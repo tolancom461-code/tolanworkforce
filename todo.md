@@ -182,3 +182,13 @@
 - [x] Vitest: payroll draft
 - [x] Review permissions
 - [x] Save checkpoint
+
+
+## QR Camera Scanner Feature
+
+- [x] Install html5-qrcode library
+- [x] Create reusable QR Scanner component
+- [x] Update AttendanceScanner page with camera support
+- [x] Add mobile-responsive UI for scanning
+- [x] Test on mobile devices
+- [x] Save checkpoint

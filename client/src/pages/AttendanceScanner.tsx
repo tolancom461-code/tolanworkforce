@@ -19,10 +19,11 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import QRScanner from '@/components/QRScanner';
 
 export default function AttendanceScanner() {
   const { user } = useAuth();
-  const [mode, setMode] = useState<'qr' | 'manual'>('manual');
+  const [mode, setMode] = useState<'qr' | 'manual'>('qr');
   const [manualCode, setManualCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResult, setLastResult] = useState<{
@@ -152,6 +153,15 @@ export default function AttendanceScanner() {
         {/* Mode Selector */}
         <div className="flex justify-center gap-4">
           <Button
+            variant={mode === 'qr' ? 'default' : 'outline'}
+            size="lg"
+            onClick={() => setMode('qr')}
+            className="flex items-center gap-2"
+          >
+            <Camera className="h-5 w-5" />
+            مسح QR بالكاميرا
+          </Button>
+          <Button
             variant={mode === 'manual' ? 'default' : 'outline'}
             size="lg"
             onClick={() => setMode('manual')}
@@ -159,15 +169,6 @@ export default function AttendanceScanner() {
           >
             <Keyboard className="h-5 w-5" />
             إدخال يدوي
-          </Button>
-          <Button
-            variant={mode === 'qr' ? 'default' : 'outline'}
-            size="lg"
-            onClick={() => setMode('qr')}
-            className="flex items-center gap-2"
-          >
-            <QrCode className="h-5 w-5" />
-            مسح QR
           </Button>
         </div>
         
@@ -230,42 +231,20 @@ export default function AttendanceScanner() {
               </form>
             ) : (
               <div className="space-y-4">
-                <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
-                  <div className="text-center text-gray-500 dark:text-gray-400">
-                    <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg">الكاميرا غير متاحة حالياً</p>
-                    <p className="text-sm mt-2">استخدم الإدخال اليدوي بدلاً من ذلك</p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => setMode('manual')}
-                    >
-                      <Keyboard className="h-4 w-4 ml-2" />
-                      التبديل للإدخال اليدوي
-                    </Button>
+                {/* QR Scanner Component */}
+                <QRScanner 
+                  onScan={handleQRScan}
+                  onError={(error) => toast.error(error)}
+                  height={350}
+                />
+                
+                {/* Processing Indicator */}
+                {isProcessing && (
+                  <div className="flex items-center justify-center gap-2 py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span className="text-muted-foreground">جاري معالجة الرمز...</span>
                   </div>
-                </div>
-                {/* Manual QR input for testing */}
-                <div className="border-t pt-4">
-                  <p className="text-sm text-gray-500 mb-2 text-center">أو أدخل رمز QR يدوياً:</p>
-                  <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    const input = (e.target as HTMLFormElement).qrInput.value;
-                    if (input) {
-                      await handleQRScan(input);
-                      (e.target as HTMLFormElement).reset();
-                    }
-                  }} className="flex gap-2">
-                    <Input 
-                      name="qrInput"
-                      placeholder="رمز QR..."
-                      className="font-mono"
-                    />
-                    <Button type="submit" disabled={isProcessing}>
-                      مسح
-                    </Button>
-                  </form>
-                </div>
+                )}
               </div>
             )}
           </CardContent>
@@ -278,6 +257,23 @@ export default function AttendanceScanner() {
             تحديث الإحصائيات
           </Button>
         </div>
+        
+        {/* Instructions for Mobile */}
+        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
+              <QrCode className="h-5 w-5" />
+              تعليمات الاستخدام
+            </h3>
+            <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
+              <li>اضغط على "تشغيل الكاميرا" للبدء في مسح رموز QR</li>
+              <li>وجّه الكاميرا نحو رمز QR الموجود على بطاقة العامل</li>
+              <li>سيتم تسجيل الحضور/الانصراف تلقائياً عند قراءة الرمز</li>
+              <li>يمكنك تبديل الكاميرا الأمامية/الخلفية إذا كان جهازك يدعم ذلك</li>
+              <li>في حالة عدم عمل الكاميرا، استخدم الإدخال اليدوي</li>
+            </ul>
+          </CardContent>
+        </Card>
       </div>
       
       {/* Result Dialog */}
