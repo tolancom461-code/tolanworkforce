@@ -205,3 +205,12 @@
 - [x] Update Users page to show roles
 - [x] Test all features
 - [x] Save checkpoint
+
+
+## Seed Permissions to Database
+
+- [x] Create seed script for 44 permissions
+- [x] Run script to insert permissions
+- [x] Verify permissions in database (40 permissions added)
+- [x] Test Permissions page with real data
+- [x] Save checkpoint
