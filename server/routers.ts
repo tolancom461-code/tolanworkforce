@@ -5,6 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow, type PayrollReportRow } from "./excelExport";
+import * as analytics from "./analytics";
 
 export const appRouter = router({
   system: systemRouter,
@@ -22,6 +23,38 @@ export const appRouter = router({
   dashboard: router({
     stats: protectedProcedure.query(async () => {
       return await db.getDashboardStats();
+    }),
+  }),
+
+  // AI-Powered Analytics
+  analytics: router({
+    executive: protectedProcedure.query(async () => {
+      const today = new Date();
+      const todayStats = await analytics.getDailyStats(today);
+      const historicalStats = await analytics.getHistoricalStats(28); // Last 4 weeks
+      
+      const healthScore = await analytics.calculateHealthScore(todayStats, historicalStats);
+      const pressurePoint = await analytics.detectPressurePoint(today);
+      const anomaly = await analytics.detectAnomalies(todayStats, historicalStats);
+      const forecast = await analytics.forecastEndOfDay(todayStats, historicalStats);
+      const insight = await analytics.generateAIInsight(healthScore, pressurePoint, anomaly, todayStats);
+      const pendingPayroll = await analytics.getPendingPayrollBatches();
+      
+      // Calculate trends
+      const yesterdayStats = historicalStats[1] || todayStats;
+      const weekAvg = historicalStats.slice(0, 7).reduce((sum, s) => sum + s.present, 0) / 7;
+      
+      return {
+        todayStats,
+        yesterdayStats,
+        weekAvg: Math.round(weekAvg),
+        healthScore,
+        pressurePoint,
+        anomaly,
+        forecast,
+        insight,
+        pendingPayroll
+      };
     }),
   }),
 

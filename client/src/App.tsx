@@ -23,12 +23,14 @@ import FinanceEntry from "./pages/FinanceEntry";
 import PayrollBatches from "./pages/PayrollBatches";
 import CostCenters from "./pages/CostCenters";
 import Roles from "./pages/Roles";
+import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/executive" component={ExecutiveDashboard} />
       <Route path="/users" component={Users} />
       <Route path="/permissions" component={Permissions} />
       <Route path="/roles" component={Roles} />

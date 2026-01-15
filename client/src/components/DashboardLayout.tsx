@@ -30,6 +30,7 @@ import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "لوحة التحكم", path: "/dashboard" },
+  { icon: BarChart3, label: "لوحة التحكم التنفيذية", path: "/executive" },
   { icon: Users, label: "المستخدمين", path: "/users" },
   { icon: Shield, label: "الأدوار", path: "/roles" },
   { icon: Key, label: "الصلاحيات", path: "/permissions" },
