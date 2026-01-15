@@ -11,6 +11,8 @@ import Permissions from "./pages/Permissions";
 import Profile from "./pages/Profile";
 import Groups from "./pages/Groups";
 import Workers from "./pages/Workers";
+import WorkerCard from "./pages/WorkerCard";
+import WorkerDetails from "./pages/WorkerDetails";
 
 function Router() {
   return (
@@ -22,6 +24,8 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/groups" component={Groups} />
       <Route path="/workers" component={Workers} />
+      <Route path="/workers/:id" component={WorkerDetails} />
+      <Route path="/workers/:id/card" component={WorkerCard} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

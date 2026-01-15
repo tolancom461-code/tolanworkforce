@@ -312,6 +312,24 @@ export const appRouter = router({
         await db.updateWorker(input.id, { qrToken });
         return { qrToken, success: true };
       }),
+    
+    getAttendance: protectedProcedure
+      .input(z.object({ workerId: z.number(), limit: z.number().optional() }))
+      .query(async ({ input }) => {
+        return await db.getWorkerAttendance(input.workerId, input.limit || 30);
+      }),
+    
+    getFinanceSummary: protectedProcedure
+      .input(z.object({ workerId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getWorkerFinanceSummary(input.workerId);
+      }),
+    
+    getPayOverrides: protectedProcedure
+      .input(z.object({ workerId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getWorkerPayOverrides(input.workerId);
+      }),
   }),
 
   // Cost Centers
@@ -332,6 +350,17 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         if (!ctx.user) throw new Error("Not authenticated");
         await db.updateUser(ctx.user.id, input);
+        return { success: true };
+      }),
+    
+    changePassword: protectedProcedure
+      .input(z.object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(6),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        await db.changeUserPassword(ctx.user.id, input.currentPassword, input.newPassword);
         return { success: true };
       }),
   }),

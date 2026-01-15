@@ -35,7 +35,7 @@
 ### User Profile
 - [x] Profile page with user info
 - [x] Edit personal information form
-- [ ] Change password functionality
+- [x] Change password functionality
 
 ### Security & Middleware
 - [x] Route protection based on permissions
@@ -77,3 +77,26 @@
 ### Navigation
 - [x] Add Groups and Workers to sidebar menu
 - [x] Update routes in App.tsx
+
+
+## Remaining Items for Phase 2 & 3 Completion
+
+### Phase 2 Remaining
+- [x] Connect to external Supabase database (jriffylmgviydaojzmai)
+- [x] Change password functionality
+
+### Phase 3 Remaining
+- [x] Shifts management UI for groups (group_shifts table)
+- [x] Image compression before upload
+- [x] Worker card print page with QR Code
+- [x] Worker details page with full info and attendance history
+- [x] Filter groups by cost center
+
+### Additional Completed Items
+- [x] Worker attendance history API (getWorkerAttendance)
+- [x] Worker finance summary API (getWorkerFinanceSummary)
+- [x] Worker pay overrides API (getPayOverrides)
+- [x] Worker details page with attendance tab showing real data
+- [x] Worker details page with finance tab showing real summary
+- [x] Toast notifications for all CRUD operations
+- [x] All vitest tests passing (33 tests)

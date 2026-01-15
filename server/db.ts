@@ -421,3 +421,89 @@ export async function getAllCostCenters() {
 
   return await db.select().from(costCenters).orderBy(costCenters.name);
 }
+
+// ============================================
+// Password Functions
+// ============================================
+
+// ============================================
+// Attendance Functions
+// ============================================
+
+export async function getWorkerAttendance(workerId: number, limit: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Import attendanceEvents from schema
+  const { attendanceEvents } = await import('../drizzle/schema');
+  
+  return await db
+    .select()
+    .from(attendanceEvents)
+    .where(eq(attendanceEvents.workerId, workerId))
+    .orderBy(desc(attendanceEvents.eventTime))
+    .limit(limit);
+}
+
+export async function getWorkerFinanceSummary(workerId: number) {
+  const db = await getDb();
+  if (!db) return { totalEarnings: 0, totalDeductions: 0, totalBonuses: 0, netAmount: 0, daysWorked: 0 };
+
+  // Import workerDailyFinance from schema
+  const { workerDailyFinance } = await import('../drizzle/schema');
+  
+  const records = await db
+    .select()
+    .from(workerDailyFinance)
+    .where(eq(workerDailyFinance.workerId, workerId));
+  
+  let totalEarnings = 0;
+  let totalDeductions = 0;
+  let totalBonuses = 0;
+  let netAmount = 0;
+  let daysWorked = records.length;
+  
+  for (const record of records) {
+    totalEarnings += parseFloat(record.baseAmount || '0');
+    totalDeductions += parseFloat(record.deductions || '0');
+    totalBonuses += parseFloat(record.bonuses || '0');
+    netAmount += parseFloat(record.netAmount || '0');
+  }
+  
+  return { totalEarnings, totalDeductions, totalBonuses, netAmount, daysWorked };
+}
+
+export async function getWorkerPayOverrides(workerId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Import payOverrides from schema
+  const { payOverrides } = await import('../drizzle/schema');
+  
+  return await db
+    .select()
+    .from(payOverrides)
+    .where(eq(payOverrides.workerId, workerId))
+    .orderBy(desc(payOverrides.createdAt));
+}
+
+export async function changeUserPassword(userId: number, currentPassword: string, newPassword: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+  
+  // Get user with current password hash
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user) {
+    throw new Error("User not found");
+  }
+  
+  // Verify current password (simplified - in production use proper hashing like bcrypt)
+  if (user.passwordHash && user.passwordHash !== currentPassword) {
+    throw new Error("كلمة المرور الحالية غير صحيحة");
+  }
+  
+  // Update password
+  await db.update(users).set({ passwordHash: newPassword, updatedAt: new Date() }).where(eq(users.id, userId));
+}

@@ -16,6 +16,7 @@ import { Plus, Pencil, Trash2, Search, Users, Clock, Building2 } from "lucide-re
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [costCenterFilter, setCostCenterFilter] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isShiftsDialogOpen, setIsShiftsDialogOpen] = useState(false);
@@ -163,9 +164,14 @@ export default function Groups() {
   };
 
   const filteredGroups = groups?.filter(
-    (group) =>
-      group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.code.toLowerCase().includes(searchQuery.toLowerCase())
+    (group) => {
+      const matchesSearch = group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        group.code.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCostCenter = costCenterFilter === "all" || 
+        (costCenterFilter === "none" && !group.costCenterId) ||
+        group.costCenterId?.toString() === costCenterFilter;
+      return matchesSearch && matchesCostCenter;
+    }
   );
 
   const getCostCenterName = (id: number | null) => {
@@ -278,17 +284,34 @@ export default function Groups() {
           </Dialog>
         </div>
 
-        {/* Search */}
+        {/* Search & Filter */}
         <Card>
           <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="البحث عن مجموعة..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
-              />
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="البحث عن مجموعة..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+              <Select value={costCenterFilter} onValueChange={setCostCenterFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <Building2 className="h-4 w-4 ml-2" />
+                  <SelectValue placeholder="مركز التكلفة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع المراكز</SelectItem>
+                  <SelectItem value="none">بدون مركز</SelectItem>
+                  {costCenters?.map((cc) => (
+                    <SelectItem key={cc.id} value={cc.id.toString()}>
+                      {cc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
