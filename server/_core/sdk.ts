@@ -276,7 +276,8 @@ class SDKServer {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
         await db.upsertUser({
           openId: userInfo.openId,
-          name: userInfo.name || null,
+          username: userInfo.openId,
+          fullName: userInfo.name || 'User',
           email: userInfo.email ?? null,
           loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
           lastSignedIn: signedInAt,
@@ -293,7 +294,9 @@ class SDKServer {
     }
 
     await db.upsertUser({
-      openId: user.openId,
+      openId: user.openId ?? '',
+      username: user.username,
+      fullName: user.fullName,
       lastSignedIn: signedInAt,
     });
 

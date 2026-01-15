@@ -1,11 +1,20 @@
-import { eq } from "drizzle-orm";
+import { eq, and, desc, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { 
+  users, InsertUser, User,
+  roles, Role,
+  permissions, Permission,
+  userRoles,
+  userPermissions,
+  rolePermissions,
+  costCenters,
+  groups,
+  workers
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -18,9 +27,13 @@ export async function getDb() {
   return _db;
 }
 
+// ============================================
+// User Functions
+// ============================================
+
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
+  if (!user.username) {
+    throw new Error("User username is required for upsert");
   }
 
   const db = await getDb();
@@ -31,23 +44,39 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   try {
     const values: InsertUser = {
-      openId: user.openId,
+      username: user.username,
+      fullName: user.fullName,
     };
     const updateSet: Record<string, unknown> = {};
 
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
-
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
-
-    textFields.forEach(assignNullable);
-
+    if (user.openId !== undefined) {
+      values.openId = user.openId;
+      updateSet.openId = user.openId;
+    }
+    if (user.email !== undefined) {
+      values.email = user.email ?? null;
+      updateSet.email = user.email ?? null;
+    }
+    if (user.phone !== undefined) {
+      values.phone = user.phone ?? null;
+      updateSet.phone = user.phone ?? null;
+    }
+    if (user.fullName !== undefined) {
+      values.fullName = user.fullName;
+      updateSet.fullName = user.fullName;
+    }
+    if (user.roleId !== undefined) {
+      values.roleId = user.roleId;
+      updateSet.roleId = user.roleId;
+    }
+    if (user.isActive !== undefined) {
+      values.isActive = user.isActive;
+      updateSet.isActive = user.isActive;
+    }
+    if (user.loginMethod !== undefined) {
+      values.loginMethod = user.loginMethod ?? null;
+      updateSet.loginMethod = user.loginMethod ?? null;
+    }
     if (user.lastSignedIn !== undefined) {
       values.lastSignedIn = user.lastSignedIn;
       updateSet.lastSignedIn = user.lastSignedIn;
@@ -85,8 +114,163 @@ export async function getUserByOpenId(openId: string) {
   }
 
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+export async function getUserById(id: number): Promise<User | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserByUsername(username: string): Promise<User | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getAllUsers(): Promise<User[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(users).orderBy(desc(users.createdAt));
+}
+
+export async function createUser(user: InsertUser): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(users).values(user);
+  return result[0].insertId;
+}
+
+export async function updateUser(id: number, data: Partial<InsertUser>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(users).set({ ...data, updatedAt: new Date() }).where(eq(users.id, id));
+}
+
+export async function deleteUser(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(users).where(eq(users.id, id));
+}
+
+// ============================================
+// Role Functions
+// ============================================
+
+export async function getAllRoles(): Promise<Role[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(roles).orderBy(roles.level);
+}
+
+export async function getRoleById(id: number): Promise<Role | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(roles).where(eq(roles.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ============================================
+// Permission Functions
+// ============================================
+
+export async function getAllPermissions(): Promise<Permission[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(permissions).orderBy(permissions.category, permissions.code);
+}
+
+export async function getUserPermissions(userId: number): Promise<Permission[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get direct user permissions
+  const directPerms = await db
+    .select({ permission: permissions })
+    .from(userPermissions)
+    .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
+    .where(and(eq(userPermissions.userId, userId), eq(userPermissions.granted, true)));
+
+  return directPerms.map(p => p.permission);
+}
+
+export async function getUserRolePermissions(userId: number): Promise<Permission[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get permissions through roles
+  const rolePerms = await db
+    .select({ permission: permissions })
+    .from(userRoles)
+    .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
+    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+    .where(eq(userRoles.userId, userId));
+
+  return rolePerms.map(p => p.permission);
+}
+
+export async function setUserPermissions(userId: number, permissionIds: number[]): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Delete existing permissions
+  await db.delete(userPermissions).where(eq(userPermissions.userId, userId));
+
+  // Insert new permissions
+  if (permissionIds.length > 0) {
+    const values = permissionIds.map(permissionId => ({
+      userId,
+      permissionId,
+      granted: true,
+    }));
+    await db.insert(userPermissions).values(values);
+  }
+}
+
+export async function assignRoleToUser(userId: number, roleId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Delete existing role assignments
+  await db.delete(userRoles).where(eq(userRoles.userId, userId));
+
+  // Insert new role
+  await db.insert(userRoles).values({ userId, roleId });
+}
+
+// ============================================
+// Statistics Functions
+// ============================================
+
+export async function getDashboardStats() {
+  const db = await getDb();
+  if (!db) return { users: 0, roles: 0, permissions: 0, groups: 0, workers: 0, costCenters: 0 };
+
+  const [userCount] = await db.select({ value: count() }).from(users);
+  const [roleCount] = await db.select({ value: count() }).from(roles);
+  const [permCount] = await db.select({ value: count() }).from(permissions);
+  const [groupCount] = await db.select({ value: count() }).from(groups);
+  const [workerCount] = await db.select({ value: count() }).from(workers);
+  const [ccCount] = await db.select({ value: count() }).from(costCenters);
+
+  return {
+    users: userCount?.value || 0,
+    roles: roleCount?.value || 0,
+    permissions: permCount?.value || 0,
+    groups: groupCount?.value || 0,
+    workers: workerCount?.value || 0,
+    costCenters: ccCount?.value || 0,
+  };
+}
