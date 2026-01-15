@@ -274,3 +274,44 @@
 - [x] Test all data and functionality
 - [x] Create DEMO_DATA.md documentation
 - [ ] Save checkpoint
+
+
+## Financial Reports System (نظام التقارير المالية الشاملة)
+
+### Phase 1: Analysis & Design
+- [x] Review worker_daily_finance table structure
+- [x] Review pay_overrides and deductions/additions
+- [x] Design report data structure for 3 levels
+- [x] Define calculation logic for totals
+
+### Phase 2: Backend APIs
+- [x] Create API: getWorkerFinancialReport (individual worker)
+- [x] Create API: getGroupFinancialReport (group level)
+- [x] Create API: getCostCenterFinancialReport (cost center level)
+- [x] Create API: getAllFinancialReportsSummary (all cost centers)
+- [x] Add date range filters to all APIs
+- [x] Add tRPC endpoints for all financial reports
+- [ ] Add Excel export endpoints for all reports (future enhancement)
+
+### Phase 3: Frontend UI
+- [x] Create FinancialReports page with tabs
+- [x] Tab 1: Summary Report (all cost centers overview)
+- [x] Tab 2: Worker Financial Report (individual details)
+- [x] Tab 3: Group Financial Report (aggregated by group)
+- [x] Tab 4: Cost Center Financial Report (aggregated by cost center)
+- [x] Add date range picker (daily, weekly, monthly)
+- [x] Add filters (group, cost center, worker)
+- [x] Display breakdown: attendance + deductions + additions = net
+- [x] Add route /finance/reports to App.tsx
+- [x] Add menu item to DashboardLayout
+- [ ] Add Excel export buttons (future enhancement)
+
+### Phase 4: Testing & Checkpoint
+- [x] Create seed-financial-data.mjs script
+- [x] Generate 147 daily finance records from attendance
+- [x] Add 8 pay overrides (bonuses and deductions)
+- [x] Test with demo data (26 workers, 4 groups, 4 cost centers)
+- [x] Verify calculations are correct
+- [x] Write vitest tests for financial report APIs (18 tests)
+- [x] All tests passed (18/18)
+- [ ] Save checkpoint

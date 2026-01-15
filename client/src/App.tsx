@@ -24,6 +24,7 @@ import PayrollBatches from "./pages/PayrollBatches";
 import CostCenters from "./pages/CostCenters";
 import Roles from "./pages/Roles";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
+import FinancialReports from "./pages/reports/FinancialReports";
 
 function Router() {
   return (
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/finance/overrides" component={PayOverrides} />
       <Route path="/finance/entry" component={FinanceEntry} />
       <Route path="/finance/payroll" component={PayrollBatches} />
+      <Route path="/finance/reports" component={FinancialReports} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

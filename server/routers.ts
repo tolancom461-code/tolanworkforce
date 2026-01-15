@@ -792,6 +792,67 @@ export const appRouter = router({
       }),
   }),
 
+  // Financial Reports
+  financialReports: router({
+    // Get worker financial report
+    worker: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        startDate: z.string(),
+        endDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getWorkerFinancialReport(
+          input.workerId,
+          new Date(input.startDate),
+          new Date(input.endDate)
+        );
+      }),
+    
+    // Get group financial report
+    group: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        startDate: z.string(),
+        endDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getGroupFinancialReport(
+          input.groupId,
+          new Date(input.startDate),
+          new Date(input.endDate)
+        );
+      }),
+    
+    // Get cost center financial report
+    costCenter: protectedProcedure
+      .input(z.object({
+        costCenterId: z.number(),
+        startDate: z.string(),
+        endDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getCostCenterFinancialReport(
+          input.costCenterId,
+          new Date(input.startDate),
+          new Date(input.endDate)
+        );
+      }),
+    
+    // Get all financial reports summary
+    summary: protectedProcedure
+      .input(z.object({
+        startDate: z.string(),
+        endDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getAllFinancialReportsSummary(
+          new Date(input.startDate),
+          new Date(input.endDate)
+        );
+      }),
+  }),
+
   // Payroll Batches
   payroll: router({
     // Create draft batch

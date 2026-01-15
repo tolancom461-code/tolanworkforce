@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Key, User, UsersRound, UserCircle, QrCode, ClipboardList, BarChart3, Calendar, Edit, AlertCircle, Calculator, Wallet, Building2, Shield } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Key, User, UsersRound, UserCircle, QrCode, ClipboardList, BarChart3, Calendar, Edit, AlertCircle, Calculator, Wallet, Building2, Shield, FileText } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -45,6 +45,7 @@ const menuItems = [
   { icon: AlertCircle, label: "الاستثناءات", path: "/finance/overrides" },
   { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry" },
   { icon: Wallet, label: "دفعات الرواتب", path: "/finance/payroll" },
+  { icon: FileText, label: "التقارير المالية", path: "/finance/reports" },
   { icon: User, label: "الملف الشخصي", path: "/profile" },
 ];
 
