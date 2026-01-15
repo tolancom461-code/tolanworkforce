@@ -485,6 +485,178 @@ export const appRouter = router({
         return await db.upsertWorkDay(input.workDate, input.dayType, input.notes);
       }),
   }),
+
+  // Daily Finance (Attendance to Finance)
+  dailyFinance: router({
+    // Process attendance to create daily finance record
+    processAttendance: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.processAttendanceToFinance(input.workerId, input.workDate);
+      }),
+    
+    // Get daily finance records for a worker
+    getRecords: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        startDate: z.string(),
+        endDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getDailyFinanceRecords(input.workerId, input.startDate, input.endDate);
+      }),
+    
+    // Add finance entry (deduction, bonus, fine, addition)
+    addEntry: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.string(),
+        entryType: z.enum(['deduction', 'bonus', 'fine', 'addition']),
+        amount: z.number().positive(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.addFinanceEntry(
+          input.workerId,
+          input.workDate,
+          input.entryType,
+          input.amount,
+          input.reason
+        );
+      }),
+    
+    // Update daily finance manually
+    update: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.string(),
+        baseAmount: z.number().optional(),
+        deductions: z.number().optional(),
+        bonuses: z.number().optional(),
+        lateMinutes: z.number().optional(),
+        earlyLeaveMinutes: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.createOrUpdateDailyFinance(input.workerId, input.workDate, {
+          baseAmount: input.baseAmount,
+          deductions: input.deductions,
+          bonuses: input.bonuses,
+          lateMinutes: input.lateMinutes,
+          earlyLeaveMinutes: input.earlyLeaveMinutes,
+          notes: input.notes,
+        });
+      }),
+  }),
+
+  // Attendance Adjustment (HR)
+  attendanceAdjust: router({
+    // Get events for editing
+    getEvents: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getAttendanceEventsForEdit(input.workerId, input.workDate);
+      }),
+    
+    // Update attendance event
+    updateEvent: protectedProcedure
+      .input(z.object({
+        eventId: z.number(),
+        newTime: z.string(), // ISO string
+        internalNote: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.updateAttendanceEvent(
+          input.eventId,
+          new Date(input.newTime),
+          input.internalNote,
+          ctx.user.id
+        );
+      }),
+  }),
+
+  // Pay Overrides (Exceptions)
+  payOverrides: router({
+    // Create new override
+    create: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        overrideDate: z.string(),
+        overrideType: z.enum(['bonus', 'deduction', 'advance', 'emergency_call']),
+        amount: z.number().positive(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.createPayOverride({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+      }),
+    
+    // Get pending overrides
+    pending: protectedProcedure
+      .input(z.object({ groupId: z.number().optional() }))
+      .query(async ({ input }) => {
+        return await db.getPendingOverrides(input.groupId);
+      }),
+    
+    // Approve override
+    approve: protectedProcedure
+      .input(z.object({ overrideId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.approveOverride(input.overrideId, ctx.user.id);
+      }),
+    
+    // Reject override
+    reject: protectedProcedure
+      .input(z.object({ overrideId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.rejectOverride(input.overrideId, ctx.user.id);
+      }),
+  }),
+
+  // Payroll Batches
+  payroll: router({
+    // Create draft batch
+    createBatch: protectedProcedure
+      .input(z.object({
+        periodStart: z.string(),
+        periodEnd: z.string(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.createPayrollBatch({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+      }),
+    
+    // List batches
+    list: protectedProcedure
+      .input(z.object({ status: z.string().optional() }))
+      .query(async ({ input }) => {
+        return await db.getPayrollBatches(input.status);
+      }),
+    
+    // Get batch details
+    getDetails: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getPayrollBatchDetails(input.batchId);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

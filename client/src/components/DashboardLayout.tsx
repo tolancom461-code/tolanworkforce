@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Key, User, UsersRound, UserCircle, QrCode, ClipboardList, BarChart3, Calendar } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Key, User, UsersRound, UserCircle, QrCode, ClipboardList, BarChart3, Calendar, Edit, AlertCircle, Calculator, Wallet } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -37,7 +37,11 @@ const menuItems = [
   { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },
   { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log" },
   { icon: BarChart3, label: "تقارير الحضور", path: "/attendance/reports" },
+  { icon: Edit, label: "تعديل الحضور", path: "/attendance/adjust" },
   { icon: Calendar, label: "أيام العمل", path: "/work-days" },
+  { icon: AlertCircle, label: "الاستثناءات", path: "/finance/overrides" },
+  { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry" },
+  { icon: Wallet, label: "دفعات الرواتب", path: "/finance/payroll" },
   { icon: User, label: "الملف الشخصي", path: "/profile" },
 ];
 

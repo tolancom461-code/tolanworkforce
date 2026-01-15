@@ -17,6 +17,10 @@ import AttendanceScanner from "./pages/AttendanceScanner";
 import AttendanceLog from "./pages/AttendanceLog";
 import AttendanceReports from "./pages/AttendanceReports";
 import WorkDays from "./pages/WorkDays";
+import AttendanceAdjust from "./pages/AttendanceAdjust";
+import PayOverrides from "./pages/PayOverrides";
+import FinanceEntry from "./pages/FinanceEntry";
+import PayrollBatches from "./pages/PayrollBatches";
 
 function Router() {
   return (
@@ -34,7 +38,12 @@ function Router() {
       <Route path="/attendance" component={AttendanceScanner} />
       <Route path="/attendance/log" component={AttendanceLog} />
       <Route path="/attendance/reports" component={AttendanceReports} />
+      <Route path="/attendance/adjust" component={AttendanceAdjust} />
       <Route path="/work-days" component={WorkDays} />
+      {/* Finance System Routes */}
+      <Route path="/finance/overrides" component={PayOverrides} />
+      <Route path="/finance/entry" component={FinanceEntry} />
+      <Route path="/finance/payroll" component={PayrollBatches} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
