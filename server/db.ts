@@ -8,9 +8,13 @@ import {
   userPermissions,
   rolePermissions,
   costCenters,
-  groups,
-  workers
+  groups, Group, InsertGroup,
+  groupShifts, GroupShift, InsertGroupShift,
+  workers, InsertWorker
 } from "../drizzle/schema";
+
+// Rename Worker type to avoid conflict with Web Worker
+import type { Worker as DbWorker } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -273,4 +277,147 @@ export async function getDashboardStats() {
     workers: workerCount?.value || 0,
     costCenters: ccCount?.value || 0,
   };
+}
+
+
+// ============================================
+// Groups Functions
+// ============================================
+
+
+
+export async function getAllGroups(): Promise<Group[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(groups).orderBy(desc(groups.createdAt));
+}
+
+export async function getGroupById(id: number): Promise<Group | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(groups).where(eq(groups.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createGroup(group: InsertGroup): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(groups).values(group);
+  return result[0].insertId;
+}
+
+export async function updateGroup(id: number, data: Partial<InsertGroup>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(groups).set({ ...data, updatedAt: new Date() }).where(eq(groups.id, id));
+}
+
+export async function deleteGroup(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Delete related shifts first
+  await db.delete(groupShifts).where(eq(groupShifts.groupId, id));
+  await db.delete(groups).where(eq(groups.id, id));
+}
+
+// Group Shifts
+export async function getGroupShifts(groupId: number): Promise<GroupShift[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(groupShifts).where(eq(groupShifts.groupId, groupId));
+}
+
+export async function createGroupShift(shift: InsertGroupShift): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(groupShifts).values(shift);
+  return result[0].insertId;
+}
+
+export async function updateGroupShift(id: number, data: Partial<InsertGroupShift>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(groupShifts).set({ ...data, updatedAt: new Date() }).where(eq(groupShifts.id, id));
+}
+
+export async function deleteGroupShift(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(groupShifts).where(eq(groupShifts.id, id));
+}
+
+// ============================================
+// Workers Functions
+// ============================================
+
+export async function getAllWorkers(): Promise<DbWorker[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(workers).orderBy(desc(workers.createdAt));
+}
+
+export async function getWorkersByGroup(groupId: number): Promise<DbWorker[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(workers).where(eq(workers.groupId, groupId)).orderBy(workers.fullName);
+}
+
+export async function getWorkerById(id: number): Promise<DbWorker | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(workers).where(eq(workers.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getWorkerByCode(code: string): Promise<DbWorker | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(workers).where(eq(workers.code, code)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createWorker(worker: InsertWorker): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(workers).values(worker);
+  return result[0].insertId;
+}
+
+export async function updateWorker(id: number, data: Partial<InsertWorker>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(workers).set({ ...data, updatedAt: new Date() }).where(eq(workers.id, id));
+}
+
+export async function deleteWorker(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(workers).where(eq(workers.id, id));
+}
+
+// ============================================
+// Cost Centers Functions
+// ============================================
+
+export async function getAllCostCenters() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(costCenters).orderBy(costCenters.name);
 }

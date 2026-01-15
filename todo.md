@@ -17,7 +17,7 @@
 - [x] Create elegant sidebar navigation
 - [x] Implement responsive dashboard layout
 - [x] Add user profile dropdown in header
-- [ ] Dark/Light theme support
+- [x] Dark/Light theme support
 
 ### User Management
 - [x] User list page with search and filters
@@ -54,3 +54,26 @@
 - [x] Add theme toggle button to dashboard
 - [x] Persist theme preference in localStorage
 - [x] Test theme switching functionality
+
+## Phase 3: Groups & Workers Management
+
+### Groups Management
+- [x] API procedures for groups CRUD
+- [x] Groups list page with search
+- [x] Add new group dialog
+- [x] Edit group dialog
+- [x] Delete group with confirmation
+- [x] Shift management for each group
+
+### Workers Management
+- [x] API procedures for workers CRUD
+- [x] Workers list page with search and filters
+- [x] Add new worker dialog with photo upload
+- [x] Edit worker dialog
+- [x] Delete worker with confirmation
+- [x] QR code generation for each worker
+- [x] Worker details view
+
+### Navigation
+- [x] Add Groups and Workers to sidebar menu
+- [x] Update routes in App.tsx

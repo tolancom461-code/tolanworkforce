@@ -296,3 +296,10 @@ export type Group = typeof groups.$inferSelect;
 export type Worker = typeof workers.$inferSelect;
 export type AttendanceEvent = typeof attendanceEvents.$inferSelect;
 export type PayrollBatch = typeof payrollBatches.$inferSelect;
+
+export type InsertGroup = typeof groups.$inferInsert;
+export type GroupShift = typeof groupShifts.$inferSelect;
+export type InsertGroupShift = typeof groupShifts.$inferInsert;
+export type InsertWorker = typeof workers.$inferInsert;
+export type Job = typeof jobs.$inferSelect;
+export type InsertJob = typeof jobs.$inferInsert;

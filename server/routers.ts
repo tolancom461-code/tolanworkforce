@@ -132,6 +132,195 @@ export const appRouter = router({
       }),
   }),
 
+  // Groups Management
+  groups: router({
+    list: protectedProcedure.query(async () => {
+      return await db.getAllGroups();
+    }),
+    
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getGroupById(input.id);
+      }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        code: z.string().min(1),
+        name: z.string().min(2),
+        costCenterId: z.number().optional().nullable(),
+        supervisorId: z.number().optional().nullable(),
+        dailyRate: z.string().optional(),
+        workHours: z.string().optional(),
+        isActive: z.boolean().default(true),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await db.createGroup(input);
+        return { id, success: true };
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        code: z.string().min(1).optional(),
+        name: z.string().min(2).optional(),
+        costCenterId: z.number().optional().nullable(),
+        supervisorId: z.number().optional().nullable(),
+        dailyRate: z.string().optional(),
+        workHours: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateGroup(id, data);
+        return { success: true };
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteGroup(input.id);
+        return { success: true };
+      }),
+    
+    // Shifts
+    getShifts: protectedProcedure
+      .input(z.object({ groupId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getGroupShifts(input.groupId);
+      }),
+    
+    createShift: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        shiftName: z.string().min(1),
+        startTime: z.string(),
+        endTime: z.string(),
+        isActive: z.boolean().default(true),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await db.createGroupShift(input);
+        return { id, success: true };
+      }),
+    
+    updateShift: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        shiftName: z.string().min(1).optional(),
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateGroupShift(id, data);
+        return { success: true };
+      }),
+    
+    deleteShift: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteGroupShift(input.id);
+        return { success: true };
+      }),
+  }),
+
+  // Workers Management
+  workers: router({
+    list: protectedProcedure.query(async () => {
+      return await db.getAllWorkers();
+    }),
+    
+    listByGroup: protectedProcedure
+      .input(z.object({ groupId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getWorkersByGroup(input.groupId);
+      }),
+    
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getWorkerById(input.id);
+      }),
+    
+    getByCode: protectedProcedure
+      .input(z.object({ code: z.string() }))
+      .query(async ({ input }) => {
+        return await db.getWorkerByCode(input.code);
+      }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        code: z.string().min(1),
+        fullName: z.string().min(2),
+        nationalId: z.string().optional().nullable(),
+        phone: z.string().optional().nullable(),
+        groupId: z.number().optional().nullable(),
+        jobId: z.number().optional().nullable(),
+        dailyRate: z.string().optional(),
+        photoUrl: z.string().optional().nullable(),
+        hireDate: z.string().optional().nullable(),
+        status: z.enum(["active", "inactive", "archived"]).default("active"),
+      }))
+      .mutation(async ({ input }) => {
+        // Generate QR token
+        const qrToken = `WRK-${input.code}-${Date.now()}`;
+        const manualCode = input.code.toUpperCase();
+        
+        const id = await db.createWorker({
+          ...input,
+          qrToken,
+          manualCode,
+          hireDate: input.hireDate ? new Date(input.hireDate) : null,
+        });
+        return { id, qrToken, success: true };
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        code: z.string().min(1).optional(),
+        fullName: z.string().min(2).optional(),
+        nationalId: z.string().optional().nullable(),
+        phone: z.string().optional().nullable(),
+        groupId: z.number().optional().nullable(),
+        jobId: z.number().optional().nullable(),
+        dailyRate: z.string().optional(),
+        photoUrl: z.string().optional().nullable(),
+        status: z.enum(["active", "inactive", "archived"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateWorker(id, data);
+        return { success: true };
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteWorker(input.id);
+        return { success: true };
+      }),
+    
+    regenerateQR: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const worker = await db.getWorkerById(input.id);
+        if (!worker) throw new Error("Worker not found");
+        
+        const qrToken = `WRK-${worker.code}-${Date.now()}`;
+        await db.updateWorker(input.id, { qrToken });
+        return { qrToken, success: true };
+      }),
+  }),
+
+  // Cost Centers
+  costCenters: router({
+    list: protectedProcedure.query(async () => {
+      return await db.getAllCostCenters();
+    }),
+  }),
+
   // Profile Management
   profile: router({
     update: protectedProcedure

@@ -1,0 +1,713 @@
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw } from "lucide-react";
+
+export default function Workers() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterGroup, setFilterGroup] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState<any>(null);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    code: "",
+    fullName: "",
+    nationalId: "",
+    phone: "",
+    groupId: null as number | null,
+    jobId: null as number | null,
+    dailyRate: "",
+    photoUrl: "",
+    hireDate: "",
+    status: "active" as "active" | "inactive" | "archived",
+  });
+
+  const utils = trpc.useUtils();
+  const { data: workers, isLoading } = trpc.workers.list.useQuery();
+  const { data: groups } = trpc.groups.list.useQuery();
+
+  const createMutation = trpc.workers.create.useMutation({
+    onSuccess: (data) => {
+      toast.success("تم إضافة العامل بنجاح");
+      setIsAddDialogOpen(false);
+      resetForm();
+      utils.workers.list.invalidate();
+      utils.dashboard.stats.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء إضافة العامل");
+    },
+  });
+
+  const updateMutation = trpc.workers.update.useMutation({
+    onSuccess: () => {
+      toast.success("تم تحديث بيانات العامل بنجاح");
+      setIsEditDialogOpen(false);
+      setSelectedWorker(null);
+      resetForm();
+      utils.workers.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء تحديث بيانات العامل");
+    },
+  });
+
+  const deleteMutation = trpc.workers.delete.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف العامل بنجاح");
+      utils.workers.list.invalidate();
+      utils.dashboard.stats.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء حذف العامل");
+    },
+  });
+
+  const regenerateQRMutation = trpc.workers.regenerateQR.useMutation({
+    onSuccess: (data) => {
+      toast.success("تم تجديد رمز QR بنجاح");
+      if (selectedWorker) {
+        setSelectedWorker({ ...selectedWorker, qrToken: data.qrToken });
+      }
+      utils.workers.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء تجديد رمز QR");
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      code: "",
+      fullName: "",
+      nationalId: "",
+      phone: "",
+      groupId: null,
+      jobId: null,
+      dailyRate: "",
+      photoUrl: "",
+      hireDate: "",
+      status: "active",
+    });
+  };
+
+  const handleEdit = (worker: any) => {
+    setSelectedWorker(worker);
+    setFormData({
+      code: worker.code,
+      fullName: worker.fullName,
+      nationalId: worker.nationalId || "",
+      phone: worker.phone || "",
+      groupId: worker.groupId,
+      jobId: worker.jobId,
+      dailyRate: worker.dailyRate || "",
+      photoUrl: worker.photoUrl || "",
+      hireDate: worker.hireDate ? new Date(worker.hireDate).toISOString().split('T')[0] : "",
+      status: worker.status || "active",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleView = (worker: any) => {
+    setSelectedWorker(worker);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleShowQR = (worker: any) => {
+    setSelectedWorker(worker);
+    setIsQRDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (selectedWorker) {
+      updateMutation.mutate({
+        id: selectedWorker.id,
+        ...formData,
+        groupId: formData.groupId || undefined,
+        jobId: formData.jobId || undefined,
+      });
+    } else {
+      createMutation.mutate({
+        ...formData,
+        groupId: formData.groupId || undefined,
+        jobId: formData.jobId || undefined,
+      });
+    }
+  };
+
+  const getGroupName = (id: number | null) => {
+    if (!id) return "-";
+    const group = groups?.find((g) => g.id === id);
+    return group?.name || "-";
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge className="bg-green-500">نشط</Badge>;
+      case "inactive":
+        return <Badge variant="secondary">غير نشط</Badge>;
+      case "archived":
+        return <Badge variant="outline">مؤرشف</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const filteredWorkers = workers?.filter((worker) => {
+    const matchesSearch =
+      worker.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      worker.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (worker.nationalId && worker.nationalId.includes(searchQuery));
+    
+    const matchesGroup = filterGroup === "all" || worker.groupId?.toString() === filterGroup;
+    const matchesStatus = filterStatus === "all" || worker.status === filterStatus;
+    
+    return matchesSearch && matchesGroup && matchesStatus;
+  });
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">إدارة العمال</h1>
+            <p className="text-muted-foreground">إدارة بيانات العمال ومعلوماتهم</p>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => { resetForm(); setSelectedWorker(null); }}>
+                <Plus className="ml-2 h-4 w-4" />
+                إضافة عامل
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]" dir="rtl">
+              <DialogHeader>
+                <DialogTitle>إضافة عامل جديد</DialogTitle>
+                <DialogDescription>أدخل بيانات العامل الجديد</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="code">كود العامل</Label>
+                    <Input
+                      id="code"
+                      value={formData.code}
+                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                      placeholder="WRK001"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">الاسم الكامل</Label>
+                    <Input
+                      id="fullName"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                      placeholder="محمد أحمد"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nationalId">رقم الهوية</Label>
+                    <Input
+                      id="nationalId"
+                      value={formData.nationalId}
+                      onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
+                      placeholder="1234567890"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">رقم الجوال</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="05xxxxxxxx"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>المجموعة</Label>
+                    <Select
+                      value={formData.groupId?.toString() || ""}
+                      onValueChange={(value) => setFormData({ ...formData, groupId: value ? parseInt(value) : null })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر المجموعة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {groups?.map((group) => (
+                          <SelectItem key={group.id} value={group.id.toString()}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dailyRate">الأجر اليومي</Label>
+                    <Input
+                      id="dailyRate"
+                      type="number"
+                      value={formData.dailyRate}
+                      onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
+                      placeholder="100.00"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="hireDate">تاريخ التعيين</Label>
+                    <Input
+                      id="hireDate"
+                      type="date"
+                      value={formData.hireDate}
+                      onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الحالة</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value: "active" | "inactive" | "archived") => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">نشط</SelectItem>
+                        <SelectItem value="inactive">غير نشط</SelectItem>
+                        <SelectItem value="archived">مؤرشف</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="photoUrl">رابط الصورة</Label>
+                  <Input
+                    id="photoUrl"
+                    value={formData.photoUrl}
+                    onChange={(e) => setFormData({ ...formData, photoUrl: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  إلغاء
+                </Button>
+                <Button onClick={handleSubmit} disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="البحث عن عامل بالاسم أو الكود أو الهوية..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={filterGroup} onValueChange={setFilterGroup}>
+                  <SelectTrigger className="w-[180px]">
+                    <Filter className="ml-2 h-4 w-4" />
+                    <SelectValue placeholder="المجموعة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المجموعات</SelectItem>
+                    {groups?.map((group) => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="الحالة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الحالات</SelectItem>
+                    <SelectItem value="active">نشط</SelectItem>
+                    <SelectItem value="inactive">غير نشط</SelectItem>
+                    <SelectItem value="archived">مؤرشف</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Workers Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCircle className="h-5 w-5" />
+              قائمة العمال
+            </CardTitle>
+            <CardDescription>
+              {filteredWorkers?.length || 0} عامل
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">العامل</TableHead>
+                    <TableHead className="text-right">الكود</TableHead>
+                    <TableHead className="text-right">رقم الهوية</TableHead>
+                    <TableHead className="text-right">المجموعة</TableHead>
+                    <TableHead className="text-right">الأجر اليومي</TableHead>
+                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredWorkers?.map((worker) => (
+                    <TableRow key={worker.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={worker.photoUrl || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {getInitials(worker.fullName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">{worker.fullName}</div>
+                            <div className="text-sm text-muted-foreground">{worker.phone || "-"}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono">{worker.code}</TableCell>
+                      <TableCell>{worker.nationalId || "-"}</TableCell>
+                      <TableCell>{getGroupName(worker.groupId)}</TableCell>
+                      <TableCell>{worker.dailyRate || "-"}</TableCell>
+                      <TableCell>{getStatusBadge(worker.status || "active")}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleView(worker)}
+                            title="عرض التفاصيل"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleShowQR(worker)}
+                            title="رمز QR"
+                          >
+                            <QrCode className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(worker)}
+                            title="تعديل"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" title="حذف">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  هل أنت متأكد من حذف العامل "{worker.fullName}"؟
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate({ id: worker.id })}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  حذف
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredWorkers?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        لا يوجد عمال
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>تعديل بيانات العامل</DialogTitle>
+              <DialogDescription>تعديل بيانات العامل</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-code">كود العامل</Label>
+                  <Input
+                    id="edit-code"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fullName">الاسم الكامل</Label>
+                  <Input
+                    id="edit-fullName"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-nationalId">رقم الهوية</Label>
+                  <Input
+                    id="edit-nationalId"
+                    value={formData.nationalId}
+                    onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-phone">رقم الجوال</Label>
+                  <Input
+                    id="edit-phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>المجموعة</Label>
+                  <Select
+                    value={formData.groupId?.toString() || ""}
+                    onValueChange={(value) => setFormData({ ...formData, groupId: value ? parseInt(value) : null })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر المجموعة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups?.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-dailyRate">الأجر اليومي</Label>
+                  <Input
+                    id="edit-dailyRate"
+                    type="number"
+                    value={formData.dailyRate}
+                    onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>الحالة</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value: "active" | "inactive" | "archived") => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">نشط</SelectItem>
+                    <SelectItem value="inactive">غير نشط</SelectItem>
+                    <SelectItem value="archived">مؤرشف</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                إلغاء
+              </Button>
+              <Button onClick={handleSubmit} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Dialog */}
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>تفاصيل العامل</DialogTitle>
+            </DialogHeader>
+            {selectedWorker && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={selectedWorker.photoUrl || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                      {getInitials(selectedWorker.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="text-xl font-bold">{selectedWorker.fullName}</h3>
+                    <p className="text-muted-foreground font-mono">{selectedWorker.code}</p>
+                    {getStatusBadge(selectedWorker.status || "active")}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div>
+                    <p className="text-sm text-muted-foreground">رقم الهوية</p>
+                    <p className="font-medium">{selectedWorker.nationalId || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">رقم الجوال</p>
+                    <p className="font-medium">{selectedWorker.phone || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">المجموعة</p>
+                    <p className="font-medium">{getGroupName(selectedWorker.groupId)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">الأجر اليومي</p>
+                    <p className="font-medium">{selectedWorker.dailyRate || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">تاريخ التعيين</p>
+                    <p className="font-medium">
+                      {selectedWorker.hireDate 
+                        ? new Date(selectedWorker.hireDate).toLocaleDateString('ar-SA')
+                        : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">آخر حضور</p>
+                    <p className="font-medium">
+                      {selectedWorker.lastAttendanceAt 
+                        ? new Date(selectedWorker.lastAttendanceAt).toLocaleDateString('ar-SA')
+                        : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                إغلاق
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* QR Code Dialog */}
+        <Dialog open={isQRDialogOpen} onOpenChange={setIsQRDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <QrCode className="h-5 w-5" />
+                رمز QR للعامل
+              </DialogTitle>
+            </DialogHeader>
+            {selectedWorker && (
+              <div className="space-y-4 text-center">
+                <div className="p-4 bg-white rounded-lg inline-block mx-auto">
+                  {/* QR Code placeholder - in production, use a QR library */}
+                  <div className="w-48 h-48 bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 rounded">
+                    <div className="text-center">
+                      <QrCode className="h-16 w-16 mx-auto text-gray-400" />
+                      <p className="text-xs text-gray-500 mt-2 font-mono break-all px-2">
+                        {selectedWorker.qrToken || "لا يوجد رمز"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-bold">{selectedWorker.fullName}</p>
+                  <p className="text-sm text-muted-foreground font-mono">{selectedWorker.code}</p>
+                </div>
+                <div className="text-xs text-muted-foreground bg-muted p-2 rounded font-mono break-all">
+                  {selectedWorker.qrToken || "لم يتم إنشاء رمز QR"}
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => regenerateQRMutation.mutate({ id: selectedWorker.id })}
+                  disabled={regenerateQRMutation.isPending}
+                  className="w-full"
+                >
+                  <RefreshCw className={`ml-2 h-4 w-4 ${regenerateQRMutation.isPending ? 'animate-spin' : ''}`} />
+                  تجديد رمز QR
+                </Button>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsQRDialogOpen(false)}>
+                إغلاق
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </DashboardLayout>
+  );
+}
