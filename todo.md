@@ -250,3 +250,13 @@
 - [x] Create Dashboard page
 - [x] Test with real data (76 tests passed)
 - [x] Save checkpoint
+
+
+## Default Roles with Permissions
+
+- [x] Create seed script for 5 default roles
+- [x] Define permissions mapping for each role
+- [x] Run script to insert roles and link permissions
+- [x] Verify roles in database (5 roles with 36, 17, 9, 6, 6 permissions)
+- [x] Test role assignment to users
+- [x] Save checkpoint
