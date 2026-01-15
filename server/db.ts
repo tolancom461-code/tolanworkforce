@@ -187,6 +187,57 @@ export async function getRoleById(id: number): Promise<Role | undefined> {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function createRole(data: {
+  code: string;
+  name: string;
+  description?: string;
+  level?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const [result] = await db.insert(roles).values({
+    code: data.code,
+    name: data.name,
+    description: data.description || null,
+    level: data.level || 0,
+  });
+
+  return { id: Number(result.insertId), success: true };
+}
+
+export async function updateRole(id: number, data: {
+  code?: string;
+  name?: string;
+  description?: string;
+  level?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  await db.update(roles)
+    .set(data)
+    .where(eq(roles.id, id));
+
+  return { success: true };
+}
+
+export async function deleteRole(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  // Delete role permissions first
+  await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id));
+  
+  // Delete user roles
+  await db.delete(userRoles).where(eq(userRoles.roleId, id));
+  
+  // Delete role
+  await db.delete(roles).where(eq(roles.id, id));
+
+  return { success: true };
+}
+
 // ============================================
 // Permission Functions
 // ============================================
@@ -422,6 +473,49 @@ export async function getAllCostCenters() {
   if (!db) return [];
 
   return await db.select().from(costCenters).orderBy(costCenters.name);
+}
+
+export async function createCostCenter(data: {
+  code: string;
+  name: string;
+  description?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const [result] = await db.insert(costCenters).values({
+    code: data.code,
+    name: data.name,
+    description: data.description || null,
+    isActive: true,
+  });
+
+  return { id: Number(result.insertId), success: true };
+}
+
+export async function updateCostCenter(id: number, data: {
+  code?: string;
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  await db.update(costCenters)
+    .set(data)
+    .where(eq(costCenters.id, id));
+
+  return { success: true };
+}
+
+export async function deleteCostCenter(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  await db.delete(costCenters).where(eq(costCenters.id, id));
+
+  return { success: true };
 }
 
 // ============================================

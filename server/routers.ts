@@ -105,6 +105,36 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getRoleById(input.id);
       }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        code: z.string().min(1),
+        name: z.string().min(1),
+        description: z.string().optional(),
+        level: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.createRole(input);
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        code: z.string().optional(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        level: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updateRole(id, data);
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteRole(input.id);
+      }),
   }),
 
   // Permission Management
@@ -337,6 +367,35 @@ export const appRouter = router({
     list: protectedProcedure.query(async () => {
       return await db.getAllCostCenters();
     }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        code: z.string().min(1),
+        name: z.string().min(1),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.createCostCenter(input);
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        code: z.string().optional(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updateCostCenter(id, data);
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteCostCenter(input.id);
+      }),
   }),
 
   // Profile Management

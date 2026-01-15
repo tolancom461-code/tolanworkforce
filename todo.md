@@ -192,3 +192,16 @@
 - [x] Add mobile-responsive UI for scanning
 - [x] Test on mobile devices
 - [x] Save checkpoint
+
+
+## Fix Roles, Permissions, and Cost Centers
+
+- [x] Create cost_centers table in schema
+- [x] Add cost centers CRUD APIs
+- [x] Create CostCenters page with management UI
+- [x] Add roles management system
+- [x] Define system permissions list
+- [x] Update Permissions page to show defined permissions
+- [x] Update Users page to show roles
+- [x] Test all features
+- [x] Save checkpoint

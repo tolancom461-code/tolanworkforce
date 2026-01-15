@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Key, User, UsersRound, UserCircle, QrCode, ClipboardList, BarChart3, Calendar, Edit, AlertCircle, Calculator, Wallet } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Key, User, UsersRound, UserCircle, QrCode, ClipboardList, BarChart3, Calendar, Edit, AlertCircle, Calculator, Wallet, Building2, Shield } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -31,7 +31,9 @@ import { Button } from "./ui/button";
 const menuItems = [
   { icon: LayoutDashboard, label: "لوحة التحكم", path: "/dashboard" },
   { icon: Users, label: "المستخدمين", path: "/users" },
+  { icon: Shield, label: "الأدوار", path: "/roles" },
   { icon: Key, label: "الصلاحيات", path: "/permissions" },
+  { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
   { icon: UsersRound, label: "المجموعات", path: "/groups" },
   { icon: UserCircle, label: "العمال", path: "/workers" },
   { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },

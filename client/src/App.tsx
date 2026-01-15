@@ -21,6 +21,8 @@ import AttendanceAdjust from "./pages/AttendanceAdjust";
 import PayOverrides from "./pages/PayOverrides";
 import FinanceEntry from "./pages/FinanceEntry";
 import PayrollBatches from "./pages/PayrollBatches";
+import CostCenters from "./pages/CostCenters";
+import Roles from "./pages/Roles";
 
 function Router() {
   return (
@@ -29,6 +31,8 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/users" component={Users} />
       <Route path="/permissions" component={Permissions} />
+      <Route path="/roles" component={Roles} />
+      <Route path="/cost-centers" component={CostCenters} />
       <Route path="/profile" component={Profile} />
       <Route path="/groups" component={Groups} />
       <Route path="/workers" component={Workers} />
