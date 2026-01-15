@@ -54,6 +54,45 @@ export default function AttendanceReports() {
 
   const years = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i);
 
+  const exportExcelMutation = trpc.export.attendanceReport.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      // Download file
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('تم تصدير التقرير بنجاح');
+    },
+    onError: (error) => {
+      toast.error('فشل تصدير التقرير: ' + error.message);
+    },
+  });
+
+  const exportToExcel = () => {
+    if (!report?.length) {
+      toast.error('لا توجد بيانات للتصدير');
+      return;
+    }
+
+    exportExcelMutation.mutate({
+      month: MONTHS[selectedMonth - 1],
+      year: selectedYear,
+      groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined,
+    });
+  };
+
   const exportToCSV = () => {
     if (!report?.length) {
       toast.error('لا توجد بيانات للتصدير');
@@ -137,7 +176,11 @@ export default function AttendanceReports() {
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button onClick={exportToCSV}>
+          <Button onClick={exportToExcel} disabled={exportExcelMutation.isPending}>
+            <Download className="h-4 w-4 ml-2" />
+            {exportExcelMutation.isPending ? 'جاري التصدير...' : 'تصدير Excel'}
+          </Button>
+          <Button variant="outline" onClick={exportToCSV}>
             <Download className="h-4 w-4 ml-2" />
             تصدير
           </Button>

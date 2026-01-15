@@ -4,6 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
+import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow, type PayrollReportRow } from "./excelExport";
 
 export const appRouter = router({
   system: systemRouter,
@@ -681,6 +682,80 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
         return await db.rejectOverride(input.overrideId, ctx.user.id);
+      }),
+  }),
+
+  // Excel Export
+  export: router({    // Export attendance report
+    attendanceReport: protectedProcedure
+      .input(z.object({
+        month: z.string(),
+        year: z.number(),
+        groupId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        // Get attendance data
+        const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+        const monthNumber = monthNames.indexOf(input.month) + 1;
+        const data = await db.getMonthlyAttendanceReport(input.year, monthNumber, input.groupId);
+        
+        // Transform to Excel format
+        const excelData: AttendanceReportRow[] = data.map(row => ({
+          workerName: row.workerName,
+          workerCode: row.workerCode,
+          groupName: '', // Group name not in report
+          daysWorked: row.daysPresent,
+          daysLate: 0, // TODO: Add late tracking
+          daysAbsent: 0, // TODO: Add absence tracking
+          totalHours: row.totalHours,
+          lateMinutes: 0, // TODO: Add late minutes tracking
+        }));
+        
+        // Generate Excel buffer
+        const buffer = await generateAttendanceExcel(excelData, input.month, input.year);
+        
+        // Return base64 encoded buffer
+        return {
+          data: buffer.toString('base64'),
+          filename: `attendance_${input.month}_${input.year}.xlsx`,
+        };
+      }),
+    
+    // Export payroll report
+    payrollReport: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        // Get batch details
+        const batch = await db.getPayrollBatchDetails(input.batchId);
+        if (!batch) throw new Error("Batch not found");
+        
+        // Transform to Excel format
+        const excelData: PayrollReportRow[] = batch.items.map(item => ({
+          workerName: item.workerName,
+          workerCode: item.workerCode,
+          groupName: '', // Group name not in payroll items
+          baseSalary: parseFloat(item.baseAmount || '0'),
+          deductions: parseFloat(item.totalDeductions || '0'),
+          bonuses: parseFloat(item.totalBonuses || '0'),
+          netSalary: parseFloat(item.netAmount || '0'),
+        }));
+        
+        // Generate Excel buffer
+        const buffer = await generatePayrollExcel(
+          excelData,
+          batch.batch.batchCode || `دفعة ${batch.batch.id}`,
+          `${batch.batch.periodStart.toISOString().split('T')[0]} - ${batch.batch.periodEnd.toISOString().split('T')[0]}`
+        );
+        
+        // Return base64 encoded buffer
+        return {
+          data: buffer.toString('base64'),
+          filename: `payroll_batch_${batch.batch.id}.xlsx`,
+        };
       }),
   }),
 

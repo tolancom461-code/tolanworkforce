@@ -16,7 +16,8 @@ import {
   FileText,
   Calendar,
   Users,
-  DollarSign
+  DollarSign,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -32,6 +33,32 @@ export default function PayrollBatches() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  
+  const exportExcelMutation = trpc.export.payrollReport.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      // Download file
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('تم تصدير التقرير بنجاح');
+    },
+    onError: (error) => {
+      toast.error('فشل تصدير التقرير: ' + error.message);
+    },
+  });
   
   // Form state
   const [periodStart, setPeriodStart] = useState('');
@@ -348,6 +375,17 @@ export default function PayrollBatches() {
                     {parseFloat(batchDetails.batch.totalAmount?.toString() || '0').toFixed(2)} ر.س
                   </p>
                 </div>
+              </div>
+
+              {/* Export Button */}
+              <div className="flex justify-end">
+                <Button 
+                  onClick={() => exportExcelMutation.mutate({ batchId: selectedBatchId! })}
+                  disabled={exportExcelMutation.isPending}
+                >
+                  <Download className="h-4 w-4 ml-2" />
+                  {exportExcelMutation.isPending ? 'جاري التصدير...' : 'تصدير Excel'}
+                </Button>
               </div>
 
               {/* Items Table */}
