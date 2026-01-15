@@ -260,3 +260,17 @@
 - [x] Verify roles in database (5 roles with 36, 17, 9, 6, 6 permissions)
 - [x] Test role assignment to users
 - [x] Save checkpoint
+
+
+## Seed Demo Data (Full System Test Data)
+
+- [x] Update roles to 6 roles (Super Admin, Admin, HR Admin, Accountant, Supervisor, Guard)
+- [x] Map specific permissions for each role
+- [x] Add cost centers (4 centers)
+- [x] Add 4 groups with shifts (5, 6, 7, 8 workers each)
+- [x] Add users for each role (6 users minimum)
+- [x] Add 26 workers across 4 groups (without photos, with QR codes)
+- [x] Add attendance records for 1 week (7 days) for all workers (294 records)
+- [x] Test all data and functionality
+- [x] Create DEMO_DATA.md documentation
+- [ ] Save checkpoint
