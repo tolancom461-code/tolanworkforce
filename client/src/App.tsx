@@ -13,6 +13,10 @@ import Groups from "./pages/Groups";
 import Workers from "./pages/Workers";
 import WorkerCard from "./pages/WorkerCard";
 import WorkerDetails from "./pages/WorkerDetails";
+import AttendanceScanner from "./pages/AttendanceScanner";
+import AttendanceLog from "./pages/AttendanceLog";
+import AttendanceReports from "./pages/AttendanceReports";
+import WorkDays from "./pages/WorkDays";
 
 function Router() {
   return (
@@ -26,6 +30,11 @@ function Router() {
       <Route path="/workers" component={Workers} />
       <Route path="/workers/:id" component={WorkerDetails} />
       <Route path="/workers/:id/card" component={WorkerCard} />
+      {/* Attendance System Routes */}
+      <Route path="/attendance" component={AttendanceScanner} />
+      <Route path="/attendance/log" component={AttendanceLog} />
+      <Route path="/attendance/reports" component={AttendanceReports} />
+      <Route path="/work-days" component={WorkDays} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

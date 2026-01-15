@@ -364,6 +364,127 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  // Attendance System (Phase 4)
+  attendance: router({
+    // Record check-in or check-out
+    record: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        eventType: z.enum(['check_in', 'check_out']),
+        method: z.string().default('manual'),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.recordAttendance(
+          input.workerId,
+          input.eventType,
+          input.method,
+          undefined,
+          ctx.user?.id
+        );
+      }),
+    
+    // Scan QR code to get worker and record attendance
+    scanQR: protectedProcedure
+      .input(z.object({ qrToken: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const worker = await db.getWorkerByQRToken(input.qrToken);
+        if (!worker) throw new Error("رمز QR غير صالح");
+        
+        // Get last event to determine next action
+        const lastEvent = await db.getWorkerLastEvent(worker.id);
+        const nextEventType = (!lastEvent || lastEvent.eventType === 'check_out') ? 'check_in' : 'check_out';
+        
+        const result = await db.recordAttendance(
+          worker.id,
+          nextEventType,
+          'qr',
+          undefined,
+          ctx.user?.id
+        );
+        
+        return { ...result, worker, eventType: nextEventType };
+      }),
+    
+    // Manual code entry
+    manualEntry: protectedProcedure
+      .input(z.object({ code: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const worker = await db.getWorkerByManualCode(input.code);
+        if (!worker) throw new Error("الرمز غير صالح");
+        
+        const lastEvent = await db.getWorkerLastEvent(worker.id);
+        const nextEventType = (!lastEvent || lastEvent.eventType === 'check_out') ? 'check_in' : 'check_out';
+        
+        const result = await db.recordAttendance(
+          worker.id,
+          nextEventType,
+          'manual',
+          undefined,
+          ctx.user?.id
+        );
+        
+        return { ...result, worker, eventType: nextEventType };
+      }),
+    
+    // Get today's attendance log
+    todayLog: protectedProcedure
+      .input(z.object({ groupId: z.number().optional() }))
+      .query(async ({ input }) => {
+        return await db.getTodayAttendance(input.groupId);
+      }),
+    
+    // Get worker's last event today
+    workerLastEvent: protectedProcedure
+      .input(z.object({ workerId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getWorkerLastEvent(input.workerId);
+      }),
+    
+    // Get monthly report
+    monthlyReport: protectedProcedure
+      .input(z.object({
+        year: z.number(),
+        month: z.number().min(1).max(12),
+        groupId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getMonthlyAttendanceReport(input.year, input.month, input.groupId);
+      }),
+    
+    // Get attendance stats
+    stats: protectedProcedure
+      .input(z.object({ groupId: z.number().optional() }))
+      .query(async ({ input }) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return await db.getAttendanceStats(today, tomorrow, input.groupId);
+      }),
+  }),
+
+  // Work Days Management
+  workDays: router({
+    list: protectedProcedure
+      .input(z.object({
+        year: z.number(),
+        month: z.number().min(1).max(12),
+      }))
+      .query(async ({ input }) => {
+        return await db.getWorkDays(input.year, input.month);
+      }),
+    
+    upsert: protectedProcedure
+      .input(z.object({
+        workDate: z.string(),
+        dayType: z.enum(['normal', 'holiday', 'weekend']),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.upsertWorkDay(input.workDate, input.dayType, input.notes);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -100,3 +100,39 @@
 - [x] Worker details page with finance tab showing real summary
 - [x] Toast notifications for all CRUD operations
 - [x] All vitest tests passing (33 tests)
+
+
+## Phase 4: Attendance System (نظام الحضور والانصراف)
+
+### API Procedures
+- [x] Create attendance check-in/check-out API
+- [x] Create daily attendance log API
+- [x] Create monthly attendance report API
+- [x] Create work days management API
+
+### Attendance Registration Page
+- [x] QR Code scanner interface
+- [x] Manual code input option
+- [x] Worker info display after scan
+- [x] Check-in/Check-out buttons
+- [x] Success/Error feedback
+
+### Daily Attendance Log
+- [x] List all attendance records for today
+- [x] Filter by group
+- [x] Show check-in and check-out times
+- [x] Calculate work hours
+
+### Monthly Reports
+- [x] Attendance summary by worker
+- [x] Days worked, late, absent statistics
+- [x] Export to CSV option
+- [x] Filter by date range and group
+
+### Work Days Management
+- [x] Calendar view for work days
+- [x] Mark holidays and weekends
+- [x] Add notes to specific days
+
+### Testing
+- [x] Write vitest tests for attendance APIs (15 tests)

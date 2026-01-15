@@ -1,4 +1,4 @@
-import { eq, and, desc, count } from "drizzle-orm";
+import { eq, desc, and, or, like, gte, lt, lte, sql, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   users, InsertUser, User,
@@ -10,7 +10,9 @@ import {
   costCenters,
   groups, Group, InsertGroup,
   groupShifts, GroupShift, InsertGroupShift,
-  workers, InsertWorker
+  workers, InsertWorker,
+  attendanceEvents,
+  workDays
 } from "../drizzle/schema";
 
 // Rename Worker type to avoid conflict with Web Worker
@@ -506,4 +508,263 @@ export async function changeUserPassword(userId: number, currentPassword: string
   
   // Update password
   await db.update(users).set({ passwordHash: newPassword, updatedAt: new Date() }).where(eq(users.id, userId));
+}
+
+
+// ============================================
+// Attendance Functions (Phase 4)
+// ============================================
+
+export async function recordAttendance(workerId: number, eventType: 'check_in' | 'check_out', method: string = 'manual', deviceId?: number, verifiedBy?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { attendanceEvents, workers } = await import('../drizzle/schema');
+  
+  // Check if worker exists
+  const [worker] = await db.select().from(workers).where(eq(workers.id, workerId)).limit(1);
+  if (!worker) throw new Error("العامل غير موجود");
+  
+  // Insert attendance event
+  const result = await db.insert(attendanceEvents).values({
+    workerId,
+    eventType,
+    eventTime: new Date(),
+    method,
+    deviceId: deviceId || null,
+    verifiedBy: verifiedBy || null,
+  });
+  
+  // Update worker's last attendance
+  await db.update(workers).set({ lastAttendanceAt: new Date() }).where(eq(workers.id, workerId));
+  
+  return { success: true, eventType, workerId, timestamp: new Date() };
+}
+
+export async function getWorkerByQRToken(qrToken: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { workers } = await import('../drizzle/schema');
+  
+  const [worker] = await db.select().from(workers).where(eq(workers.qrToken, qrToken)).limit(1);
+  return worker || null;
+}
+
+export async function getWorkerByManualCode(code: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { workers } = await import('../drizzle/schema');
+  
+  // Try manual code first, then worker code
+  let [worker] = await db.select().from(workers).where(eq(workers.manualCode, code)).limit(1);
+  if (!worker) {
+    [worker] = await db.select().from(workers).where(eq(workers.code, code)).limit(1);
+  }
+  return worker || null;
+}
+
+export async function getTodayAttendance(groupId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents, workers } = await import('../drizzle/schema');
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  let query = db
+    .select({
+      id: attendanceEvents.id,
+      workerId: attendanceEvents.workerId,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      groupId: workers.groupId,
+      eventType: attendanceEvents.eventType,
+      eventTime: attendanceEvents.eventTime,
+      method: attendanceEvents.method,
+    })
+    .from(attendanceEvents)
+    .innerJoin(workers, eq(attendanceEvents.workerId, workers.id))
+    .where(and(
+      gte(attendanceEvents.eventTime, today),
+      lt(attendanceEvents.eventTime, tomorrow)
+    ))
+    .orderBy(desc(attendanceEvents.eventTime));
+  
+  const results = await query;
+  
+  if (groupId) {
+    return results.filter(r => r.groupId === groupId);
+  }
+  
+  return results;
+}
+
+export async function getWorkerLastEvent(workerId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { attendanceEvents } = await import('../drizzle/schema');
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const [lastEvent] = await db
+    .select()
+    .from(attendanceEvents)
+    .where(and(
+      eq(attendanceEvents.workerId, workerId),
+      gte(attendanceEvents.eventTime, today)
+    ))
+    .orderBy(desc(attendanceEvents.eventTime))
+    .limit(1);
+  
+  return lastEvent || null;
+}
+
+export async function getMonthlyAttendanceReport(year: number, month: number, groupId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents, workers, groups } = await import('../drizzle/schema');
+  
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0, 23, 59, 59);
+  
+  // Get all workers
+  let workersQuery = db.select().from(workers).where(eq(workers.status, 'active'));
+  const allWorkers = await workersQuery;
+  
+  // Filter by group if specified
+  const filteredWorkers = groupId ? allWorkers.filter(w => w.groupId === groupId) : allWorkers;
+  
+  // Get attendance events for the month
+  const events = await db
+    .select()
+    .from(attendanceEvents)
+    .where(and(
+      gte(attendanceEvents.eventTime, startDate),
+      lte(attendanceEvents.eventTime, endDate)
+    ));
+  
+  // Calculate statistics for each worker
+  const report = filteredWorkers.map(worker => {
+    const workerEvents = events.filter(e => e.workerId === worker.id);
+    
+    // Group events by date
+    const eventsByDate = workerEvents.reduce((acc, event) => {
+      const dateKey = new Date(event.eventTime).toISOString().split('T')[0];
+      if (!acc[dateKey]) acc[dateKey] = [];
+      acc[dateKey].push(event);
+      return acc;
+    }, {} as Record<string, typeof workerEvents>);
+    
+    const daysPresent = Object.keys(eventsByDate).length;
+    const totalCheckIns = workerEvents.filter(e => e.eventType === 'check_in').length;
+    const totalCheckOuts = workerEvents.filter(e => e.eventType === 'check_out').length;
+    
+    // Calculate total work hours
+    let totalHours = 0;
+    Object.values(eventsByDate).forEach(dayEvents => {
+      const checkIn = dayEvents.find(e => e.eventType === 'check_in');
+      const checkOut = dayEvents.find(e => e.eventType === 'check_out');
+      if (checkIn && checkOut) {
+        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+        totalHours += hours;
+      }
+    });
+    
+    return {
+      workerId: worker.id,
+      workerName: worker.fullName,
+      workerCode: worker.code,
+      groupId: worker.groupId,
+      daysPresent,
+      totalCheckIns,
+      totalCheckOuts,
+      totalHours: Math.round(totalHours * 100) / 100,
+      avgHoursPerDay: daysPresent > 0 ? Math.round((totalHours / daysPresent) * 100) / 100 : 0,
+    };
+  });
+  
+  return report;
+}
+
+// Work Days Management
+export async function getWorkDays(year: number, month: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { workDays } = await import('../drizzle/schema');
+  
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0);
+  
+  return await db
+    .select()
+    .from(workDays)
+    .where(and(
+      gte(workDays.workDate, sql`${startDate.toISOString().split('T')[0]}`),
+      lte(workDays.workDate, sql`${endDate.toISOString().split('T')[0]}`)
+    ));
+}
+
+export async function upsertWorkDay(workDate: string, dayType: 'normal' | 'holiday' | 'weekend', notes?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { workDays } = await import('../drizzle/schema');
+  
+  // Check if exists
+  const [existing] = await db.select().from(workDays).where(eq(workDays.workDate, sql`${workDate}`)).limit(1);
+  
+  if (existing) {
+    await db.update(workDays).set({ dayType, notes }).where(eq(workDays.id, existing.id));
+  } else {
+    await db.insert(workDays).values({ workDate: sql`${workDate}`, dayType, notes });  
+  }
+  
+  return { success: true };
+}
+
+export async function getAttendanceStats(startDate: Date, endDate: Date, groupId?: number) {
+  const db = await getDb();
+  if (!db) return { totalWorkers: 0, presentToday: 0, absentToday: 0, lateToday: 0 };
+
+  const { workers, attendanceEvents } = await import('../drizzle/schema');
+  
+  // Get all active workers
+  let allWorkers = await db.select().from(workers).where(eq(workers.status, 'active'));
+  if (groupId) {
+    allWorkers = allWorkers.filter(w => w.groupId === groupId);
+  }
+  
+  // Get today's check-ins
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const todayEvents = await db
+    .select()
+    .from(attendanceEvents)
+    .where(and(
+      gte(attendanceEvents.eventTime, today),
+      lt(attendanceEvents.eventTime, tomorrow),
+      eq(attendanceEvents.eventType, 'check_in')
+    ));
+  
+  const presentWorkerIds = new Set(todayEvents.map(e => e.workerId));
+  const presentToday = allWorkers.filter(w => presentWorkerIds.has(w.id)).length;
+  
+  return {
+    totalWorkers: allWorkers.length,
+    presentToday,
+    absentToday: allWorkers.length - presentToday,
+    lateToday: 0, // Would need shift data to calculate
+  };
 }

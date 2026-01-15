@@ -1,0 +1,281 @@
+import { useState, useMemo } from 'react';
+import { trpc } from '@/lib/trpc';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { 
+  BarChart3, 
+  Download,
+  RefreshCw,
+  Users,
+  Clock,
+  Calendar,
+  TrendingUp
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+const MONTHS = [
+  'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+  'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+];
+
+export default function AttendanceReports() {
+  const currentDate = new Date();
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  
+  const { data: groups } = trpc.groups.list.useQuery();
+  const { data: report, isLoading, refetch } = trpc.attendance.monthlyReport.useQuery({
+    year: selectedYear,
+    month: selectedMonth,
+    groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+  });
+
+  // Calculate summary statistics
+  const summary = useMemo(() => {
+    if (!report?.length) return null;
+    
+    const totalWorkers = report.length;
+    const totalDays = report.reduce((sum, r) => sum + r.daysPresent, 0);
+    const totalHours = report.reduce((sum, r) => sum + r.totalHours, 0);
+    const avgDaysPerWorker = totalDays / totalWorkers;
+    const avgHoursPerWorker = totalHours / totalWorkers;
+    
+    return {
+      totalWorkers,
+      totalDays,
+      totalHours: Math.round(totalHours * 100) / 100,
+      avgDaysPerWorker: Math.round(avgDaysPerWorker * 10) / 10,
+      avgHoursPerWorker: Math.round(avgHoursPerWorker * 10) / 10,
+    };
+  }, [report]);
+
+  const years = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i);
+
+  const exportToCSV = () => {
+    if (!report?.length) {
+      toast.error('لا توجد بيانات للتصدير');
+      return;
+    }
+
+    const headers = ['اسم العامل', 'الرمز', 'أيام الحضور', 'إجمالي الساعات', 'متوسط الساعات/يوم'];
+    const rows = report.map(r => [
+      r.workerName,
+      r.workerCode,
+      r.daysPresent.toString(),
+      r.totalHours.toString(),
+      r.avgHoursPerDay.toString()
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `attendance-report-${selectedYear}-${selectedMonth}.csv`;
+    link.click();
+    
+    toast.success('تم تصدير التقرير بنجاح');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <BarChart3 className="h-6 w-6" />
+            تقارير الحضور الشهرية
+          </h1>
+          <p className="text-muted-foreground">
+            عرض وتحليل بيانات الحضور للعمال
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+            <SelectTrigger className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map((month, index) => (
+                <SelectItem key={index} value={(index + 1).toString()}>
+                  {month}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="جميع المجموعات" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع المجموعات</SelectItem>
+              {groups?.map((group) => (
+                <SelectItem key={group.id} value={group.id.toString()}>
+                  {group.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button onClick={exportToCSV}>
+            <Download className="h-4 w-4 ml-2" />
+            تصدير
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      {summary && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <Users className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{summary.totalWorkers}</p>
+                  <p className="text-sm text-muted-foreground">عدد العمال</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <Calendar className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{summary.totalDays}</p>
+                  <p className="text-sm text-muted-foreground">إجمالي أيام الحضور</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                  <Clock className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{summary.totalHours}</p>
+                  <p className="text-sm text-muted-foreground">إجمالي الساعات</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{summary.avgDaysPerWorker}</p>
+                  <p className="text-sm text-muted-foreground">متوسط الأيام/عامل</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-cyan-100 dark:bg-cyan-900 rounded-lg">
+                  <Clock className="h-5 w-5 text-cyan-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{summary.avgHoursPerWorker}</p>
+                  <p className="text-sm text-muted-foreground">متوسط الساعات/عامل</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Report Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>تقرير {MONTHS[selectedMonth - 1]} {selectedYear}</CardTitle>
+          <CardDescription>تفاصيل حضور العمال للشهر المحدد</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+              <p className="mt-2 text-muted-foreground">جاري التحميل...</p>
+            </div>
+          ) : !report?.length ? (
+            <div className="text-center py-8">
+              <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
+              <p className="mt-2 text-muted-foreground">لا توجد بيانات للفترة المحددة</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">#</TableHead>
+                    <TableHead className="text-right">اسم العامل</TableHead>
+                    <TableHead className="text-right">الرمز</TableHead>
+                    <TableHead className="text-right">أيام الحضور</TableHead>
+                    <TableHead className="text-right">تسجيلات الحضور</TableHead>
+                    <TableHead className="text-right">تسجيلات الانصراف</TableHead>
+                    <TableHead className="text-right">إجمالي الساعات</TableHead>
+                    <TableHead className="text-right">متوسط الساعات/يوم</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {report.map((record, index) => (
+                    <TableRow key={record.workerId}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell className="font-medium">
+                        {record.workerName}
+                      </TableCell>
+                      <TableCell className="font-mono text-muted-foreground">
+                        {record.workerCode}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold text-green-600">{record.daysPresent}</span>
+                      </TableCell>
+                      <TableCell>{record.totalCheckIns}</TableCell>
+                      <TableCell>{record.totalCheckOuts}</TableCell>
+                      <TableCell>
+                        <span className="font-semibold">{record.totalHours}</span> ساعة
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold">{record.avgHoursPerDay}</span> ساعة
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
