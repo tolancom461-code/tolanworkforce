@@ -46,3 +46,11 @@
 - [x] Write vitest tests for auth procedures
 - [x] Write vitest tests for user management
 - [x] Write vitest tests for permissions
+
+## New Features
+
+### Dark/Light Theme
+- [x] Update CSS variables for dark mode support
+- [x] Add theme toggle button to dashboard
+- [x] Persist theme preference in localStorage
+- [x] Test theme switching functionality
