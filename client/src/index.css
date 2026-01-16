@@ -43,6 +43,8 @@
 }
 
 :root {
+  /* Force English numerals */
+  font-variant-numeric: lining-nums;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --primary: oklch(0.55 0.18 250);
   --primary-foreground: oklch(0.98 0.01 250);

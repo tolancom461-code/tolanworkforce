@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Users, Clock, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Users, Clock, Building2, Download } from "lucide-react";
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -106,6 +106,31 @@ export default function Groups() {
     },
   });
 
+  const exportGroupQRMutation = trpc.workers.exportGroupQRCodes.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("تم تصدير QR Codes بنجاح");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء التصدير");
+    },
+  });
+
   const resetForm = () => {
     setFormData({
       code: "",
@@ -142,6 +167,10 @@ export default function Groups() {
   const handleViewShifts = (group: any) => {
     setSelectedGroup(group);
     setIsShiftsDialogOpen(true);
+  };
+
+  const handleExportGroupQR = (groupId: number) => {
+    exportGroupQRMutation.mutate({ groupId });
   };
 
   const handleSubmit = () => {
@@ -360,6 +389,14 @@ export default function Groups() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleExportGroupQR(group.id)}
+                            title="تصدير QR Codes"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

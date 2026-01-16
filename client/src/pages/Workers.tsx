@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer, Download } from "lucide-react";
 import { exportToExcel, printPage } from '@/lib/exportUtils';
 
 export default function Workers() {
@@ -93,6 +93,31 @@ export default function Workers() {
     },
   });
 
+  const exportWorkerQRMutation = trpc.workers.exportWorkerQRCode.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("تم تصدير QR Code بنجاح");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء التصدير");
+    },
+  });
+
   const resetForm = () => {
     setFormData({
       code: "",
@@ -133,6 +158,10 @@ export default function Workers() {
   const handleShowQR = (worker: any) => {
     setSelectedWorker(worker);
     setIsQRDialogOpen(true);
+  };
+
+  const handleExportWorkerQR = (workerId: number) => {
+    exportWorkerQRMutation.mutate({ workerId });
   };
 
   const handleSubmit = () => {
@@ -485,6 +514,14 @@ export default function Workers() {
                             title="رمز QR"
                           >
                             <QrCode className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleExportWorkerQR(worker.id)}
+                            title="تصدير QR إلى PDF"
+                          >
+                            <Download className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"

@@ -408,6 +408,140 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getWorkerPayOverrides(input.workerId);
       }),
+    
+    // Export single worker QR Code to PDF
+    exportWorkerQRCode: protectedProcedure
+      .input(z.object({ workerId: z.number() }))
+      .mutation(async ({ input }) => {
+        const QRCode = require('qrcode');
+        const PDFDocument = require('pdfkit');
+        const worker = await db.getWorkerById(input.workerId);
+        
+        if (!worker) {
+          throw new Error('Worker not found');
+        }
+        
+        // Generate QR Code as data URL
+        const qrDataUrl = await QRCode.toDataURL(worker.qrToken, {
+          width: 300,
+          margin: 2,
+        });
+        
+        // Create PDF
+        const doc = new PDFDocument({ size: 'A6', margin: 20 });
+        const chunks: Buffer[] = [];
+        
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        
+        await new Promise<void>((resolve) => {
+          doc.on('end', () => resolve());
+          
+          // Add title
+          doc.fontSize(16).text('بطاقة عامل', { align: 'center' });
+          doc.moveDown();
+          
+          // Add worker info
+          doc.fontSize(14).text(`الاسم: ${worker.fullName}`, { align: 'right' });
+          doc.fontSize(12).text(`الرمز: ${worker.manualCode}`, { align: 'right' });
+          doc.moveDown();
+          
+          // Add QR Code
+          const qrImage = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+          doc.image(qrImage, {
+            fit: [200, 200],
+            align: 'center',
+          });
+          
+          doc.moveDown();
+          doc.fontSize(10).text(worker.qrToken, { align: 'center' });
+          
+          doc.end();
+        });
+        
+        const pdfBuffer = Buffer.concat(chunks);
+        
+        return {
+          filename: `worker_${worker.manualCode}_qr.pdf`,
+          data: pdfBuffer.toString('base64'),
+        };
+      }),
+    
+    // Export all workers QR Codes in a group to PDF
+    exportGroupQRCodes: protectedProcedure
+      .input(z.object({ groupId: z.number() }))
+      .mutation(async ({ input }) => {
+        const QRCode = require('qrcode');
+        const PDFDocument = require('pdfkit');
+        const workers = await db.getWorkersByGroup(input.groupId);
+        
+        if (!workers || workers.length === 0) {
+          throw new Error('No workers found in this group');
+        }
+        
+        // Get group name
+        const group = await db.getGroupById(input.groupId);
+        const groupName = group?.name || 'مجموعة';
+        
+        // Create PDF
+        const doc = new PDFDocument({ size: 'A4', margin: 40 });
+        const chunks: Buffer[] = [];
+        
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        
+        await new Promise<void>(async (resolve) => {
+          doc.on('end', () => resolve());
+          
+          // Add title
+          doc.fontSize(18).text(`بطاقات عمال - ${groupName}`, { align: 'center' });
+          doc.moveDown(2);
+          
+          // Add each worker
+          for (let i = 0; i < workers.length; i++) {
+            const worker = workers[i];
+            
+            // Add page break after every 3 workers (except first)
+            if (i > 0 && i % 3 === 0) {
+              doc.addPage();
+            }
+            
+            // Generate QR Code
+            const qrDataUrl = await QRCode.toDataURL(worker.qrToken, {
+              width: 200,
+              margin: 1,
+            });
+            
+            // Worker card
+            doc.fontSize(14).text(`${i + 1}. ${worker.fullName}`, { align: 'right' });
+            doc.fontSize(11).text(`الرمز: ${worker.manualCode}`, { align: 'right' });
+            doc.moveDown(0.5);
+            
+            // Add QR Code
+            const qrImage = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+            doc.image(qrImage, {
+              fit: [150, 150],
+              align: 'center',
+            });
+            
+            doc.fontSize(9).text(worker.qrToken, { align: 'center' });
+            doc.moveDown(2);
+            
+            // Add separator line
+            if (i < workers.length - 1 && (i + 1) % 3 !== 0) {
+              doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
+              doc.moveDown();
+            }
+          }
+          
+          doc.end();
+        });
+        
+        const pdfBuffer = Buffer.concat(chunks);
+        
+        return {
+          filename: `group_${groupName}_qr_codes.pdf`,
+          data: pdfBuffer.toString('base64'),
+        };
+      }),
   }),
 
   // Cost Centers
