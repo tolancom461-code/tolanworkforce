@@ -8,6 +8,11 @@ import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow
 import * as analytics from "./analytics";
 import * as QRCode from "qrcode";
 import PDFDocument from "pdfkit";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const appRouter = router({
   system: systemRouter,
@@ -475,7 +480,7 @@ export const appRouter = router({
         const chunks: Buffer[] = [];
         
         // Register Arabic font
-        const fontPath = require('path').join(__dirname, 'fonts', 'NotoSansArabic-Regular.ttf');
+        const fontPath = path.join(__dirname, 'fonts', 'NotoSansArabic-Regular.ttf');
         doc.registerFont('Arabic', fontPath);
         doc.font('Arabic');
         
@@ -533,7 +538,7 @@ export const appRouter = router({
         const chunks: Buffer[] = [];
         
         // Register Arabic font
-        const fontPath = require('path').join(__dirname, 'fonts', 'NotoSansArabic-Regular.ttf');
+        const fontPath = path.join(__dirname, 'fonts', 'NotoSansArabic-Regular.ttf');
         doc.registerFont('Arabic', fontPath);
         doc.font('Arabic');
         
