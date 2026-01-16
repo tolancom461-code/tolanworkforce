@@ -900,4 +900,61 @@ Add "Approve Full Attendance" option that:
 - [x] Add permission to database (manage_daily_attendance)
 - [x] Grant permission to current user (anem2031@gmail.com)
 - [x] Test page visibility in menu (✅ working!)
+- [x] Save checkpoint
+
+
+## Feature: Improve Full Attendance Approval & Lock Edits After Payroll
+
+### Phase 1: Improve Full Attendance Approval UI
+- [ ] Keep checkbox checked after approval (show current status)
+- [ ] Add "Cancel Approval" button to remove approval before payroll
+- [ ] Show clear indicator (CheckCircle icon) for approved records
+- [ ] Update UI to reflect approval status on page load
+
+### Phase 2: Lock Edits After Payroll Creation
+- [ ] Add field to track if payroll batch exists for a date range
+- [ ] Block attendance edits if payroll batch exists
+- [ ] Block deductions/additions edits if payroll batch exists
+- [ ] Block full attendance approval/cancellation if payroll batch exists
+- [ ] Show warning message: "Cannot edit after payroll creation. Delete draft first"
+
+### Phase 3: Add Delete Draft Feature
+- [ ] Add "Delete Draft" button in payroll batches page
+- [ ] Show confirmation dialog before deletion
+- [ ] Delete payroll batch and unlock all related records
+- [ ] Show success message after deletion
+- [ ] Refresh data after deletion
+
+### Phase 4: Testing & Checkpoint
+- [ ] Test approval/cancellation workflow
+- [ ] Test edit locking after payroll creation
+- [ ] Test draft deletion and unlock
 - [ ] Save checkpoint
+
+
+## Payroll Lock System (نظام قفل التعديلات بعد إنشاء دفعة الراتب)
+
+### Backend Implementation
+- [x] Create checkPayrollBatchForDate function in db.ts
+- [x] Add lock check in updateAttendanceEvent (attendance editing)
+- [x] Add lock check in setFullDayOverride (disable override after batch creation)
+- [x] Add lock check in dailyFinance.addEntry (deductions/additions)
+- [x] Add lock check in payOverrides.create (pay overrides)
+- [x] Use existing deleteBatch function for deleting draft batches
+- [x] Add lock checks in routers.ts for tRPC endpoints
+- [x] Add eventId to recordAttendance return value
+
+### Frontend Implementation
+- [x] Add delete draft button in PayrollBatches.tsx
+- [x] Show delete button only for draft status
+- [x] Add confirmation dialog before deletion
+- [x] Display success/error messages
+- [x] Add Trash2 icon import
+
+### Testing
+- [x] Test attendance editing lock after batch creation (8/11 tests passed)
+- [x] Test full day override cancellation lock
+- [x] Test deductions/additions lock
+- [x] Test delete draft functionality
+- [x] Verify all error messages display correctly
+- [x] Save checkpoint

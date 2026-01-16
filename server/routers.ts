@@ -850,6 +850,12 @@ export const appRouter = router({
         reason: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
+        // Check if payroll batch exists for this date
+        const batch = await db.checkPayrollBatchForDate(input.workDate);
+        if (batch) {
+          throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+        }
+        
         return await db.addFinanceEntry(
           input.workerId,
           input.workDate,
@@ -891,6 +897,15 @@ export const appRouter = router({
         reason: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        // Check if trying to disable override (override = false)
+        if (!input.override) {
+          // Check if payroll batch exists for this date
+          const batch = await db.checkPayrollBatchForDate(input.workDate);
+          if (batch) {
+            throw new Error(`لا يمكن إلغاء اعتماد الحضور الكامل بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+          }
+        }
+        
         return await db.setFullDayOverride(
           input.workerId,
           input.workDate,
@@ -932,6 +947,18 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        
+        // Get event to check date
+        const event = await db.getAttendanceEventById(input.eventId);
+        if (!event) throw new Error("Event not found");
+        
+        // Check if payroll batch exists for this date
+        const eventDate = new Date(event.eventTime).toISOString().split('T')[0];
+        const batch = await db.checkPayrollBatchForDate(eventDate);
+        if (batch) {
+          throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+        }
+        
         return await db.updateAttendanceEvent(
           input.eventId,
           input.newTime,
@@ -954,6 +981,13 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        
+        // Check if payroll batch exists for this date
+        const batch = await db.checkPayrollBatchForDate(input.overrideDate);
+        if (batch) {
+          throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+        }
+        
         return await db.createPayOverride({
           ...input,
           createdBy: ctx.user.id,

@@ -17,7 +17,8 @@ import {
   Calendar,
   Users,
   DollarSign,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -85,6 +86,23 @@ export default function PayrollBatches() {
       toast.error(error.message || 'حدث خطأ');
     }
   });
+
+  const deleteMutation = trpc.payroll.deleteBatch.useMutation({
+    onSuccess: () => {
+      toast.success('تم حذف المسودة بنجاح');
+      refetch();
+      setShowDetailsDialog(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ في حذف المسودة');
+    }
+  });
+
+  const handleDeleteDraft = (batchId: number) => {
+    if (confirm('هل أنت متأكد من حذف هذه المسودة؟ سيتم إلغاء قفل جميع سجلات الحضور المرتبطة.')) {
+      deleteMutation.mutate({ batchId });
+    }
+  };
 
   const resetForm = () => {
     setPeriodStart('');
@@ -375,11 +393,25 @@ export default function PayrollBatches() {
                 </div>
               </div>
 
-              {/* Export Button */}
-              <div className="flex justify-end">
+              {/* Action Buttons */}
+              <div className="flex justify-between items-center">
+                {/* Delete Draft Button (only for draft status) */}
+                {batchDetails.batch.status === 'draft' && (
+                  <Button 
+                    variant="destructive"
+                    onClick={() => handleDeleteDraft(selectedBatchId!)}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4 ml-2" />
+                    {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
+                  </Button>
+                )}
+                
+                {/* Export Button */}
                 <Button 
                   onClick={() => exportExcelMutation.mutate({ batchId: selectedBatchId! })}
                   disabled={exportExcelMutation.isPending}
+                  className="mr-auto"
                 >
                   <Download className="h-4 w-4 ml-2" />
                   {exportExcelMutation.isPending ? 'جاري التصدير...' : 'تصدير Excel'}

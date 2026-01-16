@@ -635,10 +635,12 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
     verifiedBy: verifiedBy || null,
   });
   
+  const eventId = result[0].insertId;
+  
   // Update worker's last attendance
   await db.update(workers).set({ lastAttendanceAt: new Date() }).where(eq(workers.id, workerId));
   
-  return { success: true, eventType, workerId, timestamp: new Date() };
+  return { success: true, eventType, workerId, eventId, timestamp: new Date() };
 }
 
 export async function getWorkerByQRToken(qrToken: string) {
@@ -1076,6 +1078,13 @@ export async function updateAttendanceEvent(
   const [original] = await db.select().from(attendanceEvents).where(eq(attendanceEvents.id, eventId)).limit(1);
   if (!original) throw new Error("سجل الحضور غير موجود");
   
+  // Check if payroll batch exists for this date
+  const eventDate = new Date(original.eventTime).toISOString().split('T')[0];
+  const batch = await checkPayrollBatchForDate(eventDate);
+  if (batch) {
+    throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+  }
+  
   // Update event
   const updateData: any = {
     eventTime: new Date(newTime),
@@ -1287,6 +1296,12 @@ export async function addFinanceEntry(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  
+  // Check if payroll batch exists for this date
+  const batch = await checkPayrollBatchForDate(workDate);
+  if (batch) {
+    throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+  }
 
   const { workerDailyFinance } = await import('../drizzle/schema');
   
@@ -2424,6 +2439,15 @@ export async function setFullDayOverride(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  
+  // Check if trying to disable override (override = false)
+  if (!override) {
+    // Check if payroll batch exists for this date
+    const batch = await checkPayrollBatchForDate(workDate);
+    if (batch) {
+      throw new Error(`لا يمكن إلغاء اعتماد الحضور الكامل بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+    }
+  }
 
   const { workerDailyFinance } = await import('../drizzle/schema');
   
@@ -2520,3 +2544,28 @@ export async function getFullDayOverrideStatus(workerId: number, workDate: strin
     overrideAt: record.overrideAt,
   };
 }
+
+// ============================================
+// Payroll Lock Functions
+// ============================================
+
+// Check if payroll batch exists for a date (excluding cancelled)
+export async function checkPayrollBatchForDate(date: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(payrollBatches)
+    .where(
+      and(
+        sql`${payrollBatches.periodStart} <= ${date}`,
+        sql`${payrollBatches.periodEnd} >= ${date}`,
+        sql`${payrollBatches.status} != 'cancelled'`
+      )
+    )
+    .limit(1);
+  
+  return result.length > 0 ? result[0] : null;
+}
+
