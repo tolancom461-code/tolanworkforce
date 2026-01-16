@@ -43,3 +43,34 @@ export const adminProcedure = t.procedure.use(
     });
   }),
 );
+
+// Helper function to check if user has a specific permission
+export function hasPermission(user: any, permissionCode: string): boolean {
+  if (!user || !user.permissions) return false;
+  return user.permissions.some((p: any) => p.code === permissionCode);
+}
+
+// Middleware to require a specific permission
+export function requirePermission(permissionCode: string) {
+  return t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+
+    if (!hasPermission(ctx.user, permissionCode)) {
+      throw new TRPCError({ 
+        code: "FORBIDDEN", 
+        message: `ليس لديك صلاحية ${permissionCode}` 
+      });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  });
+}

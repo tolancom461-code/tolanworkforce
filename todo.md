@@ -542,3 +542,35 @@
 - [ ] Test rejection and correction workflow
 - [ ] Test role-based access control
 - [ ] Save checkpoint
+
+
+## Payroll Demo Data & Permissions (البيانات التجريبية والصلاحيات)
+
+### Phase 1: Create Demo Payroll Batches
+- [x] Create seed-payroll-batches.mjs script
+- [x] Add batch in "draft" status
+- [x] Add batch in "under_accountant_review" status with notes
+- [x] Add batch in "returned_from_accountant" status with rejection notes
+- [x] Add batch in "under_financial_review" status
+- [x] Add batch in "under_accounts_manager_review" status
+- [x] Add batch in "approved" status
+- [x] Add batch in "rejected_final" status
+- [x] Run script to populate database (7 batches created)
+
+### Phase 2: Add Role-Based Permissions
+- [ ] Create permission check middleware in server/_core/permissions.ts
+- [ ] Add hasPermission helper function
+- [ ] Update accountantApprove/Reject to check "payroll_batch_accountant_review" permission
+- [ ] Update financialReviewerApprove/Reject to check "payroll_batch_financial_review" permission
+- [ ] Update accountsManagerApprove/Reject to check "payroll_batch_manager_review" permission
+- [ ] Add role check in getDetails API (only show batches user can access)
+- [ ] Test permission checks with different roles
+
+### Phase 3: Testing & Checkpoint
+- [ ] Test creating batch as HR Admin
+- [ ] Test accountant review workflow
+- [ ] Test financial reviewer workflow
+- [ ] Test accounts manager approval
+- [ ] Test rejection and correction flow
+- [ ] Verify permission checks work correctly
+- [ ] Save checkpoint

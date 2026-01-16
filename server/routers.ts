@@ -2,7 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router, requirePermission, hasPermission } from "./_core/trpc";
 import * as db from "./db";
 import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow, type PayrollReportRow } from "./excelExport";
 import * as analytics from "./analytics";
@@ -915,6 +915,7 @@ export const appRouter = router({
     
     // Accountant approve
     accountantApprove: protectedProcedure
+      .use(requirePermission("payroll_batch_accountant_review"))
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
@@ -923,6 +924,7 @@ export const appRouter = router({
     
     // Accountant reject
     accountantReject: protectedProcedure
+      .use(requirePermission("payroll_batch_accountant_review"))
       .input(z.object({
         batchId: z.number(),
         noteType: z.enum(['critical', 'warning', 'info']),
@@ -941,6 +943,7 @@ export const appRouter = router({
     
     // Financial reviewer approve
     financialReviewerApprove: protectedProcedure
+      .use(requirePermission("payroll_batch_financial_review"))
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
@@ -949,6 +952,7 @@ export const appRouter = router({
     
     // Financial reviewer reject
     financialReviewerReject: protectedProcedure
+      .use(requirePermission("payroll_batch_financial_review"))
       .input(z.object({
         batchId: z.number(),
         noteType: z.enum(['critical', 'warning', 'info']),
@@ -967,6 +971,7 @@ export const appRouter = router({
     
     // Accounts manager final approve
     accountsManagerApprove: protectedProcedure
+      .use(requirePermission("payroll_batch_manager_review"))
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
@@ -975,6 +980,7 @@ export const appRouter = router({
     
     // Accounts manager final reject
     accountsManagerReject: protectedProcedure
+      .use(requirePermission("payroll_batch_manager_review"))
       .input(z.object({
         batchId: z.number(),
         note: z.string(),
