@@ -779,4 +779,14 @@
 - [x] Convert dynamic require to static import
 - [x] Test QR code download for workers
 - [x] Test QR code download for groups
+- [x] Save checkpoint
+
+
+## Bug Fix: Arabic Text in PDF Not Displaying
+
+- [x] Add Arabic font support to PDFKit
+- [x] Download and add Noto Sans Arabic font to project
+- [x] Update exportWorkerQRCode to use Arabic font
+- [x] Update exportGroupQRCodes to use Arabic font
+- [x] Test PDF generation with Arabic names
 - [ ] Save checkpoint

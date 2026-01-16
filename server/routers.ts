@@ -474,6 +474,11 @@ export const appRouter = router({
         const doc = new PDFDocument({ size: 'A6', margin: 20 });
         const chunks: Buffer[] = [];
         
+        // Register Arabic font
+        const fontPath = require('path').join(__dirname, 'fonts', 'NotoSansArabic-Regular.ttf');
+        doc.registerFont('Arabic', fontPath);
+        doc.font('Arabic');
+        
         doc.on('data', (chunk: Buffer) => chunks.push(chunk));
         
         await new Promise<void>((resolve) => {
@@ -526,6 +531,11 @@ export const appRouter = router({
         // Create PDF
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
         const chunks: Buffer[] = [];
+        
+        // Register Arabic font
+        const fontPath = require('path').join(__dirname, 'fonts', 'NotoSansArabic-Regular.ttf');
+        doc.registerFont('Arabic', fontPath);
+        doc.font('Arabic');
         
         doc.on('data', (chunk: Buffer) => chunks.push(chunk));
         
