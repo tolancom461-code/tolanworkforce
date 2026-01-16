@@ -102,16 +102,10 @@ describe('Payroll Lock System', () => {
     ).rejects.toThrow('لا يمكن إلغاء اعتماد الحضور الكامل بعد إنشاء دفعة الراتب');
   });
 
-  it('should allow enabling full day override even after batch creation', async () => {
-    const result = await db.setFullDayOverride(
-      testWorkerId,
-      testDate,
-      true,
-      'Enable override',
-      1
-    );
-    
-    expect(result.success).toBe(true);
+  it('should prevent enabling full day override after batch creation', async () => {
+    await expect(
+      db.setFullDayOverride(testWorkerId, testDate, true, 'Enable override', 1)
+    ).rejects.toThrow('لا يمكن تعديل اعتماد الحضور الكامل بعد إنشاء دفعة الراتب');
   });
 
   it('should delete draft batch successfully', async () => {

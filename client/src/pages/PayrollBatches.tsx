@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { 
   Wallet,
@@ -18,7 +19,9 @@ import {
   Users,
   DollarSign,
   Download,
-  Trash2
+  Trash2,
+  Unlock,
+  Lock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -32,8 +35,10 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 export default function PayrollBatches() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [unlockReason, setUnlockReason] = useState('');
   
   const exportExcelMutation = trpc.export.payrollReport.useMutation({
     onSuccess: (data) => {
@@ -102,6 +107,36 @@ export default function PayrollBatches() {
     if (confirm('هل أنت متأكد من حذف هذه المسودة؟ سيتم إلغاء قفل جميع سجلات الحضور المرتبطة.')) {
       deleteMutation.mutate({ batchId });
     }
+  };
+
+  const forceUnlockMutation = trpc.payroll.forceUnlock.useMutation({
+    onSuccess: () => {
+      toast.success('تم إلغاء قفل الدفعة بنجاح');
+      refetch();
+      setShowUnlockDialog(false);
+      setUnlockReason('');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ في إلغاء القفل');
+    }
+  });
+
+  const relockMutation = trpc.payroll.relock.useMutation({
+    onSuccess: () => {
+      toast.success('تم إعادة قفل الدفعة بنجاح');
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ في إعادة القفل');
+    }
+  });
+
+  const handleForceUnlock = () => {
+    if (!unlockReason || unlockReason.length < 10) {
+      toast.error('يجب إدخال سبب واضح (10 أحرف على الأقل)');
+      return;
+    }
+    forceUnlockMutation.mutate({ batchId: selectedBatchId!, reason: unlockReason });
   };
 
   const resetForm = () => {
@@ -394,24 +429,52 @@ export default function PayrollBatches() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-between items-center">
-                {/* Delete Draft Button (only for draft status) */}
-                {batchDetails.batch.status === 'draft' && (
-                  <Button 
-                    variant="destructive"
-                    onClick={() => handleDeleteDraft(selectedBatchId!)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4 ml-2" />
-                    {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
-                  </Button>
-                )}
+              <div className="flex justify-between items-center gap-2">
+                <div className="flex gap-2">
+                  {/* Delete Draft Button (only for draft status) */}
+                  {batchDetails.batch.status === 'draft' && (
+                    <Button 
+                      variant="destructive"
+                      onClick={() => handleDeleteDraft(selectedBatchId!)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4 ml-2" />
+                      {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
+                    </Button>
+                  )}
+                  
+                  {/* Unlock/Relock Buttons (for non-draft batches) */}
+                  {batchDetails.batch.status !== 'draft' && (
+                    <>
+                      {batchDetails.batch.isUnlocked ? (
+                        <Button 
+                          variant="outline"
+                          onClick={() => relockMutation.mutate({ batchId: selectedBatchId! })}
+                          disabled={relockMutation.isPending}
+                        >
+                          <Lock className="h-4 w-4 ml-2" />
+                          {relockMutation.isPending ? 'جاري إعادة القفل...' : 'إعادة القفل'}
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedBatchId(batchDetails.batch.id);
+                            setShowUnlockDialog(true);
+                          }}
+                        >
+                          <Unlock className="h-4 w-4 ml-2" />
+                          إلغاء القفل
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
                 
                 {/* Export Button */}
                 <Button 
                   onClick={() => exportExcelMutation.mutate({ batchId: selectedBatchId! })}
                   disabled={exportExcelMutation.isPending}
-                  className="mr-auto"
                 >
                   <Download className="h-4 w-4 ml-2" />
                   {exportExcelMutation.isPending ? 'جاري التصدير...' : 'تصدير Excel'}
@@ -458,6 +521,57 @@ export default function PayrollBatches() {
               </Table>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Unlock Dialog */}
+      <Dialog open={showUnlockDialog} onOpenChange={setShowUnlockDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إلغاء قفل دفعة الراتب</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                ⚠️ تحذير: إلغاء القفل سيسمح بتعديل سجلات الحضور والمالية المرتبطة بهذه الدفعة. هذه العملية لحالات الطوارئ فقط.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>سبب إلغاء القفل * (10 أحرف على الأقل)</Label>
+              <Textarea
+                value={unlockReason}
+                onChange={(e) => setUnlockReason(e.target.value)}
+                placeholder="مثال: تم اكتشاف خطأ في حساب راتب أحد العمال ويجب تصحيحه"
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-sm text-muted-foreground">
+                عدد الأحرف: {unlockReason.length}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowUnlockDialog(false);
+                setUnlockReason('');
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleForceUnlock}
+              disabled={forceUnlockMutation.isPending || unlockReason.length < 10}
+            >
+              {forceUnlockMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Unlock className="h-4 w-4 ml-2" />
+              )}
+              إلغاء القفل
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -958,3 +958,28 @@ Add "Approve Full Attendance" option that:
 - [x] Test delete draft functionality
 - [x] Verify all error messages display correctly
 - [x] Save checkpoint
+
+
+## Payroll Lock Enhancement (تحسين نظام قفل التعديلات)
+
+### Phase 1: منع تفعيل اعتماد الحضور الكامل
+- [x] تعديل setFullDayOverride في db.ts لمنع التفعيل (override=true) بعد إنشاء الدفعة
+- [x] تعديل routers.ts لتطبيق نفس القيد
+- [x] تحديث رسائل الخطأ
+
+### Phase 2: صلاحية force_unlock_payroll
+- [x] إضافة صلاحية FORCE_UNLOCK_PAYROLL إلى قائمة الصلاحيات
+- [x] إضافة دالة forceUnlockPayroll في db.ts
+- [x] إضافة حقل is_unlocked و unlock_reason و unlocked_by و unlocked_at في payroll_batches
+- [x] إضافة tRPC endpoint لإلغاء القفل (forceUnlock & relock)
+- [x] إضافة واجهة UI لإلغاء القفل مع حقل السبب
+- [x] تسجيل العملية في audit_log
+- [x] إضافة دالة checkUserPermission للتحقق من الصلاحيات
+- [x] تحديث checkPayrollBatchForDate للتحقق من isUnlocked
+- [x] إضافة أزرار Unlock/Lock في PayrollBatches.tsx
+- [x] إضافة dialog لإدخال سبب إلغاء القفل
+
+### Phase 3: Testing
+- [x] تحديث اختبارات payroll-lock.test.ts
+- [x] اختبار منع تفعيل اعتماد الحضور الكامل
+- [x] Save checkpoint

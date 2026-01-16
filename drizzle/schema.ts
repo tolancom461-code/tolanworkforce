@@ -271,6 +271,11 @@ export const payrollBatches = mysqlTable("payroll_batches", {
   createdBy: int("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  // Force unlock fields
+  isUnlocked: boolean("is_unlocked").default(false),
+  unlockReason: text("unlock_reason"),
+  unlockedBy: int("unlocked_by"),
+  unlockedAt: timestamp("unlocked_at"),
 });
 
 export const payrollBatchItems = mysqlTable("payroll_batch_items", {

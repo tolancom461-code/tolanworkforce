@@ -897,15 +897,8 @@ export const appRouter = router({
         reason: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Check if trying to disable override (override = false)
-        if (!input.override) {
-          // Check if payroll batch exists for this date
-          const batch = await db.checkPayrollBatchForDate(input.workDate);
-          if (batch) {
-            throw new Error(`لا يمكن إلغاء اعتماد الحضور الكامل بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
-          }
-        }
-        
+        // Check is already done in db.setFullDayOverride
+        // No need to duplicate here
         return await db.setFullDayOverride(
           input.workerId,
           input.workDate,
@@ -1309,6 +1302,35 @@ export const appRouter = router({
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input }) => {
         return await db.deleteBatch(input.batchId);
+      }),
+    
+    // Force unlock payroll batch (requires FORCE_UNLOCK_PAYROLL permission)
+    forceUnlock: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        reason: z.string().min(10, 'يجب إدخال سبب واضح (10 أحرف على الأقل)'),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Check permission
+        const hasPermission = await db.checkUserPermission(ctx.user.id, 'FORCE_UNLOCK_PAYROLL');
+        if (!hasPermission) {
+          throw new Error('ليس لديك صلاحية إلغاء قفل دفعات الرواتب');
+        }
+        
+        return await db.forceUnlockPayroll(input.batchId, input.reason, ctx.user.id);
+      }),
+    
+    // Re-lock payroll batch
+    relock: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        // Check permission
+        const hasPermission = await db.checkUserPermission(ctx.user.id, 'FORCE_UNLOCK_PAYROLL');
+        if (!hasPermission) {
+          throw new Error('ليس لديك صلاحية إعادة قفل دفعات الرواتب');
+        }
+        
+        return await db.relockPayroll(input.batchId, ctx.user.id);
       }),
     
     // Export batch to Excel

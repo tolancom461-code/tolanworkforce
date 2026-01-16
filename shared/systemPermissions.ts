@@ -51,6 +51,7 @@ export const SYSTEM_PERMISSIONS = [
   { code: 'VIEW_PAYROLL', name: 'عرض الرواتب', category: 'الإدارة المالية', description: 'القدرة على عرض دفعات الرواتب' },
   { code: 'CREATE_PAYROLL', name: 'إنشاء دفعة رواتب', category: 'الإدارة المالية', description: 'القدرة على إنشاء دفعات رواتب جديدة' },
   { code: 'APPROVE_PAYROLL', name: 'اعتماد الرواتب', category: 'الإدارة المالية', description: 'القدرة على اعتماد دفعات الرواتب' },
+  { code: 'FORCE_UNLOCK_PAYROLL', name: 'إلغاء قفل الرواتب', category: 'الإدارة المالية', description: 'القدرة على إلغاء قفل دفعة الراتب في حالات الطوارئ' },
   
   // Work Days Management
   { code: 'VIEW_WORK_DAYS', name: 'عرض أيام العمل', category: 'إدارة أيام العمل', description: 'القدرة على عرض أيام العمل والعطلات' },

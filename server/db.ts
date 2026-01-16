@@ -284,6 +284,18 @@ export async function getUserRolePermissions(userId: number): Promise<Permission
   return rolePerms.map(p => p.permission);
 }
 
+export async function checkUserPermission(userId: number, permissionCode: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  // Get all user permissions (direct + role-based)
+  const directPerms = await getUserPermissions(userId);
+  const rolePerms = await getUserRolePermissions(userId);
+  const allPerms = [...directPerms, ...rolePerms];
+  
+  return allPerms.some(p => p.code === permissionCode);
+}
+
 export async function setUserPermissions(userId: number, permissionIds: number[]): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -2440,13 +2452,10 @@ export async function setFullDayOverride(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  // Check if trying to disable override (override = false)
-  if (!override) {
-    // Check if payroll batch exists for this date
-    const batch = await checkPayrollBatchForDate(workDate);
-    if (batch) {
-      throw new Error(`لا يمكن إلغاء اعتماد الحضور الكامل بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
-    }
+  // Check if payroll batch exists for this date (prevent both enable and disable)
+  const batch = await checkPayrollBatchForDate(workDate);
+  if (batch) {
+    throw new Error(`لا يمكن تعديل اعتماد الحضور الكامل بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
   }
 
   const { workerDailyFinance } = await import('../drizzle/schema');
@@ -2549,7 +2558,7 @@ export async function getFullDayOverrideStatus(workerId: number, workDate: strin
 // Payroll Lock Functions
 // ============================================
 
-// Check if payroll batch exists for a date (excluding cancelled)
+// Check if payroll batch exists for a date (excluding cancelled and unlocked)
 export async function checkPayrollBatchForDate(date: string) {
   const db = await getDb();
   if (!db) return null;
@@ -2561,7 +2570,8 @@ export async function checkPayrollBatchForDate(date: string) {
       and(
         sql`${payrollBatches.periodStart} <= ${date}`,
         sql`${payrollBatches.periodEnd} >= ${date}`,
-        sql`${payrollBatches.status} != 'cancelled'`
+        sql`${payrollBatches.status} != 'cancelled'`,
+        sql`(${payrollBatches.isUnlocked} IS NULL OR ${payrollBatches.isUnlocked} = FALSE)`
       )
     )
     .limit(1);
@@ -2569,3 +2579,67 @@ export async function checkPayrollBatchForDate(date: string) {
   return result.length > 0 ? result[0] : null;
 }
 
+
+// Force unlock payroll batch (requires FORCE_UNLOCK_PAYROLL permission)
+export async function forceUnlockPayroll(batchId: number, reason: string, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { payrollBatches, auditLog } = await import('../drizzle/schema');
+  
+  // Get batch
+  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
+  if (!batch) throw new Error("دفعة الراتب غير موجودة");
+  
+  // Update batch to unlocked
+  await db.update(payrollBatches).set({
+    isUnlocked: true,
+    unlockReason: reason,
+    unlockedBy: userId,
+    unlockedAt: new Date(),
+  }).where(eq(payrollBatches.id, batchId));
+  
+  // Log the action
+  await db.insert(auditLog).values({
+    userId,
+    action: 'FORCE_UNLOCK_PAYROLL',
+    tableName: 'payroll_batches',
+    recordId: batchId,
+    oldValues: JSON.stringify({ isUnlocked: batch.isUnlocked }),
+    newValues: JSON.stringify({ isUnlocked: true, unlockReason: reason }),
+  });
+  
+  return { success: true, message: 'تم إلغاء قفل دفعة الراتب بنجاح' };
+}
+
+// Re-lock payroll batch
+export async function relockPayroll(batchId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { payrollBatches, auditLog } = await import('../drizzle/schema');
+  
+  // Get batch
+  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
+  if (!batch) throw new Error("دفعة الراتب غير موجودة");
+  
+  // Update batch to locked
+  await db.update(payrollBatches).set({
+    isUnlocked: false,
+    unlockReason: null,
+    unlockedBy: null,
+    unlockedAt: null,
+  }).where(eq(payrollBatches.id, batchId));
+  
+  // Log the action
+  await db.insert(auditLog).values({
+    userId,
+    action: 'RELOCK_PAYROLL',
+    tableName: 'payroll_batches',
+    recordId: batchId,
+    oldValues: JSON.stringify({ isUnlocked: batch.isUnlocked }),
+    newValues: JSON.stringify({ isUnlocked: false }),
+  });
+  
+  return { success: true, message: 'تم إعادة قفل دفعة الراتب بنجاح' };
+}
