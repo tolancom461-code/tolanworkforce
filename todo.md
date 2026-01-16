@@ -1030,3 +1030,26 @@ Add "Approve Full Attendance" option that:
 - [x] اختبار تسجيل دخول omar
 - [x] اختبار صلاحيات omar (41 صلاحية)
 - [x] Save checkpoint
+
+
+## Fix Arabic Font Issues (إصلاح مشاكل الخط العربي)
+
+### Phase 1: Download & Setup Font
+- [x] إنشاء مجلد server/fonts
+- [x] تحميل Noto Sans Arabic من Google Fonts
+- [x] حفظ الخط في server/fonts/NotoSansArabic-Regular.ttf (825KB)
+- [x] التأكد من صلاحيات القراءة
+
+### Phase 2: Fix QR Code Generation
+- [x] البحث عن جميع الأماكن التي تستخدم QR code (exportWorkerQRCode, exportGroupQRCodes)
+- [x] التأكد من صحة مسار الخط في كل مكان
+- [x] اختبار وجود الخط
+
+### Phase 3: Fix Excel Export
+- [x] فحص excelExport.ts (يستخدم ExcelJS الذي يدعم العربية بشكل افتراضي)
+- [x] التأكد من عدم وجود مشاكل
+
+### Phase 4: Testing
+- [x] اختبار وجود الخط (3/3 tests passed)
+- [x] التأكد من حجم الخط الصحيح
+- [x] Save checkpoint
