@@ -24,6 +24,9 @@ import PayrollBatches from "./pages/PayrollBatches";
 import PayrollBatchList from "./pages/payroll/PayrollBatchList";
 import PayrollBatchCreate from "./pages/payroll/PayrollBatchCreate";
 import PayrollBatchDetails from "./pages/payroll/PayrollBatchDetails";
+import AccountantReview from "./pages/payroll/AccountantReview";
+import FinancialReview from "./pages/payroll/FinancialReview";
+import AccountsManagerReview from "./pages/payroll/AccountsManagerReview";
 import CostCenters from "./pages/CostCenters";
 import Roles from "./pages/Roles";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
@@ -57,6 +60,9 @@ function Router() {
       <Route path="/payroll/batches" component={PayrollBatchList} />
       <Route path="/payroll/batches/create" component={PayrollBatchCreate} />
       <Route path="/payroll/batches/:id" component={PayrollBatchDetails} />
+      <Route path="/payroll/batches/:id/accountant-review" component={AccountantReview} />
+      <Route path="/payroll/batches/:id/financial-review" component={FinancialReview} />
+      <Route path="/payroll/batches/:id/manager-review" component={AccountsManagerReview} />
       <Route path="/finance/reports" component={FinancialReports} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

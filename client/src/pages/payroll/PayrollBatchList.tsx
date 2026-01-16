@@ -86,7 +86,7 @@ export default function PayrollBatchList() {
                       عرض
                     </Button>
                   </Link>
-                  {showDelete && batch.status === "draft" && (
+                             {batch.status === "draft" && (
                     <Button
                       variant="destructive"
                       size="sm"
@@ -96,6 +96,30 @@ export default function PayrollBatchList() {
                       <Trash2 className="h-4 w-4 ml-2" />
                       حذف
                     </Button>
+                  )}
+                  {batch.status === "under_accountant_review" && (
+                    <Link href={`/payroll/batches/${batch.id}/accountant-review`}>
+                      <Button size="sm">
+                        <Eye className="h-4 w-4 ml-2" />
+                        مراجعة المحاسب
+                      </Button>
+                    </Link>
+                  )}
+                  {batch.status === "under_financial_review" && (
+                    <Link href={`/payroll/batches/${batch.id}/financial-review`}>
+                      <Button size="sm">
+                        <Eye className="h-4 w-4 ml-2" />
+                        مراجعة المراجع المالي
+                      </Button>
+                    </Link>
+                  )}
+                  {batch.status === "under_accounts_manager_review" && (
+                    <Link href={`/payroll/batches/${batch.id}/manager-review`}>
+                      <Button size="sm">
+                        <Eye className="h-4 w-4 ml-2" />
+                        اعتماد مدير الحسابات
+                      </Button>
+                    </Link>
                   )}
                 </div>
               </TableCell>

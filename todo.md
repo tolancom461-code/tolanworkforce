@@ -510,3 +510,35 @@
 - [ ] Verify executive summary calculations
 - [ ] Test with demo data
 - [ ] Save checkpoint
+
+
+## Payroll Review & Approval Pages (صفحات المراجعة والاعتماد)
+
+### Phase 1: Shared Review Components
+- [x] Create unified PayrollBatchReview component with role prop
+- [x] Implement ReviewNotesSection (display all notes with type badges)
+- [x] Implement ReviewActions (approve/reject buttons with note input)
+- [x] Implement NoteTypeSelector (critical/warning/info)
+- [ ] Create CorrectionsHistory component (display all corrections) - future
+
+### Phase 2: Role-Specific Review Pages
+- [x] Create AccountantReview page (under_accountant_review status)
+- [x] Create FinancialReview page (under_financial_review status)
+- [x] Create AccountsManagerReview page (under_accounts_manager_review status)
+- [x] Add routes to App.tsx
+- [x] Add review buttons in PayrollBatchList based on status
+- [ ] Add role-based permissions check (future)
+- [ ] Update DashboardLayout menu items (future)
+
+### Phase 3: Notes & Corrections System
+- [ ] Implement addNote functionality with type classification
+- [ ] Display notes in timeline format
+- [ ] Show corrections history with before/after values
+- [ ] Add rejection count warning (3 max)
+- [ ] Handle final rejection flow
+
+### Phase 4: Testing & Checkpoint
+- [ ] Test full approval workflow
+- [ ] Test rejection and correction workflow
+- [ ] Test role-based access control
+- [ ] Save checkpoint
