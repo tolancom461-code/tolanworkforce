@@ -185,17 +185,20 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   
   // جلب صلاحيات المستخدم
-  const { data: userPermissions = [] } = trpc.auth.permissions.useQuery();
+  const { data: userPermissions = [], isLoading: isLoadingPermissions } = trpc.auth.permissions.useQuery();
   
   // فلترة القوائم حسب الصلاحيات
-  const filteredMenuSections = menuSections
-    .map(section => ({
-      ...section,
-      items: section.items.filter(item => 
-        !item.permission || hasPermission(userPermissions, item.permission)
-      )
-    }))
-    .filter(section => section.items.length > 0);
+  // إذا لم يكن للمستخدم أي صلاحيات، عرض جميع القوائم (للتوافق مع الإصدارات السابقة)
+  const filteredMenuSections = userPermissions.length === 0 && !isLoadingPermissions
+    ? menuSections
+    : menuSections
+        .map(section => ({
+          ...section,
+          items: section.items.filter(item => 
+            !item.permission || hasPermission(userPermissions, item.permission)
+          )
+        }))
+        .filter(section => section.items.length > 0);
   
   // Find active menu item across all sections
   const activeMenuItem = filteredMenuSections
