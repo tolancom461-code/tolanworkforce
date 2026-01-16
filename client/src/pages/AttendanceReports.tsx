@@ -11,8 +11,10 @@ import {
   Users,
   Clock,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Printer
 } from 'lucide-react';
+import { printPage } from '@/lib/exportUtils';
 import { toast } from 'sonner';
 
 const MONTHS = [
@@ -123,7 +125,7 @@ export default function AttendanceReports() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="attendance-report-content">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -182,7 +184,11 @@ export default function AttendanceReports() {
           </Button>
           <Button variant="outline" onClick={exportToCSV}>
             <Download className="h-4 w-4 ml-2" />
-            تصدير
+            تصدير CSV
+          </Button>
+          <Button variant="outline" onClick={() => printPage('attendance-report-content')}>
+            <Printer className="h-4 w-4 ml-2" />
+            طباعة
           </Button>
         </div>
       </div>

@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Calendar, TrendingUp, TrendingDown, DollarSign, Users, Building2 } from 'lucide-react';
+import { Download, Calendar, TrendingUp, TrendingDown, DollarSign, Users, Building2, Printer, FileSpreadsheet } from 'lucide-react';
+import { exportMultipleSheetsToExcel, prepareFinancialReportForExcel, printPage } from '@/lib/exportUtils';
 
 export default function FinancialReports() {
   
@@ -73,6 +74,36 @@ export default function FinancialReports() {
     }).format(typeof amount === 'string' ? parseFloat(amount) : amount);
   };
 
+  // Export handlers
+  const handleExportSummary = () => {
+    if (!summaryReport) return;
+    const { filename, sheets } = prepareFinancialReportForExcel(summaryReport, 'summary');
+    exportMultipleSheetsToExcel(sheets, filename);
+  };
+
+  const handleExportWorker = () => {
+    if (!workerReport) return;
+    const { filename, sheets } = prepareFinancialReportForExcel(workerReport, 'worker');
+    exportMultipleSheetsToExcel(sheets, filename);
+  };
+
+  const handleExportGroup = () => {
+    if (!groupReport) return;
+    const { filename, sheets } = prepareFinancialReportForExcel(groupReport, 'group');
+    exportMultipleSheetsToExcel(sheets, filename);
+  };
+
+  const handleExportCostCenter = () => {
+    if (!costCenterReport) return;
+    const { filename, sheets } = prepareFinancialReportForExcel(costCenterReport, 'costCenter');
+    exportMultipleSheetsToExcel(sheets, filename);
+  };
+
+  // Print handler
+  const handlePrint = () => {
+    printPage('financial-report-content');
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -136,7 +167,21 @@ export default function FinancialReports() {
         </TabsList>
 
         {/* Summary Report Tab */}
-        <TabsContent value="summary" className="space-y-4">
+        <TabsContent value="summary" className="space-y-4" id="financial-report-content">
+          {/* Export & Print Buttons */}
+          {summaryReport && (
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportSummary}>
+                <FileSpreadsheet className="h-4 w-4 ml-2" />
+                تصدير إلى Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 ml-2" />
+                طباعة
+              </Button>
+            </div>
+          )}
+
           {summaryLoading ? (
             <Card>
               <CardContent className="py-10 text-center">
@@ -263,6 +308,20 @@ export default function FinancialReports() {
 
         {/* Worker Report Tab */}
         <TabsContent value="worker" className="space-y-4">
+          {/* Export & Print Buttons */}
+          {workerReport && (
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportWorker}>
+                <FileSpreadsheet className="h-4 w-4 ml-2" />
+                تصدير إلى Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 ml-2" />
+                طباعة
+              </Button>
+            </div>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>اختر عامل</CardTitle>
@@ -394,6 +453,20 @@ export default function FinancialReports() {
 
         {/* Group Report Tab */}
         <TabsContent value="group" className="space-y-4">
+          {/* Export & Print Buttons */}
+          {groupReport && (
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportGroup}>
+                <FileSpreadsheet className="h-4 w-4 ml-2" />
+                تصدير إلى Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 ml-2" />
+                طباعة
+              </Button>
+            </div>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>اختر مجموعة</CardTitle>
@@ -536,6 +609,20 @@ export default function FinancialReports() {
 
         {/* Cost Center Report Tab */}
         <TabsContent value="costCenter" className="space-y-4">
+          {/* Export & Print Buttons */}
+          {costCenterReport && (
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportCostCenter}>
+                <FileSpreadsheet className="h-4 w-4 ml-2" />
+                تصدير إلى Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 ml-2" />
+                طباعة
+              </Button>
+            </div>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>اختر مركز تكلفة</CardTitle>

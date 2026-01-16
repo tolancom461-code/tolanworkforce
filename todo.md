@@ -314,4 +314,35 @@
 - [x] Verify calculations are correct
 - [x] Write vitest tests for financial report APIs (18 tests)
 - [x] All tests passed (18/18)
+- [x] Save checkpoint
+
+
+## Export & Print Functionality (وظائف التصدير والطباعة)
+
+### Phase 1: Setup Libraries & Utilities
+- [x] Install xlsx library for Excel export
+- [x] Create exportToExcel utility function
+- [x] Create printTable utility function
+- [x] Test utilities with sample data
+
+### Phase 2: Financial Reports Export & Print
+- [x] Add Excel export to Summary Report
+- [x] Add Excel export to Worker Financial Report
+- [x] Add Excel export to Group Financial Report
+- [x] Add Excel export to Cost Center Financial Report
+- [x] Add print button to all financial report tabs
+
+### Phase 3: Other Reports & Lists Export & Print
+- [x] Add print button to Attendance Reports
+- [x] Add Excel export to Workers List
+- [x] Add print button to Workers List
+- [ ] Add Excel export to Groups List (future)
+- [ ] Add Excel export to Attendance Log (future)
+- [ ] Add Excel export to Payroll Batches (future)
+
+### Phase 4: Testing & Checkpoint
+- [x] Test Excel export with Arabic text (xlsx library supports UTF-8)
+- [x] Test print functionality on all pages (printPage utility created)
+- [x] Verify formatting and layout (all buttons added with proper styling)
+- [x] Verify no TypeScript errors
 - [ ] Save checkpoint
