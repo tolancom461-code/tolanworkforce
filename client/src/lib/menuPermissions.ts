@@ -66,32 +66,47 @@ export function hasAllPermissions(
 export type PermissionCode = typeof MENU_PERMISSIONS[keyof typeof MENU_PERMISSIONS];
 
 // تصنيف الصلاحيات حسب الفئات
-export const PERMISSION_CATEGORIES: Record<string, PermissionCode[]> = {
-  dashboards: [
-    'view_dashboard',
-    'view_executive_dashboard',
-  ],
-  hr: [
-    'view_workers',
-    'view_groups',
-    'view_cost_centers',
-  ],
-  attendance: [
-    'scan_attendance',
-    'view_attendance_log',
-    'adjust_attendance',
-    'view_attendance_reports',
-    'manage_work_days',
-  ],
-  financial: [
-    'manage_finance_entries',
-    'manage_finance_overrides',
-    'view_payroll_batches',
-    'view_finance_reports',
-  ],
-  system: [
-    'manage_users',
-    'manage_roles',
-    'manage_permissions',
-  ],
+export const PERMISSION_CATEGORIES: Record<string, { label: string; permissions: PermissionCode[] }> = {
+  dashboards: {
+    label: 'لوحات التحكم',
+    permissions: [
+      'view_dashboard',
+      'view_executive_dashboard',
+    ],
+  },
+  hr: {
+    label: 'الموارد البشرية',
+    permissions: [
+      'view_workers',
+      'view_groups',
+      'view_cost_centers',
+    ],
+  },
+  attendance: {
+    label: 'نظام الحضور',
+    permissions: [
+      'scan_attendance',
+      'view_attendance_log',
+      'adjust_attendance',
+      'view_attendance_reports',
+      'manage_work_days',
+    ],
+  },
+  financial: {
+    label: 'النظام المالي',
+    permissions: [
+      'manage_finance_entries',
+      'manage_finance_overrides',
+      'view_payroll_batches',
+      'view_finance_reports',
+    ],
+  },
+  system: {
+    label: 'إدارة النظام',
+    permissions: [
+      'manage_users',
+      'manage_roles',
+      'manage_permissions',
+    ],
+  },
 };

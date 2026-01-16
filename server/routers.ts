@@ -140,6 +140,29 @@ export const appRouter = router({
         await db.assignRoleToUser(input.userId, input.roleId);
         return { success: true };
       }),
+    
+    getUserPermissions: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        // Get both role permissions and individual permissions
+        const rolePerms = await db.getUserRolePermissions(input.userId);
+        const individualPerms = await db.getUserPermissions(input.userId);
+        return {
+          rolePermissions: rolePerms,
+          individualPermissions: individualPerms,
+          allPermissions: [...rolePerms, ...individualPerms],
+        };
+      }),
+    
+    setUserPermissions: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        permissionIds: z.array(z.number()),
+      }))
+      .mutation(async ({ input }) => {
+        await db.setUserPermissions(input.userId, input.permissionIds);
+        return { success: true };
+      }),
   }),
 
   // Role Management

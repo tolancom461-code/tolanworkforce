@@ -164,8 +164,9 @@ export default function Roles() {
   };
 
   const toggleCategory = (category: string) => {
+    const categoryData = PERMISSION_CATEGORIES[category as keyof typeof PERMISSION_CATEGORIES];
     const categoryPerms = allPermissions?.filter((p: any) => 
-      PERMISSION_CATEGORIES[category as keyof typeof PERMISSION_CATEGORIES]?.includes(p.code as PermissionCode)
+      categoryData?.permissions.includes(p.code as PermissionCode)
     ) || [];
     
     const categoryPermIds = categoryPerms.map((p: any) => p.id);
@@ -446,9 +447,9 @@ export default function Roles() {
             </div>
 
             <div className="space-y-4 border rounded-lg p-4">
-              {Object.entries(PERMISSION_CATEGORIES).map(([category, permissions]) => {
+              {Object.entries(PERMISSION_CATEGORIES).map(([category, categoryData]) => {
                 const categoryPerms = allPermissions?.filter((p: any) =>
-                  permissions.includes(p.code as PermissionCode)
+                  categoryData.permissions.includes(p.code as PermissionCode)
                 ) || [];
                 
                 const categoryPermIds = categoryPerms.map((p: any) => p.id);

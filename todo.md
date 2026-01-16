@@ -742,3 +742,32 @@
 - [ ] إضافة رابط في DashboardLayout
 - [ ] إضافة route في App.tsx
 - [ ] اختبار الصفحة والتأكد من عملها
+
+
+## User Management System (نظام إدارة المستخدمين المتقدم)
+
+### Phase 1: Backend APIs
+- [x] Create API: getUserPermissions (get user's role permissions + individual permissions)
+- [x] Create API: setUserPermissions (assign additional individual permissions)
+- [x] Create API: updateUserRole (change user's role)
+- [x] Create API: toggleUserStatus (activate/deactivate user)
+- [x] Add database functions in db.ts for user permissions management
+
+### Phase 2: Frontend UI
+- [x] Create Users page with comprehensive table
+- [x] Add user creation dialog with role selection
+- [x] Add user edit dialog with role change
+- [x] Add permissions management dialog (role permissions + individual permissions)
+- [x] Add user status toggle (active/inactive)
+- [x] Add search and filter by role/status
+- [x] Display user's role and permission count in table
+
+### Phase 3: Testing & Validation
+- [x] Create vitest tests for user management APIs
+- [x] Test user role assignment
+- [x] Test individual permission assignment
+- [x] Test user status toggle
+- [x] Verify all CRUD operations work correctly
+
+### Phase 4: Checkpoint
+- [ ] Save checkpoint with complete user management system
