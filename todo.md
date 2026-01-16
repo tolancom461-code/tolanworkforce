@@ -474,14 +474,14 @@
 - [x] Add listBatches and listBatchesByStatus APIs to routers.ts
 
 ### Phase 2: HR Admin Pages (Create & Manage)
-- [ ] Implement batch creation form with date range picker
-- [ ] Add filters (group, cost center)
-- [ ] Display generated batch items in table
-- [ ] Add edit batch item functionality (DRAFT only)
-- [ ] Add delete batch functionality (DRAFT only)
-- [ ] Add submit for review button
-- [ ] Show executive summary (total amount, worker count, avg salary)
-- [ ] Handle loading and error states
+- [x] Implement batch creation form with date range picker
+- [x] Add filters (group, cost center)
+- [x] Display generated batch items in table (PayrollBatchDetails)
+- [x] Add edit batch item functionality (DRAFT only)
+- [x] Add delete batch functionality (DRAFT only - in PayrollBatchList)
+- [x] Add submit for review button
+- [x] Show executive summary (total amount, worker count, avg salary)
+- [x] Handle loading and error states
 
 ### Phase 3: Review Pages (Accountant, Financial Reviewer, Accounts Manager)
 - [ ] Create Accountant review page (under_accountant_review status)

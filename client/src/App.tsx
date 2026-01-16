@@ -22,6 +22,8 @@ import PayOverrides from "./pages/PayOverrides";
 import FinanceEntry from "./pages/FinanceEntry";
 import PayrollBatches from "./pages/PayrollBatches";
 import PayrollBatchList from "./pages/payroll/PayrollBatchList";
+import PayrollBatchCreate from "./pages/payroll/PayrollBatchCreate";
+import PayrollBatchDetails from "./pages/payroll/PayrollBatchDetails";
 import CostCenters from "./pages/CostCenters";
 import Roles from "./pages/Roles";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
@@ -53,6 +55,8 @@ function Router() {
       <Route path="/finance/entry" component={FinanceEntry} />
       <Route path="/finance/payroll" component={PayrollBatches} />
       <Route path="/payroll/batches" component={PayrollBatchList} />
+      <Route path="/payroll/batches/create" component={PayrollBatchCreate} />
+      <Route path="/payroll/batches/:id" component={PayrollBatchDetails} />
       <Route path="/finance/reports" component={FinancialReports} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
