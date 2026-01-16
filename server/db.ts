@@ -1844,6 +1844,7 @@ export async function getPayrollBatchDetails(batchId: number) {
       workerCode: workers.code,
       workerName: sql<string>`COALESCE(${workers.fullName}, 'Unknown')`,
       groupId: workers.groupId,
+      groupName: sql<string>`COALESCE(${groups.name}, 'Unknown')`,
       daysWorked: payrollBatchItems.daysWorked,
       baseAmount: payrollBatchItems.baseAmount,
       totalDeductions: payrollBatchItems.totalDeductions,
@@ -1853,6 +1854,7 @@ export async function getPayrollBatchDetails(batchId: number) {
     })
     .from(payrollBatchItems)
     .leftJoin(workers, eq(payrollBatchItems.workerId, workers.id))
+    .leftJoin(groups, eq(workers.groupId, groups.id))
     .where(eq(payrollBatchItems.batchId, batchId));
 
   // Get notes

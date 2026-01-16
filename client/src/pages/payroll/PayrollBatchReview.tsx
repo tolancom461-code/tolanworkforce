@@ -47,8 +47,14 @@ interface PayrollBatchReviewProps {
 }
 
 export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
-  const [, params] = useRoute("/payroll/batches/:id/review");
   const [, setLocation] = useLocation();
+  
+  // Try to match any of the review routes
+  const [matchAccountant, paramsAccountant] = useRoute("/payroll/batches/:id/accountant-review");
+  const [matchFinancial, paramsFinancial] = useRoute("/payroll/batches/:id/financial-review");
+  const [matchManager, paramsManager] = useRoute("/payroll/batches/:id/manager-review");
+  
+  const params = paramsAccountant || paramsFinancial || paramsManager;
   const batchId = Number(params?.id);
 
   const [showApproveDialog, setShowApproveDialog] = useState(false);

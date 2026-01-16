@@ -68,9 +68,7 @@ export default function PayrollBatches() {
   
   const { data: groups } = trpc.groups.list.useQuery();
   const { data: costCenters } = trpc.costCenters.list.useQuery();
-  const { data: batches, refetch } = trpc.payroll.list.useQuery({
-    status: statusFilter !== 'all' ? statusFilter : undefined
-  });
+  const { data: batches, refetch } = trpc.payroll.listBatches.useQuery({});
   const { data: batchDetails } = trpc.payroll.getDetails.useQuery(
     { batchId: selectedBatchId! },
     { enabled: !!selectedBatchId }
@@ -119,8 +117,8 @@ export default function PayrollBatches() {
   };
 
   // Calculate totals
-  const totalAmount = batches?.reduce((sum, b) => sum + parseFloat(b.totalAmount?.toString() || '0'), 0) || 0;
-  const draftCount = batches?.filter(b => b.status === 'draft').length || 0;
+  const totalAmount = batches?.reduce((sum: number, b: any) => sum + parseFloat(b.totalAmount?.toString() || '0'), 0) || 0;
+  const draftCount = batches?.filter((b: any) => b.status === 'draft').length || 0;
 
   return (
     <div className="space-y-6">
@@ -228,7 +226,7 @@ export default function PayrollBatches() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {batches.map((batch) => (
+                  {batches.map((batch: any) => (
                     <TableRow key={batch.id}>
                       <TableCell className="font-mono font-medium">
                         {batch.batchCode}

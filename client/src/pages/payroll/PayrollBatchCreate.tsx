@@ -19,11 +19,16 @@ export default function PayrollBatchCreate() {
   const [, setLocation] = useLocation();
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
-  const [groupId, setGroupId] = useState<number | undefined>();
   const [costCenterId, setCostCenterId] = useState<number | undefined>();
+  const [groupId, setGroupId] = useState<number | undefined>();
 
-  const { data: groups } = trpc.groups.list.useQuery();
+  const { data: allGroups } = trpc.groups.list.useQuery();
   const { data: costCenters } = trpc.costCenters.list.useQuery();
+  
+  // Filter groups by cost center
+  const groups = costCenterId 
+    ? allGroups?.filter(g => g.costCenterId === costCenterId)
+    : allGroups;
 
   const createMutation = trpc.payroll.createBatch.useMutation({
     onSuccess: (data) => {
@@ -95,50 +100,57 @@ export default function PayrollBatchCreate() {
               {/* Filters */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">الفلاتر (اختياري)</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="group">المجموعة</Label>
-                    <Select
-                      value={groupId?.toString()}
-                      onValueChange={(value) =>
-                        setGroupId(value === "all" ? undefined : Number(value))
-                      }
-                    >
-                      <SelectTrigger id="group">
-                        <SelectValue placeholder="جميع المجموعات" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">جميع المجموعات</SelectItem>
-                        {groups?.map((group) => (
-                          <SelectItem key={group.id} value={group.id.toString()}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                
+                {/* Cost Center - First */}
+                <div className="space-y-2">
+                  <Label htmlFor="costCenter">مركز التكلفة</Label>
+                  <Select
+                    value={costCenterId?.toString()}
+                    onValueChange={(value) => {
+                      setCostCenterId(value === "all" ? undefined : Number(value));
+                      // Reset group when cost center changes
+                      setGroupId(undefined);
+                    }}
+                  >
+                    <SelectTrigger id="costCenter">
+                      <SelectValue placeholder="جميع مراكز التكلفة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع مراكز التكلفة</SelectItem>
+                      {costCenters?.map((cc) => (
+                        <SelectItem key={cc.id} value={cc.id.toString()}>
+                          {cc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="costCenter">مركز التكلفة</Label>
-                    <Select
-                      value={costCenterId?.toString()}
-                      onValueChange={(value) =>
-                        setCostCenterId(value === "all" ? undefined : Number(value))
-                      }
-                    >
-                      <SelectTrigger id="costCenter">
-                        <SelectValue placeholder="جميع مراكز التكلفة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">جميع مراكز التكلفة</SelectItem>
-                        {costCenters?.map((cc) => (
-                          <SelectItem key={cc.id} value={cc.id.toString()}>
-                            {cc.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                {/* Group - Second (filtered by cost center) */}
+                <div className="space-y-2">
+                  <Label htmlFor="group">المجموعة</Label>
+                  <Select
+                    value={groupId?.toString()}
+                    onValueChange={(value) =>
+                      setGroupId(value === "all" ? undefined : Number(value))
+                    }
+                    disabled={!costCenterId && groups && groups.length > 0}
+                  >
+                    <SelectTrigger id="group">
+                      <SelectValue placeholder={costCenterId ? "جميع المجموعات" : "اختر مركز التكلفة أولاً"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع المجموعات</SelectItem>
+                      {groups?.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {costCenterId && groups && groups.length === 0 && (
+                    <p className="text-sm text-muted-foreground">لا توجد مجموعات في مركز التكلفة المختار</p>
+                  )}
                 </div>
               </div>
 

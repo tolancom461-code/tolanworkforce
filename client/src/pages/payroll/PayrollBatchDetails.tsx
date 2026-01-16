@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/payroll/StatusBadge";
-import { ArrowRight, Edit, Loader2, ArrowLeft } from "lucide-react";
+import { ArrowRight, Edit, Loader2, ArrowLeft, Users } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PayrollBatchDetails() {
@@ -111,6 +111,34 @@ export default function PayrollBatchDetails() {
   const canEdit = batch.batch.status === "draft" || batch.batch.status === "returned_from_accountant" || batch.batch.status === "returned_from_financial_review";
   const canSubmit = batch.batch.status === "draft" || batch.batch.status === "returned_from_accountant" || batch.batch.status === "returned_from_financial_review";
 
+  // Group items by groupId
+  const groupedItems = batch.items?.reduce((acc: any, item: any) => {
+    const groupKey = item.groupId || 'unknown';
+    if (!acc[groupKey]) {
+      acc[groupKey] = {
+        groupId: item.groupId,
+        groupName: item.groupName || 'مجموعة غير محددة',
+        workers: [],
+        summary: {
+          count: 0,
+          totalBase: 0,
+          totalDeductions: 0,
+          totalBonuses: 0,
+          totalNet: 0,
+        },
+      };
+    }
+    acc[groupKey].workers.push(item);
+    acc[groupKey].summary.count += 1;
+    acc[groupKey].summary.totalBase += parseFloat(item.baseAmount || '0');
+    acc[groupKey].summary.totalDeductions += parseFloat(item.totalDeductions || '0');
+    acc[groupKey].summary.totalBonuses += parseFloat(item.totalBonuses || '0');
+    acc[groupKey].summary.totalNet += parseFloat(item.netAmount || '0');
+    return acc;
+  }, {});
+
+  const groups = Object.values(groupedItems || {});
+
   return (
     <div className="container py-6">
       {/* Header */}
@@ -187,11 +215,11 @@ export default function PayrollBatchDetails() {
         </Card>
       </div>
 
-      {/* Workers Table */}
+      {/* Workers Table - Grouped by Group */}
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>تفاصيل العمال</CardTitle>
+            <CardTitle>تفاصيل العمال حسب المجموعات</CardTitle>
             {canSubmit && (
               <Button onClick={handleSubmitForReview} disabled={submitMutation.isPending}>
                 {submitMutation.isPending ? (
@@ -213,7 +241,7 @@ export default function PayrollBatchDetails() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>اسم العامل</TableHead>
+                <TableHead>اسم العامل / المجموعة</TableHead>
                 <TableHead>الراتب الأساسي</TableHead>
                 <TableHead>الخصومات</TableHead>
                 <TableHead>الإضافات</TableHead>
@@ -223,34 +251,61 @@ export default function PayrollBatchDetails() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {batch.items?.map((item: any) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.workerName}</TableCell>
-                  <TableCell>{Number(item.baseAmount).toLocaleString("ar-SA")} ر.س</TableCell>
-                  <TableCell className="text-red-600">
-                    {Number(item.totalDeductions).toLocaleString("ar-SA")} ر.س
-                  </TableCell>
-                  <TableCell className="text-green-600">
-                    {Number(item.totalBonuses).toLocaleString("ar-SA")} ر.س
-                  </TableCell>
-                  <TableCell className="font-bold">
-                    {Number(item.netAmount).toLocaleString("ar-SA")} ر.س
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {item.notes || "-"}
-                  </TableCell>
-                  {canEdit && (
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+              {groups.map((group: any) => (
+                <>
+                  {/* Group Summary Row */}
+                  <TableRow key={`group-${group.groupId}`} className="bg-muted/50 font-semibold">
+                    <TableCell className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" />
+                      {group.groupName} ({group.summary.count} عامل)
                     </TableCell>
-                  )}
-                </TableRow>
+                    <TableCell>
+                      {group.summary.totalBase.toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ر.س
+                    </TableCell>
+                    <TableCell className="text-red-600">
+                      {group.summary.totalDeductions.toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ر.س
+                    </TableCell>
+                    <TableCell className="text-green-600">
+                      {group.summary.totalBonuses.toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ر.س
+                    </TableCell>
+                    <TableCell className="font-bold">
+                      {group.summary.totalNet.toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ر.س
+                    </TableCell>
+                    <TableCell></TableCell>
+                    {canEdit && <TableCell></TableCell>}
+                  </TableRow>
+
+                  {/* Worker Rows */}
+                  {group.workers.map((item: any) => (
+                    <TableRow key={item.id} className="hover:bg-muted/30">
+                      <TableCell className="pl-12 font-medium">{item.workerName}</TableCell>
+                      <TableCell>{Number(item.baseAmount).toLocaleString("ar-SA")} ر.س</TableCell>
+                      <TableCell className="text-red-600">
+                        {Number(item.totalDeductions).toLocaleString("ar-SA")} ر.س
+                      </TableCell>
+                      <TableCell className="text-green-600">
+                        {Number(item.totalBonuses).toLocaleString("ar-SA")} ر.س
+                      </TableCell>
+                      <TableCell className="font-bold">
+                        {Number(item.netAmount).toLocaleString("ar-SA")} ر.س
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {item.notes || "-"}
+                      </TableCell>
+                      {canEdit && (
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(item)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </>
               ))}
             </TableBody>
           </Table>
@@ -285,9 +340,7 @@ export default function PayrollBatchDetails() {
                 type="number"
                 step="0.01"
                 value={editForm.totalDeductions}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, totalDeductions: e.target.value })
-                }
+                onChange={(e) => setEditForm({ ...editForm, totalDeductions: e.target.value })}
               />
             </div>
             <div>
