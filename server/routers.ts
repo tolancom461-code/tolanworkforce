@@ -871,9 +871,16 @@ export const appRouter = router({
         });
       }),
     
-    // List batches
-    list: protectedProcedure
-      .input(z.object({ status: z.string().optional() }))
+    // List all batches
+    listBatches: protectedProcedure
+      .input(z.object({}))
+      .query(async () => {
+        return await db.getBatchesByStatus();
+      }),
+    
+    // List batches by status
+    listBatchesByStatus: protectedProcedure
+      .input(z.object({ status: z.string() }))
       .query(async ({ input }) => {
         return await db.getBatchesByStatus(input.status);
       }),

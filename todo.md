@@ -458,3 +458,55 @@
 - [ ] Test executive summary calculations (future)
 - [ ] Test report generation and export (future)
 - [x] Save checkpoint
+
+
+## Payroll Batch System - Frontend UI Development
+
+### Phase 1: Page Structure & Basic Components
+- [x] Create PayrollBatchList.tsx (main dashboard)
+- [ ] Create PayrollBatchCreate.tsx (HR Admin - create new batch)
+- [ ] Create PayrollBatchDetails.tsx (view batch details)
+- [ ] Create PayrollBatchReview.tsx (review and approve/reject)
+- [x] Create shared components (StatusBadge)
+- [ ] Create shared components (BatchSummaryCard, WorkerItemCard)
+- [x] Add routes to App.tsx
+- [x] Add menu items to DashboardLayout
+- [x] Add listBatches and listBatchesByStatus APIs to routers.ts
+
+### Phase 2: HR Admin Pages (Create & Manage)
+- [ ] Implement batch creation form with date range picker
+- [ ] Add filters (group, cost center)
+- [ ] Display generated batch items in table
+- [ ] Add edit batch item functionality (DRAFT only)
+- [ ] Add delete batch functionality (DRAFT only)
+- [ ] Add submit for review button
+- [ ] Show executive summary (total amount, worker count, avg salary)
+- [ ] Handle loading and error states
+
+### Phase 3: Review Pages (Accountant, Financial Reviewer, Accounts Manager)
+- [ ] Create Accountant review page (under_accountant_review status)
+- [ ] Create Financial Reviewer page (under_financial_review status)
+- [ ] Create Accounts Manager page (under_accounts_manager_review status)
+- [ ] Add approve/reject buttons with role-based visibility
+- [ ] Add note input for rejection (type: critical/warning/info)
+- [ ] Display rejection history and count
+- [ ] Show previous notes from other reviewers
+- [ ] Add worker-specific note markers (highlight errors)
+
+### Phase 4: Notes & Corrections System
+- [ ] Create BatchNotesPanel component
+- [ ] Display all notes grouped by reviewer
+- [ ] Show note type badges (critical/warning/info)
+- [ ] Highlight affected workers and fields
+- [ ] Add correction tracking (before/after values)
+- [ ] Show correction history timeline
+- [ ] Add filter notes by type/reviewer
+
+### Phase 5: Testing & Checkpoint
+- [ ] Test full workflow: Create → Submit → Accountant → Financial → Manager → Approved
+- [ ] Test rejection workflow: Reject → Correct → Resubmit
+- [ ] Test role-based UI visibility
+- [ ] Test all status transitions
+- [ ] Verify executive summary calculations
+- [ ] Test with demo data
+- [ ] Save checkpoint

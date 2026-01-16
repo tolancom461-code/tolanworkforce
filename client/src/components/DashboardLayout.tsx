@@ -44,7 +44,7 @@ const menuItems = [
   { icon: Calendar, label: "أيام العمل", path: "/work-days" },
   { icon: AlertCircle, label: "الاستثناءات", path: "/finance/overrides" },
   { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry" },
-  { icon: Wallet, label: "دفعات الرواتب", path: "/finance/payroll" },
+  { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches" },
   { icon: FileText, label: "التقارير المالية", path: "/finance/reports" },
   { icon: User, label: "الملف الشخصي", path: "/profile" },
 ];
