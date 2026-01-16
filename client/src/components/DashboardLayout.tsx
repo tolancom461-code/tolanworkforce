@@ -18,35 +18,87 @@ import {
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Key, User, UsersRound, UserCircle, QrCode, ClipboardList, BarChart3, Calendar, Edit, AlertCircle, Calculator, Wallet, Building2, Shield, FileText } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  LogOut, 
+  PanelLeft, 
+  Users, 
+  Key, 
+  User, 
+  UsersRound, 
+  UserCircle, 
+  QrCode, 
+  ClipboardList, 
+  BarChart3, 
+  Calendar, 
+  Edit, 
+  AlertCircle, 
+  Calculator, 
+  Wallet, 
+  Building2, 
+  Shield, 
+  FileText,
+  TrendingUp,
+  DollarSign,
+  CheckCircle,
+  FileCheck
+} from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/dashboard" },
-  { icon: BarChart3, label: "لوحة التحكم التنفيذية", path: "/executive" },
-  { icon: Users, label: "المستخدمين", path: "/users" },
-  { icon: Shield, label: "الأدوار", path: "/roles" },
-  { icon: Key, label: "الصلاحيات", path: "/permissions" },
-  { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
-  { icon: UsersRound, label: "المجموعات", path: "/groups" },
-  { icon: UserCircle, label: "العمال", path: "/workers" },
-  { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },
-  { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log" },
-  { icon: BarChart3, label: "تقارير الحضور", path: "/attendance/reports" },
-  { icon: Edit, label: "تعديل الحضور", path: "/attendance/adjust" },
-  { icon: Calendar, label: "أيام العمل", path: "/work-days" },
-  { icon: AlertCircle, label: "الاستثناءات", path: "/finance/overrides" },
-  { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry" },
-  { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches" },
-  { icon: FileText, label: "التقارير المالية", path: "/finance/reports" },
-  { icon: User, label: "الملف الشخصي", path: "/profile" },
+// تصنيف القوائم حسب الأدوار والوظائف
+const menuSections = [
+  {
+    label: "لوحات التحكم",
+    items: [
+      { icon: LayoutDashboard, label: "لوحة التحكم الرئيسية", path: "/dashboard" },
+      { icon: TrendingUp, label: "لوحة التحكم التنفيذية", path: "/executive" },
+    ]
+  },
+  {
+    label: "إدارة الموارد البشرية",
+    items: [
+      { icon: UserCircle, label: "العمال", path: "/workers" },
+      { icon: UsersRound, label: "المجموعات", path: "/groups" },
+      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
+    ]
+  },
+  {
+    label: "نظام الحضور والانصراف",
+    items: [
+      { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },
+      { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log" },
+      { icon: Edit, label: "تعديل الحضور", path: "/attendance/adjust" },
+      { icon: BarChart3, label: "تقارير الحضور", path: "/attendance/reports" },
+      { icon: Calendar, label: "إدارة أيام العمل", path: "/work-days" },
+    ]
+  },
+  {
+    label: "النظام المالي",
+    items: [
+      { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry" },
+      { icon: AlertCircle, label: "الاستثناءات المالية", path: "/finance/overrides" },
+      { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches" },
+      { icon: FileText, label: "التقارير المالية", path: "/finance/reports" },
+    ]
+  },
+  {
+    label: "إدارة النظام",
+    items: [
+      { icon: Users, label: "المستخدمين", path: "/users" },
+      { icon: Shield, label: "الأدوار والصلاحيات", path: "/roles" },
+      { icon: Key, label: "إدارة الصلاحيات", path: "/permissions" },
+    ]
+  },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -79,10 +131,10 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
+              تسجيل الدخول مطلوب
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              يتطلب الوصول إلى هذه اللوحة المصادقة. انقر للمتابعة إلى صفحة تسجيل الدخول.
             </p>
           </div>
           <Button
@@ -92,7 +144,7 @@ export default function DashboardLayout({
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            Sign in
+            الذهاب إلى لوحة التحكم
           </Button>
         </div>
       </div>
@@ -129,7 +181,12 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  
+  // Find active menu item across all sections
+  const activeMenuItem = menuSections
+    .flatMap(section => section.items)
+    .find(item => item.path === location);
+  
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -156,7 +213,7 @@ function DashboardLayoutContent({
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "col-resize";
+      document.body.style.cursor = "ew-resize";
       document.body.style.userSelect = "none";
     }
 
@@ -168,117 +225,107 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
+  const handleResizeStart = () => {
+    setIsResizing(true);
+  };
+
   return (
     <>
-      <div className="relative" ref={sidebarRef}>
-        <Sidebar
-          collapsible="icon"
-          className="border-r-0"
-          disableTransition={isResizing}
-        >
-          <SidebarHeader className="h-16 justify-center">
-            <div className="flex items-center gap-3 px-2 transition-all w-full">
-              <button
-                onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-                aria-label="Toggle navigation"
-              >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
-              </button>
-              {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate">
-                    Navigation
-                  </span>
-                </div>
-              ) : null}
+      <Sidebar ref={sidebarRef} collapsible="icon">
+        <SidebarHeader className="border-b border-sidebar-border">
+          <div className="flex items-center gap-2 px-2 py-4">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Building2 className="size-4" />
             </div>
-          </SidebarHeader>
-
-          <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
-                const isActive = location === item.path;
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarContent>
-
-          <SidebarFooter className="p-3">
-            <div className="flex justify-center mb-2 group-data-[collapsible=icon]:mb-0">
-              <ThemeToggle />
+            <div className="grid flex-1 text-right text-sm leading-tight">
+              <span className="truncate font-semibold">TolanWorkforce</span>
+              <span className="truncate text-xs text-muted-foreground">نظام إدارة القوى العاملة</span>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
-                      {user?.fullName?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
-                      {user?.fullName || "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
-                    </p>
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarFooter>
-        </Sidebar>
-        <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
-          onMouseDown={() => {
-            if (isCollapsed) return;
-            setIsResizing(true);
-          }}
-          style={{ zIndex: 50 }}
-        />
-      </div>
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent>
+          {menuSections.map((section, sectionIndex) => (
+            <SidebarGroup key={sectionIndex}>
+              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground px-2">
+                {section.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {section.items.map((item, itemIndex) => (
+                    <SidebarMenuItem key={itemIndex}>
+                      <SidebarMenuButton
+                        onClick={() => setLocation(item.path)}
+                        isActive={location === item.path}
+                        tooltip={item.label}
+                      >
+                        <item.icon className="size-4" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </SidebarContent>
+
+        <SidebarFooter className="border-t border-sidebar-border">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {user?.fullName?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-right text-sm leading-tight">
+                      <span className="truncate font-semibold">{user?.fullName || "مستخدم"}</span>
+                      <span className="truncate text-xs text-muted-foreground">{user?.email || ""}</span>
+                    </div>
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                    <User className="ml-2 h-4 w-4" />
+                    <span>الملف الشخصي</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={logout}>
+                    <LogOut className="ml-2 h-4 w-4" />
+                    <span>تسجيل الخروج</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+
+        {!isCollapsed && (
+          <div
+            className="absolute left-0 top-0 h-full w-1 cursor-ew-resize hover:bg-primary/20 transition-colors"
+            onMouseDown={handleResizeStart}
+          />
+        )}
+      </Sidebar>
 
       <SidebarInset>
-        {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <ThemeToggle />
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger />
+          <div className="flex items-center gap-2 flex-1">
+            {activeMenuItem && (
+              <>
+                <activeMenuItem.icon className="h-5 w-5 text-muted-foreground" />
+                <h1 className="text-lg font-semibold">{activeMenuItem.label}</h1>
+              </>
+            )}
           </div>
-        )}
-        <main className="flex-1 p-4">{children}</main>
+          <ThemeToggle />
+        </header>
+        <main className="flex-1 overflow-y-auto p-6">
+          {children}
+        </main>
       </SidebarInset>
     </>
   );
