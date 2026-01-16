@@ -32,11 +32,13 @@ import CostCenters from "./pages/CostCenters";
 import Roles from "./pages/Roles";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import FinancialReports from "./pages/reports/FinancialReports";
+import LocalLogin from "./pages/LocalLogin";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/local-login" component={LocalLogin} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/executive" component={ExecutiveDashboard} />
       <Route path="/users" component={Users} />

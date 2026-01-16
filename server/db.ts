@@ -2643,3 +2643,94 @@ export async function relockPayroll(batchId: number, userId: number) {
   
   return { success: true, message: 'تم إعادة قفل دفعة الراتب بنجاح' };
 }
+
+
+// ============================================
+// Local Authentication (المصادقة المحلية)
+// ============================================
+
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 10;
+
+/**
+ * Hash a password using bcrypt
+ */
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
+}
+
+/**
+ * Verify a password against a hash
+ */
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
+}
+
+/**
+ * Create a local user with username and password
+ */
+export async function createLocalUser(data: {
+  username: string;
+  password: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  roleId?: number;
+  isActive?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const passwordHash = await hashPassword(data.password);
+  
+  const [result] = await db.insert(users).values({
+    username: data.username,
+    passwordHash,
+    fullName: data.fullName,
+    email: data.email,
+    phone: data.phone,
+    roleId: data.roleId,
+    isActive: data.isActive ?? true,
+    loginMethod: 'local',
+    role: 'user',
+  });
+  
+  return result.insertId;
+}
+
+/**
+ * Authenticate a local user with username and password
+ */
+export async function authenticateLocalUser(username: string, password: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.username, username))
+    .limit(1);
+  
+  if (!user) {
+    return null;
+  }
+  
+  if (!user.passwordHash) {
+    return null; // User doesn't have a local password
+  }
+  
+  const isValid = await verifyPassword(password, user.passwordHash);
+  
+  if (!isValid) {
+    return null;
+  }
+  
+  // Update last signed in
+  await db
+    .update(users)
+    .set({ lastSignedIn: new Date() })
+    .where(eq(users.id, user.id));
+  
+  return user;
+}

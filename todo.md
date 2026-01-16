@@ -994,3 +994,39 @@ Add "Approve Full Attendance" option that:
 - [x] التأكد من إمكانية التمرير والتقسيم حسب الفئات (من category في قاعدة البيانات)
 - [x] اختبار العرض
 - [x] Save checkpoint
+
+
+## Local Authentication System (نظام المصادقة المحلي)
+
+### Phase 1: Schema & Database
+- [x] إضافة حقل password_hash إلى جدول users (موجود بالفعل)
+- [x] إضافة حقل loginMethod إلى جدول users (موجود بالفعل)
+- [x] تطبيق التغييرات على قاعدة البيانات (db:push)
+
+### Phase 2: Backend Implementation
+- [x] تثبيت bcrypt لتشفير كلمات السر
+- [x] تثبيت jsonwebtoken للجلسات
+- [x] إضافة دالة hashPassword في db.ts
+- [x] إضافة دالة verifyPassword في db.ts
+- [x] إضافة دالة createLocalUser في db.ts
+- [x] إضافة دالة authenticateLocalUser في db.ts
+- [x] إضافة endpoint auth.localLogin في routers.ts
+
+### Phase 3: Frontend Implementation
+- [x] إنشاء صفحة تسجيل دخول محلي (LocalLogin.tsx)
+- [x] إضافة زر للرجوع إلى OAuth في LocalLogin.tsx
+- [x] تحديث App.tsx لإضافة route /local-login
+
+### Phase 4: Create Omar User
+- [x] إنشاء مستخدم omar بكلمة سر admin1
+- [x] منح omar كامل الصلاحيات (41 صلاحية)
+- [x] التأكد من إمكانية تسجيل الدخول
+
+### Phase 5: Testing
+- [x] اختبار تشفير كلمات السر (bcrypt)
+- [x] اختبار إنشاء مستخدم محلي
+- [x] اختبار تسجيل الدخول ببيانات صحيحة
+- [x] اختبار رفض كلمة سر خاطئة
+- [x] اختبار تسجيل دخول omar
+- [x] اختبار صلاحيات omar (41 صلاحية)
+- [x] Save checkpoint
