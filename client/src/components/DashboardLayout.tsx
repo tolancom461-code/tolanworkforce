@@ -1,4 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { MENU_PERMISSIONS, hasPermission, type MenuPermission } from "@/lib/menuPermissions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -60,43 +62,43 @@ const menuSections = [
   {
     label: "لوحات التحكم",
     items: [
-      { icon: LayoutDashboard, label: "لوحة التحكم الرئيسية", path: "/dashboard" },
-      { icon: TrendingUp, label: "لوحة التحكم التنفيذية", path: "/executive" },
+      { icon: LayoutDashboard, label: "لوحة التحكم الرئيسية", path: "/dashboard", permission: MENU_PERMISSIONS.DASHBOARD },
+      { icon: TrendingUp, label: "لوحة التحكم التنفيذية", path: "/executive", permission: MENU_PERMISSIONS.EXECUTIVE_DASHBOARD },
     ]
   },
   {
     label: "إدارة الموارد البشرية",
     items: [
-      { icon: UserCircle, label: "العمال", path: "/workers" },
-      { icon: UsersRound, label: "المجموعات", path: "/groups" },
-      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
+      { icon: UserCircle, label: "العمال", path: "/workers", permission: MENU_PERMISSIONS.WORKERS },
+      { icon: UsersRound, label: "المجموعات", path: "/groups", permission: MENU_PERMISSIONS.GROUPS },
+      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers", permission: MENU_PERMISSIONS.COST_CENTERS },
     ]
   },
   {
     label: "نظام الحضور والانصراف",
     items: [
-      { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },
-      { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log" },
-      { icon: Edit, label: "تعديل الحضور", path: "/attendance/adjust" },
-      { icon: BarChart3, label: "تقارير الحضور", path: "/attendance/reports" },
-      { icon: Calendar, label: "إدارة أيام العمل", path: "/work-days" },
+      { icon: QrCode, label: "تسجيل الحضور", path: "/attendance", permission: MENU_PERMISSIONS.ATTENDANCE_SCAN },
+      { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log", permission: MENU_PERMISSIONS.ATTENDANCE_LOG },
+      { icon: Edit, label: "تعديل الحضور", path: "/attendance/adjust", permission: MENU_PERMISSIONS.ATTENDANCE_ADJUST },
+      { icon: BarChart3, label: "تقارير الحضور", path: "/attendance/reports", permission: MENU_PERMISSIONS.ATTENDANCE_REPORTS },
+      { icon: Calendar, label: "إدارة أيام العمل", path: "/work-days", permission: MENU_PERMISSIONS.WORK_DAYS },
     ]
   },
   {
     label: "النظام المالي",
     items: [
-      { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry" },
-      { icon: AlertCircle, label: "الاستثناءات المالية", path: "/finance/overrides" },
-      { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches" },
-      { icon: FileText, label: "التقارير المالية", path: "/finance/reports" },
+      { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry", permission: MENU_PERMISSIONS.FINANCE_ENTRY },
+      { icon: AlertCircle, label: "الاستثناءات المالية", path: "/finance/overrides", permission: MENU_PERMISSIONS.FINANCE_OVERRIDES },
+      { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches", permission: MENU_PERMISSIONS.PAYROLL_BATCHES },
+      { icon: FileText, label: "التقارير المالية", path: "/finance/reports", permission: MENU_PERMISSIONS.FINANCE_REPORTS },
     ]
   },
   {
     label: "إدارة النظام",
     items: [
-      { icon: Users, label: "المستخدمين", path: "/users" },
-      { icon: Shield, label: "الأدوار والصلاحيات", path: "/roles" },
-      { icon: Key, label: "إدارة الصلاحيات", path: "/permissions" },
+      { icon: Users, label: "المستخدمين", path: "/users", permission: MENU_PERMISSIONS.USERS },
+      { icon: Shield, label: "الأدوار والصلاحيات", path: "/roles", permission: MENU_PERMISSIONS.ROLES },
+      { icon: Key, label: "إدارة الصلاحيات", path: "/permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
     ]
   },
 ];
@@ -182,8 +184,21 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   
+  // جلب صلاحيات المستخدم
+  const { data: userPermissions = [] } = trpc.auth.permissions.useQuery();
+  
+  // فلترة القوائم حسب الصلاحيات
+  const filteredMenuSections = menuSections
+    .map(section => ({
+      ...section,
+      items: section.items.filter(item => 
+        !item.permission || hasPermission(userPermissions, item.permission)
+      )
+    }))
+    .filter(section => section.items.length > 0);
+  
   // Find active menu item across all sections
-  const activeMenuItem = menuSections
+  const activeMenuItem = filteredMenuSections
     .flatMap(section => section.items)
     .find(item => item.path === location);
   
@@ -245,7 +260,7 @@ function DashboardLayoutContent({
         </SidebarHeader>
 
         <SidebarContent>
-          {menuSections.map((section, sectionIndex) => (
+          {filteredMenuSections.map((section, sectionIndex) => (
             <SidebarGroup key={sectionIndex}>
               <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground px-2">
                 {section.label}

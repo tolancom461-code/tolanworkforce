@@ -17,6 +17,20 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    permissions: protectedProcedure.query(async ({ ctx }) => {
+      // جلب الصلاحيات المباشرة للمستخدم
+      const directPerms = await db.getUserPermissions(ctx.user.id);
+      // جلب الصلاحيات من خلال الأدوار
+      const rolePerms = await db.getUserRolePermissions(ctx.user.id);
+      
+      // دمج الصلاحيات وإزالة التكرار
+      const allPerms = [...directPerms, ...rolePerms];
+      const uniquePerms = Array.from(
+        new Map(allPerms.map(p => [p.code, p])).values()
+      );
+      
+      return uniquePerms.map(p => p.code);
+    }),
   }),
 
   // Dashboard Statistics
