@@ -884,6 +884,108 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getPayrollBatchDetails(input.batchId);
       }),
+    
+    // Update batch item (DRAFT or RETURNED only)
+    updateItem: protectedProcedure
+      .input(z.object({
+        itemId: z.number(),
+        baseAmount: z.string().optional(),
+        totalDeductions: z.string().optional(),
+        totalBonuses: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.updateBatchItem(input);
+      }),
+    
+    // Submit for accountant review
+    submitForReview: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.submitBatchForReview(input.batchId, ctx.user.id);
+      }),
+    
+    // Accountant approve
+    accountantApprove: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.accountantApproveBatch(input.batchId, ctx.user.id);
+      }),
+    
+    // Accountant reject
+    accountantReject: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        noteType: z.enum(['critical', 'warning', 'info']),
+        note: z.string(),
+        workerId: z.number().optional(),
+        fieldName: z.string().optional(),
+        attachmentUrl: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.accountantRejectBatch({
+          ...input,
+          reviewerId: ctx.user.id,
+        });
+      }),
+    
+    // Financial reviewer approve
+    financialReviewerApprove: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.financialReviewerApproveBatch(input.batchId, ctx.user.id);
+      }),
+    
+    // Financial reviewer reject
+    financialReviewerReject: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        noteType: z.enum(['critical', 'warning', 'info']),
+        note: z.string(),
+        workerId: z.number().optional(),
+        fieldName: z.string().optional(),
+        attachmentUrl: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.financialReviewerRejectBatch({
+          ...input,
+          reviewerId: ctx.user.id,
+        });
+      }),
+    
+    // Accounts manager final approve
+    accountsManagerApprove: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.accountsManagerApproveBatch(input.batchId, ctx.user.id);
+      }),
+    
+    // Accounts manager final reject
+    accountsManagerReject: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        note: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.accountsManagerRejectBatch({
+          ...input,
+          reviewerId: ctx.user.id,
+        });
+      }),
+    
+    // Delete batch (DRAFT only)
+    deleteBatch: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteBatch(input.batchId);
+      }),
   }),
 });
 

@@ -1790,26 +1790,33 @@ export async function createPayrollBatch(params: {
     batchCode,
     periodStart: params.periodStart,
     periodEnd: params.periodEnd,
-    groupId: params.groupId || null,
-    costCenterId: params.costCenterId || null,
+    groupId: params.groupId ?? null,
+    costCenterId: params.costCenterId ?? null,
     totalAmount: totalAmount.toFixed(2),
     totalWorkers: filteredWorkers.length,
     totalDeductions: totalDeductions.toFixed(2),
     totalBonuses: totalBonuses.toFixed(2),
-    status: 'draft',
+    status: 'draft' as const,
     createdBy: params.createdBy,
-  });
+  } as any);
 
   // Insert batch items
-  const batchId = Number((result as any).insertId);
+  const batchId = typeof result === 'object' && 'insertId' in result 
+    ? Number(result.insertId) 
+    : Number((result as any)[0]?.insertId || (result as any).insertId);
+  
+  if (isNaN(batchId) || batchId === 0) {
+    throw new Error('Failed to get batch ID after insert');
+  }
+
   for (const item of batchItems) {
     await db.insert(payrollBatchItems).values({
-      batchId: Number(batchId),
+      batchId,
       ...item,
     });
   }
 
-  return { batchId: Number(batchId), batchCode };
+  return { batchId, batchCode };
 }
 
 /**

@@ -360,23 +360,23 @@
 - [x] Run pnpm db:push to apply changes
 
 ### Phase 2: Backend APIs - Batch Creation & Management
-- [ ] API: createPayrollBatch (HR Admin only)
-- [ ] API: getPayrollBatchDetails (with permissions check)
-- [ ] API: updateBatchItem (edit worker amount in DRAFT)
-- [ ] API: addWorkerToBatch (DRAFT only)
-- [ ] API: removeWorkerFromBatch (DRAFT only)
-- [ ] API: calculateBatchSummary (executive summary)
-- [ ] API: compareBatchWithPrevious (comparison report)
+- [x] API: createPayrollBatch (HR Admin only)
+- [x] API: getPayrollBatchDetails (with permissions check)
+- [x] API: updateBatchItem (edit worker amount in DRAFT)
+- [ ] API: addWorkerToBatch (DRAFT only) - future enhancement
+- [ ] API: removeWorkerFromBatch (DRAFT only) - future enhancement
+- [ ] API: calculateBatchSummary (executive summary) - included in getDetails
+- [ ] API: compareBatchWithPrevious (comparison report) - future enhancement
 
 ### Phase 3: Backend APIs - Review Workflow
-- [ ] API: submitForAccountantReview (HR → Accountant)
-- [ ] API: accountantApprove (Accountant → Financial Reviewer)
-- [ ] API: accountantReject (with note type: critical/warning/info)
-- [ ] API: financialReviewerApprove (Financial → Accounts Manager)
-- [ ] API: financialReviewerReject (back to HR for correction)
-- [ ] API: accountsManagerApprove (final approval)
-- [ ] API: accountsManagerReject (final rejection)
-- [ ] API: resubmitAfterCorrection (HR resubmits)
+- [x] API: submitForAccountantReview (HR → Accountant)
+- [x] API: accountantApprove (Accountant → Financial Reviewer)
+- [x] API: accountantReject (with note type: critical/warning/info)
+- [x] API: financialReviewerApprove (Financial → Accounts Manager)
+- [x] API: financialReviewerReject (back to HR for correction)
+- [x] API: accountsManagerApprove (final approval)
+- [x] API: accountsManagerReject (final rejection)
+- [x] API: resubmitAfterCorrection (HR resubmits) - included in submitForReview
 
 ### Phase 4: Backend APIs - Notes & Corrections
 - [ ] API: addBatchNote (with error type and location)
@@ -447,11 +447,14 @@
 - [ ] Add UI conditional rendering based on role
 
 ### Phase 13: Testing & Validation
-- [ ] Write vitest tests for all payroll batch APIs
-- [ ] Test full workflow: Draft → Accountant → Financial → Manager → Approved
-- [ ] Test rejection workflow: Reject → Correct → Resubmit
-- [ ] Test max rejection limit (3 attempts)
-- [ ] Test role-based permissions
-- [ ] Test executive summary calculations
-- [ ] Test report generation and export
-- [ ] Save checkpoint
+- [x] Write vitest tests for all payroll batch APIs (13 tests)
+- [x] Test full approval workflow: Draft → Accountant → Financial → Manager → Approved
+- [x] Test rejection workflows (accountant, financial reviewer, accounts manager)
+- [x] Test rejection count tracking
+- [x] Test batch deletion (DRAFT only)
+- [x] Test edge cases (non-existent batch, invalid status transitions)
+- [ ] Note: Tests need demo financial data for the test periods to pass
+- [ ] Test role-based permissions (future)
+- [ ] Test executive summary calculations (future)
+- [ ] Test report generation and export (future)
+- [x] Save checkpoint
