@@ -6,6 +6,8 @@ import { publicProcedure, protectedProcedure, router, requirePermission, hasPerm
 import * as db from "./db";
 import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow, type PayrollReportRow } from "./excelExport";
 import * as analytics from "./analytics";
+import * as QRCode from "qrcode";
+import PDFDocument from "pdfkit";
 
 export const appRouter = router({
   system: systemRouter,
@@ -452,12 +454,14 @@ export const appRouter = router({
     exportWorkerQRCode: protectedProcedure
       .input(z.object({ workerId: z.number() }))
       .mutation(async ({ input }) => {
-        const QRCode = require('qrcode');
-        const PDFDocument = require('pdfkit');
         const worker = await db.getWorkerById(input.workerId);
         
         if (!worker) {
           throw new Error('Worker not found');
+        }
+        
+        if (!worker.qrToken) {
+          throw new Error('Worker QR token not found');
         }
         
         // Generate QR Code as data URL
@@ -481,7 +485,7 @@ export const appRouter = router({
           
           // Add worker info
           doc.fontSize(14).text(`الاسم: ${worker.fullName}`, { align: 'right' });
-          doc.fontSize(12).text(`الرمز: ${worker.manualCode}`, { align: 'right' });
+          doc.fontSize(12).text(`الرمز: ${worker.manualCode || 'N/A'}`, { align: 'right' });
           doc.moveDown();
           
           // Add QR Code
@@ -492,7 +496,7 @@ export const appRouter = router({
           });
           
           doc.moveDown();
-          doc.fontSize(10).text(worker.qrToken, { align: 'center' });
+          doc.fontSize(10).text(worker.qrToken!, { align: 'center' });
           
           doc.end();
         });
@@ -509,8 +513,6 @@ export const appRouter = router({
     exportGroupQRCodes: protectedProcedure
       .input(z.object({ groupId: z.number() }))
       .mutation(async ({ input }) => {
-        const QRCode = require('qrcode');
-        const PDFDocument = require('pdfkit');
         const workers = await db.getWorkersByGroup(input.groupId);
         
         if (!workers || workers.length === 0) {
@@ -538,6 +540,11 @@ export const appRouter = router({
           for (let i = 0; i < workers.length; i++) {
             const worker = workers[i];
             
+            // Skip workers without QR token
+            if (!worker.qrToken) {
+              continue;
+            }
+            
             // Add page break after every 3 workers (except first)
             if (i > 0 && i % 3 === 0) {
               doc.addPage();
@@ -551,7 +558,7 @@ export const appRouter = router({
             
             // Worker card
             doc.fontSize(14).text(`${i + 1}. ${worker.fullName}`, { align: 'right' });
-            doc.fontSize(11).text(`الرمز: ${worker.manualCode}`, { align: 'right' });
+            doc.fontSize(11).text(`الرمز: ${worker.manualCode || 'N/A'}`, { align: 'right' });
             doc.moveDown(0.5);
             
             // Add QR Code
@@ -561,7 +568,7 @@ export const appRouter = router({
               align: 'center',
             });
             
-            doc.fontSize(9).text(worker.qrToken, { align: 'center' });
+            doc.fontSize(9).text(worker.qrToken!, { align: 'center' });
             doc.moveDown(2);
             
             // Add separator line
