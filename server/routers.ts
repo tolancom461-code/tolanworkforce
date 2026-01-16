@@ -480,7 +480,7 @@ export const appRouter = router({
         const chunks: Buffer[] = [];
         
         // Register Arabic font
-        const fontPath = path.join(__dirname, 'fonts', 'NotoSansArabic-Regular.ttf');
+        const fontPath = path.resolve('/home/ubuntu/tolanworkforce/server/fonts/NotoSansArabic-Regular.ttf');
         doc.registerFont('Arabic', fontPath);
         doc.font('Arabic');
         
@@ -538,7 +538,7 @@ export const appRouter = router({
         const chunks: Buffer[] = [];
         
         // Register Arabic font
-        const fontPath = path.join(__dirname, 'fonts', 'NotoSansArabic-Regular.ttf');
+        const fontPath = path.resolve('/home/ubuntu/tolanworkforce/server/fonts/NotoSansArabic-Regular.ttf');
         doc.registerFont('Arabic', fontPath);
         doc.font('Arabic');
         

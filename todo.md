@@ -883,4 +883,12 @@ Add "Approve Full Attendance" option that:
 - [x] Verify APIs work correctly
 - [x] Verify UI displays correctly
 - [x] Verify financial calculations respect override
+- [x] Save checkpoint
+
+
+## Bug Fix: Arabic Font Path Error in QR Code Download
+
+- [x] Fix ENOENT error: /usr/src/app/dist/fonts/NotoSansArabic-Regular.ttf not found
+- [x] Use correct absolute path (path.resolve) to locate font file
+- [x] Test QR code download with Arabic text
 - [ ] Save checkpoint
