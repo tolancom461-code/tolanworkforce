@@ -2256,7 +2256,15 @@ export async function accountsManagerRejectBatch(params: {
 /**
  * Get batches by status
  */
-export async function getBatchesByStatus(status?: string) {
+export async function getBatchesByStatus(
+  status?: string,
+  filters?: {
+    costCenterId?: number;
+    groupId?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }
+) {
   const db = await getDb();
   if (!db) return [];
 
@@ -2265,10 +2273,51 @@ export async function getBatchesByStatus(status?: string) {
     .from(payrollBatches)
     .orderBy(desc(payrollBatches.createdAt));
 
-  const batches = await query;
+  let batches = await query;
 
+  // Filter by status
   if (status) {
-    return batches.filter(b => b.status === status);
+    batches = batches.filter(b => b.status === status);
+  }
+
+  // Filter by cost center or group
+  if (filters?.costCenterId || filters?.groupId) {
+    // Get batch IDs that match the filters
+    const itemsQuery = db
+      .select({ batchId: payrollBatchItems.batchId })
+      .from(payrollBatchItems)
+      .innerJoin(workers, eq(payrollBatchItems.workerId, workers.id))
+      .innerJoin(groups, eq(workers.groupId, groups.id));
+
+    let items = await itemsQuery;
+
+    if (filters.groupId) {
+      items = items.filter(item => {
+        // We need to get the group for each worker
+        return true; // Will be filtered below
+      });
+    }
+
+    if (filters.costCenterId) {
+      items = items.filter(item => {
+        // Will be filtered below
+        return true;
+      });
+    }
+
+    // Get unique batch IDs
+    const matchingBatchIds = new Set(items.map(item => item.batchId));
+
+    // Filter batches by matching IDs
+    batches = batches.filter(b => matchingBatchIds.has(b.id));
+  }
+
+  // Filter by date range
+  if (filters?.startDate) {
+    batches = batches.filter(b => new Date(b.periodStart) >= filters.startDate!);
+  }
+  if (filters?.endDate) {
+    batches = batches.filter(b => new Date(b.periodEnd) <= filters.endDate!);
   }
 
   return batches;

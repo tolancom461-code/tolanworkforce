@@ -13,14 +13,47 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/payroll/StatusBadge";
-import { Plus, Eye, Trash2 } from "lucide-react";
+import { Plus, Eye, Trash2, Filter } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function PayrollBatchList() {
   const [activeTab, setActiveTab] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    costCenterId: undefined as number | undefined,
+    groupId: undefined as number | undefined,
+    startDate: "",
+    endDate: "",
+  });
   
   const utils = trpc.useUtils();
-  const { data: allBatches, isLoading: loadingAll } = trpc.payroll.listBatches.useQuery({});
+  
+  // Fetch cost centers and groups for filters
+  const { data: costCenters } = trpc.costCenters.list.useQuery();
+  const { data: allGroups } = trpc.groups.list.useQuery();
+  
+  // Filter groups based on selected cost center
+  const filteredGroups = filters.costCenterId
+    ? allGroups?.filter(g => g.costCenterId === filters.costCenterId)
+    : allGroups;
+  
+  // Build query params
+  const queryParams: any = {};
+  if (filters.costCenterId) queryParams.costCenterId = filters.costCenterId;
+  if (filters.groupId) queryParams.groupId = filters.groupId;
+  if (filters.startDate) queryParams.startDate = filters.startDate;
+  if (filters.endDate) queryParams.endDate = filters.endDate;
+  
+  const { data: allBatches, isLoading: loadingAll } = trpc.payroll.listBatches.useQuery(queryParams);
   const { data: draftBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "draft" });
   const { data: pendingBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "under_accountant_review" });
   const { data: approvedBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "approved" });
@@ -142,13 +175,126 @@ export default function PayrollBatchList() {
     <div className="container py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">دفعات الرواتب</h1>
-        <Link href="/payroll/batches/create">
-          <Button>
-            <Plus className="h-4 w-4 ml-2" />
-            إنشاء دفعة جديدة
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
+            <Filter className="h-4 w-4 ml-2" />
+            فلاتر
           </Button>
-        </Link>
+          <Link href="/payroll/batches/create">
+            <Button>
+              <Plus className="h-4 w-4 ml-2" />
+              إنشاء دفعة جديدة
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {/* Filters Card */}
+      {showFilters && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>فلاتر البحث</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4">
+              {/* Cost Center Filter */}
+              <div>
+                <Label>مركز التكلفة</Label>
+                <Select
+                  value={filters.costCenterId?.toString() || "all"}
+                  onValueChange={(value) => {
+                    setFilters({
+                      ...filters,
+                      costCenterId: value === "all" ? undefined : Number(value),
+                      groupId: undefined, // Reset group when cost center changes
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="جميع مراكز التكلفة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع مراكز التكلفة</SelectItem>
+                    {costCenters?.map((cc) => (
+                      <SelectItem key={cc.id} value={cc.id.toString()}>
+                        {cc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Group Filter */}
+              <div>
+                <Label>المجموعة</Label>
+                <Select
+                  value={filters.groupId?.toString() || "all"}
+                  onValueChange={(value) => {
+                    setFilters({
+                      ...filters,
+                      groupId: value === "all" ? undefined : Number(value),
+                    });
+                  }}
+                  disabled={!filters.costCenterId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      filters.costCenterId
+                        ? "جميع المجموعات"
+                        : "اختر مركز التكلفة أولاً"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المجموعات</SelectItem>
+                    {filteredGroups?.map((group) => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Start Date Filter */}
+              <div>
+                <Label>من تاريخ</Label>
+                <Input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                />
+              </div>
+
+              {/* End Date Filter */}
+              <div>
+                <Label>إلى تاريخ</Label>
+                <Input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Clear Filters Button */}
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFilters({
+                    costCenterId: undefined,
+                    groupId: undefined,
+                    startDate: "",
+                    endDate: "",
+                  });
+                }}
+              >
+                إعادة تعيين الفلاتر
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">

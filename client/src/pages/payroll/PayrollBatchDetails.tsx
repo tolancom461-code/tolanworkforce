@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/payroll/StatusBadge";
-import { ArrowRight, Edit, Loader2, ArrowLeft, Users } from "lucide-react";
+import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PayrollBatchDetails() {
@@ -59,6 +59,33 @@ export default function PayrollBatchDetails() {
     },
     onError: (error) => {
       toast.error(`خطأ: ${error.message}`);
+    },
+  });
+
+  const exportMutation = trpc.payroll.exportToExcel.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("تم تصدير الملف بنجاح");
+    },
+    onError: (error) => {
+      toast.error(`خطأ في التصدير: ${error.message}`);
     },
   });
 
@@ -220,21 +247,40 @@ export default function PayrollBatchDetails() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>تفاصيل العمال حسب المجموعات</CardTitle>
-            {canSubmit && (
-              <Button onClick={handleSubmitForReview} disabled={submitMutation.isPending}>
-                {submitMutation.isPending ? (
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => exportMutation.mutate({ batchId })} 
+                disabled={exportMutation.isPending}
+              >
+                {exportMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    جاري الإرسال...
+                    جاري التصدير...
                   </>
                 ) : (
                   <>
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                    إرسال للمراجعة
+                    <Download className="h-4 w-4 ml-2" />
+                    تصدير Excel
                   </>
                 )}
               </Button>
-            )}
+              {canSubmit && (
+                <Button onClick={handleSubmitForReview} disabled={submitMutation.isPending}>
+                  {submitMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                      جاري الإرسال...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                      إرسال للمراجعة
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

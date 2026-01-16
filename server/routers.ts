@@ -873,9 +873,20 @@ export const appRouter = router({
     
     // List all batches
     listBatches: protectedProcedure
-      .input(z.object({}))
-      .query(async () => {
-        return await db.getBatchesByStatus();
+      .input(z.object({
+        costCenterId: z.number().optional(),
+        groupId: z.number().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const filters: any = {};
+        if (input.costCenterId) filters.costCenterId = input.costCenterId;
+        if (input.groupId) filters.groupId = input.groupId;
+        if (input.startDate) filters.startDate = new Date(input.startDate);
+        if (input.endDate) filters.endDate = new Date(input.endDate);
+        
+        return await db.getBatchesByStatus(undefined, filters);
       }),
     
     // List batches by status
@@ -998,6 +1009,128 @@ export const appRouter = router({
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input }) => {
         return await db.deleteBatch(input.batchId);
+      }),
+    
+    // Export batch to Excel
+    exportToExcel: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input }) => {
+        const ExcelJS = require('exceljs');
+        const batchData = await db.getPayrollBatchDetails(input.batchId);
+        
+        if (!batchData || !batchData.batch) {
+          throw new Error('Batch not found');
+        }
+        
+        // Create workbook
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('دفعة الرواتب');
+        
+        // Set RTL
+        worksheet.views = [{ rightToLeft: true }];
+        
+        // Add header info
+        worksheet.mergeCells('A1:G1');
+        worksheet.getCell('A1').value = `دفعة رواتب #${batchData.batch.batchCode}`;
+        worksheet.getCell('A1').font = { size: 16, bold: true };
+        worksheet.getCell('A1').alignment = { horizontal: 'center' };
+        
+        worksheet.mergeCells('A2:G2');
+        worksheet.getCell('A2').value = `الفترة: ${new Date(batchData.batch.periodStart).toLocaleDateString('ar-SA')} - ${new Date(batchData.batch.periodEnd).toLocaleDateString('ar-SA')}`;
+        worksheet.getCell('A2').alignment = { horizontal: 'center' };
+        
+        // Add empty row
+        worksheet.addRow([]);
+        
+        // Group items by groupId
+        const groupedItems = batchData.items?.reduce((acc: any, item: any) => {
+          const groupKey = item.groupId || 'unknown';
+          if (!acc[groupKey]) {
+            acc[groupKey] = {
+              groupId: item.groupId,
+              groupName: item.groupName || 'مجموعة غير محددة',
+              workers: [],
+              summary: {
+                count: 0,
+                totalBase: 0,
+                totalDeductions: 0,
+                totalBonuses: 0,
+                totalNet: 0,
+              },
+            };
+          }
+          acc[groupKey].workers.push(item);
+          acc[groupKey].summary.count += 1;
+          acc[groupKey].summary.totalBase += parseFloat(item.baseAmount || '0');
+          acc[groupKey].summary.totalDeductions += parseFloat(item.totalDeductions || '0');
+          acc[groupKey].summary.totalBonuses += parseFloat(item.totalBonuses || '0');
+          acc[groupKey].summary.totalNet += parseFloat(item.netAmount || '0');
+          return acc;
+        }, {});
+        
+        const groups = Object.values(groupedItems || {});
+        
+        // Add table header
+        const headerRow = worksheet.addRow(['اسم العامل / المجموعة', 'الراتب الأساسي', 'الخصومات', 'الإضافات', 'الصافي', 'أيام العمل', 'ملاحظات']);
+        headerRow.font = { bold: true };
+        headerRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0E0E0' }
+        };
+        
+        // Add data grouped by groups
+        groups.forEach((group: any) => {
+          // Group summary row
+          const summaryRow = worksheet.addRow([
+            `${group.groupName} (${group.summary.count} عامل)`,
+            group.summary.totalBase.toFixed(2),
+            group.summary.totalDeductions.toFixed(2),
+            group.summary.totalBonuses.toFixed(2),
+            group.summary.totalNet.toFixed(2),
+            '',
+            ''
+          ]);
+          summaryRow.font = { bold: true };
+          summaryRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF0F0F0' }
+          };
+          
+          // Worker rows
+          group.workers.forEach((worker: any) => {
+            worksheet.addRow([
+              `  ${worker.workerName}`,
+              parseFloat(worker.baseAmount).toFixed(2),
+              parseFloat(worker.totalDeductions).toFixed(2),
+              parseFloat(worker.totalBonuses).toFixed(2),
+              parseFloat(worker.netAmount).toFixed(2),
+              worker.daysWorked || 0,
+              worker.notes || '-'
+            ]);
+          });
+        });
+        
+        // Set column widths
+        worksheet.columns = [
+          { width: 30 },
+          { width: 15 },
+          { width: 15 },
+          { width: 15 },
+          { width: 15 },
+          { width: 12 },
+          { width: 30 }
+        ];
+        
+        // Generate buffer
+        const buffer = await workbook.xlsx.writeBuffer();
+        
+        // Return base64 encoded file
+        return {
+          filename: `payroll_${batchData.batch.batchCode}_${Date.now()}.xlsx`,
+          data: buffer.toString('base64')
+        };
       }),
   }),
 });
