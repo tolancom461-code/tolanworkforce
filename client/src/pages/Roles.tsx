@@ -162,25 +162,6 @@ export default function Roles() {
         : [...prev, permissionId]
     );
   };
-
-  const toggleCategory = (category: string) => {
-    const categoryData = PERMISSION_CATEGORIES[category as keyof typeof PERMISSION_CATEGORIES];
-    const categoryPerms = allPermissions?.filter((p: any) => 
-      categoryData?.permissions.includes(p.code as PermissionCode)
-    ) || [];
-    
-    const categoryPermIds = categoryPerms.map((p: any) => p.id);
-    const allSelected = categoryPermIds.every((id: number) => selectedPermissions.includes(id));
-
-    if (allSelected) {
-      setSelectedPermissions((prev) => prev.filter((id) => !categoryPermIds.includes(id)));
-    } else {
-      setSelectedPermissions((prev) => {
-        const combined = [...prev, ...categoryPermIds];
-        return Array.from(new Set(combined));
-      });
-    }
-  };
   
   // Filter roles
   const filteredRoles = roles?.filter((role) =>
@@ -447,51 +428,69 @@ export default function Roles() {
             </div>
 
             <div className="space-y-4 border rounded-lg p-4">
-              {Object.entries(PERMISSION_CATEGORIES).map(([category, categoryData]) => {
-                const categoryPerms = allPermissions?.filter((p: any) =>
-                  categoryData.permissions.includes(p.code as PermissionCode)
-                ) || [];
-                
-                const categoryPermIds = categoryPerms.map((p: any) => p.id);
-                const allSelected = categoryPermIds.every((id: number) =>
-                  selectedPermissions.includes(id)
-                );
+              {(() => {
+                // Group all permissions by category from database
+                const permissionsByCategory: Record<string, any[]> = {};
+                allPermissions?.forEach((p: any) => {
+                  const category = p.category || 'أخرى';
+                  if (!permissionsByCategory[category]) {
+                    permissionsByCategory[category] = [];
+                  }
+                  permissionsByCategory[category].push(p);
+                });
 
-                const categoryNames: Record<string, string> = {
-                  dashboards: "📊 لوحات التحكم",
-                  hr: "👥 الموارد البشرية",
-                  attendance: "⏰ الحضور والانصراف",
-                  financial: "💰 النظام المالي",
-                  system: "⚙️ إدارة النظام",
-                };
+                return Object.entries(permissionsByCategory).map(([categoryName, categoryPerms]) => {
+                  if (categoryPerms.length === 0) return null;
+                  
+                  const categoryPermIds = categoryPerms.map((p: any) => p.id);
+                  const allSelected = categoryPermIds.every((id: number) =>
+                    selectedPermissions.includes(id)
+                  );
 
-                return (
-                  <div key={category} className="space-y-2">
-                    <div className="flex items-center gap-2 pb-2 border-b">
-                      <Checkbox
-                        checked={allSelected}
-                        onCheckedChange={() => toggleCategory(category)}
-                      />
-                      <Label className="font-semibold cursor-pointer" onClick={() => toggleCategory(category)}>
-                        {categoryNames[category]}
-                      </Label>
+                  return (
+                    <div key={categoryName} className="space-y-2">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={() => {
+                            if (allSelected) {
+                              setSelectedPermissions((prev) => prev.filter((id) => !categoryPermIds.includes(id)));
+                            } else {
+                              setSelectedPermissions((prev) => Array.from(new Set([...prev, ...categoryPermIds])));
+                            }
+                          }}
+                        />
+                        <Label className="font-semibold cursor-pointer flex-1" onClick={() => {
+                          if (allSelected) {
+                            setSelectedPermissions((prev) => prev.filter((id) => !categoryPermIds.includes(id)));
+                          } else {
+                            setSelectedPermissions((prev) => Array.from(new Set([...prev, ...categoryPermIds])));
+                          }
+                        }}>
+                          {categoryName}
+                        </Label>
+                        <Badge variant="secondary">{categoryPerms.length}</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 pr-6">
+                        {categoryPerms.map((perm: any) => (
+                          <div key={perm.id} className="flex items-start gap-2">
+                            <Checkbox
+                              checked={selectedPermissions.includes(perm.id)}
+                              onCheckedChange={() => togglePermission(perm.id)}
+                            />
+                            <div className="flex-1">
+                              <Label className="text-sm cursor-pointer" onClick={() => togglePermission(perm.id)}>
+                                {perm.name}
+                              </Label>
+                              <p className="text-xs text-muted-foreground mt-0.5">{perm.code}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 pr-6">
-                      {categoryPerms.map((perm: any) => (
-                        <div key={perm.id} className="flex items-center gap-2">
-                          <Checkbox
-                            checked={selectedPermissions.includes(perm.id)}
-                            onCheckedChange={() => togglePermission(perm.id)}
-                          />
-                          <Label className="text-sm cursor-pointer" onClick={() => togglePermission(perm.id)}>
-                            {perm.name}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
 

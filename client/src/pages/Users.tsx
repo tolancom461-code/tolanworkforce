@@ -515,81 +515,115 @@ export default function Users() {
                 <div>
                   <h4 className="font-medium mb-3">الصلاحيات الإضافية ({userPermissions.individualPermissions.length})</h4>
                   <div className="space-y-2">
-                    {Object.entries(PERMISSION_CATEGORIES).map(([categoryKey, category]) => {
-                      const categoryPermissions = allPermissions?.filter((p: any) => 
-                        category.permissions.includes(p.code)
-                      ) || [];
+                    {(() => {
+                      // Group all permissions by category from database
+                      const permissionsByCategory: Record<string, any[]> = {};
+                      allPermissions?.forEach((p: any) => {
+                        const category = p.category || 'أخرى';
+                        if (!permissionsByCategory[category]) {
+                          permissionsByCategory[category] = [];
+                        }
+                        permissionsByCategory[category].push(p);
+                      });
 
-                      if (categoryPermissions.length === 0) return null;
+                      return Object.entries(permissionsByCategory).map(([categoryName, categoryPermissions]) => {
+                        if (categoryPermissions.length === 0) return null;
 
-                      const isExpanded = expandedCategories.has(categoryKey);
-                      const allChecked = isCategoryChecked(categoryKey);
+                        const categoryKey = categoryName;
+                        const isExpanded = expandedCategories.has(categoryKey);
+                        
+                        // Check if all permissions in category are checked
+                        const allChecked = categoryPermissions.every((p: any) => 
+                          isPermissionChecked(p.id)
+                        );
 
-                      return (
-                        <div key={categoryKey} className="border rounded-lg">
-                          <div className="flex items-center gap-3 p-3 bg-muted/30">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => toggleCategory(categoryKey)}
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Checkbox
-                              checked={allChecked}
-                              onCheckedChange={(checked) => 
-                                handleCategoryToggle(categoryKey, checked as boolean)
-                              }
-                              disabled={setUserPermissions.isPending}
-                            />
-                            <span className="font-medium flex-1">{category.label}</span>
-                            <Badge variant="secondary">
-                              {categoryPermissions.length}
-                            </Badge>
-                          </div>
-                          
-                          {isExpanded && (
-                            <div className="p-3 space-y-2 border-t">
-                              {categoryPermissions.map((permission: any) => {
-                                const isChecked = isPermissionChecked(permission.id);
-                                const fromRole = isPermissionFromRole(permission.id);
+                        return (
+                          <div key={categoryKey} className="border rounded-lg">
+                            <div className="flex items-center gap-3 p-3 bg-muted/30">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => toggleCategory(categoryKey)}
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Checkbox
+                                checked={allChecked}
+                                onCheckedChange={(checked) => {
+                                  if (!selectedUser || !userPermissions) return;
+                                  const currentIndividualIds = userPermissions.individualPermissions.map((p: any) => p.id);
+                                  const categoryPermissionIds = categoryPermissions.map((p: any) => p.id);
+                                  
+                                  let newPermissionIds: number[];
+                                  if (checked) {
+                                    newPermissionIds = Array.from(new Set([...currentIndividualIds, ...categoryPermissionIds]));
+                                  } else {
+                                    newPermissionIds = currentIndividualIds.filter((id: number) => 
+                                      !categoryPermissionIds.includes(id)
+                                    );
+                                  }
+                                  
+                                  setUserPermissions.mutate({
+                                    userId: selectedUser.id,
+                                    permissionIds: Array.from(new Set(newPermissionIds)),
+                                  });
+                                }}
+                                disabled={setUserPermissions.isPending}
+                              />
+                              <span className="font-medium flex-1">{categoryName}</span>
+                              <Badge variant="secondary">
+                                {categoryPermissions.length}
+                              </Badge>
+                            </div>
+                            
+                            {isExpanded && (
+                              <div className="p-3 space-y-2 border-t">
+                                {categoryPermissions.map((permission: any) => {
+                                  const isChecked = isPermissionChecked(permission.id);
+                                  const fromRole = isPermissionFromRole(permission.id);
 
-                                return (
-                                  <div key={permission.id} className="flex items-start gap-3 pr-8">
-                                    <Checkbox
-                                      checked={isChecked}
-                                      onCheckedChange={(checked) =>
-                                        handlePermissionToggle(permission.id, checked as boolean)
-                                      }
-                                      disabled={setUserPermissions.isPending || fromRole}
-                                    />
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm">{permission.name}</span>
-                                        {fromRole && (
-                                          <Badge variant="outline" className="text-xs">
-                                            من الدور
-                                          </Badge>
+                                  return (
+                                    <div key={permission.id} className="flex items-start gap-3 pr-8">
+                                      <Checkbox
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) =>
+                                          handlePermissionToggle(permission.id, checked as boolean)
+                                        }
+                                        disabled={setUserPermissions.isPending || fromRole}
+                                      />
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm">{permission.name}</span>
+                                          {fromRole && (
+                                            <Badge variant="outline" className="text-xs">
+                                              من الدور
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                          {permission.code}
+                                        </p>
+                                        {permission.description && (
+                                          <p className="text-xs text-muted-foreground mt-0.5">
+                                            {permission.description}
+                                          </p>
                                         )}
                                       </div>
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        {permission.code}
-                                      </p>
                                     </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>

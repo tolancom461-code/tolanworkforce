@@ -983,3 +983,14 @@ Add "Approve Full Attendance" option that:
 - [x] تحديث اختبارات payroll-lock.test.ts
 - [x] اختبار منع تفعيل اعتماد الحضور الكامل
 - [x] Save checkpoint
+
+
+## Fix Permissions Display (إصلاح عرض الصلاحيات)
+
+- [x] البحث عن صفحات تعيين الصلاحيات للمستخدمين
+- [x] تحديد سبب عدم ظهور جميع الصلاحيات (41 صلاحية في systemPermissions.ts)
+- [x] إصلاح العرض في Users.tsx لإظهار جميع الصلاحيات
+- [x] إصلاح العرض في Roles.tsx لإظهار جميع الصلاحيات
+- [x] التأكد من إمكانية التمرير والتقسيم حسب الفئات (من category في قاعدة البيانات)
+- [x] اختبار العرض
+- [x] Save checkpoint
