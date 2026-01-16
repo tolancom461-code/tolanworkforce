@@ -15,6 +15,7 @@ export const MENU_PERMISSIONS = {
   ATTENDANCE_SCAN: 'scan_attendance',
   ATTENDANCE_LOG: 'view_attendance_log',
   ATTENDANCE_ADJUST: 'adjust_attendance',
+  ATTENDANCE_DAILY_MANAGEMENT: 'manage_daily_attendance',
   ATTENDANCE_REPORTS: 'view_attendance_reports',
   WORK_DAYS: 'manage_work_days',
   
@@ -88,6 +89,7 @@ export const PERMISSION_CATEGORIES: Record<string, { label: string; permissions:
       'scan_attendance',
       'view_attendance_log',
       'adjust_attendance',
+      'manage_daily_attendance',
       'view_attendance_reports',
       'manage_work_days',
     ],

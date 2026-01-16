@@ -2409,3 +2409,114 @@ export async function setRolePermissions(roleId: number, permissionIds: number[]
 
   return { success: true };
 }
+
+
+// ============================================
+// Full Day Override Functions
+// ============================================
+
+export async function setFullDayOverride(
+  workerId: number,
+  workDate: string,
+  override: boolean,
+  reason?: string,
+  userId?: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { workerDailyFinance } = await import('../drizzle/schema');
+  
+  // Check if daily finance record exists
+  const [existing] = await db
+    .select()
+    .from(workerDailyFinance)
+    .where(and(
+      eq(workerDailyFinance.workerId, workerId),
+      eq(workerDailyFinance.workDate, sql`${workDate}`)
+    ))
+    .limit(1);
+  
+  if (!existing) {
+    // Create new record with override
+    await processAttendanceToFinance(workerId, workDate);
+  }
+  
+  // Update override fields
+  await db.update(workerDailyFinance).set({
+    fullDayOverride: override,
+    overrideReason: reason || null,
+    overrideBy: userId || null,
+    overrideAt: override ? new Date() : null,
+    updatedAt: new Date(),
+  }).where(and(
+    eq(workerDailyFinance.workerId, workerId),
+    eq(workerDailyFinance.workDate, sql`${workDate}`)
+  ));
+  
+  // Recalculate finance with override
+  if (override) {
+    await recalculateFinanceWithOverride(workerId, workDate);
+  } else {
+    // Recalculate without override
+    await processAttendanceToFinance(workerId, workDate);
+  }
+  
+  return { success: true };
+}
+
+async function recalculateFinanceWithOverride(workerId: number, workDate: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { workers, groups, workerDailyFinance } = await import('../drizzle/schema');
+  
+  // Get worker and group info
+  const [worker] = await db.select().from(workers).where(eq(workers.id, workerId)).limit(1);
+  if (!worker) throw new Error("Worker not found");
+  
+  let dailyRate = worker.dailyRate ? parseFloat(worker.dailyRate.toString()) : 0;
+  
+  if (worker.groupId) {
+    const [group] = await db.select().from(groups).where(eq(groups.id, worker.groupId)).limit(1);
+    if (group && group.dailyRate) {
+      dailyRate = dailyRate || parseFloat(group.dailyRate.toString());
+    }
+  }
+  
+  // Update with full day rate (no deductions)
+  await db.update(workerDailyFinance).set({
+    baseAmount: sql`${dailyRate}`,
+    deductions: sql`0`,
+    netAmount: sql`${dailyRate}`,
+    updatedAt: new Date(),
+  }).where(and(
+    eq(workerDailyFinance.workerId, workerId),
+    eq(workerDailyFinance.workDate, sql`${workDate}`)
+  ));
+}
+
+export async function getFullDayOverrideStatus(workerId: number, workDate: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { workerDailyFinance } = await import('../drizzle/schema');
+  
+  const [record] = await db
+    .select()
+    .from(workerDailyFinance)
+    .where(and(
+      eq(workerDailyFinance.workerId, workerId),
+      eq(workerDailyFinance.workDate, sql`${workDate}`)
+    ))
+    .limit(1);
+  
+  if (!record) return null;
+  
+  return {
+    override: record.fullDayOverride,
+    reason: record.overrideReason,
+    overrideBy: record.overrideBy,
+    overrideAt: record.overrideAt,
+  };
+}

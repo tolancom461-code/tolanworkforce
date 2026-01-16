@@ -836,4 +836,51 @@
 - [x] Fix "Dynamic require of path is not supported" error
 - [x] Add static import for path module
 - [x] Test QR code download for workers and groups
+- [x] Save checkpoint
+
+
+## Feature: Full Attendance Override (اعتماد حضور كامل)
+
+### Problem Statement
+- Worker attends 7 hours but group requires 9 hours
+- System calculates partial pay (7/9)
+- Management wants to approve full day pay for emergency/exception cases
+
+### Solution
+Add "Approve Full Attendance" option that:
+- Overrides actual hours with full day hours
+- Shows full pay in financial reports
+- Marks record as "approved override" for audit
+
+### Phase 1: Database Schema
+- [x] Add `fullDayOverride` boolean field to daily_finance table
+- [x] Add `overrideReason` text field for documentation
+- [x] Add `overrideBy` user ID field for audit trail
+- [x] Add `overrideAt` timestamp field
+- [x] Push schema changes to database
+
+### Phase 2: Backend APIs
+- [x] Create API: setFullDayOverride (workerId, date, override, reason)
+- [x] Create API: getFullDayOverrideStatus
+- [x] Create function: recalculateFinanceWithOverride (sets full pay, no deductions)
+- [x] Add validation and permission checks
+
+### Phase 3: Frontend UI
+- [x] Create new page: DailyAttendanceManagement
+- [x] Add checkbox "اعتماد حضور كامل" for each worker
+- [x] Add reason input dialog when enabling override
+- [x] Show visual indicator (CheckCircle icon) for overridden records
+- [x] Add page to navigation menu
+- [x] Add permission: manage_daily_attendance
+
+### Phase 4: Financial Reports
+- [x] Financial reports read from workerDailyFinance table (includes override)
+- [x] Override reason stored in database for audit
+- [x] Full pay calculated automatically when override is true
+
+### Phase 5: Testing & Checkpoint
+- [x] Verify schema changes applied
+- [x] Verify APIs work correctly
+- [x] Verify UI displays correctly
+- [x] Verify financial calculations respect override
 - [ ] Save checkpoint

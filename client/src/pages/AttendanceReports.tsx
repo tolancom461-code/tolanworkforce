@@ -12,8 +12,13 @@ import {
   Clock,
   Calendar,
   TrendingUp,
-  Printer
+  Printer,
+  CheckCircle
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { printPage } from '@/lib/exportUtils';
 import { toast } from 'sonner';
 
@@ -27,6 +32,8 @@ export default function AttendanceReports() {
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [overrideDialog, setOverrideDialog] = useState<{ workerId: number; workerName: string; date: string } | null>(null);
+  const [overrideReason, setOverrideReason] = useState('');
   
   const { data: groups } = trpc.groups.list.useQuery();
   const { data: report, isLoading, refetch } = trpc.attendance.monthlyReport.useQuery({
@@ -81,6 +88,46 @@ export default function AttendanceReports() {
       toast.error('فشل تصدير التقرير: ' + error.message);
     },
   });
+
+  const setOverrideMutation = trpc.dailyFinance.setFullDayOverride.useMutation({
+    onSuccess: () => {
+      toast.success('تم اعتماد الحضور الكامل بنجاح');
+      refetch();
+      setOverrideDialog(null);
+      setOverrideReason('');
+    },
+    onError: (error) => {
+      toast.error('فشل اعتماد الحضور: ' + error.message);
+    },
+  });
+
+  const handleOverrideToggle = (workerId: number, workerName: string, date: string, currentOverride: boolean) => {
+    if (currentOverride) {
+      // Disable override
+      setOverrideMutation.mutate({
+        workerId,
+        workDate: date,
+        override: false,
+      });
+    } else {
+      // Show dialog to get reason
+      setOverrideDialog({ workerId, workerName, date });
+    }
+  };
+
+  const handleOverrideConfirm = () => {
+    if (!overrideDialog || !overrideReason.trim()) {
+      toast.error('يرجى إدخال سبب الاعتماد');
+      return;
+    }
+
+    setOverrideMutation.mutate({
+      workerId: overrideDialog.workerId,
+      workDate: overrideDialog.date,
+      override: true,
+      reason: overrideReason,
+    });
+  };
 
   const exportToExcel = () => {
     if (!report?.length) {

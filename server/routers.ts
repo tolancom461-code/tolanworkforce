@@ -881,6 +881,34 @@ export const appRouter = router({
           notes: input.notes,
         });
       }),
+    
+    // Set full day override
+    setFullDayOverride: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.string(),
+        override: z.boolean(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return await db.setFullDayOverride(
+          input.workerId,
+          input.workDate,
+          input.override,
+          input.reason,
+          ctx.user?.id
+        );
+      }),
+    
+    // Get full day override status
+    getFullDayOverrideStatus: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getFullDayOverrideStatus(input.workerId, input.workDate);
+      }),
   }),
 
   // Attendance Adjustment (HR)
