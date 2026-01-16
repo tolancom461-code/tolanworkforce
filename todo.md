@@ -891,4 +891,13 @@ Add "Approve Full Attendance" option that:
 - [x] Fix ENOENT error: /usr/src/app/dist/fonts/NotoSansArabic-Regular.ttf not found
 - [x] Use correct absolute path (path.resolve) to locate font file
 - [x] Test QR code download with Arabic text
+- [x] Save checkpoint
+
+
+## Bug Fix: Daily Attendance Management Page Not Showing in Menu
+
+- [x] Check if ATTENDANCE_DAILY_MANAGEMENT permission exists in menuPermissions.ts
+- [x] Add permission to database (manage_daily_attendance)
+- [x] Grant permission to current user (anem2031@gmail.com)
+- [x] Test page visibility in menu (✅ working!)
 - [ ] Save checkpoint
