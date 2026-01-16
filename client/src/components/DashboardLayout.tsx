@@ -24,6 +24,11 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { 
@@ -49,7 +54,8 @@ import {
   TrendingUp,
   DollarSign,
   CheckCircle,
-  FileCheck
+  FileCheck,
+  ChevronDown
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -104,6 +110,7 @@ const menuSections = [
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
+const SIDEBAR_COLLAPSED_SECTIONS_KEY = "sidebar-collapsed-sections";
 const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
@@ -184,6 +191,23 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   
+  // حفظ حالة الطي/الفتح لكل قسم
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_SECTIONS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_SECTIONS_KEY, JSON.stringify(collapsedSections));
+  }, [collapsedSections]);
+
+  const toggleSection = (label: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [label]: !prev[label]
+    }));
+  };
+  
   // جلب صلاحيات المستخدم
   const { data: userPermissions = [], isLoading: isLoadingPermissions } = trpc.auth.permissions.useQuery();
   
@@ -198,27 +222,20 @@ function DashboardLayoutContent({
             !item.permission || hasPermission(userPermissions, item.permission)
           )
         }))
-        .filter(section => section.items.length > 0);
-  
-  // Find active menu item across all sections
-  const activeMenuItem = filteredMenuSections
-    .flatMap(section => section.items)
-    .find(item => item.path === location);
-  
+        .filter(section => section.items.length > 0); // إخفاء الأقسام الفارغة
+
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    if (isCollapsed) {
-      setIsResizing(false);
-    }
-  }, [isCollapsed]);
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    e.preventDefault();
+  };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
 
-      const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
-      const newWidth = e.clientX - sidebarLeft;
+      const newWidth = e.clientX;
       if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
         setSidebarWidth(newWidth);
       }
@@ -231,88 +248,106 @@ function DashboardLayoutContent({
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "ew-resize";
-      document.body.style.userSelect = "none";
     }
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
     };
   }, [isResizing, setSidebarWidth]);
 
-  const handleResizeStart = () => {
-    setIsResizing(true);
-  };
-
   return (
     <>
-      <Sidebar ref={sidebarRef} collapsible="icon">
-        <SidebarHeader className="border-b border-sidebar-border">
-          <div className="flex items-center gap-2 px-2 py-4">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Building2 className="size-4" />
+      <Sidebar ref={sidebarRef} collapsible="icon" className="border-l">
+        <SidebarHeader className="border-b px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Users className="h-4 w-4" />
             </div>
-            <div className="grid flex-1 text-right text-sm leading-tight">
-              <span className="truncate font-semibold">TolanWorkforce</span>
-              <span className="truncate text-xs text-muted-foreground">نظام إدارة القوى العاملة</span>
-            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">TolanWorkforce</span>
+                <span className="text-xs text-muted-foreground">نظام إدارة القوى العاملة</span>
+              </div>
+            )}
           </div>
         </SidebarHeader>
 
-        <SidebarContent>
-          {filteredMenuSections.map((section, sectionIndex) => (
-            <SidebarGroup key={sectionIndex}>
-              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground px-2">
-                {section.label}
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {section.items.map((item, itemIndex) => (
-                    <SidebarMenuItem key={itemIndex}>
-                      <SidebarMenuButton
-                        onClick={() => setLocation(item.path)}
-                        isActive={location === item.path}
-                        tooltip={item.label}
-                      >
-                        <item.icon className="size-4" />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
+        <SidebarContent className="px-2 py-2">
+          <SidebarMenu>
+            {filteredMenuSections.map((section) => (
+              <Collapsible
+                key={section.label}
+                open={!collapsedSections[section.label]}
+                onOpenChange={() => toggleSection(section.label)}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip={section.label}
+                      className="w-full justify-between font-semibold"
+                    >
+                      <span>{section.label}</span>
+                      <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=closed]/collapsible:rotate-180" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenu className="mt-1 space-y-0.5">
+                      {section.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location === item.path;
+                        return (
+                          <SidebarMenuItem key={item.path}>
+                            <SidebarMenuButton
+                              onClick={() => setLocation(item.path)}
+                              isActive={isActive}
+                              tooltip={item.label}
+                              className="pl-8"
+                            >
+                              <Icon className="h-4 w-4" />
+                              <span>{item.label}</span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        );
+                      })}
+                    </SidebarMenu>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            ))}
+          </SidebarMenu>
         </SidebarContent>
 
-        <SidebarFooter className="border-t border-sidebar-border">
+        <SidebarFooter className="border-t p-2">
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        {user?.fullName?.charAt(0) || "U"}
+                  <SidebarMenuButton
+                    size="lg"
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                  >
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarFallback className="rounded-lg">
+                        {user?.fullName?.charAt(0) || "a"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-right text-sm leading-tight">
-                      <span className="truncate font-semibold">{user?.fullName || "مستخدم"}</span>
-                      <span className="truncate text-xs text-muted-foreground">{user?.email || ""}</span>
+                      <span className="truncate font-semibold">{user?.fullName || "anem2031"}</span>
+                      <span className="truncate text-xs">{user?.email || "anem2031@gmail.com"}</span>
                     </div>
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => setLocation("/profile")}>
-                    <User className="ml-2 h-4 w-4" />
-                    <span>الملف الشخصي</span>
-                  </DropdownMenuItem>
+                <DropdownMenuContent
+                  className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                  side="top"
+                  align="end"
+                  sideOffset={4}
+                >
                   <DropdownMenuItem onClick={logout}>
                     <LogOut className="ml-2 h-4 w-4" />
-                    <span>تسجيل الخروج</span>
+                    تسجيل الخروج
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -320,30 +355,32 @@ function DashboardLayoutContent({
           </SidebarMenu>
         </SidebarFooter>
 
-        {!isCollapsed && (
+        {!isMobile && !isCollapsed && (
           <div
-            className="absolute left-0 top-0 h-full w-1 cursor-ew-resize hover:bg-primary/20 transition-colors"
-            onMouseDown={handleResizeStart}
+            className="absolute left-0 top-0 h-full w-1 cursor-ew-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
+            onMouseDown={handleMouseDown}
+            style={{
+              userSelect: "none",
+            }}
           />
         )}
       </Sidebar>
 
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger />
+          <SidebarTrigger className="-ml-1" />
           <div className="flex items-center gap-2 flex-1">
-            {activeMenuItem && (
-              <>
-                <activeMenuItem.icon className="h-5 w-5 text-muted-foreground" />
-                <h1 className="text-lg font-semibold">{activeMenuItem.label}</h1>
-              </>
-            )}
+            <span className="text-lg font-semibold">
+              {filteredMenuSections
+                .flatMap((s) => s.items)
+                .find((item) => item.path === location)?.label || "لوحة التحكم"}
+            </span>
           </div>
           <ThemeToggle />
         </header>
-        <main className="flex-1 overflow-y-auto p-6">
+        <div className="flex flex-1 flex-col gap-4 p-4 overflow-auto">
           {children}
-        </main>
+        </div>
       </SidebarInset>
     </>
   );
