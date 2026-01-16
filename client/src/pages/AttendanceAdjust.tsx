@@ -28,7 +28,8 @@ export default function AttendanceAdjust() {
     note: string;
   } | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [newTime, setNewTime] = useState('');
+  const [newDate, setNewDate] = useState('');
+  const [newTimeOnly, setNewTimeOnly] = useState('');
   const [internalNote, setInternalNote] = useState('');
   
   const { data: workers } = trpc.workers.list.useQuery();
@@ -62,16 +63,20 @@ export default function AttendanceAdjust() {
 
   const handleEdit = (event: any) => {
     setEditingEvent(event);
-    setNewTime(formatDateTime(event.eventTime));
+    const eventDate = new Date(event.eventTime);
+    setNewDate(eventDate.toISOString().split('T')[0]); // YYYY-MM-DD
+    setNewTimeOnly(eventDate.toTimeString().slice(0, 5)); // HH:MM
     setInternalNote(event.note || '');
     setShowEditDialog(true);
   };
 
   const handleSave = () => {
-    if (!editingEvent) return;
+    if (!editingEvent || !newDate || !newTimeOnly) return;
+    // Combine date and time
+    const combinedDateTime = `${newDate}T${newTimeOnly}:00`;
     updateMutation.mutate({
       eventId: editingEvent.id,
-      newTime: new Date(newTime).toISOString(),
+      newTime: new Date(combinedDateTime).toISOString(),
       internalNote,
     });
   };
@@ -205,13 +210,23 @@ export default function AttendanceAdjust() {
                 disabled
               />
             </div>
-            <div className="space-y-2">
-              <Label>الوقت الجديد</Label>
-              <Input
-                type="datetime-local"
-                value={newTime}
-                onChange={(e) => setNewTime(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>التاريخ</Label>
+                <Input
+                  type="date"
+                  value={newDate}
+                  onChange={(e) => setNewDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>الوقت</Label>
+                <Input
+                  type="time"
+                  value={newTimeOnly}
+                  onChange={(e) => setNewTimeOnly(e.target.value)}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>سبب التعديل (ملاحظة داخلية)</Label>

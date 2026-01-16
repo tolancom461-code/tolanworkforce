@@ -789,4 +789,14 @@
 - [x] Update exportWorkerQRCode to use Arabic font
 - [x] Update exportGroupQRCodes to use Arabic font
 - [x] Test PDF generation with Arabic names
+- [x] Save checkpoint
+
+
+## UX Improvement: Separate Date and Time Fields in Attendance Edit
+
+- [x] Find attendance edit dialog in AttendanceAdjust.tsx
+- [x] Split datetime-local input into separate date and time inputs
+- [x] Update state management to handle separate date and time
+- [x] Combine date and time when submitting to API
+- [x] Test editing attendance records
 - [ ] Save checkpoint
