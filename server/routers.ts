@@ -183,6 +183,22 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await db.deleteRole(input.id);
       }),
+    
+    getRolePermissions: protectedProcedure
+      .input(z.object({ roleId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getRolePermissions(input.roleId);
+      }),
+    
+    setRolePermissions: protectedProcedure
+      .input(z.object({
+        roleId: z.number(),
+        permissionIds: z.array(z.number()),
+      }))
+      .mutation(async ({ input }) => {
+        await db.setRolePermissions(input.roleId, input.permissionIds);
+        return { success: true };
+      }),
   }),
 
   // Permission Management

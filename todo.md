@@ -719,3 +719,26 @@
 - [x] إضافة زر تصدير جماعي في صفحة المجموعات (Groups.tsx)
 - [x] إضافة زر تصدير فردي أمام كل عامل (Workers.tsx)
 - [x] اختبار التصدير والتأكد من جودة QR Code (جاهز للاختبار)
+
+
+## إنشاء صفحة إدارة الأدوار
+
+### إضافة API endpoints
+- [x] إضافة endpoint لجلب جميع الأدوار (roles.list)
+- [x] إضافة endpoint لإنشاء دور جديد (roles.create)
+- [x] إضافة endpoint لتحديث دور (roles.update)
+- [x] إضافة endpoint لحذف دور (roles.delete)
+- [x] إضافة endpoint لتعيين صلاحيات لدور (roles.setRolePermissions)
+- [x] إضافة endpoint لجلب صلاحيات دور معين (roles.getRolePermissions)
+
+### إنشاء صفحة Frontend
+- [ ] إنشاء صفحة Roles.tsx
+- [ ] إضافة جدول لعرض الأدوار
+- [ ] إضافة dialog لإضافة/تعديل دور
+- [ ] إضافة checkboxes للصلاحيات منظمة حسب الفئات
+- [ ] إضافة وظائف الحذف والتعديل
+
+### إضافة إلى القائمة
+- [ ] إضافة رابط في DashboardLayout
+- [ ] إضافة route في App.tsx
+- [ ] اختبار الصفحة والتأكد من عملها

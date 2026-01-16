@@ -61,3 +61,37 @@ export function hasAllPermissions(
   
   return requiredPermissions.every(perm => userPermissions.includes(perm));
 }
+
+// نوع TypeScript لرموز الصلاحيات
+export type PermissionCode = typeof MENU_PERMISSIONS[keyof typeof MENU_PERMISSIONS];
+
+// تصنيف الصلاحيات حسب الفئات
+export const PERMISSION_CATEGORIES: Record<string, PermissionCode[]> = {
+  dashboards: [
+    'view_dashboard',
+    'view_executive_dashboard',
+  ],
+  hr: [
+    'view_workers',
+    'view_groups',
+    'view_cost_centers',
+  ],
+  attendance: [
+    'scan_attendance',
+    'view_attendance_log',
+    'adjust_attendance',
+    'view_attendance_reports',
+    'manage_work_days',
+  ],
+  financial: [
+    'manage_finance_entries',
+    'manage_finance_overrides',
+    'view_payroll_batches',
+    'view_finance_reports',
+  ],
+  system: [
+    'manage_users',
+    'manage_roles',
+    'manage_permissions',
+  ],
+};

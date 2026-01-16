@@ -2355,3 +2355,44 @@ export async function deleteBatch(batchId: number) {
 
   return { success: true };
 }
+
+/**
+ * Get permissions for a role
+ */
+export async function getRolePermissions(roleId: number): Promise<Permission[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rolePerms = await db
+    .select({ permission: permissions })
+    .from(rolePermissions)
+    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+    .where(eq(rolePermissions.roleId, roleId));
+
+  return rolePerms.map(rp => rp.permission);
+}
+
+/**
+ * Set permissions for a role (replace all)
+ */
+export async function setRolePermissions(roleId: number, permissionIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Delete existing permissions
+  await db
+    .delete(rolePermissions)
+    .where(eq(rolePermissions.roleId, roleId));
+
+  // Insert new permissions
+  if (permissionIds.length > 0) {
+    await db.insert(rolePermissions).values(
+      permissionIds.map(permissionId => ({
+        roleId,
+        permissionId,
+      }))
+    );
+  }
+
+  return { success: true };
+}

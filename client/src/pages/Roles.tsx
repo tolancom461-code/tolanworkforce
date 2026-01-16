@@ -7,23 +7,28 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Shield,
   Plus,
   Pencil,
   Trash2,
   RefreshCw,
-  Search
+  Search,
+  Settings
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PERMISSION_CATEGORIES, type PermissionCode } from '@/lib/menuPermissions';
 
 export default function Roles() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
   const [selectedRole, setSelectedRole] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPermissions, setSelectedPermissions] = useState<number[]>([]);
   
   // Form state
   const [code, setCode] = useState('');
@@ -32,6 +37,7 @@ export default function Roles() {
   const [level, setLevel] = useState('0');
   
   const { data: roles, refetch } = trpc.roles.list.useQuery();
+  const { data: allPermissions } = trpc.permissions.list.useQuery();
   
   const createMutation = trpc.roles.create.useMutation({
     onSuccess: () => {
@@ -66,6 +72,16 @@ export default function Roles() {
       toast.error(error.message || 'حدث خطأ');
     }
   });
+
+  const setPermissionsMutation = trpc.roles.setRolePermissions.useMutation({
+    onSuccess: () => {
+      toast.success('تم تحديث الصلاحيات بنجاح');
+      setShowPermissionsDialog(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ');
+    }
+  });
   
   const resetForm = () => {
     setCode('');
@@ -73,6 +89,7 @@ export default function Roles() {
     setDescription('');
     setLevel('0');
     setSelectedRole(null);
+    setSelectedPermissions([]);
   };
   
   const handleCreate = () => {
@@ -116,6 +133,53 @@ export default function Roles() {
       deleteMutation.mutate({ id });
     }
   };
+
+  const utils = trpc.useUtils();
+
+  const handleManagePermissions = async (role: any) => {
+    setSelectedRole(role);
+    try {
+      const perms = await utils.roles.getRolePermissions.fetch({ roleId: role.id });
+      setSelectedPermissions(perms.map((p: any) => p.id));
+      setShowPermissionsDialog(true);
+    } catch (error) {
+      toast.error('حدث خطأ في تحميل الصلاحيات');
+    }
+  };
+
+  const handleSavePermissions = () => {
+    if (!selectedRole) return;
+    setPermissionsMutation.mutate({
+      roleId: selectedRole.id,
+      permissionIds: selectedPermissions,
+    });
+  };
+
+  const togglePermission = (permissionId: number) => {
+    setSelectedPermissions((prev) =>
+      prev.includes(permissionId)
+        ? prev.filter((id) => id !== permissionId)
+        : [...prev, permissionId]
+    );
+  };
+
+  const toggleCategory = (category: string) => {
+    const categoryPerms = allPermissions?.filter((p: any) => 
+      PERMISSION_CATEGORIES[category as keyof typeof PERMISSION_CATEGORIES]?.includes(p.code as PermissionCode)
+    ) || [];
+    
+    const categoryPermIds = categoryPerms.map((p: any) => p.id);
+    const allSelected = categoryPermIds.every((id: number) => selectedPermissions.includes(id));
+
+    if (allSelected) {
+      setSelectedPermissions((prev) => prev.filter((id) => !categoryPermIds.includes(id)));
+    } else {
+      setSelectedPermissions((prev) => {
+        const combined = [...prev, ...categoryPermIds];
+        return Array.from(new Set(combined));
+      });
+    }
+  };
   
   // Filter roles
   const filteredRoles = roles?.filter((role) =>
@@ -134,7 +198,7 @@ export default function Roles() {
               الأدوار
             </h1>
             <p className="text-muted-foreground">
-              إدارة الأدوار في النظام
+              إدارة الأدوار والصلاحيات في النظام
             </p>
           </div>
           <Button onClick={() => setShowCreateDialog(true)}>
@@ -204,6 +268,14 @@ export default function Roles() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleManagePermissions(role)}
+                            >
+                              <Settings className="h-4 w-4 ml-1" />
+                              الصلاحيات
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
@@ -350,6 +422,89 @@ export default function Roles() {
                 <Pencil className="h-4 w-4 ml-2" />
               )}
               تحديث
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Dialog */}
+      <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>إدارة صلاحيات الدور: {selectedRole?.name}</DialogTitle>
+            <DialogDescription>
+              حدد الصلاحيات التي يمتلكها هذا الدور
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-base">الصلاحيات</Label>
+              <span className="text-sm text-muted-foreground">
+                {selectedPermissions.length} من {allPermissions?.length || 0} محددة
+              </span>
+            </div>
+
+            <div className="space-y-4 border rounded-lg p-4">
+              {Object.entries(PERMISSION_CATEGORIES).map(([category, permissions]) => {
+                const categoryPerms = allPermissions?.filter((p: any) =>
+                  permissions.includes(p.code as PermissionCode)
+                ) || [];
+                
+                const categoryPermIds = categoryPerms.map((p: any) => p.id);
+                const allSelected = categoryPermIds.every((id: number) =>
+                  selectedPermissions.includes(id)
+                );
+
+                const categoryNames: Record<string, string> = {
+                  dashboards: "📊 لوحات التحكم",
+                  hr: "👥 الموارد البشرية",
+                  attendance: "⏰ الحضور والانصراف",
+                  financial: "💰 النظام المالي",
+                  system: "⚙️ إدارة النظام",
+                };
+
+                return (
+                  <div key={category} className="space-y-2">
+                    <div className="flex items-center gap-2 pb-2 border-b">
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={() => toggleCategory(category)}
+                      />
+                      <Label className="font-semibold cursor-pointer" onClick={() => toggleCategory(category)}>
+                        {categoryNames[category]}
+                      </Label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pr-6">
+                      {categoryPerms.map((perm: any) => (
+                        <div key={perm.id} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedPermissions.includes(perm.id)}
+                            onCheckedChange={() => togglePermission(perm.id)}
+                          />
+                          <Label className="text-sm cursor-pointer" onClick={() => togglePermission(perm.id)}>
+                            {perm.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPermissionsDialog(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={handleSavePermissions} disabled={setPermissionsMutation.isPending}>
+              {setPermissionsMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Settings className="h-4 w-4 ml-2" />
+              )}
+              حفظ الصلاحيات
             </Button>
           </DialogFooter>
         </DialogContent>
