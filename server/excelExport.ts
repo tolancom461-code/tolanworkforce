@@ -13,7 +13,7 @@ export interface AttendanceReportRow {
 
 export interface PayrollReportRow {
   workerName: string;
-  workerCode: string;
+  workerCode: string | null;
   groupName: string;
   baseSalary: number;
   deductions: number;

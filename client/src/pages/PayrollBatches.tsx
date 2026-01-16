@@ -78,7 +78,7 @@ export default function PayrollBatches() {
   
   const createMutation = trpc.payroll.createBatch.useMutation({
     onSuccess: (result) => {
-      toast.success(`تم إنشاء الدفعة ${result.batchCode} بنجاح. المجموع: ${result.totalAmount?.toFixed(2)} ر.س`);
+      toast.success(`تم إنشاء الدفعة ${result.batchCode} بنجاح`);
       refetch();
       setShowCreateDialog(false);
       resetForm();

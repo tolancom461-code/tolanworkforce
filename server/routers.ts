@@ -875,7 +875,7 @@ export const appRouter = router({
     list: protectedProcedure
       .input(z.object({ status: z.string().optional() }))
       .query(async ({ input }) => {
-        return await db.getPayrollBatches(input.status);
+        return await db.getBatchesByStatus(input.status);
       }),
     
     // Get batch details

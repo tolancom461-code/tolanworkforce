@@ -337,7 +337,7 @@ export async function getPendingPayrollBatches() {
   const batches = await db
     .select()
     .from(payrollBatches)
-    .where(eq(payrollBatches.status, 'pending'))
+    .where(eq(payrollBatches.status, 'under_accountant_review'))
     .orderBy(desc(payrollBatches.totalAmount));
 
   return batches.map(batch => ({

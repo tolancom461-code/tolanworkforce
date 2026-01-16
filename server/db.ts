@@ -14,7 +14,11 @@ import {
   attendanceEvents,
   workDays,
   workerDailyFinance,
-  payOverrides
+  payOverrides,
+  payrollBatches,
+  payrollBatchItems,
+  payrollBatchNotes,
+  payrollBatchCorrections
 } from "../drizzle/schema";
 
 // Rename Worker type to avoid conflict with Web Worker
@@ -1346,145 +1350,7 @@ export async function getDailyFinanceRecords(workerId: number, startDate: string
     .orderBy(workerDailyFinance.workDate);
 }
 
-// ============================================
-// Payroll Batch Functions
-// ============================================
-
-export async function createPayrollBatch(data: {
-  periodStart: string;
-  periodEnd: string;
-  groupId?: number;
-  costCenterId?: number;
-  createdBy: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const { payrollBatches, payrollBatchItems, workerDailyFinance, workers } = await import('../drizzle/schema');
-  
-  // Generate batch code
-  const batchCode = `PAY-${Date.now()}`;
-  
-  // Create batch
-  const batchResult = await db.insert(payrollBatches).values({
-    batchCode,
-    periodStart: sql`${data.periodStart}`,
-    periodEnd: sql`${data.periodEnd}`,
-    groupId: data.groupId || null,
-    costCenterId: data.costCenterId || null,
-    status: 'draft',
-    createdBy: data.createdBy,
-  });
-  
-  const batchId = (batchResult as any).insertId;
-  
-  // Get workers to include
-  let workersQuery = db.select().from(workers).where(eq(workers.status, 'active'));
-  let allWorkers = await workersQuery;
-  
-  if (data.groupId) {
-    allWorkers = allWorkers.filter(w => w.groupId === data.groupId);
-  }
-  
-  // Aggregate daily finance for each worker
-  let totalAmount = 0;
-  
-  for (const worker of allWorkers) {
-    const dailyRecords = await db
-      .select()
-      .from(workerDailyFinance)
-      .where(and(
-        eq(workerDailyFinance.workerId, worker.id),
-        gte(workerDailyFinance.workDate, sql`${data.periodStart}`),
-        lte(workerDailyFinance.workDate, sql`${data.periodEnd}`)
-      ));
-    
-    if (dailyRecords.length === 0) continue;
-    
-    const daysWorked = dailyRecords.length;
-    const baseAmount = dailyRecords.reduce((sum, r) => sum + parseFloat(r.baseAmount?.toString() || '0'), 0);
-    const totalDeductions = dailyRecords.reduce((sum, r) => sum + parseFloat(r.deductions?.toString() || '0'), 0);
-    const totalBonuses = dailyRecords.reduce((sum, r) => sum + parseFloat(r.bonuses?.toString() || '0'), 0);
-    const netAmount = baseAmount - totalDeductions + totalBonuses;
-    
-    await db.insert(payrollBatchItems).values({
-      batchId,
-      workerId: worker.id,
-      daysWorked,
-      baseAmount: sql`${baseAmount}`,
-      totalDeductions: sql`${totalDeductions}`,
-      totalBonuses: sql`${totalBonuses}`,
-      netAmount: sql`${netAmount}`,
-    });
-    
-    totalAmount += netAmount;
-  }
-  
-  // Update batch total
-  await db.update(payrollBatches).set({
-    totalAmount: sql`${totalAmount}`,
-  }).where(eq(payrollBatches.id, batchId));
-  
-  return { batchId, batchCode, totalAmount, workersCount: allWorkers.length };
-}
-
-export async function getPayrollBatches(status?: string) {
-  const db = await getDb();
-  if (!db) return [];
-
-  const { payrollBatches, groups, costCenters } = await import('../drizzle/schema');
-  
-  let query = db
-    .select({
-      id: payrollBatches.id,
-      batchCode: payrollBatches.batchCode,
-      periodStart: payrollBatches.periodStart,
-      periodEnd: payrollBatches.periodEnd,
-      groupId: payrollBatches.groupId,
-      costCenterId: payrollBatches.costCenterId,
-      totalAmount: payrollBatches.totalAmount,
-      status: payrollBatches.status,
-      createdAt: payrollBatches.createdAt,
-    })
-    .from(payrollBatches)
-    .orderBy(desc(payrollBatches.createdAt));
-  
-  const results = await query;
-  
-  if (status) {
-    return results.filter(r => r.status === status);
-  }
-  
-  return results;
-}
-
-export async function getPayrollBatchDetails(batchId: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const { payrollBatches, payrollBatchItems, workers } = await import('../drizzle/schema');
-  
-  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
-  if (!batch) return null;
-  
-  const items = await db
-    .select({
-      id: payrollBatchItems.id,
-      workerId: payrollBatchItems.workerId,
-      workerName: workers.fullName,
-      workerCode: workers.code,
-      daysWorked: payrollBatchItems.daysWorked,
-      baseAmount: payrollBatchItems.baseAmount,
-      totalDeductions: payrollBatchItems.totalDeductions,
-      totalBonuses: payrollBatchItems.totalBonuses,
-      netAmount: payrollBatchItems.netAmount,
-    })
-    .from(payrollBatchItems)
-    .innerJoin(workers, eq(payrollBatchItems.workerId, workers.id))
-    .where(eq(payrollBatchItems.batchId, batchId));
-  
-  return { batch, items };
-}
+// Old payroll batch functions removed - see new implementation below
 
 // ============================================
 // Financial Reports Functions
@@ -1837,4 +1703,597 @@ export async function getAllFinancialReportsSummary(
       ...r.summary,
     })),
   };
+}
+
+// ============================================
+// Payroll Batch Functions (دفعات الرواتب)
+// ============================================
+
+/**
+ * Create a new payroll batch
+ */
+export async function createPayrollBatch(params: {
+  periodStart: string;
+  periodEnd: string;
+  groupId?: number;
+  costCenterId?: number;
+  createdBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Generate batch code
+  const batchCode = `PB-${Date.now()}`;
+
+  // Get workers based on filters
+  let workersQuery = db.select().from(workers).where(eq(workers.status, 'active'));
+  
+  const allWorkers = await workersQuery;
+  
+  // Filter by groupId if specified
+  let filteredWorkers = allWorkers;
+  if (params.groupId) {
+    filteredWorkers = allWorkers.filter(w => w.groupId === params.groupId);
+  }
+
+  // Filter by cost center if specified
+  if (params.costCenterId) {
+    const groupsInCostCenter = await db
+      .select()
+      .from(groups)
+      .where(eq(groups.costCenterId, params.costCenterId));
+    
+    const groupIds = groupsInCostCenter.map(g => g.id);
+    filteredWorkers = allWorkers.filter(w => w.groupId && groupIds.includes(w.groupId));
+  }
+
+  // Calculate totals for each worker
+  const batchItems = await Promise.all(
+    filteredWorkers.map(async (worker) => {
+      // Get daily finance records for the period
+      const dailyRecords = await db
+        .select()
+        .from(workerDailyFinance)
+        .where(
+          and(
+            eq(workerDailyFinance.workerId, worker.id),
+            sql`${workerDailyFinance.workDate} >= ${params.periodStart}`,
+            sql`${workerDailyFinance.workDate} <= ${params.periodEnd}`
+          )
+        );
+
+      // Calculate totals
+      const daysWorked = dailyRecords.length;
+      const baseAmount = dailyRecords.reduce((sum, r) => sum + parseFloat(r.baseAmount || '0'), 0);
+      const totalDeductions = dailyRecords.reduce((sum, r) => sum + parseFloat(r.deductions || '0'), 0);
+      const totalBonuses = dailyRecords.reduce((sum, r) => sum + parseFloat(r.bonuses || '0'), 0);
+      const netAmount = baseAmount - totalDeductions + totalBonuses;
+
+      return {
+        workerId: worker.id,
+        daysWorked,
+        baseAmount: baseAmount.toFixed(2),
+        totalDeductions: totalDeductions.toFixed(2),
+        totalBonuses: totalBonuses.toFixed(2),
+        netAmount: netAmount.toFixed(2),
+      };
+    })
+  );
+
+  // Calculate batch totals
+  const totalAmount = batchItems.reduce((sum, item) => sum + parseFloat(item.netAmount), 0);
+  const totalDeductions = batchItems.reduce((sum, item) => sum + parseFloat(item.totalDeductions), 0);
+  const totalBonuses = batchItems.reduce((sum, item) => sum + parseFloat(item.totalBonuses), 0);
+
+  // Insert batch
+  const result = await db.insert(payrollBatches).values({
+    batchCode,
+    periodStart: params.periodStart,
+    periodEnd: params.periodEnd,
+    groupId: params.groupId || null,
+    costCenterId: params.costCenterId || null,
+    totalAmount: totalAmount.toFixed(2),
+    totalWorkers: filteredWorkers.length,
+    totalDeductions: totalDeductions.toFixed(2),
+    totalBonuses: totalBonuses.toFixed(2),
+    status: 'draft',
+    createdBy: params.createdBy,
+  });
+
+  // Insert batch items
+  const batchId = Number((result as any).insertId);
+  for (const item of batchItems) {
+    await db.insert(payrollBatchItems).values({
+      batchId: Number(batchId),
+      ...item,
+    });
+  }
+
+  return { batchId: Number(batchId), batchCode };
+}
+
+/**
+ * Get payroll batch details with items
+ */
+export async function getPayrollBatchDetails(batchId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get batch
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, batchId));
+
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  // Get items with worker details
+  const items = await db
+    .select({
+      id: payrollBatchItems.id,
+      workerId: payrollBatchItems.workerId,
+      workerCode: workers.code,
+      workerName: sql<string>`COALESCE(${workers.fullName}, 'Unknown')`,
+      groupId: workers.groupId,
+      daysWorked: payrollBatchItems.daysWorked,
+      baseAmount: payrollBatchItems.baseAmount,
+      totalDeductions: payrollBatchItems.totalDeductions,
+      totalBonuses: payrollBatchItems.totalBonuses,
+      netAmount: payrollBatchItems.netAmount,
+      notes: payrollBatchItems.notes,
+    })
+    .from(payrollBatchItems)
+    .leftJoin(workers, eq(payrollBatchItems.workerId, workers.id))
+    .where(eq(payrollBatchItems.batchId, batchId));
+
+  // Get notes
+  const notes = await db
+    .select()
+    .from(payrollBatchNotes)
+    .where(eq(payrollBatchNotes.batchId, batchId))
+    .orderBy(desc(payrollBatchNotes.createdAt));
+
+  // Get corrections
+  const corrections = await db
+    .select()
+    .from(payrollBatchCorrections)
+    .where(eq(payrollBatchCorrections.batchId, batchId))
+    .orderBy(desc(payrollBatchCorrections.createdAt));
+
+  return {
+    batch,
+    items,
+    notes,
+    corrections,
+  };
+}
+
+/**
+ * Update batch item (DRAFT only)
+ */
+export async function updateBatchItem(params: {
+  itemId: number;
+  baseAmount?: string;
+  totalDeductions?: string;
+  totalBonuses?: string;
+  notes?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get item and batch
+  const [item] = await db
+    .select()
+    .from(payrollBatchItems)
+    .where(eq(payrollBatchItems.id, params.itemId));
+
+  if (!item) {
+    throw new Error("Item not found");
+  }
+
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, item.batchId));
+
+  if (batch.status !== 'draft' && batch.status !== 'returned_from_accountant' && batch.status !== 'returned_from_financial_review') {
+    throw new Error("Can only edit items in draft or returned batches");
+  }
+
+  // Calculate new net amount
+  const baseAmount = params.baseAmount !== undefined ? parseFloat(params.baseAmount) : parseFloat(item.baseAmount || '0');
+  const totalDeductions = params.totalDeductions !== undefined ? parseFloat(params.totalDeductions) : parseFloat(item.totalDeductions || '0');
+  const totalBonuses = params.totalBonuses !== undefined ? parseFloat(params.totalBonuses) : parseFloat(item.totalBonuses || '0');
+  const netAmount = baseAmount - totalDeductions + totalBonuses;
+
+  // Update item
+  await db
+    .update(payrollBatchItems)
+    .set({
+      baseAmount: baseAmount.toFixed(2),
+      totalDeductions: totalDeductions.toFixed(2),
+      totalBonuses: totalBonuses.toFixed(2),
+      netAmount: netAmount.toFixed(2),
+      notes: params.notes !== undefined ? params.notes : item.notes,
+    })
+    .where(eq(payrollBatchItems.id, params.itemId));
+
+  // Recalculate batch totals
+  await recalculateBatchTotals(item.batchId);
+
+  return { success: true };
+}
+
+/**
+ * Recalculate batch totals
+ */
+async function recalculateBatchTotals(batchId: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  const items = await db
+    .select()
+    .from(payrollBatchItems)
+    .where(eq(payrollBatchItems.batchId, batchId));
+
+  const totalAmount = items.reduce((sum, item) => sum + parseFloat(item.netAmount || '0'), 0);
+  const totalDeductions = items.reduce((sum, item) => sum + parseFloat(item.totalDeductions || '0'), 0);
+  const totalBonuses = items.reduce((sum, item) => sum + parseFloat(item.totalBonuses || '0'), 0);
+
+  await db
+    .update(payrollBatches)
+    .set({
+      totalAmount: totalAmount.toFixed(2),
+      totalDeductions: totalDeductions.toFixed(2),
+      totalBonuses: totalBonuses.toFixed(2),
+      totalWorkers: items.length,
+    })
+    .where(eq(payrollBatches.id, batchId));
+}
+
+/**
+ * Submit batch for accountant review
+ */
+export async function submitBatchForReview(batchId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, batchId));
+
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  if (batch.status !== 'draft' && batch.status !== 'returned_from_accountant' && batch.status !== 'returned_from_financial_review') {
+    throw new Error("Can only submit draft or returned batches");
+  }
+
+  await db
+    .update(payrollBatches)
+    .set({
+      status: 'under_accountant_review',
+    })
+    .where(eq(payrollBatches.id, batchId));
+
+  // Record correction if resubmitting
+  if (batch.status !== 'draft') {
+    await db.insert(payrollBatchCorrections).values({
+      batchId,
+      correctorId: userId,
+      correctionNote: 'Resubmitted after corrections',
+      previousStatus: batch.status,
+      newStatus: 'under_accountant_review',
+    });
+  }
+
+  return { success: true };
+}
+
+/**
+ * Accountant approve batch
+ */
+export async function accountantApproveBatch(batchId: number, reviewerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, batchId));
+
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  if (batch.status !== 'under_accountant_review') {
+    throw new Error("Batch is not under accountant review");
+  }
+
+  await db
+    .update(payrollBatches)
+    .set({
+      status: 'under_financial_review',
+    })
+    .where(eq(payrollBatches.id, batchId));
+
+  return { success: true };
+}
+
+/**
+ * Accountant reject batch
+ */
+export async function accountantRejectBatch(params: {
+  batchId: number;
+  reviewerId: number;
+  noteType: 'critical' | 'warning' | 'info';
+  note: string;
+  workerId?: number;
+  fieldName?: string;
+  attachmentUrl?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, params.batchId));
+
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  if (batch.status !== 'under_accountant_review') {
+    throw new Error("Batch is not under accountant review");
+  }
+
+  // Check rejection count
+  const newRejectionCount = (batch.rejectionCount || 0) + 1;
+  if (newRejectionCount >= 3) {
+    // Final rejection
+    await db
+      .update(payrollBatches)
+      .set({
+        status: 'rejected_final',
+        rejectionCount: newRejectionCount,
+      })
+      .where(eq(payrollBatches.id, params.batchId));
+  } else {
+    // Return for correction
+    await db
+      .update(payrollBatches)
+      .set({
+        status: 'returned_from_accountant',
+        rejectionCount: newRejectionCount,
+      })
+      .where(eq(payrollBatches.id, params.batchId));
+  }
+
+  // Add note
+  await db.insert(payrollBatchNotes).values({
+    batchId: params.batchId,
+    reviewerId: params.reviewerId,
+    reviewerRole: 'accountant',
+    noteType: params.noteType,
+    workerId: params.workerId || null,
+    fieldName: params.fieldName || null,
+    note: params.note,
+    attachmentUrl: params.attachmentUrl || null,
+  });
+
+  return { success: true, rejectionCount: newRejectionCount };
+}
+
+/**
+ * Financial reviewer approve batch
+ */
+export async function financialReviewerApproveBatch(batchId: number, reviewerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, batchId));
+
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  if (batch.status !== 'under_financial_review') {
+    throw new Error("Batch is not under financial review");
+  }
+
+  await db
+    .update(payrollBatches)
+    .set({
+      status: 'under_accounts_manager_review',
+    })
+    .where(eq(payrollBatches.id, batchId));
+
+  return { success: true };
+}
+
+/**
+ * Financial reviewer reject batch
+ */
+export async function financialReviewerRejectBatch(params: {
+  batchId: number;
+  reviewerId: number;
+  noteType: 'critical' | 'warning' | 'info';
+  note: string;
+  workerId?: number;
+  fieldName?: string;
+  attachmentUrl?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, params.batchId));
+
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  if (batch.status !== 'under_financial_review') {
+    throw new Error("Batch is not under financial review");
+  }
+
+  await db
+    .update(payrollBatches)
+    .set({
+      status: 'returned_from_financial_review',
+    })
+    .where(eq(payrollBatches.id, params.batchId));
+
+  // Add note
+  await db.insert(payrollBatchNotes).values({
+    batchId: params.batchId,
+    reviewerId: params.reviewerId,
+    reviewerRole: 'financial_reviewer',
+    noteType: params.noteType,
+    workerId: params.workerId || null,
+    fieldName: params.fieldName || null,
+    note: params.note,
+    attachmentUrl: params.attachmentUrl || null,
+  });
+
+  return { success: true };
+}
+
+/**
+ * Accounts manager final approve
+ */
+export async function accountsManagerApproveBatch(batchId: number, approverId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, batchId));
+
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  if (batch.status !== 'under_accounts_manager_review') {
+    throw new Error("Batch is not under accounts manager review");
+  }
+
+  await db
+    .update(payrollBatches)
+    .set({
+      status: 'approved',
+      approvedBy: approverId,
+      approvedAt: sql`NOW()`,
+    })
+    .where(eq(payrollBatches.id, batchId));
+
+  return { success: true };
+}
+
+/**
+ * Accounts manager final reject
+ */
+export async function accountsManagerRejectBatch(params: {
+  batchId: number;
+  reviewerId: number;
+  note: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, params.batchId));
+
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  if (batch.status !== 'under_accounts_manager_review') {
+    throw new Error("Batch is not under accounts manager review");
+  }
+
+  await db
+    .update(payrollBatches)
+    .set({
+      status: 'rejected_final',
+    })
+    .where(eq(payrollBatches.id, params.batchId));
+
+  // Add note
+  await db.insert(payrollBatchNotes).values({
+    batchId: params.batchId,
+    reviewerId: params.reviewerId,
+    reviewerRole: 'accounts_manager',
+    noteType: 'critical',
+    note: params.note,
+  });
+
+  return { success: true };
+}
+
+/**
+ * Get batches by status
+ */
+export async function getBatchesByStatus(status?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query = db
+    .select()
+    .from(payrollBatches)
+    .orderBy(desc(payrollBatches.createdAt));
+
+  const batches = await query;
+
+  if (status) {
+    return batches.filter(b => b.status === status);
+  }
+
+  return batches;
+}
+
+/**
+ * Delete batch (DRAFT only)
+ */
+export async function deleteBatch(batchId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [batch] = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.id, batchId));
+
+  if (!batch) {
+    throw new Error("Batch not found");
+  }
+
+  if (batch.status !== 'draft') {
+    throw new Error("Can only delete draft batches");
+  }
+
+  // Delete items first
+  await db
+    .delete(payrollBatchItems)
+    .where(eq(payrollBatchItems.batchId, batchId));
+
+  // Delete batch
+  await db
+    .delete(payrollBatches)
+    .where(eq(payrollBatches.id, batchId));
+
+  return { success: true };
 }

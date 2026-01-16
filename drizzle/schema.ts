@@ -246,7 +246,22 @@ export const payrollBatches = mysqlTable("payroll_batches", {
   groupId: int("group_id"),
   costCenterId: int("cost_center_id"),
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).default("0.00"),
-  status: mysqlEnum("status", ["draft", "pending", "approved", "paid"]).default("draft"),
+  totalWorkers: int("total_workers").default(0),
+  totalDeductions: decimal("total_deductions", { precision: 12, scale: 2 }).default("0.00"),
+  totalBonuses: decimal("total_bonuses", { precision: 12, scale: 2 }).default("0.00"),
+  status: mysqlEnum("status", [
+    "draft",
+    "under_accountant_review",
+    "returned_from_accountant",
+    "under_financial_review",
+    "returned_from_financial_review",
+    "under_accounts_manager_review",
+    "approved",
+    "rejected_final",
+    "paid"
+  ]).default("draft"),
+  rejectionCount: int("rejection_count").default(0),
+  notes: text("notes"),
   approvedBy: int("approved_by"),
   approvedAt: timestamp("approved_at"),
   createdBy: int("created_by"),
@@ -263,6 +278,34 @@ export const payrollBatchItems = mysqlTable("payroll_batch_items", {
   totalDeductions: decimal("total_deductions", { precision: 10, scale: 2 }).default("0.00"),
   totalBonuses: decimal("total_bonuses", { precision: 10, scale: 2 }).default("0.00"),
   netAmount: decimal("net_amount", { precision: 10, scale: 2 }).default("0.00"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+// Payroll Batch Notes (ملاحظات المراجعة)
+export const payrollBatchNotes = mysqlTable("payroll_batch_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: int("batch_id").notNull(),
+  reviewerId: int("reviewer_id").notNull(),
+  reviewerRole: varchar("reviewer_role", { length: 50 }).notNull(),
+  noteType: mysqlEnum("note_type", ["critical", "warning", "info"]).default("info"),
+  errorLocation: varchar("error_location", { length: 255 }),
+  workerId: int("worker_id"),
+  fieldName: varchar("field_name", { length: 100 }),
+  note: text("note").notNull(),
+  attachmentUrl: varchar("attachment_url", { length: 500 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Payroll Batch Corrections (سجل التصحيحات)
+export const payrollBatchCorrections = mysqlTable("payroll_batch_corrections", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: int("batch_id").notNull(),
+  correctorId: int("corrector_id").notNull(),
+  correctionNote: text("correction_note"),
+  previousStatus: varchar("previous_status", { length: 50 }),
+  newStatus: varchar("new_status", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

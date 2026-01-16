@@ -345,4 +345,113 @@
 - [x] Test print functionality on all pages (printPage utility created)
 - [x] Verify formatting and layout (all buttons added with proper styling)
 - [x] Verify no TypeScript errors
+- [x] Save checkpoint
+
+
+## Advanced Payroll Batch System (نظام دفعات الرواتب المتقدم)
+
+### Phase 1: Database Schema & Backend Foundation
+- [x] Create `payroll_batches` table with all statuses
+- [x] Create `payroll_batch_items` table for worker details
+- [x] Create `payroll_batch_notes` table for review comments
+- [x] Create `payroll_batch_corrections` table for correction history
+- [x] Add rejection_count field to track correction attempts
+- [x] Update schema with all 8 workflow states
+- [x] Run pnpm db:push to apply changes
+
+### Phase 2: Backend APIs - Batch Creation & Management
+- [ ] API: createPayrollBatch (HR Admin only)
+- [ ] API: getPayrollBatchDetails (with permissions check)
+- [ ] API: updateBatchItem (edit worker amount in DRAFT)
+- [ ] API: addWorkerToBatch (DRAFT only)
+- [ ] API: removeWorkerFromBatch (DRAFT only)
+- [ ] API: calculateBatchSummary (executive summary)
+- [ ] API: compareBatchWithPrevious (comparison report)
+
+### Phase 3: Backend APIs - Review Workflow
+- [ ] API: submitForAccountantReview (HR → Accountant)
+- [ ] API: accountantApprove (Accountant → Financial Reviewer)
+- [ ] API: accountantReject (with note type: critical/warning/info)
+- [ ] API: financialReviewerApprove (Financial → Accounts Manager)
+- [ ] API: financialReviewerReject (back to HR for correction)
+- [ ] API: accountsManagerApprove (final approval)
+- [ ] API: accountsManagerReject (final rejection)
+- [ ] API: resubmitAfterCorrection (HR resubmits)
+
+### Phase 4: Backend APIs - Notes & Corrections
+- [ ] API: addBatchNote (with error type and location)
+- [ ] API: getBatchNotes (all review comments)
+- [ ] API: recordCorrection (track what was fixed)
+- [ ] API: getBatchHistory (full audit trail)
+
+### Phase 5: Backend APIs - Reports
+- [ ] API: getApprovedBatches (for printing/export)
+- [ ] API: getBatchComparisonReport
+- [ ] API: getErrorStatisticsReport
+- [ ] API: getPerformanceReport (review times, approval rates)
+
+### Phase 6: Frontend - Batch Creation (HR Admin)
+- [ ] Page: /finance/payroll/create (step 1: select period/group/cost center)
+- [ ] Page: /finance/payroll/{id}/edit (step 2: review and edit items)
+- [ ] Component: ExecutiveSummary (totals, averages, comparison)
+- [ ] Component: WorkerItemEditor (edit base/deductions/bonuses)
+- [ ] Component: AddWorkerDialog
+- [ ] Button: Submit for Review
+
+### Phase 7: Frontend - Accountant Review
+- [ ] Page: /finance/payroll/accountant-queue (list of pending batches)
+- [ ] Page: /finance/payroll/{id}/accountant-review
+- [ ] Component: ReviewNoteForm (with error type selector)
+- [ ] Component: ErrorLocationSelector (worker + field)
+- [ ] Button: Approve → Send to Financial Reviewer
+- [ ] Button: Reject → Return to HR
+
+### Phase 8: Frontend - Financial Reviewer
+- [ ] Page: /finance/payroll/financial-queue
+- [ ] Page: /finance/payroll/{id}/financial-review
+- [ ] Component: ComplianceChecklist
+- [ ] Button: Approve → Send to Accounts Manager
+- [ ] Button: Reject → Return to HR
+
+### Phase 9: Frontend - Accounts Manager (Final Approval)
+- [ ] Page: /finance/payroll/manager-queue
+- [ ] Page: /finance/payroll/{id}/final-approval
+- [ ] Component: FinalApprovalSummary
+- [ ] Button: Final Approve
+- [ ] Button: Final Reject
+
+### Phase 10: Frontend - Corrections (HR Admin)
+- [ ] Page: /finance/payroll/{id}/corrections
+- [ ] Component: ReviewNotesDisplay (show all comments)
+- [ ] Component: CorrectionForm
+- [ ] Button: Resubmit after corrections
+- [ ] Alert: Show rejection count (max 3)
+
+### Phase 11: Frontend - Reports & Export
+- [ ] Page: /finance/payroll/approved (list of approved batches)
+- [ ] Component: PayrollBatchReport (printable format)
+- [ ] Button: Export to Excel (detailed breakdown)
+- [ ] Button: Export to PDF
+- [ ] Button: Print
+- [ ] Report: Batch Comparison
+- [ ] Report: Error Statistics
+- [ ] Report: Performance Metrics
+
+### Phase 12: Permissions & Role-Based Access
+- [ ] Implement role check: HR Admin (create, edit, resubmit)
+- [ ] Implement role check: Accountant (review, approve/reject)
+- [ ] Implement role check: Financial Reviewer (review, approve/reject)
+- [ ] Implement role check: Accounts Manager (final approve/reject)
+- [ ] Implement role check: Super Admin (all permissions)
+- [ ] Add permission checks to all APIs
+- [ ] Add UI conditional rendering based on role
+
+### Phase 13: Testing & Validation
+- [ ] Write vitest tests for all payroll batch APIs
+- [ ] Test full workflow: Draft → Accountant → Financial → Manager → Approved
+- [ ] Test rejection workflow: Reject → Correct → Resubmit
+- [ ] Test max rejection limit (3 attempts)
+- [ ] Test role-based permissions
+- [ ] Test executive summary calculations
+- [ ] Test report generation and export
 - [ ] Save checkpoint
