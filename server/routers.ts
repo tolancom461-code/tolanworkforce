@@ -759,6 +759,35 @@ export const appRouter = router({
         tomorrow.setDate(tomorrow.getDate() + 1);
         return await db.getAttendanceStats(today, tomorrow, input.groupId);
       }),
+    
+    // Bulk update attendance times
+    bulkUpdate: protectedProcedure
+      .input(z.object({
+        eventIds: z.array(z.number()),
+        adjustmentMinutes: z.number(),
+        internalNote: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const results = [];
+        for (const eventId of input.eventIds) {
+          try {
+            const event = await db.getAttendanceEventById(eventId);
+            if (!event) {
+              results.push({ eventId, success: false, error: 'Event not found' });
+              continue;
+            }
+            
+            const currentTime = new Date(event.eventTime);
+            const newTime = new Date(currentTime.getTime() + input.adjustmentMinutes * 60 * 1000);
+            
+            await db.updateAttendanceEvent(eventId, newTime.toISOString(), input.internalNote);
+            results.push({ eventId, success: true });
+          } catch (error) {
+            results.push({ eventId, success: false, error: String(error) });
+          }
+        }
+        return results;
+      }),
   }),
 
   // Work Days Management
@@ -872,7 +901,7 @@ export const appRouter = router({
         if (!ctx.user) throw new Error("Not authenticated");
         return await db.updateAttendanceEvent(
           input.eventId,
-          new Date(input.newTime),
+          input.newTime,
           input.internalNote,
           ctx.user.id
         );

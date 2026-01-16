@@ -1051,11 +1051,21 @@ export async function processAttendanceToFinance(workerId: number, workDate: str
 // Attendance Adjustment Functions
 // ============================================
 
+export async function getAttendanceEventById(eventId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { attendanceEvents } = await import('../drizzle/schema');
+  
+  const [event] = await db.select().from(attendanceEvents).where(eq(attendanceEvents.id, eventId)).limit(1);
+  return event || null;
+}
+
 export async function updateAttendanceEvent(
   eventId: number, 
-  newTime: Date, 
-  internalNote: string,
-  updatedBy: number
+  newTime: string, 
+  internalNote?: string,
+  updatedBy?: number
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1067,10 +1077,13 @@ export async function updateAttendanceEvent(
   if (!original) throw new Error("سجل الحضور غير موجود");
   
   // Update event
-  await db.update(attendanceEvents).set({
-    eventTime: newTime,
-    note: internalNote,
-  }).where(eq(attendanceEvents.id, eventId));
+  const updateData: any = {
+    eventTime: new Date(newTime),
+  };
+  if (internalNote !== undefined) {
+    updateData.note = internalNote;
+  }
+  await db.update(attendanceEvents).set(updateData).where(eq(attendanceEvents.id, eventId));
   
   // Log the change
   await db.insert(auditLog).values({

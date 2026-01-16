@@ -799,4 +799,33 @@
 - [x] Update state management to handle separate date and time
 - [x] Combine date and time when submitting to API
 - [x] Test editing attendance records
+- [x] Save checkpoint
+
+
+## Feature: Data Validation & Bulk Attendance Edit
+
+### Phase 1: Verify Date/Time Fields Separation
+- [x] Check if date and time fields are properly separated in AttendanceAdjust.tsx
+- [x] Fix if not working correctly
+
+### Phase 2: Add Data Validation
+- [x] Add validation: check-out time must be after check-in time
+- [x] Add warning if time difference < 30 minutes
+- [x] Add warning if time difference > 24 hours
+- [x] Show validation errors in UI
+
+### Phase 3: Bulk Edit Backend
+- [x] Create API: bulkUpdateAttendance (adjust multiple workers at once)
+- [x] Add database function for bulk attendance updates
+- [x] Add validation for bulk operations
+
+### Phase 4: Bulk Edit Frontend
+- [x] Add "Bulk Edit" button in AttendanceAdjust page
+- [x] Create bulk edit dialog with event selection
+- [x] Add time adjustment options (add/subtract minutes)
+- [x] Show preview of changes before applying
+
+### Phase 5: Testing & Checkpoint
+- [x] Test data validation with various scenarios
+- [x] Test bulk edit with multiple events
 - [ ] Save checkpoint

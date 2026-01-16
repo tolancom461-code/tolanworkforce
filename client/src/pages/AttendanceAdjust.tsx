@@ -31,6 +31,9 @@ export default function AttendanceAdjust() {
   const [newDate, setNewDate] = useState('');
   const [newTimeOnly, setNewTimeOnly] = useState('');
   const [internalNote, setInternalNote] = useState('');
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [selectedEvents, setSelectedEvents] = useState<number[]>([]);
+  const [bulkAdjustmentMinutes, setBulkAdjustmentMinutes] = useState<number>(0);
   
   const { data: workers } = trpc.workers.list.useQuery();
   const { data: events, refetch } = trpc.attendanceAdjust.getEvents.useQuery(
@@ -46,6 +49,24 @@ export default function AttendanceAdjust() {
     },
     onError: (error) => {
       toast.error(error.message || 'حدث خطأ');
+    }
+  });
+  
+  const bulkUpdateMutation = trpc.attendance.bulkUpdate.useMutation({
+    onSuccess: (results) => {
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+      if (failCount === 0) {
+        toast.success(`تم تحديث ${successCount} سجل بنجاح`);
+      } else {
+        toast.warning(`تم تحديث ${successCount} سجل، فشل ${failCount} سجل`);
+      }
+      refetch();
+      setShowBulkDialog(false);
+      setSelectedEvents([]);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ في التعديل الجماعي');
     }
   });
 
@@ -72,13 +93,111 @@ export default function AttendanceAdjust() {
 
   const handleSave = () => {
     if (!editingEvent || !newDate || !newTimeOnly) return;
+    
     // Combine date and time
     const combinedDateTime = `${newDate}T${newTimeOnly}:00`;
+    const newTime = new Date(combinedDateTime);
+    
+    // Validation: Check if time is valid
+    if (isNaN(newTime.getTime())) {
+      toast.error('التاريخ أو الوقت غير صحيح');
+      return;
+    }
+    
+    // Validation: If this is check-out, ensure it's after check-in
+    if (editingEvent.eventType === 'check_out') {
+      // Find corresponding check-in event
+      const checkInEvent = events?.find(e => 
+        e.eventType === 'check_in' && 
+        new Date(e.eventTime).toDateString() === newTime.toDateString()
+      );
+      
+      if (checkInEvent) {
+        const checkInTime = new Date(checkInEvent.eventTime);
+        const diffMinutes = (newTime.getTime() - checkInTime.getTime()) / (1000 * 60);
+        
+        if (diffMinutes <= 0) {
+          toast.error('وقت الانصراف يجب أن يكون بعد وقت الحضور');
+          return;
+        }
+        
+        if (diffMinutes < 30) {
+          toast.warning('تحذير: الفرق بين الحضور والانصراف أقل من 30 دقيقة');
+        }
+        
+        if (diffMinutes > 24 * 60) {
+          toast.warning('تحذير: الفرق بين الحضور والانصراف أكثر من 24 ساعة');
+        }
+      }
+    }
+    
+    // Validation: If this is check-in, ensure it's before check-out
+    if (editingEvent.eventType === 'check_in') {
+      const checkOutEvent = events?.find(e => 
+        e.eventType === 'check_out' && 
+        new Date(e.eventTime).toDateString() === newTime.toDateString()
+      );
+      
+      if (checkOutEvent) {
+        const checkOutTime = new Date(checkOutEvent.eventTime);
+        const diffMinutes = (checkOutTime.getTime() - newTime.getTime()) / (1000 * 60);
+        
+        if (diffMinutes <= 0) {
+          toast.error('وقت الحضور يجب أن يكون قبل وقت الانصراف');
+          return;
+        }
+        
+        if (diffMinutes < 30) {
+          toast.warning('تحذير: الفرق بين الحضور والانصراف أقل من 30 دقيقة');
+        }
+        
+        if (diffMinutes > 24 * 60) {
+          toast.warning('تحذير: الفرق بين الحضور والانصراف أكثر من 24 ساعة');
+        }
+      }
+    }
+    
     updateMutation.mutate({
       eventId: editingEvent.id,
-      newTime: new Date(combinedDateTime).toISOString(),
+      newTime: newTime.toISOString(),
       internalNote,
     });
+  };
+  
+  const handleBulkEdit = () => {
+    if (selectedEvents.length === 0) {
+      toast.error('يجب اختيار سجل واحد على الأقل');
+      return;
+    }
+    setShowBulkDialog(true);
+  };
+  
+  const handleBulkSave = () => {
+    if (bulkAdjustmentMinutes === 0) {
+      toast.error('يجب إدخال قيمة التعديل');
+      return;
+    }
+    bulkUpdateMutation.mutate({
+      eventIds: selectedEvents,
+      adjustmentMinutes: bulkAdjustmentMinutes,
+      internalNote: `تعديل جماعي: ${bulkAdjustmentMinutes > 0 ? '+' : ''}${bulkAdjustmentMinutes} دقيقة`,
+    });
+  };
+  
+  const toggleEventSelection = (eventId: number) => {
+    setSelectedEvents(prev => 
+      prev.includes(eventId) 
+        ? prev.filter(id => id !== eventId)
+        : [...prev, eventId]
+    );
+  };
+  
+  const toggleSelectAll = () => {
+    if (selectedEvents.length === events?.length) {
+      setSelectedEvents([]);
+    } else {
+      setSelectedEvents(events?.map(e => e.id) || []);
+    }
   };
 
   return (
@@ -139,10 +258,24 @@ export default function AttendanceAdjust() {
       {selectedWorker && (
         <Card>
           <CardHeader>
-            <CardTitle>سجلات الحضور</CardTitle>
-            <CardDescription>
-              سجلات يوم {new Date(selectedDate).toLocaleDateString('ar-SA')}
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>سجلات الحضور</CardTitle>
+                <CardDescription>
+                  سجلات يوم {new Date(selectedDate).toLocaleDateString('ar-SA')}
+                </CardDescription>
+              </div>
+              {events && events.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleBulkEdit}
+                  disabled={selectedEvents.length === 0}
+                >
+                  <Edit className="h-4 w-4 ml-2" />
+                  تعديل جماعي ({selectedEvents.length})
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {!events?.length ? (
@@ -154,6 +287,14 @@ export default function AttendanceAdjust() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="text-right w-12">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedEvents.length === events.length}
+                        onChange={toggleSelectAll}
+                        className="rounded border-gray-300"
+                      />
+                    </TableHead>
                     <TableHead className="text-right">النوع</TableHead>
                     <TableHead className="text-right">الوقت</TableHead>
                     <TableHead className="text-right">الطريقة</TableHead>
@@ -164,6 +305,14 @@ export default function AttendanceAdjust() {
                 <TableBody>
                   {events.map((event) => (
                     <TableRow key={event.id}>
+                      <TableCell>
+                        <input 
+                          type="checkbox" 
+                          checked={selectedEvents.includes(event.id)}
+                          onChange={() => toggleEventSelection(event.id)}
+                          className="rounded border-gray-300"
+                        />
+                      </TableCell>
                       <TableCell>
                         <Badge variant={event.eventType === 'check_in' ? 'default' : 'secondary'}>
                           {event.eventType === 'check_in' ? 'حضور' : 'انصراف'}
@@ -249,6 +398,61 @@ export default function AttendanceAdjust() {
                 <Save className="h-4 w-4 ml-2" />
               )}
               حفظ التعديل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Bulk Edit Dialog */}
+      <Dialog open={showBulkDialog} onOpenChange={setShowBulkDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تعديل جماعي للحضور</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>عدد السجلات المختارة</Label>
+              <div className="text-2xl font-bold">{selectedEvents.length}</div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="bulkAdjustment">قيمة التعديل (بالدقائق)</Label>
+              <Input
+                id="bulkAdjustment"
+                type="number"
+                value={bulkAdjustmentMinutes}
+                onChange={(e) => setBulkAdjustmentMinutes(parseInt(e.target.value) || 0)}
+                placeholder="مثال: 15 للإضافة، -10 للخصم"
+              />
+              <p className="text-sm text-muted-foreground">
+                استخدم قيمة موجبة للإضافة أو سالبة للخصم
+              </p>
+            </div>
+            
+            {bulkAdjustmentMinutes !== 0 && (
+              <div className="p-3 bg-muted rounded-md">
+                <p className="text-sm font-medium">معاينة:</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  سيتم {bulkAdjustmentMinutes > 0 ? 'إضافة' : 'خصم'} {Math.abs(bulkAdjustmentMinutes)} دقيقة 
+                  {bulkAdjustmentMinutes > 0 ? 'إلى' : 'من'} جميع السجلات المختارة
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkDialog(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleBulkSave} 
+              disabled={bulkUpdateMutation.isPending || bulkAdjustmentMinutes === 0}
+            >
+              {bulkUpdateMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : (
+                <Save className="h-4 w-4 ml-2" />
+              )}
+              تطبيق التعديل
             </Button>
           </DialogFooter>
         </DialogContent>
