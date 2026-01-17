@@ -32,6 +32,7 @@ import CostCenters from "./pages/CostCenters";
 import Roles from "./pages/Roles";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import FinancialReports from "./pages/reports/FinancialReports";
+import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
 
 function Router() {
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/payroll/batches/:id/financial-review" component={FinancialReview} />
       <Route path="/payroll/batches/:id/manager-review" component={AccountsManagerReview} />
       <Route path="/finance/reports" component={FinancialReports} />
+      <Route path="/payroll-report" component={PayrollReport} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

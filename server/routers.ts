@@ -1425,6 +1425,49 @@ export const appRouter = router({
         return await db.rejectBatch(input.batchId, ctx.user.id, input.reason);
       }),
     
+    // Get official payroll report by group
+    getReportByGroup: protectedProcedure
+      .input(z.object({
+        periodStart: z.string(),
+        periodEnd: z.string(),
+        groupId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getPayrollReportByGroup(input.periodStart, input.periodEnd, input.groupId);
+      }),
+    
+    // Get official payroll report by worker
+    getReportByWorker: protectedProcedure
+      .input(z.object({
+        periodStart: z.string(),
+        periodEnd: z.string(),
+        workerId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getPayrollReportByWorker(input.periodStart, input.periodEnd, input.workerId);
+      }),
+    
+    // Get official payroll report by cost center
+    getReportByCostCenter: protectedProcedure
+      .input(z.object({
+        periodStart: z.string(),
+        periodEnd: z.string(),
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getPayrollReportByCostCenter(input.periodStart, input.periodEnd, input.costCenterId);
+      }),
+    
+    // Get official payroll report summary (all groups)
+    getReportSummary: protectedProcedure
+      .input(z.object({
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getPayrollReportSummary(input.periodStart, input.periodEnd);
+      }),
+    
     // Export batch to Excel
     exportToExcel: protectedProcedure
       .input(z.object({ batchId: z.number() }))

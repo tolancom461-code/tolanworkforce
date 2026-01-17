@@ -291,14 +291,16 @@ export default function AttendanceAdjust() {
                   </Select>
                 </div>
               )}
-            <div className="space-y-2">
-              <Label>التاريخ</Label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
-            </div>
+
+              <div className="space-y-2">
+                <Label>التاريخ</Label>
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
+              </div>
+
               <div className="flex items-end">
                 <Button onClick={() => {
                   if (adjustmentType === 'worker') refetch();

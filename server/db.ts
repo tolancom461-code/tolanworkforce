@@ -2995,3 +2995,229 @@ export function calculateEarlyLeavePenalty(
   const penalty = minuteCost * earlyLeaveMinutes * (1 + earlyLeavePenaltyRate);
   return Math.round(penalty * 100) / 100;
 }
+
+
+// ==================== Official Payroll Reports ====================
+
+/**
+ * Get official payroll report by group
+ */
+export async function getPayrollReportByGroup(
+  periodStart: string,
+  periodEnd: string,
+  groupId?: number
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startDate = new Date(periodStart);
+  const endDate = new Date(periodEnd);
+
+  const whereConditions = groupId
+    ? and(
+        gte(workerDailyFinance.workDate, startDate),
+        lte(workerDailyFinance.workDate, endDate),
+        eq(workers.groupId, groupId)
+      )
+    : and(
+        gte(workerDailyFinance.workDate, startDate),
+        lte(workerDailyFinance.workDate, endDate)
+      );
+
+  const results = await db
+    .select({
+      groupId: groups.id,
+      groupName: groups.name,
+      groupCode: groups.code,
+      workerId: workers.id,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      baseAmount: workerDailyFinance.baseAmount,
+      deductions: workerDailyFinance.deductions,
+      bonuses: workerDailyFinance.bonuses,
+    })
+    .from(workerDailyFinance)
+    .innerJoin(workers, eq(workerDailyFinance.workerId, workers.id))
+    .innerJoin(groups, eq(workers.groupId, groups.id))
+    .where(whereConditions);
+
+  // Group by group and calculate totals
+  const groupMap = new Map<number, {
+    groupName: string;
+    groupCode: string;
+    workerCount: number;
+    totalSalary: number;
+    totalDeductions: number;
+    totalBonuses: number;
+    totalNet: number;
+  }>();
+
+  results.forEach((row) => {
+    const existing = groupMap.get(row.groupId);
+    const baseAmount = parseFloat(row.baseAmount || '0');
+    const deductions = parseFloat(row.deductions || '0');
+    const bonuses = parseFloat(row.bonuses || '0');
+    const netAmount = baseAmount - deductions + bonuses;
+
+    if (existing) {
+      existing.totalSalary += baseAmount;
+      existing.totalDeductions += deductions;
+      existing.totalBonuses += bonuses;
+      existing.totalNet += netAmount;
+    } else {
+      groupMap.set(row.groupId, {
+        groupName: row.groupName,
+        groupCode: row.groupCode,
+        workerCount: 1,
+        totalSalary: baseAmount,
+        totalDeductions: deductions,
+        totalBonuses: bonuses,
+        totalNet: netAmount,
+      });
+    }
+  });
+
+  // Count unique workers per group
+  const workerCountMap = new Map<number, Set<number>>();
+  results.forEach((row) => {
+    if (!workerCountMap.has(row.groupId)) {
+      workerCountMap.set(row.groupId, new Set());
+    }
+    workerCountMap.get(row.groupId)!.add(row.workerId);
+  });
+
+  // Update worker counts
+  workerCountMap.forEach((workerSet, groupId) => {
+    const group = groupMap.get(groupId);
+    if (group) {
+      group.workerCount = workerSet.size;
+    }
+  });
+
+  return Array.from(groupMap.entries()).map(([groupId, data]) => ({
+    groupId,
+    groupName: data.groupName,
+    groupCode: data.groupCode,
+    workerCount: data.workerCount,
+    totalSalary: data.totalSalary.toFixed(2),
+    totalDeductions: data.totalDeductions.toFixed(2),
+    totalBonuses: data.totalBonuses.toFixed(2),
+    totalNet: data.totalNet.toFixed(2),
+  }));
+}
+
+/**
+ * Get official payroll report by worker
+ */
+export async function getPayrollReportByWorker(
+  periodStart: string,
+  periodEnd: string,
+  workerId?: number
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startDate = new Date(periodStart);
+  const endDate = new Date(periodEnd);
+
+  const whereConditions = workerId
+    ? and(
+        gte(workerDailyFinance.workDate, startDate),
+        lte(workerDailyFinance.workDate, endDate),
+        eq(workers.id, workerId)
+      )
+    : and(
+        gte(workerDailyFinance.workDate, startDate),
+        lte(workerDailyFinance.workDate, endDate)
+      );
+
+  const results = await db
+    .select({
+      workerId: workers.id,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      groupName: groups.name,
+      groupCode: groups.code,
+      baseAmount: workerDailyFinance.baseAmount,
+      deductions: workerDailyFinance.deductions,
+      bonuses: workerDailyFinance.bonuses,
+    })
+    .from(workerDailyFinance)
+    .innerJoin(workers, eq(workerDailyFinance.workerId, workers.id))
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .where(whereConditions);
+
+  // Group by worker and calculate totals
+  const workerMap = new Map<number, {
+    workerName: string;
+    workerCode: string;
+    groupName: string | null;
+    groupCode: string | null;
+    totalSalary: number;
+    totalDeductions: number;
+    totalBonuses: number;
+    totalNet: number;
+  }>();
+
+  results.forEach((row) => {
+    const existing = workerMap.get(row.workerId);
+    const baseAmount = parseFloat(row.baseAmount || '0');
+    const deductions = parseFloat(row.deductions || '0');
+    const bonuses = parseFloat(row.bonuses || '0');
+    const netAmount = baseAmount - deductions + bonuses;
+
+    if (existing) {
+      existing.totalSalary += baseAmount;
+      existing.totalDeductions += deductions;
+      existing.totalBonuses += bonuses;
+      existing.totalNet += netAmount;
+    } else {
+      workerMap.set(row.workerId, {
+        workerName: row.workerName,
+        workerCode: row.workerCode,
+        groupName: row.groupName,
+        groupCode: row.groupCode,
+        totalSalary: baseAmount,
+        totalDeductions: deductions,
+        totalBonuses: bonuses,
+        totalNet: netAmount,
+      });
+    }
+  });
+
+  return Array.from(workerMap.entries()).map(([workerId, data]) => ({
+    workerId,
+    workerName: data.workerName,
+    workerCode: data.workerCode,
+    groupName: data.groupName || '-',
+    groupCode: data.groupCode || '-',
+    totalSalary: data.totalSalary.toFixed(2),
+    totalDeductions: data.totalDeductions.toFixed(2),
+    totalBonuses: data.totalBonuses.toFixed(2),
+    totalNet: data.totalNet.toFixed(2),
+  }));
+}
+
+/**
+ * Get official payroll report by cost center
+ * Note: Returns same data as group report since workers don't have direct costCenterId
+ */
+export async function getPayrollReportByCostCenter(
+  periodStart: string,
+  periodEnd: string,
+  costCenterId?: number
+) {
+  // For now, return group-based report since workers table doesn't have costCenterId
+  // In the future, if costCenterId is added to workers table, update this function
+  return await getPayrollReportByGroup(periodStart, periodEnd, undefined);
+}
+
+/**
+ * Get official payroll report summary (all groups)
+ */
+export async function getPayrollReportSummary(
+  periodStart: string,
+  periodEnd: string
+) {
+  return await getPayrollReportByGroup(periodStart, periodEnd);
+}
