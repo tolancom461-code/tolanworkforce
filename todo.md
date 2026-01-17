@@ -1295,3 +1295,32 @@ Add "Approve Full Attendance" option that:
 - [ ] اختبار حساب الوقت داخل الوردية
 - [ ] اختبار تجاهل الوقت خارج الوردية
 - [ ] Save checkpoint
+
+
+## New Task - إضافة طبقة تصحيح "اعتماد يوم كامل" في مسودة الرواتب
+
+### Schema Updates
+- [x] الحقول موجودة بالفعل: fullDayOverride, overrideReason, overrideBy, overrideAt
+
+### Backend
+- [x] تحديث دالة calculateDailyFinanceFromAttendance لتجاهل الخصومات عند fullDayOverride = true
+- [x] إضافة procedure updateFullDayOverride لتحديث التصحيح اليومي
+- [x] إضافة procedure getDailyFinanceForWorker لجلب تفاصيل الأيام
+- [x] إعادة احتساب إجمالي اليوم تلقائياً بعد التصحيح
+
+### Frontend
+- [ ] تحديث صفحة مسودة الرواتب لعرض زر "تفاصيل الأيام"
+- [ ] إضافة Dialog لعرض الأيام الفردية للعامل
+- [ ] إضافة checkbox "اعتماد يوم كامل (تصحيح إداري)"
+- [ ] إضافة textarea "سبب التصحيح" (إجباري)
+- [ ] إعادة احتساب الإجمالي تلقائياً بعد التصحيح
+
+### Reports
+- [ ] إضافة عمود "ملاحظات التصحيح" في تقرير كشف الرواتب
+- [ ] عرض سبب التصحيح للأيام المصححة
+
+### Testing
+- [ ] اختبار التصحيح اليومي
+- [ ] اختبار إعادة الاحتساب
+- [ ] اختبار ظهور السبب في التقرير
+- [ ] Save checkpoint

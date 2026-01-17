@@ -1589,6 +1589,36 @@ export const appRouter = router({
           data: buffer.toString('base64')
         };
       }),
+    
+    // Get daily finance records for a worker in a batch
+    getDailyFinanceForWorker: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getDailyFinanceForWorker(input.workerId, input.periodStart, input.periodEnd);
+      }),
+    
+    // Update full day override for a specific day
+    updateFullDayOverride: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.string(),
+        fullDayOverride: z.boolean(),
+        overrideReason: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.updateFullDayOverride(
+          input.workerId,
+          input.workDate,
+          input.fullDayOverride,
+          input.overrideReason,
+          ctx.user.id
+        );
+      }),
   }),
 });
 
