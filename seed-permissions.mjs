@@ -57,6 +57,10 @@ const SYSTEM_PERMISSIONS = [
   { code: 'VIEW_WORK_DAYS', name: 'عرض أيام العمل', category: 'إدارة أيام العمل', description: 'القدرة على عرض أيام العمل والعطلات' },
   { code: 'EDIT_WORK_DAYS', name: 'تعديل أيام العمل', category: 'إدارة أيام العمل', description: 'القدرة على تعديل أيام العمل والعطلات' },
   
+  // Operational Flags
+  { code: 'CREATE_OPERATIONAL_FLAGS', name: 'إنشاء بلاغات تشغيلية', category: 'البلاغات التشغيلية', description: 'القدرة على إنشاء بلاغات تشغيلية للحالات الاستثنائية' },
+  { code: 'MANAGE_PENDING_FLAGS', name: 'معالجة البلاغات المعلقة', category: 'البلاغات التشغيلية', description: 'القدرة على معالجة وتنفيذ أو تجاهل البلاغات التشغيلية' },
+  
   // Reports
   { code: 'VIEW_REPORTS', name: 'عرض التقارير', category: 'التقارير', description: 'القدرة على عرض التقارير' },
   { code: 'EXPORT_REPORTS', name: 'تصدير التقارير', category: 'التقارير', description: 'القدرة على تصدير التقارير' },

@@ -1396,3 +1396,19 @@ Add "Approve Full Attendance" option that:
 - [x] اختبار روابط Sidebar
 - [x] اختبار scroll في المجموعات
 - [ ] Save checkpoint
+
+## Task - إضافة صلاحيات البلاغات وبيانات تجريبية
+### Phase 1: إضافة صلاحيات البلاغات
+- [x] تحديث seed-permissions.mjs لإضافة الصلاحيتين الجديدتين
+- [x] تشغيل seed-permissions.mjs
+- [x] تحديث seed-roles.mjs لربط الصلاحيات بالأدوار
+- [x] ربط الصلاحيات بـ SUPER_ADMIN, ADMIN, HR_ADMIN
+
+### Phase 2: إنشاء بيانات تجريبية
+- [x] إنشاء seed-operational-flags.mjs
+- [x] إضافة 8 بلاغات بأنواع مختلفة (7 PENDING + 1 RESOLVED)
+- [x] تشغيل seed-operational-flags.mjs
+- [x] التحقق من البيانات في النظام
+
+### Phase 3: حفظ checkpoint
+- [ ] Save checkpoint
