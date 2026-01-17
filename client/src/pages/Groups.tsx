@@ -29,6 +29,11 @@ export default function Groups() {
     costCenterId: null as number | null,
     dailyRate: "",
     workHours: "8.00",
+    // New flexible settings
+    dailyWage: "",
+    workMinutes: "",
+    latePenaltyRate: "",
+    earlyLeavePenaltyRate: "",
     isActive: true,
   });
 
@@ -138,6 +143,10 @@ export default function Groups() {
       costCenterId: null,
       dailyRate: "",
       workHours: "8.00",
+      dailyWage: "",
+      workMinutes: "",
+      latePenaltyRate: "",
+      earlyLeavePenaltyRate: "",
       isActive: true,
     });
   };
@@ -159,6 +168,10 @@ export default function Groups() {
       costCenterId: group.costCenterId,
       dailyRate: group.dailyRate || "",
       workHours: group.workHours || "8.00",
+      dailyWage: group.dailyWage || "",
+      workMinutes: group.workMinutes || "",
+      latePenaltyRate: group.latePenaltyRate || "",
+      earlyLeavePenaltyRate: group.earlyLeavePenaltyRate || "",
       isActive: group.isActive,
     });
     setIsEditDialogOpen(true);

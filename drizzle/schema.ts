@@ -108,6 +108,12 @@ export const groups = mysqlTable("groups", {
   supervisorId: int("supervisor_id"),
   dailyRate: decimal("daily_rate", { precision: 10, scale: 2 }),
   workHours: decimal("work_hours", { precision: 4, scale: 2 }).default("8.00"),
+  // New flexible settings (NULL by default)
+  dailyWage: decimal("daily_wage", { precision: 10, scale: 2 }),
+  workMinutes: int("work_minutes"),
+  minuteCost: decimal("minute_cost", { precision: 10, scale: 4 }),
+  latePenaltyRate: decimal("late_penalty_rate", { precision: 5, scale: 2 }),
+  earlyLeavePenaltyRate: decimal("early_leave_penalty_rate", { precision: 5, scale: 2 }),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),

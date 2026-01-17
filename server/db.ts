@@ -384,7 +384,23 @@ export async function updateGroup(id: number, data: Partial<InsertGroup>): Promi
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(groups).set({ ...data, updatedAt: new Date() }).where(eq(groups.id, id));
+  // Calculate minute cost if dailyWage or workMinutes are provided
+  const updatedData = { ...data };
+  if (data.dailyWage !== undefined || data.workMinutes !== undefined) {
+    // Get current values if not provided
+    const current = await getGroupById(id);
+    const dailyWage = data.dailyWage !== undefined ? data.dailyWage : current?.dailyWage;
+    const workMinutes = data.workMinutes !== undefined ? data.workMinutes : current?.workMinutes;
+    
+    // Calculate minute cost
+    const minuteCost = calculateMinuteCost(
+      dailyWage ? Number(dailyWage) : null,
+      workMinutes ? Number(workMinutes) : null
+    );
+    updatedData.minuteCost = minuteCost !== null ? minuteCost.toString() : null;
+  }
+
+  await db.update(groups).set({ ...updatedData, updatedAt: new Date() }).where(eq(groups.id, id));
 }
 
 export async function deleteGroup(id: number): Promise<void> {
@@ -2859,4 +2875,52 @@ export async function updateBatchData(batchId: number, userId: number, reason: s
     .where(eq(payrollBatches.id, batchId));
   
   return { success: true };
+}
+
+
+// ============================================
+// Work Group Settings Calculations (حسابات إعدادات مجموعات العمل)
+// ============================================
+
+/**
+ * Calculate minute cost from daily wage and work minutes
+ * Returns rounded to 4 decimal places
+ */
+export function calculateMinuteCost(dailyWage: number | null, workMinutes: number | null): number | null {
+  if (!dailyWage || !workMinutes || workMinutes <= 0) return null;
+  return Math.round((dailyWage / workMinutes) * 10000) / 10000;
+}
+
+/**
+ * Calculate late penalty based on group settings
+ * Formula: (dailyWage ÷ workMinutes) × lateMinutes × (1 + latePenaltyRate)
+ * Returns rounded to 2 decimal places
+ */
+export function calculateLatePenalty(
+  dailyWage: number | null,
+  workMinutes: number | null,
+  lateMinutes: number,
+  latePenaltyRate: number | null
+): number {
+  if (!dailyWage || !workMinutes || workMinutes <= 0 || !latePenaltyRate) return 0;
+  const minuteCost = dailyWage / workMinutes;
+  const penalty = minuteCost * lateMinutes * (1 + latePenaltyRate);
+  return Math.round(penalty * 100) / 100;
+}
+
+/**
+ * Calculate early leave penalty based on group settings
+ * Formula: (dailyWage ÷ workMinutes) × earlyLeaveMinutes × (1 + earlyLeavePenaltyRate)
+ * Returns rounded to 2 decimal places
+ */
+export function calculateEarlyLeavePenalty(
+  dailyWage: number | null,
+  workMinutes: number | null,
+  earlyLeaveMinutes: number,
+  earlyLeavePenaltyRate: number | null
+): number {
+  if (!dailyWage || !workMinutes || workMinutes <= 0 || !earlyLeavePenaltyRate) return 0;
+  const minuteCost = dailyWage / workMinutes;
+  const penalty = minuteCost * earlyLeaveMinutes * (1 + earlyLeavePenaltyRate);
+  return Math.round(penalty * 100) / 100;
 }

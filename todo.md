@@ -1102,3 +1102,55 @@ Add "Approve Full Attendance" option that:
 - [ ] اختبار الصلاحيات
 - [ ] اختبار الرفض والإرجاع
 - [ ] Save checkpoint
+
+
+## Payroll Workflow Notifications (إشعارات workflow دفعات الرواتب)
+
+- [ ] البحث عن نظام الإشعارات الموجود في النظام
+- [ ] إضافة دالة notifyWorkflowTransition في db.ts
+- [ ] إضافة دالة getUsersByPermission في db.ts
+- [ ] تحديث submitBatchToAccounting لإرسال إشعار للمحاسب
+- [ ] تحديث submitBatchToFinalReview لإرسال إشعار للمراجع
+- [ ] تحديث submitBatchForApproval لإرسال إشعار للمدير
+- [ ] تحديث rejectBatch لإرسال إشعار للمراجع
+- [ ] اختبار الإشعارات
+- [ ] Save checkpoint
+
+
+## Work Group Settings System (نظام إعدادات مجموعات العمل)
+
+### Phase 1: Schema & Database
+- [x] إضافة حقل daily_wage (DECIMAL, NULL) إلى groups
+- [x] إضافة حقل work_minutes (INT, NULL) إلى groups
+- [x] إضافة حقل minute_cost (DECIMAL, NULL) إلى groups
+- [x] إضافة حقل late_penalty_rate (DECIMAL, NULL) إلى groups
+- [x] إضافة حقل early_leave_penalty_rate (DECIMAL, NULL) إلى groups
+- [x] تطبيق التغييرات (db:push)
+
+### Phase 2: Calculation Functions
+- [x] إضافة دالة calculateMinuteCost في db.ts
+- [x] إضافة دالة calculateLatePenalty في db.ts
+- [x] إضافة دالة calculateEarlyLeavePenalty في db.ts
+- [x] تحديث دالة updateGroup لحساب minute_cost تلقائياً
+- [x] تقريب جميع النتائج إلى منزلتين عشريتين
+
+### Phase 3: Frontend - Groups UI
+- [x] تحديث Groups.tsx formData لإضافة الحقول الجديدة
+- [x] تحديث resetForm لإضافة الحقول الجديدة
+- [x] تحديث handleEdit لإضافة الحقول الجديدة
+- [ ] إضافة حقول الإدخال في dialog
+- [ ] عرض minute_cost المحسوب تلقائياً
+- [ ] إضافة validation للحقول
+
+### Phase 4: Payroll Integration
+- [ ] تحديث دالة calculatePayroll لاستخدام الإعدادات الجديدة
+- [ ] تحديث حساب خصم التأخير
+- [ ] تحديث حساب خصم الخروج المبكر
+- [ ] التأكد من التكامل مع التقارير
+
+### Phase 5: Testing
+- [ ] اختبار إضافة مجموعة بإعدادات كاملة
+- [ ] اختبار إضافة مجموعة بحقول NULL
+- [ ] اختبار الحسابات التلقائية
+- [ ] اختبار CHECK constraints
+- [ ] Save checkpoint
