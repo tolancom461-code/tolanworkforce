@@ -27,9 +27,6 @@ export default function Groups() {
     code: "",
     name: "",
     costCenterId: null as number | null,
-    dailyRate: "",
-    workHours: "8.00",
-    // New flexible settings
     dailyWage: "",
     workMinutes: "",
     latePenaltyRate: "",
@@ -151,8 +148,6 @@ export default function Groups() {
       code: "",
       name: "",
       costCenterId: null,
-      dailyRate: "",
-      workHours: "8.00",
       dailyWage: "",
       workMinutes: "",
       latePenaltyRate: "",
@@ -176,8 +171,6 @@ export default function Groups() {
       code: group.code,
       name: group.name,
       costCenterId: group.costCenterId,
-      dailyRate: group.dailyRate || "",
-      workHours: group.workHours || "8.00",
       dailyWage: group.dailyWage || "",
       workMinutes: group.workMinutes || "",
       latePenaltyRate: group.latePenaltyRate || "",
@@ -301,33 +294,10 @@ export default function Groups() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="dailyRate">الأجر اليومي</Label>
-                    <Input
-                      id="dailyRate"
-                      type="number"
-                      value={formData.dailyRate}
-                      onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
-                      placeholder="100.00"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="workHours">ساعات العمل</Label>
-                    <Input
-                      id="workHours"
-                      type="number"
-                      step="0.5"
-                      value={formData.workHours}
-                      onChange={(e) => setFormData({ ...formData, workHours: e.target.value })}
-                      placeholder="8.00"
-                    />
-                  </div>
-                </div>
                 
-                {/* New Work Group Settings */}
+                {/* Work Group Settings */}
                 <div className="border-t pt-4 mt-2">
-                  <h4 className="text-sm font-medium mb-3">إعدادات الحساب بالدقائق (اختياري)</h4>
+                  <h4 className="text-sm font-medium mb-3">إعدادات الحساب بالدقائق</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="dailyWage">أجر اليوم (ريال)</Label>
@@ -464,8 +434,6 @@ export default function Groups() {
                     <TableHead className="text-right">الكود</TableHead>
                     <TableHead className="text-right">الاسم</TableHead>
                     <TableHead className="text-right">مركز التكلفة</TableHead>
-                    <TableHead className="text-right">الأجر اليومي</TableHead>
-                    <TableHead className="text-right">ساعات العمل</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
@@ -476,8 +444,6 @@ export default function Groups() {
                       <TableCell className="font-mono">{group.code}</TableCell>
                       <TableCell className="font-medium">{group.name}</TableCell>
                       <TableCell>{getCostCenterName(group.costCenterId)}</TableCell>
-                      <TableCell>{group.dailyRate || "-"}</TableCell>
-                      <TableCell>{group.workHours || "8.00"} ساعة</TableCell>
                       <TableCell>
                         <Badge variant={group.isActive ? "default" : "secondary"}>
                           {group.isActive ? "نشط" : "غير نشط"}
@@ -594,31 +560,10 @@ export default function Groups() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-dailyRate">الأجر اليومي</Label>
-                  <Input
-                    id="edit-dailyRate"
-                    type="number"
-                    value={formData.dailyRate}
-                    onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-workHours">ساعات العمل</Label>
-                  <Input
-                    id="edit-workHours"
-                    type="number"
-                    step="0.5"
-                    value={formData.workHours}
-                    onChange={(e) => setFormData({ ...formData, workHours: e.target.value })}
-                  />
-                </div>
-              </div>
               
-              {/* New Work Group Settings */}
+              {/* Work Group Settings */}
               <div className="border-t pt-4 mt-2">
-                <h4 className="text-sm font-medium mb-3">إعدادات الحساب بالدقائق (اختياري)</h4>
+                <h4 className="text-sm font-medium mb-3">إعدادات الحساب بالدقائق</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-dailyWage">أجر اليوم (ريال)</Label>

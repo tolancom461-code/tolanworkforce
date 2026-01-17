@@ -1176,3 +1176,18 @@ Add "Approve Full Attendance" option that:
 - [x] معالجة الحالات التي تكون فيها القيم NULL (fallback إلى الحساب القديم)
 - [x] اختبار الحسابات مع قيم مختلفة (23 اختبار نجحوا)
 - [ ] Save checkpoint
+
+
+## New Task - حذف الحقول القديمة غير الضرورية من واجهة المجموعات
+
+- [x] حذف حقل dailyRate (الأجر اليومي القديم) من formData
+- [x] حذف حقل workHours (ساعات العمل القديمة) من formData
+- [x] حذف حقل dailyRate من Add Dialog
+- [x] حذف حقل workHours من Add Dialog
+- [x] حذف حقل dailyRate من Edit Dialog
+- [x] حذف حقل workHours من Edit Dialog
+- [x] تحديث resetForm لإزالة الحقول القديمة
+- [x] تحديث handleEdit لإزالة الحقول القديمة
+- [x] حذف عمود dailyRate من جدول العرض
+- [x] حذف عمود workHours من جدول العرض
+- [ ] Save checkpoint
