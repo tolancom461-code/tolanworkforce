@@ -1088,12 +1088,14 @@ Add "Approve Full Attendance" option that:
 - [x] إضافة endpoints في routers.ts (submitToAccounting, submitToFinalReview, submitForApproval, approveBatchFinal, rejectBatchFinal)
 
 ### Phase 4: Frontend Implementation
-- [ ] تحديث PayrollBatches.tsx لعرض المراحل
-- [ ] إضافة أزرار workflow حسب الصلاحيات
-- [ ] إضافة dialog لإدخال سبب التعديل
-- [ ] إضافة dialog لإدخال سبب الرفض
-- [ ] إضافة badges لحالة workflow
-- [ ] تحديث فلاتر البحث لتشمل المراحل
+- [x] إضافة dialog إرسال للمحاسب (submitToAccounting)
+- [x] إضافة dialog إرسال للمراجع (submitToFinalReview) مع حقل السبب
+- [x] إضافة dialog إرسال للمدير (submitForApproval) مع حقل السبب
+- [x] إضافة dialog اعتماد نهائي (approveBatchFinal)
+- [x] إضافة dialog رفض (rejectBatchFinal) مع حقل السبب الإجباري
+- [x] إضافة badges لحالة workflow (STATUS_LABELS)
+- [x] إضافة أزرار workflow حسب الصلاحيات والمرحلة
+- [x] تحديث فلاتر البحث لتشمل المراحل
 
 ### Phase 5: Testing
 - [ ] اختبار workflow كامل من البداية للنهاية

@@ -27,9 +27,12 @@ import { toast } from 'sonner';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft: { label: 'مسودة', color: 'bg-gray-100 text-gray-800' },
-  pending: { label: 'قيد المراجعة', color: 'bg-yellow-100 text-yellow-800' },
-  approved: { label: 'معتمد', color: 'bg-green-100 text-green-800' },
-  paid: { label: 'مدفوع', color: 'bg-blue-100 text-blue-800' },
+  under_accountant_review: { label: 'قيد المراجعة المحاسبية', color: 'bg-blue-100 text-blue-800' },
+  under_financial_review: { label: 'قيد المراجعة النهائية', color: 'bg-purple-100 text-purple-800' },
+  under_accounts_manager_review: { label: 'في انتظار الاعتماد', color: 'bg-yellow-100 text-yellow-800' },
+  approved: { label: 'معتمدة', color: 'bg-green-100 text-green-800' },
+  rejected_final: { label: 'مرفوضة', color: 'bg-red-100 text-red-800' },
+  paid: { label: 'مدفوعة', color: 'bg-teal-100 text-teal-800' },
 };
 
 export default function PayrollBatches() {
@@ -39,6 +42,14 @@ export default function PayrollBatches() {
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [unlockReason, setUnlockReason] = useState('');
+  
+  // Workflow dialogs state
+  const [showSubmitToAccountingDialog, setShowSubmitToAccountingDialog] = useState(false);
+  const [showSubmitToFinalReviewDialog, setShowSubmitToFinalReviewDialog] = useState(false);
+  const [showSubmitForApprovalDialog, setShowSubmitForApprovalDialog] = useState(false);
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [workflowReason, setWorkflowReason] = useState('');
   
   const exportExcelMutation = trpc.export.payrollReport.useMutation({
     onSuccess: (data) => {
@@ -137,6 +148,89 @@ export default function PayrollBatches() {
       return;
     }
     forceUnlockMutation.mutate({ batchId: selectedBatchId!, reason: unlockReason });
+  };
+  
+  // Workflow mutations
+  const submitToAccountingMutation = trpc.payroll.submitToAccounting.useMutation({
+    onSuccess: () => {
+      toast.success('تم إرسال الدفعة للمحاسب المالي بنجاح');
+      refetch();
+      setShowSubmitToAccountingDialog(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ');
+    }
+  });
+  
+  const submitToFinalReviewMutation = trpc.payroll.submitToFinalReview.useMutation({
+    onSuccess: () => {
+      toast.success('تم إرسال الدفعة للمراجع بنجاح');
+      refetch();
+      setShowSubmitToFinalReviewDialog(false);
+      setWorkflowReason('');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ');
+    }
+  });
+  
+  const submitForApprovalMutation = trpc.payroll.submitForApproval.useMutation({
+    onSuccess: () => {
+      toast.success('تم إرسال الدفعة للمدير المالي بنجاح');
+      refetch();
+      setShowSubmitForApprovalDialog(false);
+      setWorkflowReason('');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ');
+    }
+  });
+  
+  const approveBatchMutation = trpc.payroll.approveBatchFinal.useMutation({
+    onSuccess: () => {
+      toast.success('تم اعتماد الدفعة بنجاح');
+      refetch();
+      setShowApproveDialog(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ');
+    }
+  });
+  
+  const rejectBatchMutation = trpc.payroll.rejectBatchFinal.useMutation({
+    onSuccess: () => {
+      toast.success('تم رفض الدفعة وإرجاعها للمراجع');
+      refetch();
+      setShowRejectDialog(false);
+      setWorkflowReason('');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'حدث خطأ');
+    }
+  });
+  
+  const handleSubmitToAccounting = () => {
+    submitToAccountingMutation.mutate({ batchId: selectedBatchId! });
+  };
+  
+  const handleSubmitToFinalReview = () => {
+    submitToFinalReviewMutation.mutate({ batchId: selectedBatchId!, reason: workflowReason });
+  };
+  
+  const handleSubmitForApproval = () => {
+    submitForApprovalMutation.mutate({ batchId: selectedBatchId!, reason: workflowReason });
+  };
+  
+  const handleApproveBatch = () => {
+    approveBatchMutation.mutate({ batchId: selectedBatchId! });
+  };
+  
+  const handleRejectBatch = () => {
+    if (!workflowReason || workflowReason.length < 10) {
+      toast.error('يجب إدخال سبب الرفض (10 أحرف على الأقل)');
+      return;
+    }
+    rejectBatchMutation.mutate({ batchId: selectedBatchId!, reason: workflowReason });
   };
 
   const resetForm = () => {
@@ -430,21 +524,79 @@ export default function PayrollBatches() {
 
               {/* Action Buttons */}
               <div className="flex justify-between items-center gap-2">
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {/* Delete Draft Button (only for draft status) */}
                   {batchDetails.batch.status === 'draft' && (
+                    <>
+                      <Button 
+                        variant="destructive"
+                        onClick={() => handleDeleteDraft(selectedBatchId!)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4 ml-2" />
+                        {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          setSelectedBatchId(batchDetails.batch.id);
+                          setShowSubmitToAccountingDialog(true);
+                        }}
+                      >
+                        إرسال للمحاسب
+                      </Button>
+                    </>
+                  )}
+                  
+                  {/* Accountant Review Stage */}
+                  {batchDetails.batch.status === 'under_accountant_review' && (
                     <Button 
-                      variant="destructive"
-                      onClick={() => handleDeleteDraft(selectedBatchId!)}
-                      disabled={deleteMutation.isPending}
+                      onClick={() => {
+                        setSelectedBatchId(batchDetails.batch.id);
+                        setShowSubmitToFinalReviewDialog(true);
+                      }}
                     >
-                      <Trash2 className="h-4 w-4 ml-2" />
-                      {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
+                      إرسال للمراجع
                     </Button>
                   )}
                   
+                  {/* Final Review Stage */}
+                  {batchDetails.batch.status === 'under_financial_review' && (
+                    <Button 
+                      onClick={() => {
+                        setSelectedBatchId(batchDetails.batch.id);
+                        setShowSubmitForApprovalDialog(true);
+                      }}
+                    >
+                      إرسال للمدير
+                    </Button>
+                  )}
+                  
+                  {/* Manager Approval Stage */}
+                  {batchDetails.batch.status === 'under_accounts_manager_review' && (
+                    <>
+                      <Button 
+                        onClick={() => {
+                          setSelectedBatchId(batchDetails.batch.id);
+                          setShowApproveDialog(true);
+                        }}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        اعتماد
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedBatchId(batchDetails.batch.id);
+                          setShowRejectDialog(true);
+                        }}
+                      >
+                        رفض
+                      </Button>
+                    </>
+                  )}
+                  
                   {/* Unlock/Relock Buttons (for non-draft batches) */}
-                  {batchDetails.batch.status !== 'draft' && (
+                  {batchDetails.batch.status !== 'draft' && batchDetails.batch.status !== 'approved' && (
                     <>
                       {batchDetails.batch.isUnlocked ? (
                         <Button 
@@ -570,6 +722,201 @@ export default function PayrollBatches() {
                 <Unlock className="h-4 w-4 ml-2" />
               )}
               إلغاء القفل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Submit to Accounting Dialog */}
+      <Dialog open={showSubmitToAccountingDialog} onOpenChange={setShowSubmitToAccountingDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>إرسال للمحاسب المالي</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            هل أنت متأكد من إرسال هذه الدفعة للمحاسب المالي للمراجعة؟
+          </p>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSubmitToAccountingDialog(false)}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleSubmitToAccounting}
+              disabled={submitToAccountingMutation.isPending}
+            >
+              {submitToAccountingMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              إرسال
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Submit to Final Review Dialog */}
+      <Dialog open={showSubmitToFinalReviewDialog} onOpenChange={setShowSubmitToFinalReviewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>إرسال للمراجع</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              سيتم إرسال الدفعة للمراجع للمراجعة النهائية.
+            </p>
+            <div>
+              <Label>ملاحظات المحاسب (اختياري)</Label>
+              <Textarea 
+                value={workflowReason}
+                onChange={(e) => setWorkflowReason(e.target.value)}
+                placeholder="أدخل أي ملاحظات أو تعديلات تمت..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowSubmitToFinalReviewDialog(false);
+                setWorkflowReason('');
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleSubmitToFinalReview}
+              disabled={submitToFinalReviewMutation.isPending}
+            >
+              {submitToFinalReviewMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              إرسال
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Submit for Approval Dialog */}
+      <Dialog open={showSubmitForApprovalDialog} onOpenChange={setShowSubmitForApprovalDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>إرسال للمدير المالي</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              سيتم إرسال الدفعة للمدير المالي للاعتماد النهائي.
+            </p>
+            <div>
+              <Label>ملاحظات المراجع (اختياري)</Label>
+              <Textarea 
+                value={workflowReason}
+                onChange={(e) => setWorkflowReason(e.target.value)}
+                placeholder="أدخل أي ملاحظات أو تعديلات تمت..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowSubmitForApprovalDialog(false);
+                setWorkflowReason('');
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleSubmitForApproval}
+              disabled={submitForApprovalMutation.isPending}
+            >
+              {submitForApprovalMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              إرسال
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Approve Dialog */}
+      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>اعتماد الدفعة</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            هل أنت متأكد من اعتماد هذه الدفعة؟ لن تتمكن من التعديل بعد الاعتماد.
+          </p>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowApproveDialog(false)}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleApproveBatch}
+              disabled={approveBatchMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {approveBatchMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              اعتماد
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Reject Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>رفض الدفعة</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              سيتم إرجاع الدفعة للمراجع لإعادة المراجعة.
+            </p>
+            <div>
+              <Label>سبب الرفض *</Label>
+              <Textarea 
+                value={workflowReason}
+                onChange={(e) => setWorkflowReason(e.target.value)}
+                placeholder="يجب إدخال سبب واضح للرفض (10 أحرف على الأقل)"
+                rows={3}
+                className={workflowReason.length > 0 && workflowReason.length < 10 ? 'border-red-500' : ''}
+              />
+              {workflowReason.length > 0 && workflowReason.length < 10 && (
+                <p className="text-xs text-red-500 mt-1">
+                  يجب أن يكون السبب 10 أحرف على الأقل
+                </p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowRejectDialog(false);
+                setWorkflowReason('');
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleRejectBatch}
+              disabled={rejectBatchMutation.isPending || workflowReason.length < 10}
+              variant="destructive"
+            >
+              {rejectBatchMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              رفض
             </Button>
           </DialogFooter>
         </DialogContent>
