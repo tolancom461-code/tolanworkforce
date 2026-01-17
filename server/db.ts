@@ -3338,3 +3338,250 @@ export async function updateFullDayOverride(
   
   return { success: true };
 }
+
+
+// ============================================
+// Operational Flags (البلاغات التشغيلية)
+// ============================================
+
+export async function createOperationalFlag(data: {
+  flagType: string;
+  workerId: number;
+  groupId?: number;
+  flagDate: string;
+  endDate?: string;
+  description: string;
+  attachments?: string[];
+  amount?: number;
+  createdBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { operationalFlags } = await import('../drizzle/schema');
+
+  const insertData: any = {
+    flagType: data.flagType,
+    workerId: data.workerId,
+    groupId: data.groupId || null,
+    flagDate: data.flagDate,
+    endDate: data.endDate || null,
+    description: data.description,
+    attachments: data.attachments ? JSON.stringify(data.attachments) : null,
+    amount: data.amount?.toString() || null,
+    status: 'PENDING_ADMIN_ACTION',
+    createdBy: data.createdBy,
+  };
+
+  const result = await db.insert(operationalFlags).values(insertData);
+
+  return result[0].insertId;
+}
+
+export async function listOperationalFlags(filters?: {
+  status?: string;
+  workerId?: number;
+  groupId?: number;
+  flagType?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { operationalFlags, workers, groups, users } = await import('../drizzle/schema');
+
+  let query = db
+    .select({
+      id: operationalFlags.id,
+      flagType: operationalFlags.flagType,
+      workerId: operationalFlags.workerId,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      groupId: operationalFlags.groupId,
+      groupName: groups.name,
+      flagDate: operationalFlags.flagDate,
+      endDate: operationalFlags.endDate,
+      description: operationalFlags.description,
+      attachments: operationalFlags.attachments,
+      amount: operationalFlags.amount,
+      status: operationalFlags.status,
+      createdBy: operationalFlags.createdBy,
+      createdByName: users.fullName,
+      resolvedBy: operationalFlags.resolvedBy,
+      resolvedAt: operationalFlags.resolvedAt,
+      resolutionAction: operationalFlags.resolutionAction,
+      resolutionNotes: operationalFlags.resolutionNotes,
+      createdAt: operationalFlags.createdAt,
+      updatedAt: operationalFlags.updatedAt,
+    })
+    .from(operationalFlags)
+    .leftJoin(workers, eq(operationalFlags.workerId, workers.id))
+    .leftJoin(groups, eq(operationalFlags.groupId, groups.id))
+    .leftJoin(users, eq(operationalFlags.createdBy, users.id));
+
+  const conditions = [];
+
+  if (filters?.status) {
+    conditions.push(eq(operationalFlags.status, filters.status as any));
+  }
+
+  if (filters?.workerId) {
+    conditions.push(eq(operationalFlags.workerId, filters.workerId));
+  }
+
+  if (filters?.groupId) {
+    conditions.push(eq(operationalFlags.groupId, filters.groupId));
+  }
+
+  if (filters?.flagType) {
+    conditions.push(eq(operationalFlags.flagType, filters.flagType as any));
+  }
+
+  if (filters?.startDate) {
+    conditions.push(sql`${operationalFlags.flagDate} >= ${filters.startDate}`);
+  }
+
+  if (filters?.endDate) {
+    conditions.push(sql`${operationalFlags.flagDate} <= ${filters.endDate}`);
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  const results = await query.orderBy(desc(operationalFlags.createdAt));
+
+  return results.map(r => ({
+    ...r,
+    attachments: r.attachments ? JSON.parse(r.attachments as string) : null,
+  }));
+}
+
+export async function getOperationalFlag(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { operationalFlags, workers, groups, users } = await import('../drizzle/schema');
+
+  const [flag] = await db
+    .select({
+      id: operationalFlags.id,
+      flagType: operationalFlags.flagType,
+      workerId: operationalFlags.workerId,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      groupId: operationalFlags.groupId,
+      groupName: groups.name,
+      flagDate: operationalFlags.flagDate,
+      endDate: operationalFlags.endDate,
+      description: operationalFlags.description,
+      attachments: operationalFlags.attachments,
+      amount: operationalFlags.amount,
+      status: operationalFlags.status,
+      createdBy: operationalFlags.createdBy,
+      createdByName: users.fullName,
+      resolvedBy: operationalFlags.resolvedBy,
+      resolvedAt: operationalFlags.resolvedAt,
+      resolutionAction: operationalFlags.resolutionAction,
+      resolutionNotes: operationalFlags.resolutionNotes,
+      createdAt: operationalFlags.createdAt,
+      updatedAt: operationalFlags.updatedAt,
+    })
+    .from(operationalFlags)
+    .leftJoin(workers, eq(operationalFlags.workerId, workers.id))
+    .leftJoin(groups, eq(operationalFlags.groupId, groups.id))
+    .leftJoin(users, eq(operationalFlags.createdBy, users.id))
+    .where(eq(operationalFlags.id, id))
+    .limit(1);
+
+  if (!flag) return null;
+
+  return {
+    ...flag,
+    attachments: flag.attachments ? JSON.parse(flag.attachments as string) : null,
+  };
+}
+
+export async function resolveOperationalFlag(
+  id: number,
+  resolvedBy: number,
+  action: string,
+  notes?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { operationalFlags } = await import('../drizzle/schema');
+
+  await db
+    .update(operationalFlags)
+    .set({
+      status: 'RESOLVED',
+      resolvedBy,
+      resolvedAt: new Date(),
+      resolutionAction: action,
+      resolutionNotes: notes || null,
+    })
+    .where(eq(operationalFlags.id, id));
+
+  return { success: true };
+}
+
+export async function ignoreOperationalFlag(id: number, resolvedBy: number, notes?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { operationalFlags } = await import('../drizzle/schema');
+
+  await db
+    .update(operationalFlags)
+    .set({
+      status: 'IGNORED',
+      resolvedBy,
+      resolvedAt: new Date(),
+      resolutionNotes: notes || null,
+    })
+    .where(eq(operationalFlags.id, id));
+
+  return { success: true };
+}
+
+export async function checkUnresolvedFlags(workerId?: number, groupId?: number, dateRange?: { start: string; end: string }) {
+  const db = await getDb();
+  if (!db) return { hasUnresolved: false, count: 0, flags: [] };
+
+  const { operationalFlags } = await import('../drizzle/schema');
+
+  const conditions = [eq(operationalFlags.status, 'PENDING_ADMIN_ACTION' as any)];
+
+  if (workerId) {
+    conditions.push(eq(operationalFlags.workerId, workerId));
+  }
+
+  if (groupId) {
+    conditions.push(eq(operationalFlags.groupId, groupId));
+  }
+
+  if (dateRange) {
+    conditions.push(sql`${operationalFlags.flagDate} >= ${dateRange.start}`);
+    conditions.push(sql`${operationalFlags.flagDate} <= ${dateRange.end}`);
+  }
+
+  const flags = await db
+    .select()
+    .from(operationalFlags)
+    .where(and(...conditions));
+
+  return {
+    hasUnresolved: flags.length > 0,
+    count: flags.length,
+    flags: flags.map(f => ({
+      id: f.id,
+      flagType: f.flagType,
+      workerId: f.workerId,
+      flagDate: f.flagDate,
+      description: f.description,
+    })),
+  };
+}

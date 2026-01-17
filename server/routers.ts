@@ -1620,6 +1620,105 @@ export const appRouter = router({
         );
       }),
   }),
+
+  // Operational Flags (البلاغات التشغيلية)
+  operationalFlags: router({
+    // Create a new operational flag
+    create: protectedProcedure
+      .input(z.object({
+        flagType: z.enum([
+          'emergency_call',
+          'justified_late',
+          'justified_early_leave',
+          'justified_absence',
+          'proposed_deduction',
+          'proposed_bonus',
+          'general_report'
+        ]),
+        workerId: z.number(),
+        groupId: z.number().optional(),
+        flagDate: z.string(),
+        endDate: z.string().optional(),
+        description: z.string().min(1),
+        attachments: z.array(z.string()).optional(),
+        amount: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const flagId = await db.createOperationalFlag({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+        return { success: true, flagId };
+      }),
+
+    // List operational flags with filters
+    list: protectedProcedure
+      .input(z.object({
+        status: z.string().optional(),
+        workerId: z.number().optional(),
+        groupId: z.number().optional(),
+        flagType: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.listOperationalFlags(input);
+      }),
+
+    // Get a single flag by ID
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getOperationalFlag(input.id);
+      }),
+
+    // Resolve a flag (execute action)
+    resolve: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        action: z.string(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.resolveOperationalFlag(
+          input.id,
+          ctx.user.id,
+          input.action,
+          input.notes
+        );
+      }),
+
+    // Ignore a flag
+    ignore: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.ignoreOperationalFlag(input.id, ctx.user.id, input.notes);
+      }),
+
+    // Check for unresolved flags
+    checkUnresolved: protectedProcedure
+      .input(z.object({
+        workerId: z.number().optional(),
+        groupId: z.number().optional(),
+        dateRange: z.object({
+          start: z.string(),
+          end: z.string(),
+        }).optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.checkUnresolvedFlags(
+          input.workerId,
+          input.groupId,
+          input.dateRange
+        );
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, date } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, date, json } from "drizzle-orm/mysql-core";
 
 // ============================================
 // Reference Tables (المراجع)
@@ -364,3 +364,43 @@ export type InsertGroupShift = typeof groupShifts.$inferInsert;
 export type InsertWorker = typeof workers.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
 export type InsertJob = typeof jobs.$inferInsert;
+
+
+// ============================================
+// Operational Flags (البلاغات التشغيلية)
+// ============================================
+
+export const operationalFlags = mysqlTable("operational_flags", {
+  id: int("id").autoincrement().primaryKey(),
+  flagType: mysqlEnum("flag_type", [
+    "emergency_call",      // استدعاء طارئ (اعتماد يوم كامل)
+    "justified_late",      // تأخير مبرر
+    "justified_early_leave", // خروج مبكر مبرر
+    "justified_absence",   // غياب مبرر
+    "proposed_deduction",  // خصم مقترح
+    "proposed_bonus",      // إضافة مقترحة
+    "general_report"       // بلاغ عام
+  ]).notNull(),
+  workerId: int("worker_id").notNull(),
+  groupId: int("group_id"),
+  flagDate: date("flag_date").notNull(), // تاريخ البلاغ أو بداية المدة
+  endDate: date("end_date"), // نهاية المدة (اختياري)
+  description: text("description").notNull(), // وصف مختصر (إجباري)
+  attachments: json("attachments"), // مرفقات (اختياري) - array of URLs
+  amount: decimal("amount", { precision: 10, scale: 2 }), // المبلغ (للخصم/الإضافة)
+  status: mysqlEnum("status", [
+    "PENDING_ADMIN_ACTION", // بانتظار إجراء الشؤون الإدارية
+    "RESOLVED",             // تم المعالجة
+    "IGNORED"               // تم التجاهل
+  ]).default("PENDING_ADMIN_ACTION").notNull(),
+  createdBy: int("created_by").notNull(), // المشرف الذي أنشأ البلاغ
+  resolvedBy: int("resolved_by"), // من نفّذ الإجراء
+  resolvedAt: timestamp("resolved_at"), // متى تم التنفيذ
+  resolutionAction: text("resolution_action"), // ماذا نُفّذ
+  resolutionNotes: text("resolution_notes"), // ملاحظات التنفيذ
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OperationalFlag = typeof operationalFlags.$inferSelect;
+export type InsertOperationalFlag = typeof operationalFlags.$inferInsert;

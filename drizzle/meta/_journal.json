@@ -50,6 +50,13 @@
       "when": 1768677175555,
       "tag": "0006_minor_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1768680209900,
+      "tag": "0007_lowly_red_wolf",
+      "breakpoints": true
     }
   ]
 }

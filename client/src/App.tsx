@@ -34,6 +34,7 @@ import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import FinancialReports from "./pages/reports/FinancialReports";
 import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
+import OperationalFlags from "./pages/OperationalFlags";
 
 function Router() {
   return (
@@ -58,6 +59,7 @@ function Router() {
 
       <Route path="/attendance/daily-management" component={DailyAttendanceManagement} />
       <Route path="/work-days" component={WorkDays} />
+      <Route path="/operational-flags" component={OperationalFlags} />
       {/* Finance System Routes */}
       <Route path="/finance/overrides" component={PayOverrides} />
       <Route path="/finance/entry" component={FinanceEntry} />

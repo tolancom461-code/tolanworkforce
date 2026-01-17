@@ -48,6 +48,7 @@ const SYSTEM_PERMISSIONS = [
   { code: 'EDIT_FINANCE', name: 'تعديل المالية', category: 'الإدارة المالية', description: 'القدرة على تعديل البيانات المالية' },
   { code: 'CREATE_OVERRIDE', name: 'إنشاء استثناء', category: 'الإدارة المالية', description: 'القدرة على إنشاء استثناءات مالية' },
   { code: 'APPROVE_OVERRIDES', name: 'اعتماد الاستثناءات', category: 'الإدارة المالية', description: 'القدرة على اعتماد أو رفض الاستثناءات المالية' },
+  { code: 'OVERRIDE_DAILY_FINANCE', name: 'تصحيح الرواتب اليومية', category: 'الإدارة المالية', description: 'القدرة على اعتماد يوم كامل وتصحيح الخصومات اليومية' },
   { code: 'VIEW_PAYROLL', name: 'عرض الرواتب', category: 'الإدارة المالية', description: 'القدرة على عرض دفعات الرواتب' },
   { code: 'CREATE_PAYROLL', name: 'إنشاء دفعة رواتب', category: 'الإدارة المالية', description: 'القدرة على إنشاء دفعات رواتب جديدة' },
   { code: 'APPROVE_PAYROLL', name: 'اعتماد الرواتب', category: 'الإدارة المالية', description: 'القدرة على اعتماد دفعات الرواتب' },
