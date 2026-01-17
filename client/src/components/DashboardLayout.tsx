@@ -77,9 +77,9 @@ const menuSections = [
   {
     label: "👥 الموارد البشرية",
     items: [
-      { icon: UserCircle, label: "إدارة العمال", path: "/workers", permission: MENU_PERMISSIONS.WORKERS },
-      { icon: UsersRound, label: "إدارة المجموعات", path: "/groups", permission: MENU_PERMISSIONS.GROUPS },
-      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers", permission: MENU_PERMISSIONS.COST_CENTERS },
+      { icon: UserCircle, label: "إدارة العمال", path: "/workers", permission: MENU_PERMISSIONS.WORKERS_VIEW },
+      { icon: UsersRound, label: "إدارة المجموعات", path: "/groups", permission: MENU_PERMISSIONS.GROUPS_VIEW },
+      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers", permission: MENU_PERMISSIONS.COST_CENTERS_VIEW },
     ]
   },
   {
@@ -90,23 +90,23 @@ const menuSections = [
       { icon: CheckCircle, label: "إدارة الحضور اليومي", path: "/attendance/daily-management", permission: MENU_PERMISSIONS.ATTENDANCE_DAILY_MANAGEMENT },
       { icon: BarChart3, label: "تقارير الحضور", path: "/attendance/reports", permission: MENU_PERMISSIONS.ATTENDANCE_REPORTS },
       { icon: Calendar, label: "أيام العمل", path: "/work-days", permission: MENU_PERMISSIONS.WORK_DAYS },
-      { icon: Flag, label: "البلاغات التشغيلية", path: "/operational-flags", permission: MENU_PERMISSIONS.OPERATIONAL_FLAGS },
-      { icon: Clock, label: "البلاغات المعلقة", path: "/pending-flags", permission: MENU_PERMISSIONS.PENDING_FLAGS },
+      { icon: Flag, label: "البلاغات التشغيلية", path: "/operational-flags", permission: MENU_PERMISSIONS.OPERATIONAL_FLAGS_CREATE },
+      { icon: Clock, label: "البلاغات المعلقة", path: "/pending-flags", permission: MENU_PERMISSIONS.OPERATIONAL_FLAGS_MANAGE },
     ]
   },
   {
     label: "💰 الرواتب والمالية",
     items: [
-      { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches", permission: MENU_PERMISSIONS.PAYROLL_BATCHES },
-      { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry", permission: MENU_PERMISSIONS.FINANCE_ENTRY },
-      { icon: AlertCircle, label: "الاستثناءات المالية", path: "/finance/overrides", permission: MENU_PERMISSIONS.FINANCE_OVERRIDES },
-      { icon: FileText, label: "التقارير المالية", path: "/finance/reports", permission: MENU_PERMISSIONS.FINANCE_REPORTS },
+      { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches", permission: MENU_PERMISSIONS.PAYROLL_BATCHES_VIEW },
+      { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry", permission: MENU_PERMISSIONS.FINANCE_ENTRIES_VIEW },
+      { icon: AlertCircle, label: "الاستثناءات المالية", path: "/finance/overrides", permission: MENU_PERMISSIONS.FINANCE_OVERRIDE_DAILY },
+      { icon: FileText, label: "التقارير المالية", path: "/finance/reports", permission: MENU_PERMISSIONS.FINANCE_REPORTS_VIEW },
     ]
   },
   {
     label: "⚙️ إعدادات النظام",
     items: [
-      { icon: Users, label: "المستخدمين", path: "/users", permission: MENU_PERMISSIONS.USERS },
+      { icon: Users, label: "المستخدمين", path: "/users", permission: MENU_PERMISSIONS.USERS_VIEW },
       { icon: Shield, label: "الأدوار والصلاحيات", path: "/roles", permission: MENU_PERMISSIONS.ROLES },
       { icon: Key, label: "إدارة الصلاحيات", path: "/permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
     ]

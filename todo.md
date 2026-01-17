@@ -1434,3 +1434,22 @@ Add "Approve Full Attendance" option that:
 - [x] التحقق من ظهور جميع الصلاحيات في قسم الصلاحيات
 - [x] إصلاح خطأ Groups.tsx
 - [ ] Save checkpoint
+
+## Task - تقسيم الصلاحيات التفصيلي (24 → 47)
+### Phase 1: إنشاء الصلاحيات التفصيلية الجديدة
+- [x] إنشاء detailed-permissions.mjs
+- [x] إضافة 47 صلاحية تفصيلية
+- [x] تشغيل detailed-permissions.mjs
+
+### Phase 2: تحديث menuPermissions.ts
+- [x] تحديث MENU_PERMISSIONS (47 صلاحية)
+- [x] تحديث PERMISSION_CATEGORIES (6 فئات)
+- [x] إصلاح DashboardLayout.tsx
+
+### Phase 3: إعادة ربط الصلاحيات بالأدوار
+- [x] إنشاء detailed-role-permissions.mjs
+- [x] تشغيل detailed-role-permissions.mjs
+- [x] ربط 47 صلاحية بـ 6 أدوار
+
+### Phase 4: حفظ checkpoint
+- [ ] Save checkpoint
