@@ -1191,3 +1191,10 @@ Add "Approve Full Attendance" option that:
 - [x] حذف عمود dailyRate من جدول العرض
 - [x] حذف عمود workHours من جدول العرض
 - [ ] Save checkpoint
+
+
+## New Task - إخفاء قسم معلومات النظام من لوحة التحكم
+
+- [x] البحث عن قسم "معلومات النظام" في Dashboard.tsx
+- [x] حذف القسم بالكامل من Dashboard
+- [ ] Save checkpoint
