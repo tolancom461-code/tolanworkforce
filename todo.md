@@ -1154,3 +1154,25 @@ Add "Approve Full Attendance" option that:
 - [ ] اختبار الحسابات التلقائية
 - [ ] اختبار CHECK constraints
 - [ ] Save checkpoint
+
+
+## New Tasks - إكمال نظام إعدادات المجموعات وربطه بالرواتب (المرحلة الحالية)
+
+### Task 1: إكمال واجهة إعدادات المجموعات في Groups.tsx
+- [x] إضافة حقل إدخال daily_wage (أجر اليوم) في dialog
+- [x] إضافة حقل إدخال work_minutes (دقائق الدوام) في dialog
+- [x] إضافة حقل إدخال late_penalty_rate (نسبة غرامة التأخير %) في dialog
+- [x] إضافة حقل إدخال early_leave_penalty_rate (نسبة غرامة الانصراف المبكر %) في dialog
+- [x] إضافة عرض minute_cost المحسوب تلقائياً (read-only)
+- [x] إضافة validation للحقول (work_minutes > 0, daily_wage >= 0, penalty_rates >= 0)
+- [x] تحديث handleSubmit لإرسال القيم الجديدة
+
+### Task 2: ربط النظام بحسابات الرواتب
+- [x] قراءة دالة calculateDailyFinanceFromAttendance في db.ts
+- [x] تحديث calculateDailyFinanceFromAttendance لجلب إعدادات المجموعة (daily_wage, work_minutes, penalty_rates)
+- [x] استخدام calculateLatePenalty و calculateEarlyLeavePenalty مع إعدادات المجموعة
+- [x] تطبيق late_penalty_rate من المجموعة على خصم التأخير
+- [x] تطبيق early_leave_penalty_rate من المجموعة على خصم الانصراف المبكر
+- [x] معالجة الحالات التي تكون فيها القيم NULL (fallback إلى الحساب القديم)
+- [x] اختبار الحسابات مع قيم مختلفة (23 اختبار نجحوا)
+- [ ] Save checkpoint

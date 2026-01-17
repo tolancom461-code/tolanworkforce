@@ -979,10 +979,23 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   let expectedStartTime = '08:00';
   let expectedEndTime = '17:00';
   
+  // New: Group settings for minute-based calculations
+  let groupDailyWage: number | null = null;
+  let groupWorkMinutes: number | null = null;
+  let groupLatePenaltyRate: number | null = null;
+  let groupEarlyLeavePenaltyRate: number | null = null;
+  
   if (worker.groupId) {
     const [group] = await db.select().from(groups).where(eq(groups.id, worker.groupId)).limit(1);
-    if (group && group.dailyRate) {
-      dailyRate = dailyRate || parseFloat(group.dailyRate.toString());
+    if (group) {
+      if (group.dailyRate) {
+        dailyRate = dailyRate || parseFloat(group.dailyRate.toString());
+      }
+      // Load new flexible settings
+      groupDailyWage = group.dailyWage ? parseFloat(group.dailyWage.toString()) : null;
+      groupWorkMinutes = group.workMinutes;
+      groupLatePenaltyRate = group.latePenaltyRate ? parseFloat(group.latePenaltyRate.toString()) : null;
+      groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? parseFloat(group.earlyLeavePenaltyRate.toString()) : null;
     }
     
     // Get shift
@@ -1051,13 +1064,26 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   
   // Calculate deductions based on late/early
   let deductions = 0;
-  const hourlyRate = dailyRate / 8; // Assuming 8 hour work day
   
-  if (lateMinutes > 0) {
-    deductions += (lateMinutes / 60) * hourlyRate;
-  }
-  if (earlyLeaveMinutes > 0) {
-    deductions += (earlyLeaveMinutes / 60) * hourlyRate;
+  // Use new minute-based calculation if group settings are available
+  if (groupDailyWage && groupWorkMinutes && groupWorkMinutes > 0) {
+    // Use calculateLatePenalty and calculateEarlyLeavePenalty
+    if (lateMinutes > 0) {
+      deductions += calculateLatePenalty(groupDailyWage, groupWorkMinutes, lateMinutes, groupLatePenaltyRate);
+    }
+    if (earlyLeaveMinutes > 0) {
+      deductions += calculateEarlyLeavePenalty(groupDailyWage, groupWorkMinutes, earlyLeaveMinutes, groupEarlyLeavePenaltyRate);
+    }
+  } else {
+    // Fallback to old hourly calculation
+    const hourlyRate = dailyRate / 8; // Assuming 8 hour work day
+    
+    if (lateMinutes > 0) {
+      deductions += (lateMinutes / 60) * hourlyRate;
+    }
+    if (earlyLeaveMinutes > 0) {
+      deductions += (earlyLeaveMinutes / 60) * hourlyRate;
+    }
   }
   
   // Round deductions

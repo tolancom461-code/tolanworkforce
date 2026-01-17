@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,16 @@ export default function Groups() {
     endTime: "16:00",
     isActive: true,
   });
+
+  // Calculate minute_cost automatically
+  const calculatedMinuteCost = useMemo(() => {
+    const wage = parseFloat(formData.dailyWage);
+    const minutes = parseInt(formData.workMinutes);
+    if (wage > 0 && minutes > 0) {
+      return (wage / minutes).toFixed(2);
+    }
+    return null;
+  }, [formData.dailyWage, formData.workMinutes]);
 
   const utils = trpc.useUtils();
   const { data: groups, isLoading } = trpc.groups.list.useQuery();
@@ -187,13 +197,22 @@ export default function Groups() {
   };
 
   const handleSubmit = () => {
+    // Convert string values to numbers or null
+    const payload = {
+      ...formData,
+      dailyWage: formData.dailyWage ? parseFloat(formData.dailyWage) : null,
+      workMinutes: formData.workMinutes ? parseInt(formData.workMinutes) : null,
+      latePenaltyRate: formData.latePenaltyRate ? parseFloat(formData.latePenaltyRate) : null,
+      earlyLeavePenaltyRate: formData.earlyLeavePenaltyRate ? parseFloat(formData.earlyLeavePenaltyRate) : null,
+    };
+
     if (selectedGroup) {
       updateMutation.mutate({
         id: selectedGroup.id,
-        ...formData,
+        ...payload,
       });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload);
     }
   };
 
@@ -303,6 +322,70 @@ export default function Groups() {
                       onChange={(e) => setFormData({ ...formData, workHours: e.target.value })}
                       placeholder="8.00"
                     />
+                  </div>
+                </div>
+                
+                {/* New Work Group Settings */}
+                <div className="border-t pt-4 mt-2">
+                  <h4 className="text-sm font-medium mb-3">إعدادات الحساب بالدقائق (اختياري)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="dailyWage">أجر اليوم (ريال)</Label>
+                      <Input
+                        id="dailyWage"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.dailyWage}
+                        onChange={(e) => setFormData({ ...formData, dailyWage: e.target.value })}
+                        placeholder="150.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="workMinutes">دقائق الدوام</Label>
+                      <Input
+                        id="workMinutes"
+                        type="number"
+                        min="1"
+                        value={formData.workMinutes}
+                        onChange={(e) => setFormData({ ...formData, workMinutes: e.target.value })}
+                        placeholder="480"
+                      />
+                    </div>
+                  </div>
+                  {calculatedMinuteCost && (
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">تكلفة الدقيقة (محسوبة تلقائياً):</span>
+                        <span className="text-lg font-bold text-primary">{calculatedMinuteCost} ريال</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="latePenaltyRate">نسبة غرامة التأخير (%)</Label>
+                      <Input
+                        id="latePenaltyRate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.latePenaltyRate}
+                        onChange={(e) => setFormData({ ...formData, latePenaltyRate: e.target.value })}
+                        placeholder="0.50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="earlyLeavePenaltyRate">نسبة غرامة الانصراف المبكر (%)</Label>
+                      <Input
+                        id="earlyLeavePenaltyRate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.earlyLeavePenaltyRate}
+                        onChange={(e) => setFormData({ ...formData, earlyLeavePenaltyRate: e.target.value })}
+                        placeholder="0.50"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -532,6 +615,71 @@ export default function Groups() {
                   />
                 </div>
               </div>
+              
+              {/* New Work Group Settings */}
+              <div className="border-t pt-4 mt-2">
+                <h4 className="text-sm font-medium mb-3">إعدادات الحساب بالدقائق (اختياري)</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-dailyWage">أجر اليوم (ريال)</Label>
+                    <Input
+                      id="edit-dailyWage"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.dailyWage}
+                      onChange={(e) => setFormData({ ...formData, dailyWage: e.target.value })}
+                      placeholder="150.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-workMinutes">دقائق الدوام</Label>
+                    <Input
+                      id="edit-workMinutes"
+                      type="number"
+                      min="1"
+                      value={formData.workMinutes}
+                      onChange={(e) => setFormData({ ...formData, workMinutes: e.target.value })}
+                      placeholder="480"
+                    />
+                  </div>
+                </div>
+                {calculatedMinuteCost && (
+                  <div className="bg-muted/50 p-3 rounded-md">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">تكلفة الدقيقة (محسوبة تلقائياً):</span>
+                      <span className="text-lg font-bold text-primary">{calculatedMinuteCost} ريال</span>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-latePenaltyRate">نسبة غرامة التأخير (%)</Label>
+                    <Input
+                      id="edit-latePenaltyRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.latePenaltyRate}
+                      onChange={(e) => setFormData({ ...formData, latePenaltyRate: e.target.value })}
+                      placeholder="0.50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-earlyLeavePenaltyRate">نسبة غرامة الانصراف المبكر (%)</Label>
+                    <Input
+                      id="edit-earlyLeavePenaltyRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.earlyLeavePenaltyRate}
+                      onChange={(e) => setFormData({ ...formData, earlyLeavePenaltyRate: e.target.value })}
+                      placeholder="0.50"
+                    />
+                  </div>
+                </div>
+              </div>
+              
               <div className="flex items-center gap-2">
                 <Switch
                   id="edit-isActive"
