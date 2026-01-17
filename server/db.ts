@@ -3184,6 +3184,9 @@ export async function getPayrollReportByWorker(
       baseAmount: workerDailyFinance.baseAmount,
       deductions: workerDailyFinance.deductions,
       bonuses: workerDailyFinance.bonuses,
+      fullDayOverride: workerDailyFinance.fullDayOverride,
+      overrideReason: workerDailyFinance.overrideReason,
+      workDate: workerDailyFinance.workDate,
     })
     .from(workerDailyFinance)
     .innerJoin(workers, eq(workerDailyFinance.workerId, workers.id))
@@ -3200,6 +3203,7 @@ export async function getPayrollReportByWorker(
     totalDeductions: number;
     totalBonuses: number;
     totalNet: number;
+    overrideNotes: string[];
   }>();
 
   results.forEach((row) => {
@@ -3209,11 +3213,17 @@ export async function getPayrollReportByWorker(
     const bonuses = parseFloat(row.bonuses || '0');
     const netAmount = baseAmount - deductions + bonuses;
 
+    // Collect override notes
+    const overrideNote = row.fullDayOverride && row.overrideReason
+      ? `${new Date(row.workDate).toLocaleDateString('ar-SA')}: ${row.overrideReason}`
+      : null;
+
     if (existing) {
       existing.totalSalary += baseAmount;
       existing.totalDeductions += deductions;
       existing.totalBonuses += bonuses;
       existing.totalNet += netAmount;
+      if (overrideNote) existing.overrideNotes.push(overrideNote);
     } else {
       workerMap.set(row.workerId, {
         workerName: row.workerName,
@@ -3224,6 +3234,7 @@ export async function getPayrollReportByWorker(
         totalDeductions: deductions,
         totalBonuses: bonuses,
         totalNet: netAmount,
+        overrideNotes: overrideNote ? [overrideNote] : [],
       });
     }
   });
@@ -3238,6 +3249,7 @@ export async function getPayrollReportByWorker(
     totalDeductions: data.totalDeductions.toFixed(2),
     totalBonuses: data.totalBonuses.toFixed(2),
     totalNet: data.totalNet.toFixed(2),
+    overrideNotes: data.overrideNotes.join(' | '),
   }));
 }
 

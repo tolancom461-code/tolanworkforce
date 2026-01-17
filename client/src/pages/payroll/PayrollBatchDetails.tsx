@@ -21,7 +21,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/payroll/StatusBadge";
-import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PayrollBatchDetails() {
@@ -36,6 +38,14 @@ export default function PayrollBatchDetails() {
     totalBonuses: "",
     notes: "",
   });
+
+  // Daily Details Dialog State
+  const [dailyDetailsOpen, setDailyDetailsOpen] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState<any>(null);
+  const [dailyData, setDailyData] = useState<any[]>([]);
+  const [overrideForm, setOverrideForm] = useState<{
+    [key: string]: { enabled: boolean; reason: string };
+  }>({});
 
   const utils = trpc.useUtils();
   const { data: batch, isLoading } = trpc.payroll.getDetails.useQuery({ batchId });
@@ -56,6 +66,22 @@ export default function PayrollBatchDetails() {
       toast.success("تم إرسال الدفعة للمراجعة");
       utils.payroll.getDetails.invalidate({ batchId });
       utils.payroll.listBatches.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`خطأ: ${error.message}`);
+    },
+  });
+
+  // Daily Override Mutation
+  const updateOverrideMutation = trpc.payroll.updateFullDayOverride.useMutation({
+    onSuccess: () => {
+      toast.success("تم تطبيق التصحيح بنجاح");
+      // إعادة جلب البيانات اليومية
+      if (selectedWorker && batch) {
+        handleOpenDailyDetails(selectedWorker);
+      }
+      // إعادة جلب تفاصيل الدفعة لتحديث المجاميع
+      utils.payroll.getDetails.invalidate({ batchId });
     },
     onError: (error) => {
       toast.error(`خطأ: ${error.message}`);
@@ -110,6 +136,70 @@ export default function PayrollBatchDetails() {
     if (confirm("هل أنت متأكد من إرسال الدفعة للمراجعة؟ لن تتمكن من التعديل بعد ذلك.")) {
       submitMutation.mutate({ batchId });
     }
+  };
+
+  // Daily Details Handlers
+  const handleOpenDailyDetails = async (worker: any) => {
+    setSelectedWorker(worker);
+    setDailyDetailsOpen(true);
+    
+    // Fetch daily finance data
+    try {
+      const data = await utils.client.payroll.getDailyFinanceForWorker.query({
+        workerId: worker.workerId,
+        periodStart: batch!.batch.periodStart.toISOString().split('T')[0],
+        periodEnd: batch!.batch.periodEnd.toISOString().split('T')[0],
+      });
+      setDailyData(data);
+      
+      // Initialize override form
+      const initialForm: any = {};
+      data.forEach((day: any) => {
+        initialForm[day.workDate] = {
+          enabled: day.fullDayOverride || false,
+          reason: day.overrideReason || "",
+        };
+      });
+      setOverrideForm(initialForm);
+    } catch (error: any) {
+      toast.error(`خطأ في جلب البيانات: ${error.message}`);
+    }
+  };
+
+  const handleOverrideChange = (workDate: string, enabled: boolean) => {
+    setOverrideForm(prev => ({
+      ...prev,
+      [workDate]: {
+        ...prev[workDate],
+        enabled,
+      },
+    }));
+  };
+
+  const handleReasonChange = (workDate: string, reason: string) => {
+    setOverrideForm(prev => ({
+      ...prev,
+      [workDate]: {
+        ...prev[workDate],
+        reason,
+      },
+    }));
+  };
+
+  const handleSaveOverride = (workDate: string) => {
+    const form = overrideForm[workDate];
+    
+    if (form.enabled && !form.reason.trim()) {
+      toast.error("يرجى إدخال سبب التصحيح");
+      return;
+    }
+
+    updateOverrideMutation.mutate({
+      workerId: selectedWorker!.workerId,
+      workDate,
+      fullDayOverride: form.enabled,
+      overrideReason: form.enabled ? form.reason : undefined,
+    });
   };
 
   if (isLoading) {
@@ -340,13 +430,24 @@ export default function PayrollBatchDetails() {
                       </TableCell>
                       {canEdit && (
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(item)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenDailyDetails(item)}
+                              title="تفاصيل الأيام"
+                            >
+                              <Calendar className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(item)}
+                              title="تعديل"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>
@@ -421,6 +522,151 @@ export default function PayrollBatchDetails() {
               ) : (
                 "حفظ"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Daily Details Dialog */}
+      <Dialog open={dailyDetailsOpen} onOpenChange={setDailyDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              تفاصيل الأيام - {selectedWorker?.workerName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {dailyData.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                لا توجد بيانات يومية لهذا العامل
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {dailyData.map((day: any) => {
+                  const form = overrideForm[day.workDate] || { enabled: false, reason: "" };
+                  const isOverridden = form.enabled;
+                  
+                  return (
+                    <Card key={day.workDate} className={isOverridden ? "border-green-500 bg-green-50" : ""}>
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* التاريخ والمعلومات الأساسية */}
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <h4 className="font-semibold text-lg">
+                                {new Date(day.workDate).toLocaleDateString('ar-SA', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </h4>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">الحضور:</span>{" "}
+                                  <span className="font-medium">{day.checkInTime || "-"}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">الانصراف:</span>{" "}
+                                  <span className="font-medium">{day.checkOutTime || "-"}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">دقائق التأخير:</span>{" "}
+                                  <span className="font-medium text-red-600">{day.lateMinutes || 0}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">دقائق الانصراف المبكر:</span>{" "}
+                                  <span className="font-medium text-red-600">{day.earlyLeaveMinutes || 0}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-left space-y-1">
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">الخصم:</span>{" "}
+                                <span className="font-bold text-red-600">
+                                  {Number(day.totalDeduction || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 })} ر.س
+                                </span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">الصافي:</span>{" "}
+                                <span className="font-bold text-green-600">
+                                  {Number(day.netAmount || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 })} ر.س
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* قسم التصحيح */}
+                          <div className="border-t pt-3 space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id={`override-${day.workDate}`}
+                                checked={form.enabled}
+                                onCheckedChange={(checked) => handleOverrideChange(day.workDate, checked as boolean)}
+                              />
+                              <Label htmlFor={`override-${day.workDate}`} className="font-medium cursor-pointer">
+                                اعتماد يوم كامل (تصحيح إداري)
+                              </Label>
+                            </div>
+                            
+                            {form.enabled && (
+                              <div className="space-y-2">
+                                <Label htmlFor={`reason-${day.workDate}`}>
+                                  سبب التصحيح <span className="text-red-500">*</span>
+                                </Label>
+                                <Textarea
+                                  id={`reason-${day.workDate}`}
+                                  value={form.reason}
+                                  onChange={(e) => handleReasonChange(day.workDate, e.target.value)}
+                                  placeholder="مثال: عذر طارئ معتمد من الإدارة"
+                                  rows={2}
+                                  className="resize-none"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveOverride(day.workDate)}
+                                  disabled={updateOverrideMutation.isPending}
+                                >
+                                  {updateOverrideMutation.isPending ? (
+                                    <>
+                                      <Loader2 className="h-3 w-3 ml-2 animate-spin" />
+                                      جاري الحفظ...
+                                    </>
+                                  ) : (
+                                    "حفظ التصحيح"
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* عرض سبب التصحيح إذا كان محفوظاً */}
+                            {day.fullDayOverride && day.overrideReason && (
+                              <div className="bg-green-100 border border-green-300 rounded p-3">
+                                <p className="text-sm font-medium text-green-800">
+                                  ✓ تم اعتماد هذا اليوم كاملاً
+                                </p>
+                                <p className="text-sm text-green-700 mt-1">
+                                  <span className="font-medium">السبب:</span> {day.overrideReason}
+                                </p>
+                                {day.overrideBy && (
+                                  <p className="text-xs text-green-600 mt-1">
+                                    بواسطة: {day.overrideBy} في {new Date(day.overrideAt).toLocaleString('ar-SA')}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDailyDetailsOpen(false)}>
+              إغلاق
             </Button>
           </DialogFooter>
         </DialogContent>

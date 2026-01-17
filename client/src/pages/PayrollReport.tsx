@@ -353,6 +353,9 @@ export default function PayrollReport() {
                       <TableHead className="text-center font-bold">إجمالي الخصم</TableHead>
                       <TableHead className="text-center font-bold">إجمالي الإضافي</TableHead>
                       <TableHead className="text-center font-bold">الإجمالي المستحق</TableHead>
+                      {reportType === 'worker' && (
+                        <TableHead className="text-center font-bold">ملاحظات التصحيح</TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -375,6 +378,11 @@ export default function PayrollReport() {
                         <TableCell className="text-center">{row.totalDeductions}</TableCell>
                         <TableCell className="text-center">{row.totalBonuses}</TableCell>
                         <TableCell className="text-center font-semibold">{row.totalNet}</TableCell>
+                        {reportType === 'worker' && (
+                          <TableCell className="text-center text-sm">
+                            {row.overrideNotes || '-'}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
 
@@ -388,6 +396,7 @@ export default function PayrollReport() {
                       <TableCell className="text-center">{totals.totalDeductions}</TableCell>
                       <TableCell className="text-center">{totals.totalBonuses}</TableCell>
                       <TableCell className="text-center">{totals.totalNet}</TableCell>
+                      {reportType === 'worker' && <TableCell></TableCell>}
                     </TableRow>
                   </TableBody>
                 </Table>
