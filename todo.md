@@ -1258,3 +1258,13 @@ Add "Approve Full Attendance" option that:
 - [x] اختبار صحة الحسابات (7 اختبارات نجحوا)
 - [x] اختبار تنسيق القيم المالية
 - [ ] Save checkpoint
+
+
+## New Task - إلغاء قسم تعديل الحضور
+
+- [x] حذف ملف AttendanceAdjust.tsx
+- [x] حذف ملف الاختبار attendance-adjust-group.test.ts
+- [x] حذف route من App.tsx
+- [x] حذف import من App.tsx
+- [x] حذف رابط تعديل الحضور من DashboardLayout
+- [ ] Save checkpoint
