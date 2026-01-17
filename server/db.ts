@@ -2734,3 +2734,129 @@ export async function authenticateLocalUser(username: string, password: string) 
   
   return user;
 }
+
+
+// ============================================
+// Payroll Workflow Functions
+// ============================================
+
+export async function submitBatchToAccounting(batchId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
+  if (!batch) throw new Error('Batch not found');
+  if (batch.status !== 'draft') throw new Error('Only draft batches can be submitted to accounting');
+  
+  await db.update(payrollBatches)
+    .set({
+      status: 'under_accountant_review',
+      updatedAt: new Date(),
+    })
+    .where(eq(payrollBatches.id, batchId));
+  
+  return { success: true };
+}
+
+export async function submitBatchToFinalReview(batchId: number, userId: number, reason?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
+  if (!batch) throw new Error('Batch not found');
+  if (batch.status !== 'under_accountant_review') throw new Error('Batch must be under accounting review');
+  
+  await db.update(payrollBatches)
+    .set({
+      status: 'under_financial_review',
+      notes: reason || batch.notes,
+      updatedAt: new Date(),
+    })
+    .where(eq(payrollBatches.id, batchId));
+  
+  return { success: true };
+}
+
+export async function submitBatchForApproval(batchId: number, userId: number, reason?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
+  if (!batch) throw new Error('Batch not found');
+  if (batch.status !== 'under_financial_review') throw new Error('Batch must be under financial review');
+  
+  await db.update(payrollBatches)
+    .set({
+      status: 'under_accounts_manager_review',
+      notes: reason || batch.notes,
+      updatedAt: new Date(),
+    })
+    .where(eq(payrollBatches.id, batchId));
+  
+  return { success: true };
+}
+
+export async function approveBatch(batchId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
+  if (!batch) throw new Error('Batch not found');
+  if (batch.status !== 'under_accounts_manager_review') throw new Error('Batch must be pending approval');
+  
+  await db.update(payrollBatches)
+    .set({
+      status: 'approved',
+      approvedBy: userId,
+      approvedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(payrollBatches.id, batchId));
+  
+  return { success: true };
+}
+
+export async function rejectBatch(batchId: number, userId: number, reason: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
+  if (!batch) throw new Error('Batch not found');
+  if (batch.status !== 'under_accounts_manager_review') throw new Error('Only pending batches can be rejected');
+  
+  const rejectionCount = (batch.rejectionCount || 0) + 1;
+  
+  await db.update(payrollBatches)
+    .set({
+      status: 'under_financial_review', // Return to final reviewer
+      notes: reason,
+      rejectionCount,
+      updatedAt: new Date(),
+    })
+    .where(eq(payrollBatches.id, batchId));
+  
+  return { success: true };
+}
+
+export async function updateBatchData(batchId: number, userId: number, reason: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
+  if (!batch) throw new Error('Batch not found');
+  
+  // Allow updates only in review stages
+  const allowedStatuses = ['under_accountant_review', 'under_financial_review'];
+  if (!batch.status || !allowedStatuses.includes(batch.status)) {
+    throw new Error('Batch cannot be modified in current status');
+  }
+  
+  await db.update(payrollBatches)
+    .set({
+      notes: reason,
+      updatedAt: new Date(),
+    })
+    .where(eq(payrollBatches.id, batchId));
+  
+  return { success: true };
+}

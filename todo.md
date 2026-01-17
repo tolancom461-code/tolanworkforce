@@ -1063,3 +1063,40 @@ Add "Approve Full Attendance" option that:
 - [x] إزالة جميع النصوص العربية من exportGroupQRCodes
 - [x] إزالة الحاجة للخط العربي
 - [x] Save checkpoint
+
+
+## Payroll Workflow System (نظام workflow دفعات الرواتب)
+
+### Phase 1: Schema & Database
+- [x] Schema موجود بالفعل مع workflow stages
+- [x] استخدام النظام الموجود (draft, under_accountant_review, under_financial_review, under_accounts_manager_review, approved, rejected_final)
+
+### Phase 2: Permissions
+- [x] إضافة صلاحية REVIEW_PAYROLL_ACCOUNTING (المحاسب المالي)
+- [x] إضافة صلاحية REVIEW_PAYROLL_FINAL (المراجع)
+- [x] إضافة صلاحية APPROVE_PAYROLL (المدير المالي) - موجودة بالفعل
+- [x] إضافة صلاحية REJECT_PAYROLL (المدير المالي)
+
+### Phase 3: Backend Implementation
+- [x] إضافة دالة submitBatchToAccounting في db.ts
+- [x] إضافة دالة submitBatchToFinalReview في db.ts
+- [x] إضافة دالة submitBatchForApproval في db.ts
+- [x] إضافة دالة approveBatch في db.ts
+- [x] إضافة دالة rejectBatch في db.ts
+- [x] إضافة دالة updateBatchData في db.ts
+- [x] إضافة دالة checkUserPermission في db.ts
+- [x] إضافة endpoints في routers.ts (submitToAccounting, submitToFinalReview, submitForApproval, approveBatchFinal, rejectBatchFinal)
+
+### Phase 4: Frontend Implementation
+- [ ] تحديث PayrollBatches.tsx لعرض المراحل
+- [ ] إضافة أزرار workflow حسب الصلاحيات
+- [ ] إضافة dialog لإدخال سبب التعديل
+- [ ] إضافة dialog لإدخال سبب الرفض
+- [ ] إضافة badges لحالة workflow
+- [ ] تحديث فلاتر البحث لتشمل المراحل
+
+### Phase 5: Testing
+- [ ] اختبار workflow كامل من البداية للنهاية
+- [ ] اختبار الصلاحيات
+- [ ] اختبار الرفض والإرجاع
+- [ ] Save checkpoint

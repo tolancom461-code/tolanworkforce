@@ -1345,6 +1345,76 @@ export const appRouter = router({
         return await db.relockPayroll(input.batchId, ctx.user.id);
       }),
     
+    // Workflow: Submit to accounting
+    submitToAccounting: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const hasPermission = await db.checkUserPermission(ctx.user.id, 'CREATE_PAYROLL');
+        if (!hasPermission) {
+          throw new Error('ليس لديك صلاحية إرسال دفعات الرواتب');
+        }
+        
+        return await db.submitBatchToAccounting(input.batchId, ctx.user.id);
+      }),
+    
+    // Workflow: Submit to final review
+    submitToFinalReview: protectedProcedure
+      .input(z.object({ batchId: z.number(), reason: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const hasPermission = await db.checkUserPermission(ctx.user.id, 'REVIEW_PAYROLL_ACCOUNTING');
+        if (!hasPermission) {
+          throw new Error('ليس لديك صلاحية مراجعة دفعات الرواتب');
+        }
+        
+        return await db.submitBatchToFinalReview(input.batchId, ctx.user.id, input.reason);
+      }),
+    
+    // Workflow: Submit for approval
+    submitForApproval: protectedProcedure
+      .input(z.object({ batchId: z.number(), reason: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const hasPermission = await db.checkUserPermission(ctx.user.id, 'REVIEW_PAYROLL_FINAL');
+        if (!hasPermission) {
+          throw new Error('ليس لديك صلاحية مراجعة دفعات الرواتب');
+        }
+        
+        return await db.submitBatchForApproval(input.batchId, ctx.user.id, input.reason);
+      }),
+    
+    // Workflow: Approve batch (Manager only)
+    approveBatchFinal: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const hasPermission = await db.checkUserPermission(ctx.user.id, 'APPROVE_PAYROLL');
+        if (!hasPermission) {
+          throw new Error('ليس لديك صلاحية اعتماد دفعات الرواتب');
+        }
+        
+        return await db.approveBatch(input.batchId, ctx.user.id);
+      }),
+    
+    // Workflow: Reject batch (Manager only)
+    rejectBatchFinal: protectedProcedure
+      .input(z.object({ batchId: z.number(), reason: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const hasPermission = await db.checkUserPermission(ctx.user.id, 'REJECT_PAYROLL');
+        if (!hasPermission) {
+          throw new Error('ليس لديك صلاحية رفض دفعات الرواتب');
+        }
+        
+        return await db.rejectBatch(input.batchId, ctx.user.id, input.reason);
+      }),
+    
     // Export batch to Excel
     exportToExcel: protectedProcedure
       .input(z.object({ batchId: z.number() }))

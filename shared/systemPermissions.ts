@@ -51,6 +51,9 @@ export const SYSTEM_PERMISSIONS = [
   { code: 'VIEW_PAYROLL', name: 'عرض الرواتب', category: 'الإدارة المالية', description: 'القدرة على عرض دفعات الرواتب' },
   { code: 'CREATE_PAYROLL', name: 'إنشاء دفعة رواتب', category: 'الإدارة المالية', description: 'القدرة على إنشاء دفعات رواتب جديدة' },
   { code: 'APPROVE_PAYROLL', name: 'اعتماد الرواتب', category: 'الإدارة المالية', description: 'القدرة على اعتماد دفعات الرواتب' },
+  { code: 'REJECT_PAYROLL', name: 'رفض الرواتب', category: 'الإدارة المالية', description: 'القدرة على رفض دفعات الرواتب وإرجاعها للمراجع' },
+  { code: 'REVIEW_PAYROLL_ACCOUNTING', name: 'مراجعة محاسبية', category: 'الإدارة المالية', description: 'القدرة على مراجعة وتعديل دفعات الرواتب (المحاسب المالي)' },
+  { code: 'REVIEW_PAYROLL_FINAL', name: 'مراجعة نهائية', category: 'الإدارة المالية', description: 'القدرة على مراجعة وتعديل دفعات الرواتب (المراجع)' },
   { code: 'FORCE_UNLOCK_PAYROLL', name: 'إلغاء قفل الرواتب', category: 'الإدارة المالية', description: 'القدرة على إلغاء قفل دفعة الراتب في حالات الطوارئ' },
   
   // Work Days Management
