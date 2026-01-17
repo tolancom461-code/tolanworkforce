@@ -1187,6 +1187,51 @@ export async function getAttendanceEventsForEdit(workerId: number, workDate: str
     .orderBy(attendanceEvents.eventTime);
 }
 
+export async function getAttendanceEventsByGroup(groupId: number, workDate: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents, workers } = await import('../drizzle/schema');
+  
+  // Get all workers in the group
+  const groupWorkers = await db
+    .select()
+    .from(workers)
+    .where(eq(workers.groupId, groupId));
+  
+  if (groupWorkers.length === 0) return [];
+  
+  const workerIds = groupWorkers.map(w => w.id);
+  
+  const dateStart = new Date(workDate);
+  dateStart.setHours(0, 0, 0, 0);
+  const dateEnd = new Date(workDate);
+  dateEnd.setHours(23, 59, 59, 999);
+  
+  // Get all events for all workers in the group
+  const events = await db
+    .select({
+      id: attendanceEvents.id,
+      workerId: attendanceEvents.workerId,
+      eventType: attendanceEvents.eventType,
+      eventTime: attendanceEvents.eventTime,
+      method: attendanceEvents.method,
+      note: attendanceEvents.note,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+    })
+    .from(attendanceEvents)
+    .innerJoin(workers, eq(attendanceEvents.workerId, workers.id))
+    .where(and(
+      sql`${attendanceEvents.workerId} IN (${sql.join(workerIds.map(id => sql`${id}`), sql`, `)})`,
+      gte(attendanceEvents.eventTime, dateStart),
+      lte(attendanceEvents.eventTime, dateEnd)
+    ))
+    .orderBy(workers.fullName, attendanceEvents.eventTime);
+  
+  return events;
+}
+
 // ============================================
 // Pay Overrides Functions
 // ============================================

@@ -1212,3 +1212,17 @@ Add "Approve Full Attendance" option that:
 - [x] حذف dailyRate من View Dialog
 - [x] حذف dailyRate من exportToExcel
 - [ ] Save checkpoint
+
+
+## New Task - إضافة خيار تعديل الحضور حسب المجموعة
+
+- [x] قراءة صفحة تعديل الحضور الحالية (AttendanceAdjust.tsx)
+- [x] إضافة radio buttons لاختيار نوع التعديل (عامل واحد / مجموعة)
+- [x] إضافة حقل اختيار المجموعة في الواجهة
+- [x] إضافة منطق إخفاء/إظهار الحقول حسب الاختيار
+- [x] إضافة backend procedure getEventsByGroup
+- [x] إضافة backend function getAttendanceEventsByGroup
+- [x] ربط الواجهة بالbackend
+- [x] تحديث جدول العرض لإظهار اسم العامل في حالة المجموعة
+- [x] اختبار التعديل حسب المجموعة (4 اختبارات نجحوا)
+- [ ] Save checkpoint

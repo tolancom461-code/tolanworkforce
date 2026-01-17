@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -19,10 +20,13 @@ import {
 import { toast } from 'sonner';
 
 export default function AttendanceAdjust() {
+  const [adjustmentType, setAdjustmentType] = useState<'worker' | 'group'>('worker');
   const [selectedWorker, setSelectedWorker] = useState<string>('');
+  const [selectedGroup, setSelectedGroup] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [editingEvent, setEditingEvent] = useState<{
     id: number;
+    workerId: number;
     eventType: string;
     eventTime: Date;
     note: string;
@@ -36,15 +40,21 @@ export default function AttendanceAdjust() {
   const [bulkAdjustmentMinutes, setBulkAdjustmentMinutes] = useState<number>(0);
   
   const { data: workers } = trpc.workers.list.useQuery();
+  const { data: groups } = trpc.groups.list.useQuery();
   const { data: events, refetch } = trpc.attendanceAdjust.getEvents.useQuery(
     { workerId: parseInt(selectedWorker), workDate: selectedDate },
-    { enabled: !!selectedWorker }
+    { enabled: adjustmentType === 'worker' && !!selectedWorker }
+  );
+  const { data: groupEvents, refetch: refetchGroupEvents } = trpc.attendanceAdjust.getEventsByGroup.useQuery(
+    { groupId: parseInt(selectedGroup), workDate: selectedDate },
+    { enabled: adjustmentType === 'group' && !!selectedGroup }
   );
   
   const updateMutation = trpc.attendanceAdjust.updateEvent.useMutation({
     onSuccess: () => {
       toast.success('تم تحديث سجل الحضور بنجاح');
-      refetch();
+      if (adjustmentType === 'worker') refetch();
+      else refetchGroupEvents();
       setShowEditDialog(false);
     },
     onError: (error) => {
@@ -61,7 +71,8 @@ export default function AttendanceAdjust() {
       } else {
         toast.warning(`تم تحديث ${successCount} سجل، فشل ${failCount} سجل`);
       }
-      refetch();
+      if (adjustmentType === 'worker') refetch();
+      else refetchGroupEvents();
       setShowBulkDialog(false);
       setSelectedEvents([]);
     },
@@ -107,8 +118,10 @@ export default function AttendanceAdjust() {
     // Validation: If this is check-out, ensure it's after check-in
     if (editingEvent.eventType === 'check_out') {
       // Find corresponding check-in event
-      const checkInEvent = events?.find(e => 
+      const currentEvents = adjustmentType === 'worker' ? events : groupEvents;
+      const checkInEvent = currentEvents?.find((e: any) => 
         e.eventType === 'check_in' && 
+        e.workerId === editingEvent.workerId &&
         new Date(e.eventTime).toDateString() === newTime.toDateString()
       );
       
@@ -133,8 +146,10 @@ export default function AttendanceAdjust() {
     
     // Validation: If this is check-in, ensure it's before check-out
     if (editingEvent.eventType === 'check_in') {
-      const checkOutEvent = events?.find(e => 
+      const currentEvents = adjustmentType === 'worker' ? events : groupEvents;
+      const checkOutEvent = currentEvents?.find((e: any) => 
         e.eventType === 'check_out' && 
+        e.workerId === editingEvent.workerId &&
         new Date(e.eventTime).toDateString() === newTime.toDateString()
       );
       
@@ -193,10 +208,11 @@ export default function AttendanceAdjust() {
   };
   
   const toggleSelectAll = () => {
-    if (selectedEvents.length === events?.length) {
+    const currentEvents = adjustmentType === 'worker' ? events : groupEvents;
+    if (selectedEvents.length === currentEvents?.length) {
       setSelectedEvents([]);
     } else {
-      setSelectedEvents(events?.map(e => e.id) || []);
+      setSelectedEvents(currentEvents?.map(e => e.id) || []);
     }
   };
 
@@ -217,25 +233,64 @@ export default function AttendanceAdjust() {
       <Card>
         <CardHeader>
           <CardTitle>البحث عن سجل الحضور</CardTitle>
-          <CardDescription>اختر العامل والتاريخ لعرض سجلات الحضور</CardDescription>
+          <CardDescription>اختر نوع التعديل والتاريخ لعرض سجلات الحضور</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-4">
+            {/* Adjustment Type Selection */}
             <div className="space-y-2">
-              <Label>العامل</Label>
-              <Select value={selectedWorker} onValueChange={setSelectedWorker}>
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر العامل" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workers?.map((worker) => (
-                    <SelectItem key={worker.id} value={worker.id.toString()}>
-                      {worker.fullName} ({worker.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>نوع التعديل</Label>
+              <RadioGroup value={adjustmentType} onValueChange={(value: 'worker' | 'group') => {
+                setAdjustmentType(value);
+                setSelectedWorker('');
+                setSelectedGroup('');
+                setSelectedEvents([]);
+              }}>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="worker" id="worker" />
+                  <Label htmlFor="worker" className="cursor-pointer">تعديل حسب العامل</Label>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="group" id="group" />
+                  <Label htmlFor="group" className="cursor-pointer">تعديل حسب المجموعة</Label>
+                </div>
+              </RadioGroup>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {adjustmentType === 'worker' ? (
+                <div className="space-y-2">
+                  <Label>العامل</Label>
+                  <Select value={selectedWorker} onValueChange={setSelectedWorker}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر العامل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workers?.map((worker) => (
+                        <SelectItem key={worker.id} value={worker.id.toString()}>
+                          {worker.fullName} ({worker.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>المجموعة</Label>
+                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر المجموعة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groups?.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             <div className="space-y-2">
               <Label>التاريخ</Label>
               <Input
@@ -244,18 +299,22 @@ export default function AttendanceAdjust() {
                 onChange={(e) => setSelectedDate(e.target.value)}
               />
             </div>
-            <div className="flex items-end">
-              <Button onClick={() => refetch()} disabled={!selectedWorker}>
-                <Search className="h-4 w-4 ml-2" />
-                بحث
-              </Button>
+              <div className="flex items-end">
+                <Button onClick={() => {
+                  if (adjustmentType === 'worker') refetch();
+                  else refetchGroupEvents();
+                }} disabled={adjustmentType === 'worker' ? !selectedWorker : !selectedGroup}>
+                  <Search className="h-4 w-4 ml-2" />
+                  بحث
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Events Table */}
-      {selectedWorker && (
+      {(selectedWorker || selectedGroup) && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -265,7 +324,7 @@ export default function AttendanceAdjust() {
                   سجلات يوم {new Date(selectedDate).toLocaleDateString('ar-SA')}
                 </CardDescription>
               </div>
-              {events && events.length > 0 && (
+              {((adjustmentType === 'worker' && events && events.length > 0) || (adjustmentType === 'group' && groupEvents && groupEvents.length > 0)) && (
                 <Button 
                   variant="outline" 
                   onClick={handleBulkEdit}
@@ -278,7 +337,7 @@ export default function AttendanceAdjust() {
             </div>
           </CardHeader>
           <CardContent>
-            {!events?.length ? (
+            {(adjustmentType === 'worker' && !events?.length) || (adjustmentType === 'group' && !groupEvents?.length) ? (
               <div className="text-center py-8">
                 <Clock className="h-12 w-12 mx-auto text-muted-foreground opacity-50" />
                 <p className="mt-2 text-muted-foreground">لا توجد سجلات لهذا اليوم</p>
@@ -290,11 +349,12 @@ export default function AttendanceAdjust() {
                     <TableHead className="text-right w-12">
                       <input 
                         type="checkbox" 
-                        checked={selectedEvents.length === events.length}
+                        checked={selectedEvents.length === (adjustmentType === 'worker' ? events?.length || 0 : groupEvents?.length || 0)}
                         onChange={toggleSelectAll}
                         className="rounded border-gray-300"
                       />
                     </TableHead>
+                    {adjustmentType === 'group' && <TableHead className="text-right">العامل</TableHead>}
                     <TableHead className="text-right">النوع</TableHead>
                     <TableHead className="text-right">الوقت</TableHead>
                     <TableHead className="text-right">الطريقة</TableHead>
@@ -303,7 +363,7 @@ export default function AttendanceAdjust() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {events.map((event) => (
+                  {(adjustmentType === 'worker' ? events : groupEvents)?.map((event: any) => (
                     <TableRow key={event.id}>
                       <TableCell>
                         <input 
@@ -313,6 +373,14 @@ export default function AttendanceAdjust() {
                           className="rounded border-gray-300"
                         />
                       </TableCell>
+                      {adjustmentType === 'group' && (
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{event.workerName}</div>
+                            <div className="text-sm text-muted-foreground">{event.workerCode}</div>
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Badge variant={event.eventType === 'check_in' ? 'default' : 'secondary'}>
                           {event.eventType === 'check_in' ? 'حضور' : 'انصراف'}

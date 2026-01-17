@@ -943,6 +943,16 @@ export const appRouter = router({
         return await db.getAttendanceEventsForEdit(input.workerId, input.workDate);
       }),
     
+    // Get events by group for editing
+    getEventsByGroup: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        workDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getAttendanceEventsByGroup(input.groupId, input.workDate);
+      }),
+    
     // Update attendance event
     updateEvent: protectedProcedure
       .input(z.object({
