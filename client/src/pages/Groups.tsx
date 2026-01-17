@@ -31,6 +31,8 @@ export default function Groups() {
     workMinutes: "",
     latePenaltyRate: "",
     earlyLeavePenaltyRate: "",
+    shiftStartTime: "",
+    shiftEndTime: "",
     isActive: true,
   });
 
@@ -152,6 +154,8 @@ export default function Groups() {
       workMinutes: "",
       latePenaltyRate: "",
       earlyLeavePenaltyRate: "",
+      shiftStartTime: "",
+      shiftEndTime: "",
       isActive: true,
     });
   };
@@ -175,6 +179,8 @@ export default function Groups() {
       workMinutes: group.workMinutes || "",
       latePenaltyRate: group.latePenaltyRate || "",
       earlyLeavePenaltyRate: group.earlyLeavePenaltyRate || "",
+      shiftStartTime: group.shiftStartTime || "",
+      shiftEndTime: group.shiftEndTime || "",
       isActive: group.isActive,
     });
     setIsEditDialogOpen(true);
@@ -190,6 +196,12 @@ export default function Groups() {
   };
 
   const handleSubmit = () => {
+    // Validate shift times
+    if (!formData.shiftStartTime || !formData.shiftEndTime) {
+      toast.error("يجب تحديد أوقات الوردية (إلزامي)");
+      return;
+    }
+    
     // Convert string values to numbers or null
     const payload = {
       ...formData,
@@ -358,6 +370,37 @@ export default function Groups() {
                     </div>
                   </div>
                 </div>
+                
+                {/* Shift Times */}
+                <div className="border-t pt-4 mt-2">
+                  <h4 className="text-sm font-medium mb-3">أوقات الوردية (إلزامي)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="shiftStartTime">بداية الوردية *</Label>
+                      <Input
+                        id="shiftStartTime"
+                        type="time"
+                        value={formData.shiftStartTime}
+                        onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="shiftEndTime">نهاية الوردية *</Label>
+                      <Input
+                        id="shiftEndTime"
+                        type="time"
+                        value={formData.shiftEndTime}
+                        onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ⚠️ يتم احتساب الأجر مالياً فقط للوقت الواقع داخل وقت الوردية
+                  </p>
+                </div>
+                
                 <div className="flex items-center gap-2">
                   <Switch
                     id="isActive"
@@ -623,6 +666,36 @@ export default function Groups() {
                     />
                   </div>
                 </div>
+              </div>
+              
+              {/* Shift Times */}
+              <div className="border-t pt-4 mt-2">
+                <h4 className="text-sm font-medium mb-3">أوقات الوردية (إلزامي)</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-shiftStartTime">بداية الوردية *</Label>
+                    <Input
+                      id="edit-shiftStartTime"
+                      type="time"
+                      value={formData.shiftStartTime}
+                      onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-shiftEndTime">نهاية الوردية *</Label>
+                    <Input
+                      id="edit-shiftEndTime"
+                      type="time"
+                      value={formData.shiftEndTime}
+                      onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  ⚠️ يتم احتساب الأجر مالياً فقط للوقت الواقع داخل وقت الوردية
+                </p>
               </div>
               
               <div className="flex items-center gap-2">

@@ -114,6 +114,9 @@ export const groups = mysqlTable("groups", {
   minuteCost: decimal("minute_cost", { precision: 10, scale: 4 }),
   latePenaltyRate: decimal("late_penalty_rate", { precision: 5, scale: 2 }),
   earlyLeavePenaltyRate: decimal("early_leave_penalty_rate", { precision: 5, scale: 2 }),
+  // Shift times for financial calculation
+  shiftStartTime: varchar("shift_start_time", { length: 10 }), // Format: HH:MM (e.g., "08:00")
+  shiftEndTime: varchar("shift_end_time", { length: 10 }), // Format: HH:MM (e.g., "17:00")
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),

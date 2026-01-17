@@ -984,6 +984,8 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   let groupWorkMinutes: number | null = null;
   let groupLatePenaltyRate: number | null = null;
   let groupEarlyLeavePenaltyRate: number | null = null;
+  let shiftStartTime: string | null = null;
+  let shiftEndTime: string | null = null;
   
   if (worker.groupId) {
     const [group] = await db.select().from(groups).where(eq(groups.id, worker.groupId)).limit(1);
@@ -996,16 +998,13 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       groupWorkMinutes = group.workMinutes;
       groupLatePenaltyRate = group.latePenaltyRate ? parseFloat(group.latePenaltyRate.toString()) : null;
       groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? parseFloat(group.earlyLeavePenaltyRate.toString()) : null;
-    }
-    
-    // Get shift
-    const [shift] = await db.select().from(groupShifts).where(and(
-      eq(groupShifts.groupId, worker.groupId),
-      eq(groupShifts.isActive, true)
-    )).limit(1);
-    if (shift) {
-      expectedStartTime = shift.startTime;
-      expectedEndTime = shift.endTime;
+      // Load shift times for financial calculation
+      shiftStartTime = group.shiftStartTime;
+      shiftEndTime = group.shiftEndTime;
+      
+      // If shift times are defined, use them as expected times
+      if (shiftStartTime) expectedStartTime = shiftStartTime;
+      if (shiftEndTime) expectedEndTime = shiftEndTime;
     }
   }
   
@@ -1037,28 +1036,40 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   
   let lateMinutes = 0;
   let earlyLeaveMinutes = 0;
+  let actualCheckInTime: Date | null = null;
+  let actualCheckOutTime: Date | null = null;
+  
+  // Parse shift times
+  const [shiftStartHour, shiftStartMin] = expectedStartTime.split(':').map(Number);
+  const [shiftEndHour, shiftEndMin] = expectedEndTime.split(':').map(Number);
   
   if (checkIn) {
-    // Calculate late minutes
-    const [expectedHour, expectedMin] = expectedStartTime.split(':').map(Number);
     const checkInTime = new Date(checkIn.eventTime);
-    const expectedStart = new Date(checkInTime);
-    expectedStart.setHours(expectedHour, expectedMin, 0, 0);
+    const shiftStart = new Date(checkInTime);
+    shiftStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
     
-    if (checkInTime > expectedStart) {
-      lateMinutes = Math.round((checkInTime.getTime() - expectedStart.getTime()) / (1000 * 60));
+    // Financial calculation: use shift start if checked in before shift
+    // This means early arrival is NOT counted financially
+    actualCheckInTime = checkInTime < shiftStart ? shiftStart : checkInTime;
+    
+    // Calculate late minutes (only if checked in after shift start)
+    if (checkInTime > shiftStart) {
+      lateMinutes = Math.round((checkInTime.getTime() - shiftStart.getTime()) / (1000 * 60));
     }
   }
   
   if (checkOut) {
-    // Calculate early leave minutes
-    const [expectedHour, expectedMin] = expectedEndTime.split(':').map(Number);
     const checkOutTime = new Date(checkOut.eventTime);
-    const expectedEnd = new Date(checkOutTime);
-    expectedEnd.setHours(expectedHour, expectedMin, 0, 0);
+    const shiftEnd = new Date(checkOutTime);
+    shiftEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
     
-    if (checkOutTime < expectedEnd) {
-      earlyLeaveMinutes = Math.round((expectedEnd.getTime() - checkOutTime.getTime()) / (1000 * 60));
+    // Financial calculation: use shift end if checked out after shift
+    // This means late departure is NOT counted financially
+    actualCheckOutTime = checkOutTime > shiftEnd ? shiftEnd : checkOutTime;
+    
+    // Calculate early leave minutes (only if checked out before shift end)
+    if (checkOutTime < shiftEnd) {
+      earlyLeaveMinutes = Math.round((shiftEnd.getTime() - checkOutTime.getTime()) / (1000 * 60));
     }
   }
   

@@ -1268,3 +1268,30 @@ Add "Approve Full Attendance" option that:
 - [x] حذف import من App.tsx
 - [x] حذف رابط تعديل الحضور من DashboardLayout
 - [ ] Save checkpoint
+
+
+## New Task - تطبيق نظام الورديات المعتمد
+
+### Schema Updates
+- [x] إضافة حقل shift_start_time (وقت بداية الوردية) في جدول groups
+- [x] إضافة حقل shift_end_time (وقت نهاية الوردية) في جدول groups
+- [x] تشغيل db:push لتطبيق التغييرات
+
+### Frontend - Groups.tsx
+- [x] إضافة حقل إدخال shift_start_time في Add/Edit Dialog
+- [x] إضافة حقل إدخال shift_end_time في Add/Edit Dialog
+- [x] إضافة validation (shift_start_time و shift_end_time إلزاميين)
+- [x] إضافة رسالة توضيحية عن الحساب المالي
+- [ ] عرض أوقات الوردية في جدول المجموعات
+### Backend - Calculation Logic
+- [x] تحديث calculateDailyFinanceFromAttendance لاستخدام shift times
+- [x] حساب ساعات العمل المالية فقط داخل وقت الوردية
+- [x] تجاهل الحضور المبكر قبل بداية الوردية مالياً (actualCheckInTime = shiftStart)
+- [x] تجاهل الانصراف المتأخر بعد نهاية الوردية مالياً (actualCheckOutTime = shiftEnd)
+- [x] الاحتفاظ بالتسجيل الكامل للسجلات (events تبقى كما هي)حضور/الانصراف (للسجلات فقط)
+
+### Testing
+- [ ] كتابة unit tests لنظام الورديات
+- [ ] اختبار حساب الوقت داخل الوردية
+- [ ] اختبار تجاهل الوقت خارج الوردية
+- [ ] Save checkpoint
