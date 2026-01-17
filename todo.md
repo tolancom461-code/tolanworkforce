@@ -1198,3 +1198,17 @@ Add "Approve Full Attendance" option that:
 - [x] البحث عن قسم "معلومات النظام" في Dashboard.tsx
 - [x] حذف القسم بالكامل من Dashboard
 - [ ] Save checkpoint
+
+
+## New Task - حذف حقل الأجر اليومي من نموذج العامل
+
+- [x] البحث عن حقل dailyRate في Workers.tsx
+- [x] حذف حقل dailyRate من formData
+- [x] حذف حقل dailyRate من Add Worker Dialog
+- [x] حذف حقل dailyRate من Edit Worker Dialog
+- [x] تحديث resetForm لإزالة dailyRate
+- [x] تحديث handleEdit لإزالة dailyRate
+- [x] حذف عمود dailyRate من جدول العرض
+- [x] حذف dailyRate من View Dialog
+- [x] حذف dailyRate من exportToExcel
+- [ ] Save checkpoint

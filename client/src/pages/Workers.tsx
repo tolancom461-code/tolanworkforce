@@ -33,7 +33,6 @@ export default function Workers() {
     phone: "",
     groupId: null as number | null,
     jobId: null as number | null,
-    dailyRate: "",
     photoUrl: "",
     hireDate: "",
     status: "active" as "active" | "inactive" | "archived",
@@ -126,7 +125,6 @@ export default function Workers() {
       phone: "",
       groupId: null,
       jobId: null,
-      dailyRate: "",
       photoUrl: "",
       hireDate: "",
       status: "active",
@@ -142,7 +140,6 @@ export default function Workers() {
       phone: worker.phone || "",
       groupId: worker.groupId,
       jobId: worker.jobId,
-      dailyRate: worker.dailyRate || "",
       photoUrl: worker.photoUrl || "",
       hireDate: worker.hireDate ? new Date(worker.hireDate).toISOString().split('T')[0] : "",
       status: worker.status || "active",
@@ -236,7 +233,6 @@ export default function Workers() {
         'رقم الهوية': worker.nationalId || '-',
         'رقم الجوال': worker.phone || '-',
         'المجموعة': groupName,
-        'الأجر اليومي': worker.dailyRate || '-',
         'تاريخ التوظيف': worker.hireDate ? new Date(worker.hireDate).toLocaleDateString('ar-SA') : '-',
         'الحالة': worker.status === 'active' ? 'نشط' : worker.status === 'inactive' ? 'غير نشط' : 'مؤرشف',
       };
@@ -340,16 +336,6 @@ export default function Workers() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dailyRate">الأجر اليومي</Label>
-                    <Input
-                      id="dailyRate"
-                      type="number"
-                      value={formData.dailyRate}
-                      onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
-                      placeholder="100.00"
-                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -470,7 +456,6 @@ export default function Workers() {
                     <TableHead className="text-right">الكود</TableHead>
                     <TableHead className="text-right">رقم الهوية</TableHead>
                     <TableHead className="text-right">المجموعة</TableHead>
-                    <TableHead className="text-right">الأجر اليومي</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
@@ -495,7 +480,6 @@ export default function Workers() {
                       <TableCell className="font-mono">{worker.code}</TableCell>
                       <TableCell>{worker.nationalId || "-"}</TableCell>
                       <TableCell>{getGroupName(worker.groupId)}</TableCell>
-                      <TableCell>{worker.dailyRate || "-"}</TableCell>
                       <TableCell>{getStatusBadge(worker.status || "active")}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -635,15 +619,6 @@ export default function Workers() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-dailyRate">الأجر اليومي</Label>
-                  <Input
-                    id="edit-dailyRate"
-                    type="number"
-                    value={formData.dailyRate}
-                    onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
-                  />
-                </div>
               </div>
               <div className="space-y-2">
                 <Label>الحالة</Label>
@@ -706,10 +681,6 @@ export default function Workers() {
                   <div>
                     <p className="text-sm text-muted-foreground">المجموعة</p>
                     <p className="font-medium">{getGroupName(selectedWorker.groupId)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">الأجر اليومي</p>
-                    <p className="font-medium">{selectedWorker.dailyRate || "-"}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">تاريخ التعيين</p>
