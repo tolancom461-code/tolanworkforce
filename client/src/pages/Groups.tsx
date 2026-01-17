@@ -471,6 +471,7 @@ export default function Groups() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
+              <div className="rounded-md border overflow-x-auto max-h-[600px] overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -555,6 +556,7 @@ export default function Groups() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>

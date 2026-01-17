@@ -55,7 +55,9 @@ import {
   DollarSign,
   CheckCircle,
   FileCheck,
-  ChevronDown
+  ChevronDown,
+  Flag,
+  Clock
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -88,6 +90,8 @@ const menuSections = [
       { icon: CheckCircle, label: "إدارة الحضور اليومي", path: "/attendance/daily-management", permission: MENU_PERMISSIONS.ATTENDANCE_DAILY_MANAGEMENT },
       { icon: BarChart3, label: "تقارير الحضور", path: "/attendance/reports", permission: MENU_PERMISSIONS.ATTENDANCE_REPORTS },
       { icon: Calendar, label: "أيام العمل", path: "/work-days", permission: MENU_PERMISSIONS.WORK_DAYS },
+      { icon: Flag, label: "البلاغات التشغيلية", path: "/operational-flags", permission: MENU_PERMISSIONS.OPERATIONAL_FLAGS },
+      { icon: Clock, label: "البلاغات المعلقة", path: "/pending-flags", permission: MENU_PERMISSIONS.PENDING_FLAGS },
     ]
   },
   {

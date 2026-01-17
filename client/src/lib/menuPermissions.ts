@@ -18,6 +18,8 @@ export const MENU_PERMISSIONS = {
   ATTENDANCE_DAILY_MANAGEMENT: 'manage_daily_attendance',
   ATTENDANCE_REPORTS: 'view_attendance_reports',
   WORK_DAYS: 'manage_work_days',
+  OPERATIONAL_FLAGS: 'create_operational_flags',
+  PENDING_FLAGS: 'manage_pending_flags',
   
   // النظام المالي
   FINANCE_ENTRY: 'manage_finance_entries',
@@ -92,6 +94,8 @@ export const PERMISSION_CATEGORIES: Record<string, { label: string; permissions:
       'manage_daily_attendance',
       'view_attendance_reports',
       'manage_work_days',
+      'create_operational_flags',
+      'manage_pending_flags',
     ],
   },
   financial: {

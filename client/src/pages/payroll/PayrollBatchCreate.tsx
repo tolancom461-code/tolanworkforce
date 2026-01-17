@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,36 @@ export default function PayrollBatchCreate() {
   const [periodEnd, setPeriodEnd] = useState("");
   const [costCenterId, setCostCenterId] = useState<number | undefined>();
   const [groupId, setGroupId] = useState<number | undefined>();
+  const [unresolvedCount, setUnresolvedCount] = useState<number>(0);
 
   const { data: allGroups } = trpc.groups.list.useQuery();
   const { data: costCenters } = trpc.costCenters.list.useQuery();
+  
+  // Check for unresolved flags when period/group/costCenter changes
+  const { data: unresolvedData, refetch: refetchUnresolved } = trpc.operationalFlags.checkUnresolved.useQuery(
+    {
+      groupId,
+      dateRange: periodStart && periodEnd ? {
+        start: periodStart,
+        end: periodEnd,
+      } : undefined,
+    },
+    {
+      enabled: !!periodStart && !!periodEnd,
+    }
+  );
+  
+  // Update count when data changes
+  useEffect(() => {
+    if (unresolvedData) {
+      setUnresolvedCount(unresolvedData.count);
+      if (unresolvedData.count > 0) {
+        toast.warning(`تحذير: يوجد ${unresolvedData.count} بلاغ تشغيلي غير معالج في هذه الفترة`);
+      } else {
+        setUnresolvedCount(0);
+      }
+    }
+  }, [unresolvedData]);
   
   // Filter groups by cost center
   const groups = costCenterId 
@@ -40,6 +67,8 @@ export default function PayrollBatchCreate() {
     },
   });
 
+
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -50,6 +79,12 @@ export default function PayrollBatchCreate() {
 
     if (new Date(periodStart) > new Date(periodEnd)) {
       toast.error("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
+      return;
+    }
+
+    // Check for unresolved flags before creating batch
+    if (unresolvedCount > 0) {
+      toast.error(`لا يمكن إنشاء دفعة الرواتب. يوجد ${unresolvedCount} بلاغ تشغيلي غير معالج. يرجى معالجة جميع البلاغات أولاً.`);
       return;
     }
 
