@@ -556,7 +556,7 @@ export default function Groups() {
                   )}
                 </TableBody>
               </Table>
-              </div>
+            </div>
             )}
           </CardContent>
         </Card>

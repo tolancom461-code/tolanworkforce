@@ -1649,6 +1649,27 @@ export const appRouter = router({
           ...input,
           createdBy: ctx.user.id,
         });
+        
+        // Send notification to admin
+        try {
+          const { notifyOwner } = await import('./_core/notification');
+          const flagTypeLabels: Record<string, string> = {
+            'emergency_call': 'استدعاء طارئ',
+            'justified_late': 'تأخر مبرر',
+            'justified_early_leave': 'خروج مبكر مبرر',
+            'justified_absence': 'غياب مبرر',
+            'proposed_deduction': 'خصم مقترح',
+            'proposed_bonus': 'إضافة مقترحة',
+            'general_report': 'بلاغ عام'
+          };
+          await notifyOwner({
+            title: `بلاغ تشغيلي جديد: ${flagTypeLabels[input.flagType] || input.flagType}`,
+            content: `تم إنشاء بلاغ تشغيلي جديد بواسطة ${ctx.user.fullName || ctx.user.username}\nنوع البلاغ: ${flagTypeLabels[input.flagType] || input.flagType}\nالتاريخ: ${input.flagDate}\nالوصف: ${input.description}\n\nيرجى مراجعة البلاغ ومعالجته من قسم الشؤون الإدارية.`
+          });
+        } catch (error) {
+          console.error('Failed to send notification:', error);
+        }
+        
         return { success: true, flagId };
       }),
 
@@ -1682,12 +1703,40 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        return await db.resolveOperationalFlag(
+        
+        // Get flag details before resolving
+        const flag = await db.getOperationalFlag(input.id);
+        
+        const result = await db.resolveOperationalFlag(
           input.id,
           ctx.user.id,
           input.action,
           input.notes
         );
+        
+        // Send notification to flag creator
+        if (flag && flag.createdBy) {
+          try {
+            const { notifyOwner } = await import('./_core/notification');
+            const flagTypeLabels: Record<string, string> = {
+              'emergency_call': 'استدعاء طارئ',
+              'justified_late': 'تأخر مبرر',
+              'justified_early_leave': 'خروج مبكر مبرر',
+              'justified_absence': 'غياب مبرر',
+              'proposed_deduction': 'خصم مقترح',
+              'proposed_bonus': 'إضافة مقترحة',
+              'general_report': 'بلاغ عام'
+            };
+            await notifyOwner({
+              title: `تم معالجة بلاغك التشغيلي`,
+              content: `تم معالجة بلاغك التشغيلي بواسطة ${ctx.user.fullName || ctx.user.username}\nنوع البلاغ: ${flagTypeLabels[flag.flagType] || flag.flagType}\nالتاريخ: ${flag.flagDate}\nالإجراء: ${input.action}${input.notes ? `\nملاحظات: ${input.notes}` : ''}`
+            });
+          } catch (error) {
+            console.error('Failed to send notification:', error);
+          }
+        }
+        
+        return result;
       }),
 
     // Ignore a flag
