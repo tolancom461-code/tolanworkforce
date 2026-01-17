@@ -1053,3 +1053,13 @@ Add "Approve Full Attendance" option that:
 - [x] اختبار وجود الخط (3/3 tests passed)
 - [x] التأكد من حجم الخط الصحيح
 - [x] Save checkpoint
+
+
+## Simplify QR Code Export (تبسيط تصدير QR code)
+
+- [x] إزالة جميع النصوص العربية من exportWorkerQRCode
+- [x] إبقاء رمز العامل (manualCode) فقط
+- [x] إبقاء QR code فقط
+- [x] إزالة جميع النصوص العربية من exportGroupQRCodes
+- [x] إزالة الحاجة للخط العربي
+- [x] Save checkpoint

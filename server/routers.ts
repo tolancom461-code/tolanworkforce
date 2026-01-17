@@ -511,38 +511,25 @@ export const appRouter = router({
           margin: 2,
         });
         
-        // Create PDF
+        // Create PDF (simple layout: code + QR only)
         const doc = new PDFDocument({ size: 'A6', margin: 20 });
         const chunks: Buffer[] = [];
-        
-        // Register Arabic font
-        const fontPath = path.resolve('/home/ubuntu/tolanworkforce/server/fonts/NotoSansArabic-Regular.ttf');
-        doc.registerFont('Arabic', fontPath);
-        doc.font('Arabic');
         
         doc.on('data', (chunk: Buffer) => chunks.push(chunk));
         
         await new Promise<void>((resolve) => {
           doc.on('end', () => resolve());
           
-          // Add title
-          doc.fontSize(16).text('بطاقة عامل', { align: 'center' });
-          doc.moveDown();
+          // Add worker code at top
+          doc.fontSize(24).text(worker.manualCode || 'N/A', { align: 'center' });
+          doc.moveDown(2);
           
-          // Add worker info
-          doc.fontSize(14).text(`الاسم: ${worker.fullName}`, { align: 'right' });
-          doc.fontSize(12).text(`الرمز: ${worker.manualCode || 'N/A'}`, { align: 'right' });
-          doc.moveDown();
-          
-          // Add QR Code
+          // Add QR Code (centered)
           const qrImage = Buffer.from(qrDataUrl.split(',')[1], 'base64');
           doc.image(qrImage, {
-            fit: [200, 200],
+            fit: [250, 250],
             align: 'center',
           });
-          
-          doc.moveDown();
-          doc.fontSize(10).text(worker.qrToken!, { align: 'center' });
           
           doc.end();
         });
@@ -569,25 +556,16 @@ export const appRouter = router({
         const group = await db.getGroupById(input.groupId);
         const groupName = group?.name || 'مجموعة';
         
-        // Create PDF
+        // Create PDF (simple layout: code + QR only)
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
         const chunks: Buffer[] = [];
-        
-        // Register Arabic font
-        const fontPath = path.resolve('/home/ubuntu/tolanworkforce/server/fonts/NotoSansArabic-Regular.ttf');
-        doc.registerFont('Arabic', fontPath);
-        doc.font('Arabic');
         
         doc.on('data', (chunk: Buffer) => chunks.push(chunk));
         
         await new Promise<void>(async (resolve) => {
           doc.on('end', () => resolve());
           
-          // Add title
-          doc.fontSize(18).text(`بطاقات عمال - ${groupName}`, { align: 'center' });
-          doc.moveDown(2);
-          
-          // Add each worker
+          // Add each worker (3 per page)
           for (let i = 0; i < workers.length; i++) {
             const worker = workers[i];
             
@@ -607,19 +585,17 @@ export const appRouter = router({
               margin: 1,
             });
             
-            // Worker card
-            doc.fontSize(14).text(`${i + 1}. ${worker.fullName}`, { align: 'right' });
-            doc.fontSize(11).text(`الرمز: ${worker.manualCode || 'N/A'}`, { align: 'right' });
-            doc.moveDown(0.5);
+            // Worker code at top
+            doc.fontSize(18).text(worker.manualCode || 'N/A', { align: 'center' });
+            doc.moveDown(1);
             
             // Add QR Code
             const qrImage = Buffer.from(qrDataUrl.split(',')[1], 'base64');
             doc.image(qrImage, {
-              fit: [150, 150],
+              fit: [180, 180],
               align: 'center',
             });
             
-            doc.fontSize(9).text(worker.qrToken!, { align: 'center' });
             doc.moveDown(2);
             
             // Add separator line
