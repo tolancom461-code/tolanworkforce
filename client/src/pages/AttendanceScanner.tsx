@@ -33,6 +33,7 @@ export default function AttendanceScanner() {
     timestamp?: Date;
   } | null>(null);
   const [showResultDialog, setShowResultDialog] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -96,6 +97,10 @@ export default function AttendanceScanner() {
       // Play success beep
       playSuccessBeep();
       
+      // Show success animation
+      setShowSuccessAnimation(true);
+      setTimeout(() => setShowSuccessAnimation(false), 1500);
+      
       // Auto-close dialog after 3 seconds
       setTimeout(() => {
         setShowResultDialog(false);
@@ -129,6 +134,10 @@ export default function AttendanceScanner() {
       
       // Play success beep
       playSuccessBeep();
+      
+      // Show success animation
+      setShowSuccessAnimation(true);
+      setTimeout(() => setShowSuccessAnimation(false), 1500);
       
       setTimeout(() => {
         setShowResultDialog(false);
@@ -265,11 +274,22 @@ export default function AttendanceScanner() {
             ) : (
               <div className="space-y-4">
                 {/* QR Scanner Component */}
-                <QRScanner 
-                  onScan={handleQRScan}
-                  onError={(error) => toast.error(error)}
-                  height={350}
-                />
+                <div className="relative">
+                  <QRScanner 
+                    onScan={handleQRScan}
+                    onError={(error) => toast.error(error)}
+                    height={350}
+                  />
+                  
+                  {/* Success Animation Overlay */}
+                  {showSuccessAnimation && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg z-50 animate-in fade-in duration-200">
+                      <div className="animate-in zoom-in duration-500">
+                        <CheckCircle2 className="h-32 w-32 text-green-500 drop-shadow-2xl animate-pulse" strokeWidth={3} />
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 {/* Processing Indicator */}
                 {isProcessing && (
