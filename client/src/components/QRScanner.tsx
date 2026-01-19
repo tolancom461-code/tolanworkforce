@@ -116,7 +116,7 @@ export default function QRScanner({
         await scanner.stop();
       }
 
-      // Use camera ID or facingMode
+      // Use camera ID
       const cameraConfig = cameras[currentCameraIndex].id;
 
       await scanner.start(
@@ -124,13 +124,7 @@ export default function QRScanner({
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
-          aspectRatio: 1,
-          // Additional config for better mobile support
-          videoConstraints: {
-            facingMode: currentCameraIndex === 0 ? 'environment' : 'user',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
+          aspectRatio: 1
         },
         (decodedText) => {
           // Success callback
@@ -147,15 +141,23 @@ export default function QRScanner({
       setIsScanning(true);
     } catch (err: any) {
       console.error('Scanner start error:', err);
+      console.error('Error details:', {
+        name: err.name,
+        message: err.message,
+        cameraId: cameras[currentCameraIndex]?.id,
+        cameraLabel: cameras[currentCameraIndex]?.label
+      });
       
       let errorMsg = 'فشل في تشغيل الكاميرا';
       
       if (err.name === 'NotAllowedError') {
-        errorMsg = 'تم رفض الوصول للكاميرا';
+        errorMsg = 'تم رفض الوصول للكاميرا. يرجى السماح بالوصول من إعدادات المتصفح';
       } else if (err.name === 'NotReadableError') {
-        errorMsg = 'الكاميرا قيد الاستخدام';
-      } else if (err.message) {
-        errorMsg = err.message;
+        errorMsg = 'الكاميرا قيد الاستخدام من قبل تطبيق آخر';
+      } else if (err.name === 'OverconstrainedError') {
+        errorMsg = 'إعدادات الكاميرا غير مدعومة. جرب كاميرا أخرى';
+      } else if (err.message && err.message.includes('Permission')) {
+        errorMsg = 'يرجى السماح بالوصول للكاميرا';
       }
       
       setError(errorMsg);
