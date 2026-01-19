@@ -18,7 +18,7 @@ import AttendanceLog from "./pages/AttendanceLog";
 import AttendanceReports from "./pages/AttendanceReports";
 import WorkDays from "./pages/WorkDays";
 
-import DailyAttendanceManagement from "./pages/DailyAttendanceManagement";
+
 import PayOverrides from "./pages/PayOverrides";
 import FinanceEntry from "./pages/FinanceEntry";
 import PayrollBatches from "./pages/PayrollBatches";
@@ -60,7 +60,7 @@ function Router() {
       <Route path="/attendance/log" component={AttendanceLog} />
       <Route path="/attendance/reports" component={AttendanceReports} />
 
-      <Route path="/attendance/daily-management" component={DailyAttendanceManagement} />
+
       <Route path="/work-days" component={WorkDays} />
       <Route path="/operational-flags" component={OperationalFlags} />
       <Route path="/pending-flags" component={PendingFlags} />

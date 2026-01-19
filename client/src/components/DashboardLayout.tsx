@@ -88,7 +88,7 @@ const menuSections = [
     items: [
       { icon: QrCode, label: "تسجيل الحضور", path: "/attendance", permission: MENU_PERMISSIONS.ATTENDANCE_SCAN },
       { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log", permission: MENU_PERMISSIONS.ATTENDANCE_LOG },
-      { icon: CheckCircle, label: "إدارة الحضور اليومي", path: "/attendance/daily-management", permission: MENU_PERMISSIONS.ATTENDANCE_DAILY_MANAGEMENT },
+
       { icon: BarChart3, label: "تقارير الحضور", path: "/attendance/reports", permission: MENU_PERMISSIONS.ATTENDANCE_REPORTS },
       { icon: Calendar, label: "أيام العمل", path: "/work-days", permission: MENU_PERMISSIONS.WORK_DAYS },
       { icon: Flag, label: "البلاغات التشغيلية", path: "/operational-flags", permission: MENU_PERMISSIONS.OPERATIONAL_FLAGS_CREATE },

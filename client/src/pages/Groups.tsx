@@ -570,7 +570,13 @@ export default function Groups() {
         </Card>
 
         {/* Edit Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setSelectedGroup(null);
+            resetForm();
+          }
+        }}>
           <DialogContent className="sm:max-w-[500px]" dir="rtl">
             <DialogHeader>
               <DialogTitle>تعديل المجموعة</DialogTitle>
