@@ -1852,3 +1852,23 @@ Add "Approve Full Attendance" option that:
 
 ### Checkpoint
 - [x] Save checkpoint
+
+
+---
+
+## 🔧 إضافة صفحة Landing Page مع تسجيل دخول (Jan 19, 2026 - Part 6)
+
+### Landing Page رسمية
+- [x] تصميم Landing Page احترافية
+- [x] إضافة معلومات عن المشروع
+- [x] إضافة زر "تسجيل دخول"
+
+### نظام تسجيل دخول
+- [x] إضافة Login Dialog مع username/password
+- [x] تحديث schema لإضافة جدول credentials - موجود بالفعل
+- [x] إضافة backend procedure للتحقق من credentials - localLogin موجود
+- [x] إضافة session management
+- [x] حماية routes بـ authentication
+
+### Checkpoint
+- [x] Save checkpoint
