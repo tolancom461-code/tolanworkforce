@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
+import { useScopedPermissions } from '@/hooks/useScopedPermissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,9 +16,17 @@ import {
 } from 'lucide-react';
 
 export default function AttendanceLog() {
+  const { isAdmin, getUserScopeIds } = useScopedPermissions();
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   
-  const { data: groups } = trpc.groups.list.useQuery();
+  const { data: allGroups } = trpc.groups.list.useQuery();
+  
+  // Filter groups based on permissions
+  const groups = useMemo(() => {
+    if (isAdmin() || !allGroups) return allGroups;
+    const allowedGroupIds = getUserScopeIds('work_group', 'view');
+    return allGroups.filter(g => allowedGroupIds.includes(String(g.id)));
+  }, [allGroups, isAdmin, getUserScopeIds]);
   const { data: todayLog, isLoading, refetch } = trpc.attendance.todayLog.useQuery({
     groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
   });

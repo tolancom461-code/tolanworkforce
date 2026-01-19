@@ -1687,4 +1687,22 @@ Add "Approve Full Attendance" option that:
 ### Phase 3: اختبار وحفظ checkpoint
 - [x] التأكد من عدم وجود أخطاء TypeScript
 - [x] التأكد من عمل الخادم بنجاح
+- [x] Save checkpoint (version: 11908c20)
+
+
+## تطبيق نظام الصلاحيات على سجل الحضور اليومي
+
+### Phase 1: تحليل AttendanceLog.tsx وفهم بنية السجل
+- [x] قراءة AttendanceLog.tsx لفهم البنية
+- [x] تحديد APIs المستخدمة (attendance.todayLog, attendance.stats)
+- [x] تحديد نقاط التصفية المطلوبة (المجموعات)
+
+### Phase 2: تطبيق التصفية على مستوى UI
+- [x] استيراد useScopedPermissions في AttendanceLog.tsx
+- [x] تصفية المجموعات المعروضة في dropdown حسب صلاحية view
+- [x] تصفية سجلات الحضور تتم تلقائيًا عبر تصفية المجموعات
+
+### Phase 3: اختبار وحفظ checkpoint
+- [x] التأكد من عدم وجود أخطاء TypeScript
+- [x] التأكد من عمل الخادم بنجاح
 - [ ] Save checkpoint
