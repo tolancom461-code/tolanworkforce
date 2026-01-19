@@ -2029,3 +2029,16 @@ Add "Approve Full Attendance" option that:
 
 ### Checkpoint
 - [x] Save checkpoint
+
+
+---
+
+## 🔧 إصلاح خطأ DialogTrigger في Users.tsx (Jan 19, 2026 - Part 15)
+
+### الإصلاح
+- [x] فحص Users.tsx للعثور على المشكلة
+- [x] إصلاح import DialogTrigger
+- [x] اختبار صفحة المستخدمين
+
+### Checkpoint
+- [x] Save checkpoint
