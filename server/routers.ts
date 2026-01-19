@@ -765,7 +765,48 @@ export const appRouter = router({
         );
       }),
     
-    // Scan QR code to get worker and record attendance
+    // Get worker info from QR code (without recording)
+    getWorkerFromQR: protectedProcedure
+      .input(z.object({ qrToken: z.string() }))
+      .query(async ({ input }) => {
+        const worker = await db.getWorkerByQRToken(input.qrToken);
+        if (!worker) throw new Error("رمز QR غير صالح");
+        
+        // Get last event to determine next action
+        const lastEvent = await db.getWorkerLastEvent(worker.id);
+        const nextEventType = (!lastEvent || lastEvent.eventType === 'check_out') ? 'check_in' : 'check_out';
+        
+        // Get today's events
+        const today = new Date().toISOString().split('T')[0];
+        const todayEvents = await db.getAttendanceEventsForEdit(worker.id, today);
+        
+        return { 
+          worker, 
+          nextEventType,
+          lastEvent,
+          todayEvents
+        };
+      }),
+
+    // Confirm and record attendance
+    confirmAttendance: protectedProcedure
+      .input(z.object({ 
+        workerId: z.number(),
+        eventType: z.enum(['check_in', 'check_out']),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const result = await db.recordAttendance(
+          input.workerId,
+          input.eventType,
+          'qr',
+          undefined,
+          ctx.user?.id
+        );
+        
+        return result;
+      }),
+    
+    // Scan QR code to get worker and record attendance (legacy - kept for compatibility)
     scanQR: protectedProcedure
       .input(z.object({ qrToken: z.string() }))
       .mutation(async ({ input, ctx }) => {

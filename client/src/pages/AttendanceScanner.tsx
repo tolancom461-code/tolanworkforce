@@ -16,9 +16,12 @@ import {
   ArrowRightCircle,
   Loader2,
   Camera,
-  RefreshCw
+  RefreshCw,
+  Users,
+  IdCard,
+  Briefcase
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import QRScanner from '@/components/QRScanner';
 
 export default function AttendanceScanner() {
@@ -26,13 +29,10 @@ export default function AttendanceScanner() {
   const [mode, setMode] = useState<'qr' | 'manual'>('qr');
   const [manualCode, setManualCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [lastResult, setLastResult] = useState<{
-    success: boolean;
-    worker?: { fullName: string; code: string; photoUrl?: string | null };
-    eventType?: string;
-    timestamp?: Date;
-  } | null>(null);
-  const [showResultDialog, setShowResultDialog] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [workerData, setWorkerData] = useState<any>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [lastResult, setLastResult] = useState<any>(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,8 +63,7 @@ export default function AttendanceScanner() {
     }
   };
   
-  const scanQRMutation = trpc.attendance.scanQR.useMutation();
-  const manualEntryMutation = trpc.attendance.manualEntry.useMutation();
+  const confirmAttendanceMutation = trpc.attendance.confirmAttendance.useMutation();
   const { data: stats, refetch: refetchStats } = trpc.attendance.stats.useQuery({});
   
   // Focus on input when in manual mode
@@ -74,63 +73,25 @@ export default function AttendanceScanner() {
     }
   }, [mode]);
   
-  const handleManualSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualCode.trim() || isProcessing) return;
-    
-    setIsProcessing(true);
-    try {
-      const result = await manualEntryMutation.mutateAsync({ code: manualCode.trim() });
-      setLastResult({
-        success: true,
-        worker: result.worker as any,
-        eventType: result.eventType as string,
-        timestamp: new Date(),
-      });
-      setShowResultDialog(true);
-      setManualCode('');
-      refetchStats();
-      
-      const eventText = result.eventType === 'check_in' ? 'تسجيل حضور' : 'تسجيل انصراف';
-      toast.success(`${eventText} - ${result.worker?.fullName}`);
-      
-      // Play success beep
-      playSuccessBeep();
-      
-      // Show success animation
-      setShowSuccessAnimation(true);
-      setTimeout(() => setShowSuccessAnimation(false), 1500);
-      
-      // Auto-close dialog after 3 seconds
-      setTimeout(() => {
-        setShowResultDialog(false);
-        inputRef.current?.focus();
-      }, 3000);
-    } catch (error: any) {
-      setLastResult({ success: false });
-      toast.error(error.message || 'حدث خطأ');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-  
   const handleQRScan = async (qrData: string) => {
     if (isProcessing) return;
     
     setIsProcessing(true);
     try {
-      const result = await scanQRMutation.mutateAsync({ qrToken: qrData });
-      setLastResult({
-        success: true,
-        worker: result.worker as any,
-        eventType: result.eventType as string,
-        timestamp: new Date(),
+      // Fetch worker data without recording
+      const response = await fetch(`/api/trpc/attendance.getWorkerFromQR?input=${encodeURIComponent(JSON.stringify({ qrToken: qrData }))}`, {
+        credentials: 'include'
       });
-      setShowResultDialog(true);
-      refetchStats();
       
-      const eventText = result.eventType === 'check_in' ? 'تسجيل حضور' : 'تسجيل انصراف';
-      toast.success(`${eventText} - ${result.worker?.fullName}`);
+      if (!response.ok) {
+        throw new Error('رمز QR غير صالح');
+      }
+      
+      const data = await response.json();
+      const result = data.result.data;
+      
+      setWorkerData(result);
+      setShowConfirmDialog(true);
       
       // Play success beep
       playSuccessBeep();
@@ -139,16 +100,69 @@ export default function AttendanceScanner() {
       setShowSuccessAnimation(true);
       setTimeout(() => setShowSuccessAnimation(false), 1500);
       
-      setTimeout(() => {
-        setShowResultDialog(false);
-        inputRef.current?.focus();
-      }, 3000);
     } catch (error: any) {
-      setLastResult({ success: false });
       toast.error(error.message || 'رمز QR غير صالح');
     } finally {
       setIsProcessing(false);
     }
+  };
+  
+  const handleConfirmAttendance = async () => {
+    if (!workerData) return;
+    
+    setIsProcessing(true);
+    try {
+      const result = await confirmAttendanceMutation.mutateAsync({
+        workerId: workerData.worker.id,
+        eventType: workerData.nextEventType,
+      });
+      
+      setLastResult({
+        success: true,
+        worker: workerData.worker,
+        eventType: workerData.nextEventType,
+        timestamp: new Date(),
+      });
+      
+      setShowConfirmDialog(false);
+      setShowSuccessDialog(true);
+      refetchStats();
+      
+      const eventText = workerData.nextEventType === 'check_in' ? 'تسجيل حضور' : 'تسجيل انصراف';
+      toast.success(`${eventText} - ${workerData.worker.fullName}`);
+      
+      // Play success beep
+      playSuccessBeep();
+      
+      // Auto-close success dialog and reset
+      setTimeout(() => {
+        setShowSuccessDialog(false);
+        setWorkerData(null);
+        setLastResult(null);
+      }, 3000);
+      
+    } catch (error: any) {
+      toast.error(error.message || 'حدث خطأ أثناء التسجيل');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  const handleCancelConfirm = () => {
+    setShowConfirmDialog(false);
+    setWorkerData(null);
+  };
+  
+  const getEventTypeLabel = (eventType: string) => {
+    return eventType === 'check_in' ? 'حضور' : 'انصراف';
+  };
+  
+  const getEventTypeIcon = (eventType: string) => {
+    return eventType === 'check_in' ? (
+      <ArrowRightCircle className="h-12 w-12 text-green-600" />
+    ) : (
+      <ArrowLeftCircle className="h-12 w-12 text-blue-600" />
+    );
   };
 
   return (
@@ -208,181 +222,195 @@ export default function AttendanceScanner() {
             size="lg"
             onClick={() => setMode('manual')}
             className="flex items-center gap-2"
+            disabled
           >
             <Keyboard className="h-5 w-5" />
-            إدخال يدوي
+            إدخال يدوي (قريباً)
           </Button>
         </div>
         
-        {/* Scanner/Input Area */}
+        {/* Scanner Area */}
         <Card className="bg-white dark:bg-gray-800 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 justify-center">
-              {mode === 'qr' ? (
-                <>
-                  <Camera className="h-6 w-6" />
-                  ماسح رمز QR
-                </>
-              ) : (
-                <>
-                  <Keyboard className="h-6 w-6" />
-                  إدخال رمز العامل
-                </>
-              )}
+              <Camera className="h-6 w-6" />
+              ماسح رمز QR
             </CardTitle>
             <CardDescription className="text-center">
-              {mode === 'qr' 
-                ? 'وجّه الكاميرا نحو رمز QR الخاص بالعامل'
-                : 'أدخل رمز العامل أو رقم الهوية'
-              }
+              وجّه الكاميرا نحو رمز QR الخاص بالعامل
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {mode === 'manual' ? (
-              <form onSubmit={handleManualSubmit} className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    ref={inputRef}
-                    type="text"
-                    placeholder="أدخل رمز العامل..."
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value)}
-                    className="text-2xl text-center h-16 font-mono"
-                    disabled={isProcessing}
-                    autoFocus
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  size="lg" 
-                  className="w-full h-14 text-lg"
-                  disabled={!manualCode.trim() || isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin ml-2" />
-                      جاري المعالجة...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="h-5 w-5 ml-2" />
-                      تسجيل
-                    </>
-                  )}
-                </Button>
-              </form>
-            ) : (
-              <div className="space-y-4">
-                {/* QR Scanner Component */}
-                <div className="relative">
-                  <QRScanner 
-                    onScan={handleQRScan}
-                    onError={(error) => toast.error(error)}
-                    height={350}
-                  />
-                  
-                  {/* Success Animation Overlay */}
-                  {showSuccessAnimation && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg z-50 animate-in fade-in duration-200">
-                      <div className="animate-in zoom-in duration-500">
-                        <CheckCircle2 className="h-32 w-32 text-green-500 drop-shadow-2xl animate-pulse" strokeWidth={3} />
-                      </div>
-                    </div>
-                  )}
-                </div>
+            <div className="space-y-4">
+              {/* QR Scanner Component */}
+              <div className="relative">
+                <QRScanner 
+                  onScan={handleQRScan}
+                  onError={(error) => toast.error(error)}
+                  height={350}
+                />
                 
-                {/* Processing Indicator */}
-                {isProcessing && (
-                  <div className="flex items-center justify-center gap-2 py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <span className="text-muted-foreground">جاري معالجة الرمز...</span>
+                {/* Success Animation Overlay */}
+                {showSuccessAnimation && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg z-50 animate-in fade-in duration-200">
+                    <div className="animate-in zoom-in duration-500">
+                      <CheckCircle2 className="h-32 w-32 text-green-500 drop-shadow-2xl animate-pulse" strokeWidth={3} />
+                    </div>
                   </div>
                 )}
               </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* Quick Actions */}
-        <div className="flex justify-center gap-4">
-          <Button variant="outline" onClick={() => refetchStats()}>
-            <RefreshCw className="h-4 w-4 ml-2" />
-            تحديث الإحصائيات
-          </Button>
-        </div>
-        
-        {/* Instructions for Mobile */}
-        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-          <CardContent className="p-4">
-            <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
-              <QrCode className="h-5 w-5" />
-              تعليمات الاستخدام
-            </h3>
-            <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-disc list-inside">
-              <li>اضغط على "تشغيل الكاميرا" للبدء في مسح رموز QR</li>
-              <li>وجّه الكاميرا نحو رمز QR الموجود على بطاقة العامل</li>
-              <li>سيتم تسجيل الحضور/الانصراف تلقائياً عند قراءة الرمز</li>
-              <li>يمكنك تبديل الكاميرا الأمامية/الخلفية إذا كان جهازك يدعم ذلك</li>
-              <li>في حالة عدم عمل الكاميرا، استخدم الإدخال اليدوي</li>
-            </ul>
+              
+              {/* Processing Indicator */}
+              {isProcessing && !showConfirmDialog && (
+                <div className="flex items-center justify-center gap-2 py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-muted-foreground">جاري معالجة الرمز...</span>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
       
-      {/* Result Dialog */}
-      <Dialog open={showResultDialog} onOpenChange={setShowResultDialog}>
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center">
-              {lastResult?.success ? (
-                <div className="flex flex-col items-center gap-4">
-                  {lastResult.eventType === 'check_in' ? (
-                    <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                      <ArrowRightCircle className="h-12 w-12 text-green-600" />
-                    </div>
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
-                      <ArrowLeftCircle className="h-12 w-12 text-orange-600" />
-                    </div>
-                  )}
-                  <span className={lastResult.eventType === 'check_in' ? 'text-green-600' : 'text-orange-600'}>
-                    {lastResult.eventType === 'check_in' ? 'تسجيل حضور' : 'تسجيل انصراف'}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                    <XCircle className="h-12 w-12 text-red-600" />
-                  </div>
-                  <span className="text-red-600">فشل التسجيل</span>
-                </div>
-              )}
-            </DialogTitle>
+            <DialogTitle className="text-center text-2xl">تأكيد {workerData && getEventTypeLabel(workerData.nextEventType)}</DialogTitle>
+            <DialogDescription className="text-center">
+              يرجى التحقق من بيانات العامل قبل التأكيد
+            </DialogDescription>
           </DialogHeader>
           
-          {lastResult?.success && lastResult.worker && (
-            <div className="text-center space-y-4 py-4">
-              {lastResult.worker.photoUrl ? (
-                <img 
-                  src={lastResult.worker.photoUrl} 
-                  alt={lastResult.worker.fullName}
-                  className="w-24 h-24 rounded-full mx-auto object-cover border-4 border-gray-200"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full mx-auto bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                  <User className="h-12 w-12 text-gray-400" />
+          {workerData && (
+            <div className="space-y-6 py-4">
+              {/* Event Type Icon */}
+              <div className="flex justify-center">
+                {getEventTypeIcon(workerData.nextEventType)}
+              </div>
+              
+              {/* Worker Info */}
+              <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5 text-gray-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">اسم العامل</div>
+                    <div className="font-semibold text-lg">{workerData.worker.fullName}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <IdCard className="h-5 w-5 text-gray-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">رقم الهوية</div>
+                    <div className="font-semibold">{workerData.worker.nationalId || workerData.worker.code}</div>
+                  </div>
+                </div>
+                
+                {workerData.worker.groupName && (
+                  <div className="flex items-center gap-3">
+                    <Users className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <div className="text-sm text-gray-500">المجموعة</div>
+                      <div className="font-semibold">{workerData.worker.groupName}</div>
+                    </div>
+                  </div>
+                )}
+                
+                {workerData.worker.jobTitle && (
+                  <div className="flex items-center gap-3">
+                    <Briefcase className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <div className="text-sm text-gray-500">المسمى الوظيفي</div>
+                      <div className="font-semibold">{workerData.worker.jobTitle}</div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-gray-500" />
+                  <div>
+                    <div className="text-sm text-gray-500">الوقت الحالي</div>
+                    <div className="font-semibold">{new Date().toLocaleTimeString('ar-SA')}</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Today's Events */}
+              {workerData.todayEvents && workerData.todayEvents.length > 0 && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <div className="text-sm font-semibold mb-2">سجل اليوم:</div>
+                  <div className="space-y-1 text-sm">
+                    {workerData.todayEvents.map((event: any, index: number) => (
+                      <div key={index} className="flex justify-between">
+                        <span>{event.eventType === 'check_in' ? '✓ حضور' : '✗ انصراف'}</span>
+                        <span>{new Date(event.timestamp).toLocaleTimeString('ar-SA')}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              <div>
-                <h3 className="text-xl font-bold">{lastResult.worker.fullName}</h3>
-                <p className="text-gray-500 font-mono">{lastResult.worker.code}</p>
-              </div>
-              <div className="flex items-center justify-center gap-2 text-gray-500">
-                <Clock className="h-4 w-4" />
-                <span>{lastResult.timestamp?.toLocaleTimeString('ar-SA')}</span>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="flex-1"
+                  onClick={handleCancelConfirm}
+                  disabled={isProcessing}
+                >
+                  <XCircle className="h-5 w-5 ml-2" />
+                  إلغاء
+                </Button>
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  onClick={handleConfirmAttendance}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin ml-2" />
+                      جاري التسجيل...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-5 w-5 ml-2" />
+                      تأكيد {getEventTypeLabel(workerData.nextEventType)}
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <div className="text-center space-y-4 py-6">
+            <div className="flex justify-center">
+              <CheckCircle2 className="h-20 w-20 text-green-500 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-green-600 mb-2">
+                تم التسجيل بنجاح!
+              </h3>
+              {lastResult && (
+                <>
+                  <p className="text-lg font-semibold">{lastResult.worker?.fullName}</p>
+                  <p className="text-muted-foreground">
+                    {lastResult.eventType === 'check_in' ? 'تسجيل حضور' : 'تسجيل انصراف'}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {new Date().toLocaleTimeString('ar-SA')}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
