@@ -4,6 +4,7 @@ import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
+import jwt from "jsonwebtoken";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { ENV } from "./env";
@@ -197,6 +198,32 @@ class SDKServer {
       .sign(secretKey);
   }
 
+  async verifyLocalSession(
+    cookieValue: string | undefined | null
+  ): Promise<{ userId: number; username: string } | null> {
+    if (!cookieValue) {
+      return null;
+    }
+
+    try {
+      const decoded = jwt.verify(
+        cookieValue,
+        process.env.JWT_SECRET || 'fallback-secret'
+      ) as any;
+
+      if (decoded.userId && decoded.username) {
+        return {
+          userId: decoded.userId,
+          username: decoded.username,
+        };
+      }
+
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
   async verifySession(
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
@@ -260,6 +287,22 @@ class SDKServer {
     // Regular authentication flow
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
+    
+    // Try to verify as local JWT first
+    let user: User | null = null;
+    try {
+      const localSession = await this.verifyLocalSession(sessionCookie);
+      if (localSession) {
+        user = await db.getUserById(localSession.userId) ?? null;
+        if (user) {
+          return user; // Local auth successful
+        }
+      }
+    } catch (error) {
+      // Not a local JWT, try OAuth
+    }
+    
+    // Try OAuth JWT
     const session = await this.verifySession(sessionCookie);
 
     if (!session) {
@@ -268,7 +311,7 @@ class SDKServer {
 
     const sessionUserId = session.openId;
     const signedInAt = new Date();
-    let user = await db.getUserByOpenId(sessionUserId);
+    user = await db.getUserByOpenId(sessionUserId) ?? null;
 
     // If user not in DB, sync from OAuth server automatically
     if (!user) {
@@ -282,7 +325,7 @@ class SDKServer {
           loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
           lastSignedIn: signedInAt,
         });
-        user = await db.getUserByOpenId(userInfo.openId);
+        user = await db.getUserByOpenId(userInfo.openId) ?? null;
       } catch (error) {
         console.error("[Auth] Failed to sync user from OAuth:", error);
         throw ForbiddenError("Failed to sync user info");
