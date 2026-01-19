@@ -57,6 +57,13 @@
       "when": 1768680209900,
       "tag": "0007_lowly_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1768810542269,
+      "tag": "0008_naive_paper_doll",
+      "breakpoints": true
     }
   ]
 }

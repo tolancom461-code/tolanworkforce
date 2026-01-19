@@ -111,6 +111,7 @@ const menuSections = [
       { icon: Shield, label: "الأدوار والصلاحيات", path: "/roles", permission: MENU_PERMISSIONS.ROLES },
       { icon: Key, label: "إدارة الصلاحيات", path: "/permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
       { icon: Settings, label: "توزيع الصلاحيات", path: "/role-permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
+      { icon: Shield, label: "الصلاحيات الذرية", path: "/scoped-permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
     ]
   },
 ];

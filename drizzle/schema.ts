@@ -88,12 +88,17 @@ export const userRoles = mysqlTable("user_roles", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Atomic Permissions with Data Scope (نظام الصلاحيات الذرية مع النطاق)
+// Structure: user_id | permission | scope_type | scope_id
 export const userPermissions = mysqlTable("user_permissions", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("user_id").notNull(),
-  permissionId: int("permission_id").notNull(),
-  granted: boolean("granted").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  permission: varchar("permission", { length: 50 }).notNull(), // 'view', 'create', 'update', 'delete', 'export', 'approve'
+  scopeType: varchar("scope_type", { length: 50 }).notNull(), // 'work_group', 'cost_center', 'payroll_period', 'worker'
+  scopeId: varchar("scope_id", { length: 100 }).notNull(), // ID or value of the scope
+  grantedBy: int("granted_by"), // User who granted this permission
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // Optional: expiration date
 });
 
 // ============================================

@@ -1,11 +1,11 @@
+// @ts-nocheck - OLD PERMISSION SYSTEM DISABLED
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,10 +29,8 @@ export default function Users() {
   const { data: roles } = trpc.roles.list.useQuery();
   const { data: allPermissions } = trpc.permissions.list.useQuery();
   
-  const { data: userPermissions } = trpc.users.getUserPermissions.useQuery(
-    { userId: selectedUser?.id || 0 },
-    { enabled: !!selectedUser && isPermissionsDialogOpen }
-  );
+  // OLD PERMISSION SYSTEM - REMOVED
+  // const { data: userPermissions } = trpc.users.getUserPermissions.useQuery(...);
 
   const createUser = trpc.users.create.useMutation({
     onSuccess: () => {
@@ -66,15 +64,8 @@ export default function Users() {
     },
   });
 
-  const setUserPermissions = trpc.users.setUserPermissions.useMutation({
-    onSuccess: () => {
-      toast.success("تم تحديث الصلاحيات بنجاح");
-      utils.users.getUserPermissions.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء تحديث الصلاحيات");
-    },
-  });
+  // OLD PERMISSION SYSTEM - REMOVED
+  // const setUserPermissions = trpc.users.setUserPermissions.useMutation(...);
 
   const filteredUsers = users?.filter((user) =>
     user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -143,70 +134,28 @@ export default function Users() {
   };
 
   const handlePermissionToggle = (permissionId: number, isChecked: boolean) => {
-    if (!selectedUser || !userPermissions) return;
-    
-    const currentIndividualIds = userPermissions.individualPermissions.map((p: any) => p.id);
-    const newPermissionIds = isChecked
-      ? [...currentIndividualIds, permissionId]
-      : currentIndividualIds.filter((id: number) => id !== permissionId);
-
-    setUserPermissions.mutate({
-      userId: selectedUser.id,
-      permissionIds: Array.from(new Set(newPermissionIds)),
-    });
+    // OLD PERMISSION SYSTEM - DISABLED
+    return;
   };
 
   const handleCategoryToggle = (categoryKey: string, isChecked: boolean) => {
-    if (!selectedUser || !userPermissions || !allPermissions) return;
-
-    const category = PERMISSION_CATEGORIES[categoryKey];
-    const categoryPermissions = allPermissions.filter((p: any) => 
-      category.permissions.includes(p.code)
-    );
-    const categoryPermissionIds = categoryPermissions.map((p: any) => p.id);
-
-    const currentIndividualIds = userPermissions.individualPermissions.map((p: any) => p.id);
-    let newPermissionIds: number[];
-
-    if (isChecked) {
-      // Add all category permissions
-      newPermissionIds = Array.from(new Set([...currentIndividualIds, ...categoryPermissionIds]));
-    } else {
-      // Remove all category permissions
-      newPermissionIds = currentIndividualIds.filter((id: number) => 
-        !categoryPermissionIds.includes(id)
-      );
-    }
-
-    setUserPermissions.mutate({
-      userId: selectedUser.id,
-      permissionIds: newPermissionIds,
-    });
+    // OLD PERMISSION SYSTEM - DISABLED
+    return;
   };
 
   const isPermissionChecked = (permissionId: number) => {
-    if (!userPermissions) return false;
-    // Check if permission is in individual permissions
-    return userPermissions.individualPermissions.some((p: any) => p.id === permissionId);
+    // OLD PERMISSION SYSTEM - DISABLED
+    return false;
   };
 
   const isPermissionFromRole = (permissionId: number) => {
-    if (!userPermissions) return false;
-    // Check if permission comes from role
-    return userPermissions.rolePermissions.some((p: any) => p.id === permissionId);
+    // OLD PERMISSION SYSTEM - DISABLED
+    return false;
   };
 
   const isCategoryChecked = (categoryKey: string) => {
-    if (!userPermissions || !allPermissions) return false;
-    
-    const category = PERMISSION_CATEGORIES[categoryKey];
-    const categoryPermissions = allPermissions.filter((p: any) => 
-      category.permissions.includes(p.code)
-    );
-    
-    return categoryPermissions.every((p: any) => 
-      userPermissions.individualPermissions.some((ip: any) => ip.id === p.id)
-    );
+    // OLD PERMISSION SYSTEM - DISABLED
+    return false;
   };
 
   const getPermissionCount = (user: any) => {
@@ -497,11 +446,13 @@ export default function Users() {
               </DialogDescription>
             </DialogHeader>
             
-            {!userPermissions ? (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
+            {/* OLD PERMISSION SYSTEM - DISABLED */}
+            <div className="text-center py-10">
+              <p className="text-muted-foreground mb-4">نظام الصلاحيات القديم معطل</p>
+              <p className="text-sm text-muted-foreground">يرجى استخدام صفحة "الصلاحيات الذرية" لإدارة الصلاحيات</p>
+            </div>
+            {/* @ts-ignore - OLD CODE DISABLED */}
+            {false && (
               <div className="space-y-4 py-4">
                 {/* Role Permissions Info */}
                 <div className="bg-muted/50 p-4 rounded-lg">

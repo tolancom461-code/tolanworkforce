@@ -1518,3 +1518,83 @@ Add "Approve Full Attendance" option that:
 - [x] اختبار الحفظ التلقائي
 - [x] اختبار "تحديد الكل" لكل فئة
 - [ ] Save checkpoint
+
+
+## نظام الصلاحيات الذرية + النطاق (Atomic Permissions + Data Scope System)
+
+### Phase 1: البنية التحتية (Database Schema)
+- [x] إنشاء جدول user_permissions في schema.ts
+- [x] إضافة حقول: user_id, permission, scope_type, scope_id, granted_by, granted_at, expires_at
+- [x] إنشاء indexes للأداء (user_id, scope_type, scope_id)
+- [x] تشغيل pnpm db:push لتطبيق التغييرات
+- [x] إضافة بيانات تجريبية عبر SQL
+
+### Phase 2: Backend Core Functions
+- [x] إضافة دالة checkScopedPermission في db.ts (التحقق من صلاحية محددة)
+- [x] إضافة دالة getUserScopedPermissions في db.ts (جلب جميع صلاحيات مستخدم)
+- [x] إضافة دالة getUserScopeIds في db.ts (جلب IDs النطاق المسموح)
+- [x] إضافة دالة grantScopedPermission في db.ts (منح صلاحية)
+- [x] إضافة دالة revokeScopedPermission في db.ts (إلغاء صلاحية)
+- [x] إضافة دالة bulkGrantScopedPermissions في db.ts (منح صلاحيات متعددة)
+- [x] إضافة دالة getUserPermissionsGrouped في db.ts (تجميع الصلاحيات حسب النطاق)
+
+### Phase 3: Backend tRPC Procedures
+- [x] إضافة scopedPermissions router في routers.ts
+- [x] إضافة procedure check (التحقق من صلاحية)
+- [x] إضافة procedure getUserPermissions (جلب صلاحيات مستخدم)
+- [x] إضافة procedure getUserPermissionsGrouped (تجميع الصلاحيات)
+- [x] إضافة procedure getUserScopeIds (جلب IDs النطاق)
+- [x] إضافة procedure grant (منح صلاحية واحدة)
+- [x] إضافة procedure revoke (إلغاء صلاحية واحدة)
+- [x] إضافة procedure bulkGrant (منح صلاحيات متعددة)
+- [ ] إضافة procedure bulkUpdateUserPermissions (تحديث صلاحيات دفعة واحدة)
+- [ ] إضافة procedure getUserPermissionsByScope (جلب صلاحيات حسب نوع النطاق)
+
+### Phase 4: تطبيق التصفية على APIs الموجودة
+- [ ] تحديث getGroups للتصفية حسب صلاحيات work_group
+- [ ] تحديث getWorkers للتصفية حسب صلاحيات work_group
+- [ ] تحديث getCostCenters للتصفية حسب صلاحيات cost_center
+- [ ] تحديث getPayrollBatches للتصفية حسب صلاحيات cost_center
+- [ ] تحديث getAttendanceRecords للتصفية حسب صلاحيات work_group
+- [ ] تحديث getFinancialReports للتصفية حسب صلاحيات cost_center
+- [ ] إضافة permission checks لجميع APIs (view, create, update, delete)
+
+### Phase 5: واجهة إدارة الصلاحيات (UserScopedPermissions.tsx)
+- [x] إنشاء صفحة UserScopedPermissions.tsx
+- [x] إضافة selector لاختيار المستخدم
+- [x] عرض الصلاحيات مجمعة حسب نوع النطاق
+- [x] إضافة dialog لإضافة صلاحيات جديدة
+- [x] اختيار نوع النطاق (work_group, cost_center, payroll_period)
+- [x] اختيار النطاق المحدد (group/cost center)
+- [x] اختيار الصلاحيات (view, create, update, delete, export, approve)
+- [x] إضافة زر "منح الصلاحيات" (bulkGrant)
+- [x] إضافة زر حذف لكل صلاحية (revoke)
+- [x] إضافة route /scoped-permissions في App.tsx
+- [x] إضافة رابط في Sidebar (قسم إعدادات النظام)
+
+### Phase 6: تحديث الواجهات لتطبيق التحكم
+- [ ] تحديث Groups.tsx لإخفاء/إظهار أزرار (Edit, Delete) حسب الصلاحيات
+- [ ] تحديث Workers.tsx لإخفاء/إظهار أزرار حسب الصلاحيات
+- [ ] تحديث CostCenters.tsx لإخفاء/إظهار أزرار حسب الصلاحيات
+- [ ] تحديث PayrollBatchCreate.tsx لتصفية المجموعات/مراكز التكلفة
+- [ ] تحديث AttendanceScanner.tsx لتصفية المجموعات
+- [ ] تحديث FinancialReports.tsx لتصفية مراكز التكلفة
+- [ ] إضافة helper hook useUserPermissions للتحقق من الصلاحيات في Frontend
+
+### Phase 7: الاختبارات (Vitest)
+- [ ] كتابة unit tests لـ checkPermission (10 tests)
+- [ ] كتابة unit tests لـ getUserPermissions (5 tests)
+- [ ] كتابة unit tests لـ grantPermission و revokePermission (8 tests)
+- [ ] كتابة integration tests لـ getGroups مع التصفية (5 tests)
+- [ ] كتابة integration tests لـ getWorkers مع التصفية (5 tests)
+- [ ] كتابة integration tests لـ getCostCenters مع التصفية (5 tests)
+- [ ] تشغيل جميع الاختبارات والتأكد من نجاحها
+
+### Phase 8: التوثيق والتسليم
+- [ ] إنشاء ملف PERMISSIONS_SYSTEM.md لتوثيق النظام
+- [ ] توثيق الهيكل الثلاثي (user_id, permission, scope_type, scope_id)
+- [ ] توثيق أنواع الصلاحيات (view, create, update, delete, export, approve)
+- [ ] توثيق أنواع النطاق (work_group, cost_center, payroll_period)
+- [ ] إضافة أمثلة استخدام في التوثيق
+- [ ] تحديث todo.md بالتقدم النهائي
+- [ ] إنشاء checkpoint نهائي

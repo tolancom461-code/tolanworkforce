@@ -27,15 +27,11 @@ export const appRouter = router({
       return { success: true } as const;
     }),
     permissions: protectedProcedure.query(async ({ ctx }) => {
-      // جلب الصلاحيات المباشرة للمستخدم
-      const directPerms = await db.getUserPermissions(ctx.user.id);
       // جلب الصلاحيات من خلال الأدوار
       const rolePerms = await db.getUserRolePermissions(ctx.user.id);
       
-      // دمج الصلاحيات وإزالة التكرار
-      const allPerms = [...directPerms, ...rolePerms];
       const uniquePerms = Array.from(
-        new Map(allPerms.map(p => [p.code, p])).values()
+        new Map(rolePerms.map(p => [p.code, p])).values()
       );
       
       return uniquePerms.map(p => p.code);
@@ -184,28 +180,8 @@ export const appRouter = router({
         return { success: true };
       }),
     
-    getUserPermissions: protectedProcedure
-      .input(z.object({ userId: z.number() }))
-      .query(async ({ input }) => {
-        // Get both role permissions and individual permissions
-        const rolePerms = await db.getUserRolePermissions(input.userId);
-        const individualPerms = await db.getUserPermissions(input.userId);
-        return {
-          rolePermissions: rolePerms,
-          individualPermissions: individualPerms,
-          allPermissions: [...rolePerms, ...individualPerms],
-        };
-      }),
-    
-    setUserPermissions: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        permissionIds: z.array(z.number()),
-      }))
-      .mutation(async ({ input }) => {
-        await db.setUserPermissions(input.userId, input.permissionIds);
-        return { success: true };
-      }),
+    // OLD PERMISSION PROCEDURES - REMOVED
+    // Replaced with Atomic Permissions + Scope System
   }),
 
   // Role Management
@@ -273,23 +249,8 @@ export const appRouter = router({
       return await db.getAllPermissions();
     }),
     
-    getUserPermissions: protectedProcedure
-      .input(z.object({ userId: z.number() }))
-      .query(async ({ input }) => {
-        const direct = await db.getUserPermissions(input.userId);
-        const fromRoles = await db.getUserRolePermissions(input.userId);
-        return { direct, fromRoles };
-      }),
-    
-    setUserPermissions: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        permissionIds: z.array(z.number()),
-      }))
-      .mutation(async ({ input }) => {
-        await db.setUserPermissions(input.userId, input.permissionIds);
-        return { success: true };
-      }),
+    // OLD PERMISSION PROCEDURES - REMOVED
+    // Replaced with Atomic Permissions + Scope System
     
     getRolePermissions: protectedProcedure
       .input(z.object({ roleId: z.number() }))
@@ -1809,6 +1770,118 @@ export const appRouter = router({
           input.workerId,
           input.groupId,
           input.dateRange
+        );
+      }),
+  }),
+
+  // ============================================
+  // Scoped Permissions Management
+  // إدارة الصلاحيات الذرية + النطاق
+  // ============================================
+  scopedPermissions: router({
+    // Check if user has permission on specific scope
+    check: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        permission: z.string(),
+        scopeType: z.string(),
+        scopeId: z.union([z.string(), z.number()]),
+      }))
+      .query(async ({ input }) => {
+        return await db.checkScopedPermission(
+          input.userId,
+          input.permission,
+          input.scopeType,
+          input.scopeId
+        );
+      }),
+
+    // Get all permissions for a user
+    getUserPermissions: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        scopeType: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getUserScopedPermissions(input.userId, input.scopeType);
+      }),
+
+    // Get all permissions grouped by scope
+    getUserPermissionsGrouped: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getUserPermissionsGrouped(input.userId);
+      }),
+
+    // Get scope IDs user has permission on
+    getUserScopeIds: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        permission: z.string(),
+        scopeType: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getUserScopeIds(
+          input.userId,
+          input.permission,
+          input.scopeType
+        );
+      }),
+
+    // Grant permission to user
+    grant: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        permission: z.string(),
+        scopeType: z.string(),
+        scopeId: z.union([z.string(), z.number()]),
+        expiresAt: z.date().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.grantScopedPermission(
+          input.userId,
+          input.permission,
+          input.scopeType,
+          input.scopeId,
+          ctx.user.id,
+          input.expiresAt
+        );
+      }),
+
+    // Revoke permission from user
+    revoke: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        permission: z.string(),
+        scopeType: z.string(),
+        scopeId: z.union([z.string(), z.number()]),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.revokeScopedPermission(
+          input.userId,
+          input.permission,
+          input.scopeType,
+          input.scopeId
+        );
+      }),
+
+    // Bulk grant permissions
+    bulkGrant: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        permissions: z.array(z.object({
+          permission: z.string(),
+          scopeType: z.string(),
+          scopeId: z.union([z.string(), z.number()]),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.bulkGrantScopedPermissions(
+          input.userId,
+          input.permissions,
+          ctx.user.id
         );
       }),
   }),

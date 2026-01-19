@@ -1,0 +1,31 @@
+{
+  "query": "-- Clear existing permissions\nDELETE FROM user_permissions;\n\n-- Add sample permissions for first user\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id, granted_by, granted_at)\nSELECT \n  u.id,\n  'view',\n  'work_group',\n  g.id,\n  u.id,\n  NOW()\nFROM users u\nCROSS JOIN `groups` g\nWHERE u.id = (SELECT id FROM users ORDER BY id LIMIT 1)\n  AND g.id = (SELECT id FROM `groups` ORDER BY id LIMIT 1);\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id, granted_by, granted_at)\nSELECT \n  u.id,\n  'create',\n  'work_group',\n  g.id,\n  u.id,\n  NOW()\nFROM users u\nCROSS JOIN `groups` g\nWHERE u.id = (SELECT id FROM users ORDER BY id LIMIT 1)\n  AND g.id = (SELECT id FROM `groups` ORDER BY id LIMIT 1);\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id, granted_by, granted_at)\nSELECT \n  u.id,\n  'update',\n  'work_group',\n  g.id,\n  u.id,\n  NOW()\nFROM users u\nCROSS JOIN `groups` g\nWHERE u.id = (SELECT id FROM users ORDER BY id LIMIT 1)\n  AND g.id = (SELECT id FROM `groups` ORDER BY id LIMIT 1);\n\n-- Show results\nSELECT \n  u.full_name AS user_name,\n  up.permission,\n  up.scope_type,\n  up.scope_id,\n  up.granted_at\nFROM user_permissions up\nJOIN users u ON u.id = up.user_id\nORDER BY u.full_name, up.scope_type, up.scope_id, up.permission;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute -- Clear existing permissions\nDELETE FROM user_permissions;\n\n-- Add sample permissions for first user\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id, granted_by, granted_at)\nSELECT \n  u.id,\n  'view',\n  'work_group',\n  g.id,\n  u.id,\n  NOW()\nFROM users u\nCROSS JOIN `groups` g\nWHERE u.id = (SELECT id FROM users ORDER BY id LIMIT 1)\n  AND g.id = (SELECT id FROM `groups` ORDER BY id LIMIT 1);\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id, granted_by, granted_at)\nSELECT \n  u.id,\n  'create',\n  'work_group',\n  g.id,\n  u.id,\n  NOW()\nFROM users u\nCROSS JOIN `groups` g\nWHERE u.id = (SELECT id FROM users ORDER BY id LIMIT 1)\n  AND g.id = (SELECT id FROM `groups` ORDER BY id LIMIT 1);\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id, granted_by, granted_at)\nSELECT \n  u.id,\n  'update',\n  'work_group',\n  g.id,\n  u.id,\n  NOW()\nFROM users u\nCROSS JOIN `groups` g\nWHERE u.id = (SELECT id FROM users ORDER BY id LIMIT 1)\n  AND g.id = (SELECT id FROM `groups` ORDER BY id LIMIT 1);\n\n-- Show results\nSELECT \n  u.full_name AS user_name,\n  up.permission,\n  up.scope_type,\n  up.scope_id,\n  up.granted_at\nFROM user_permissions up\nJOIN users u ON u.id = up.user_id\nORDER BY u.full_name, up.scope_type, up.scope_id, up.permission;",
+  "rows": [
+    {
+      "user_name": "anem2031",
+      "permission": "create",
+      "scope_type": "work_group",
+      "scope_id": "60001",
+      "granted_at": "2026-01-19 08:49:11"
+    },
+    {
+      "user_name": "anem2031",
+      "permission": "update",
+      "scope_type": "work_group",
+      "scope_id": "60001",
+      "granted_at": "2026-01-19 08:49:12"
+    },
+    {
+      "user_name": "anem2031",
+      "permission": "view",
+      "scope_type": "work_group",
+      "scope_id": "60001",
+      "granted_at": "2026-01-19 08:49:11"
+    }
+  ],
+  "messages": [],
+  "stdout": "user_name\tpermission\tscope_type\tscope_id\tgranted_at\nanem2031\tcreate\twork_group\t60001\t2026-01-19 08:49:11\nanem2031\tupdate\twork_group\t60001\t2026-01-19 08:49:12\nanem2031\tview\twork_group\t60001\t2026-01-19 08:49:11\n",
+  "stderr": "",
+  "execution_time_ms": 2477
+}

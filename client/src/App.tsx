@@ -37,6 +37,7 @@ import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
 import OperationalFlags from "./pages/OperationalFlags";
 import PendingFlags from "./pages/PendingFlags";
+import UserScopedPermissions from "./pages/UserScopedPermissions";
 
 function Router() {
   return (
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/users" component={Users} />
       <Route path="/permissions" component={Permissions} />
       <Route path="/role-permissions" component={RolePermissions} />
+      <Route path="/scoped-permissions" component={UserScopedPermissions} />
       <Route path="/roles" component={Roles} />
       <Route path="/cost-centers" component={CostCenters} />
       <Route path="/profile" component={Profile} />
