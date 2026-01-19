@@ -35,6 +35,7 @@ export const appRouter = router({
       .input(z.object({
         username: z.string().min(1),
         password: z.string().min(1),
+        rememberMe: z.boolean().optional().default(false),
       }))
       .mutation(async ({ input, ctx }) => {
         const user = await db.authenticateLocalUser(input.username, input.password);
@@ -54,14 +55,16 @@ export const appRouter = router({
         }
         
         // Create session
+        const expiresIn = input.rememberMe ? '30d' : '1d';
         const token = jwt.sign(
           { userId: user.id, username: user.username },
           process.env.JWT_SECRET || 'fallback-secret',
-          { expiresIn: '7d' }
+          { expiresIn }
         );
         
         const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie(COOKIE_NAME, token, cookieOptions);
+        const maxAge = input.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000; // 30 days or 1 day
+        ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge });
         
         return { success: true, user };
       }),

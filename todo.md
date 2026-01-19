@@ -1886,3 +1886,19 @@ Add "Approve Full Attendance" option that:
 
 ### Checkpoint
 - [x] Save checkpoint
+
+
+---
+
+## 🔧 إضافة "تذكرني" (Jan 19, 2026 - Part 8)
+
+### Frontend
+- [x] إضافة checkbox "تذكرني" في Login Dialog
+- [x] إرسال rememberMe flag إلى backend
+
+### Backend
+- [x] تحديث localLogin procedure لدعم rememberMe
+- [x] تعديل cookie maxAge حسب rememberMe (1 يوم أو 30 يوم)
+
+### Checkpoint
+- [x] Save checkpoint

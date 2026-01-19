@@ -14,6 +14,7 @@ export default function LandingPage() {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const loginMutation = trpc.auth.localLogin.useMutation();
@@ -28,7 +29,7 @@ export default function LandingPage() {
 
     setIsLoading(true);
     try {
-      await loginMutation.mutateAsync({ username, password });
+      await loginMutation.mutateAsync({ username, password, rememberMe });
       toast.success('تم تسجيل الدخول بنجاح');
       setShowLoginDialog(false);
       // Redirect to dashboard
@@ -219,6 +220,19 @@ export default function LandingPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
               />
+            </div>
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={isLoading}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+                تذكرني لمدة 30 يوماً
+              </Label>
             </div>
             <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
               {isLoading ? 'جاري التحقق...' : 'دخول'}
