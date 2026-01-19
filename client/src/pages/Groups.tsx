@@ -22,6 +22,7 @@ export default function Groups() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isShiftsDialogOpen, setIsShiftsDialogOpen] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   
   // Form state
@@ -204,6 +205,16 @@ export default function Groups() {
       return;
     }
     
+    // If editing, show confirmation dialog
+    if (selectedGroup) {
+      setIsConfirmDialogOpen(true);
+    } else {
+      // For new groups, save directly
+      saveGroup();
+    }
+  };
+
+  const saveGroup = () => {
     // Convert string values to numbers or null
     const payload = {
       ...formData,
@@ -221,6 +232,8 @@ export default function Groups() {
     } else {
       createMutation.mutate(payload);
     }
+    
+    setIsConfirmDialogOpen(false);
   };
 
   const handleAddShift = () => {
@@ -824,6 +837,31 @@ export default function Groups() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Confirmation Dialog for Edit */}
+        <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+          <AlertDialogContent dir="rtl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>تأكيد حفظ التعديلات</AlertDialogTitle>
+              <AlertDialogDescription>
+                هل أنت متأكد من حفظ التعديلات على المجموعة "{selectedGroup?.name}"?
+                <br />
+                <span className="text-xs text-muted-foreground mt-2 block">
+                  سيتم تحديث جميع بيانات المجموعة وقد يؤثر ذلك على حسابات الرواتب المستقبلية.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={saveGroup}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? "جاري الحفظ..." : "نعم، حفظ التعديلات"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

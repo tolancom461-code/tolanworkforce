@@ -30,38 +30,70 @@ export default function QRScanner({
   const [error, setError] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const permissionRequestedRef = useRef(false);
 
   useEffect(() => {
-    // Get available cameras
-    Html5Qrcode.getCameras()
-      .then((devices) => {
-        if (devices && devices.length > 0) {
-          setCameras(devices);
-          setHasPermission(true);
-          // Prefer back camera on mobile
-          const backCameraIndex = devices.findIndex(
-            (d) => d.label.toLowerCase().includes('back') || 
-                   d.label.toLowerCase().includes('rear') ||
-                   d.label.toLowerCase().includes('environment')
-          );
-          if (backCameraIndex !== -1) {
-            setCurrentCameraIndex(backCameraIndex);
-          }
-        } else {
-          setHasPermission(false);
-          setError('لم يتم العثور على كاميرا');
-        }
-      })
-      .catch((err) => {
-        console.error('Camera access error:', err);
-        setHasPermission(false);
-        setError('لم يتم السماح بالوصول للكاميرا');
-      });
+    // Request camera permission explicitly
+    requestCameraPermission();
 
     return () => {
       stopScanning();
     };
   }, []);
+
+  const requestCameraPermission = async () => {
+    if (permissionRequestedRef.current) return;
+    permissionRequestedRef.current = true;
+
+    try {
+      // First, request permission explicitly
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment' // Prefer back camera on mobile
+        } 
+      });
+      
+      // Stop the stream immediately (we just needed permission)
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Now get available cameras
+      const devices = await Html5Qrcode.getCameras();
+      
+      if (devices && devices.length > 0) {
+        setCameras(devices);
+        setHasPermission(true);
+        
+        // Prefer back camera on mobile
+        const backCameraIndex = devices.findIndex(
+          (d) => d.label.toLowerCase().includes('back') || 
+                 d.label.toLowerCase().includes('rear') ||
+                 d.label.toLowerCase().includes('environment')
+        );
+        
+        if (backCameraIndex !== -1) {
+          setCurrentCameraIndex(backCameraIndex);
+        }
+      } else {
+        setHasPermission(false);
+        setError('لم يتم العثور على كاميرا');
+      }
+    } catch (err: any) {
+      console.error('Camera permission error:', err);
+      setHasPermission(false);
+      
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError('تم رفض الوصول للكاميرا. يرجى السماح بالوصول للكاميرا من إعدادات المتصفح');
+      } else if (err.name === 'NotFoundError') {
+        setError('لم يتم العثور على كاميرا على هذا الجهاز');
+      } else if (err.name === 'NotReadableError') {
+        setError('الكاميرا قيد الاستخدام من قبل تطبيق آخر');
+      } else {
+        setError('لم يتم السماح بالوصول للكاميرا');
+      }
+      
+      onError?.(error || 'Camera permission denied');
+    }
+  };
 
   const startScanning = async () => {
     if (!cameras.length) {
@@ -84,12 +116,21 @@ export default function QRScanner({
         await scanner.stop();
       }
 
+      // Use camera ID or facingMode
+      const cameraConfig = cameras[currentCameraIndex].id;
+
       await scanner.start(
-        cameras[currentCameraIndex].id,
+        cameraConfig,
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
           aspectRatio: 1,
+          // Additional config for better mobile support
+          videoConstraints: {
+            facingMode: currentCameraIndex === 0 ? 'environment' : 'user',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
         },
         (decodedText) => {
           // Success callback
@@ -106,8 +147,19 @@ export default function QRScanner({
       setIsScanning(true);
     } catch (err: any) {
       console.error('Scanner start error:', err);
-      setError(err.message || 'فشل في تشغيل الكاميرا');
-      onError?.(err.message || 'فشل في تشغيل الكاميرا');
+      
+      let errorMsg = 'فشل في تشغيل الكاميرا';
+      
+      if (err.name === 'NotAllowedError') {
+        errorMsg = 'تم رفض الوصول للكاميرا';
+      } else if (err.name === 'NotReadableError') {
+        errorMsg = 'الكاميرا قيد الاستخدام';
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
+      setError(errorMsg);
+      onError?.(errorMsg);
     }
   };
 
@@ -140,8 +192,15 @@ export default function QRScanner({
     if (wasScanning) {
       setTimeout(() => {
         startScanning();
-      }, 100);
+      }, 300);
     }
+  };
+
+  const retryPermission = () => {
+    permissionRequestedRef.current = false;
+    setHasPermission(null);
+    setError(null);
+    requestCameraPermission();
   };
 
   if (hasPermission === null) {
@@ -149,7 +208,10 @@ export default function QRScanner({
       <Card>
         <CardContent className="p-6 text-center">
           <RefreshCw className="h-8 w-8 mx-auto animate-spin text-muted-foreground" />
-          <p className="mt-2 text-muted-foreground">جاري التحقق من الكاميرا...</p>
+          <p className="mt-2 text-muted-foreground">جاري طلب الوصول للكاميرا...</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            يرجى السماح بالوصول للكاميرا عند ظهور الرسالة
+          </p>
         </CardContent>
       </Card>
     );
@@ -161,17 +223,27 @@ export default function QRScanner({
         <CardContent className="p-6 text-center">
           <AlertCircle className="h-12 w-12 mx-auto text-destructive" />
           <p className="mt-2 text-destructive font-medium">لا يمكن الوصول للكاميرا</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            يرجى السماح بالوصول للكاميرا من إعدادات المتصفح
+          <p className="text-sm text-muted-foreground mt-2">
+            {error || 'يرجى السماح بالوصول للكاميرا من إعدادات المتصفح'}
           </p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => window.location.reload()}
-          >
-            <RefreshCw className="h-4 w-4 ml-2" />
-            إعادة المحاولة
-          </Button>
+          <div className="mt-4 space-y-2">
+            <Button 
+              variant="default" 
+              onClick={retryPermission}
+              className="w-full"
+            >
+              <RefreshCw className="h-4 w-4 ml-2" />
+              إعادة المحاولة
+            </Button>
+            <div className="text-xs text-muted-foreground text-right p-3 bg-muted rounded-md">
+              <p className="font-medium mb-1">خطوات الحل:</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>اضغط على أيقونة القفل/الكاميرا في شريط العنوان</li>
+                <li>اختر "السماح" للكاميرا</li>
+                <li>اضغط "إعادة المحاولة"</li>
+              </ol>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -214,7 +286,7 @@ export default function QRScanner({
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div 
-                    className="border-2 border-primary rounded-lg"
+                    className="border-2 border-primary rounded-lg relative"
                     style={{ width: 250, height: 250 }}
                   >
                     {/* Corner markers */}
@@ -223,6 +295,10 @@ export default function QRScanner({
                     <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary rounded-bl-lg" />
                     <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary rounded-br-lg" />
                   </div>
+                </div>
+                {/* Scanning indicator */}
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm">
+                  جاري المسح...
                 </div>
               </div>
             )}
