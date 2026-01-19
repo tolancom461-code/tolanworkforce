@@ -1668,4 +1668,23 @@ Add "Approve Full Attendance" option that:
 ### Phase 3: اختبار وحفظ checkpoint
 - [x] التأكد من عدم وجود أخطاء TypeScript
 - [x] التأكد من عمل الخادم بنجاح
+- [x] Save checkpoint (version: 30c356f0)
+
+
+## تطبيق نظام الصلاحيات على تقارير الحضور
+
+### Phase 1: تحليل AttendanceReports.tsx وفهم بنية التقارير
+- [x] قراءة AttendanceReports.tsx لفهم البنية
+- [x] تحديد APIs المستخدمة (attendance.monthlyReport)
+- [x] تحديد نقاط التصفية المطلوبة (المجموعات وأزرار التصدير)
+
+### Phase 2: تطبيق التصفية على مستوى UI وAPI
+- [x] استيراد useScopedPermissions في AttendanceReports.tsx
+- [x] تصفية المجموعات المعروضة في dropdown حسب صلاحية view
+- [x] تصفية بيانات التقارير تتم تلقائيًا عبر تصفية المجموعات
+- [x] إخفاء أزرار التصدير (Excel, CSV, طباعة) حسب صلاحية export
+
+### Phase 3: اختبار وحفظ checkpoint
+- [x] التأكد من عدم وجود أخطاء TypeScript
+- [x] التأكد من عمل الخادم بنجاح
 - [ ] Save checkpoint

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
+import { useScopedPermissions } from '@/hooks/useScopedPermissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,6 +29,7 @@ const MONTHS = [
 ];
 
 export default function AttendanceReports() {
+  const { checkPermission, isAdmin, getUserScopeIds } = useScopedPermissions();
   const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
@@ -35,7 +37,14 @@ export default function AttendanceReports() {
   const [overrideDialog, setOverrideDialog] = useState<{ workerId: number; workerName: string; date: string } | null>(null);
   const [overrideReason, setOverrideReason] = useState('');
   
-  const { data: groups } = trpc.groups.list.useQuery();
+  const { data: allGroups } = trpc.groups.list.useQuery();
+  
+  // Filter groups based on permissions
+  const groups = useMemo(() => {
+    if (isAdmin() || !allGroups) return allGroups;
+    const allowedGroupIds = getUserScopeIds('work_group', 'view');
+    return allGroups.filter(g => allowedGroupIds.includes(String(g.id)));
+  }, [allGroups, isAdmin, getUserScopeIds]);
   const { data: report, isLoading, refetch } = trpc.attendance.monthlyReport.useQuery({
     year: selectedYear,
     month: selectedMonth,
@@ -225,18 +234,22 @@ export default function AttendanceReports() {
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button onClick={exportToExcel} disabled={exportExcelMutation.isPending}>
-            <Download className="h-4 w-4 ml-2" />
-            {exportExcelMutation.isPending ? 'جاري التصدير...' : 'تصدير Excel'}
-          </Button>
-          <Button variant="outline" onClick={exportToCSV}>
-            <Download className="h-4 w-4 ml-2" />
-            تصدير CSV
-          </Button>
-          <Button variant="outline" onClick={() => printPage('attendance-report-content')}>
-            <Printer className="h-4 w-4 ml-2" />
-            طباعة
-          </Button>
+          {(isAdmin() || checkPermission('export', 'work_group', '*')) && (
+            <>
+              <Button onClick={exportToExcel} disabled={exportExcelMutation.isPending}>
+                <Download className="h-4 w-4 ml-2" />
+                {exportExcelMutation.isPending ? 'جاري التصدير...' : 'تصدير Excel'}
+              </Button>
+              <Button variant="outline" onClick={exportToCSV}>
+                <Download className="h-4 w-4 ml-2" />
+                تصدير CSV
+              </Button>
+              <Button variant="outline" onClick={() => printPage('attendance-report-content')}>
+                <Printer className="h-4 w-4 ml-2" />
+                طباعة
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
