@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
+import { useScopedPermissions } from '@/hooks/useScopedPermissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function PayrollBatches() {
+  const { checkPermission, isAdmin } = useScopedPermissions();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
@@ -293,10 +295,12 @@ export default function PayrollBatches() {
               <SelectItem value="paid">مدفوع</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="h-4 w-4 ml-2" />
-            إنشاء دفعة
-          </Button>
+          {(isAdmin() || checkPermission('create', 'payroll_period', '*')) && (
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="h-4 w-4 ml-2" />
+              إنشاء دفعة
+            </Button>
+          )}
         </div>
       </div>
 
@@ -528,22 +532,26 @@ export default function PayrollBatches() {
                   {/* Delete Draft Button (only for draft status) */}
                   {batchDetails.batch.status === 'draft' && (
                     <>
-                      <Button 
-                        variant="destructive"
-                        onClick={() => handleDeleteDraft(selectedBatchId!)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4 ml-2" />
-                        {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
-                      </Button>
-                      <Button 
-                        onClick={() => {
-                          setSelectedBatchId(batchDetails.batch.id);
-                          setShowSubmitToAccountingDialog(true);
-                        }}
-                      >
-                        إرسال للمحاسب
-                      </Button>
+                      {(isAdmin() || checkPermission('delete', 'payroll_period', batchDetails.batch.id)) && (
+                        <Button 
+                          variant="destructive"
+                          onClick={() => handleDeleteDraft(selectedBatchId!)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 ml-2" />
+                          {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
+                        </Button>
+                      )}
+                      {(isAdmin() || checkPermission('update', 'payroll_period', batchDetails.batch.id)) && (
+                        <Button 
+                          onClick={() => {
+                            setSelectedBatchId(batchDetails.batch.id);
+                            setShowSubmitToAccountingDialog(true);
+                          }}
+                        >
+                          إرسال للمحاسب
+                        </Button>
+                      )}
                     </>
                   )}
                   
@@ -572,7 +580,7 @@ export default function PayrollBatches() {
                   )}
                   
                   {/* Manager Approval Stage */}
-                  {batchDetails.batch.status === 'under_accounts_manager_review' && (
+                  {batchDetails.batch.status === 'under_accounts_manager_review' && (isAdmin() || checkPermission('approve', 'payroll_period', batchDetails.batch.id)) && (
                     <>
                       <Button 
                         onClick={() => {
@@ -624,13 +632,15 @@ export default function PayrollBatches() {
                 </div>
                 
                 {/* Export Button */}
-                <Button 
-                  onClick={() => exportExcelMutation.mutate({ batchId: selectedBatchId! })}
-                  disabled={exportExcelMutation.isPending}
-                >
-                  <Download className="h-4 w-4 ml-2" />
+                {(isAdmin() || checkPermission('export', 'payroll_period', batchDetails.batch.id)) && (
+                  <Button 
+                    onClick={() => exportExcelMutation.mutate({ batchId: selectedBatchId! })}
+                    disabled={exportExcelMutation.isPending}
+                  >
+                    <Download className="h-4 w-4 ml-2" />
                   {exportExcelMutation.isPending ? 'جاري التصدير...' : 'تصدير Excel'}
                 </Button>
+                )}
               </div>
 
               {/* Items Table */}

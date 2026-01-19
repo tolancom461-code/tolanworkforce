@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
+import { useScopedPermissions } from '@/hooks/useScopedPermissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,6 +20,7 @@ import {
 import { toast } from 'sonner';
 
 export default function DailyAttendanceManagement() {
+  const { checkPermission, isAdmin } = useScopedPermissions();
   const currentDate = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(currentDate);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
@@ -193,19 +195,30 @@ export default function DailyAttendanceManagement() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              checked={hasOverride}
-                              onCheckedChange={() => handleOverrideToggle(worker.id, worker.fullName, hasOverride)}
-                              disabled={setOverrideMutation.isPending}
-                            />
-                            {hasOverride && (
+                          {(isAdmin() || (worker.groupId && checkPermission('approve', 'work_group', worker.groupId))) ? (
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={hasOverride}
+                                onCheckedChange={() => handleOverrideToggle(worker.id, worker.fullName, hasOverride)}
+                                disabled={setOverrideMutation.isPending}
+                              />
+                              {hasOverride && (
+                                <Badge variant="outline" className="gap-1">
+                                  <CheckCircle className="h-3 w-3" />
+                                  معتمد
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            hasOverride ? (
                               <Badge variant="outline" className="gap-1">
                                 <CheckCircle className="h-3 w-3" />
                                 معتمد
                               </Badge>
-                            )}
-                          </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">غير معتمد</span>
+                            )
+                          )}
                         </TableCell>
                       </TableRow>
                     );

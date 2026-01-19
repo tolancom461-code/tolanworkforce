@@ -1647,4 +1647,25 @@ Add "Approve Full Attendance" option that:
 ### Phase 4: اختبار وحفظ checkpoint
 - [x] التأكد من عدم وجود أخطاء TypeScript
 - [x] التأكد من عمل الخادم بنجاح
+- [x] Save checkpoint (version: 6e00d636)
+
+
+## تطبيق نظام الصلاحيات على الحضور والرواتب
+
+### Phase 1: تطبيق الصلاحيات على صفحة الحضور والانصراف
+- [x] قراءة DailyAttendanceManagement.tsx لفهم البنية
+- [x] استيراد useScopedPermissions في DailyAttendanceManagement.tsx
+- [x] إخفاء checkbox الاعتماد حسب صلاحية approve على مجموعة العامل
+
+### Phase 2: تطبيق الصلاحيات على صفحة الرواتب
+- [x] قراءة PayrollBatches.tsx لفهم البنية
+- [x] استيراد useScopedPermissions في PayrollBatches.tsx
+- [x] إخفاء زر "إنشاء دفعة" حسب صلاحية create على payroll_period
+- [x] إخفاء أزرار الاعتماد/الرفض حسب صلاحية approve على payroll_period
+- [x] إخفاء زر التصدير حسب صلاحية export على payroll_period
+- [x] إخفاء زر الحذف حسب صلاحية delete على payroll_period
+
+### Phase 3: اختبار وحفظ checkpoint
+- [x] التأكد من عدم وجود أخطاء TypeScript
+- [x] التأكد من عمل الخادم بنجاح
 - [ ] Save checkpoint
