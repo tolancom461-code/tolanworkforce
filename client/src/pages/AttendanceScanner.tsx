@@ -36,6 +36,32 @@ export default function AttendanceScanner() {
   
   const inputRef = useRef<HTMLInputElement>(null);
   
+  // Play success beep sound
+  const playSuccessBeep = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Configure beep sound
+      oscillator.frequency.value = 800; // Hz
+      oscillator.type = 'sine';
+      
+      // Volume envelope
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+      
+      // Play
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (error) {
+      console.error('Failed to play beep:', error);
+    }
+  };
+  
   const scanQRMutation = trpc.attendance.scanQR.useMutation();
   const manualEntryMutation = trpc.attendance.manualEntry.useMutation();
   const { data: stats, refetch: refetchStats } = trpc.attendance.stats.useQuery({});
@@ -66,6 +92,9 @@ export default function AttendanceScanner() {
       
       const eventText = result.eventType === 'check_in' ? 'تسجيل حضور' : 'تسجيل انصراف';
       toast.success(`${eventText} - ${result.worker?.fullName}`);
+      
+      // Play success beep
+      playSuccessBeep();
       
       // Auto-close dialog after 3 seconds
       setTimeout(() => {
@@ -98,8 +127,12 @@ export default function AttendanceScanner() {
       const eventText = result.eventType === 'check_in' ? 'تسجيل حضور' : 'تسجيل انصراف';
       toast.success(`${eventText} - ${result.worker?.fullName}`);
       
+      // Play success beep
+      playSuccessBeep();
+      
       setTimeout(() => {
         setShowResultDialog(false);
+        inputRef.current?.focus();
       }, 3000);
     } catch (error: any) {
       setLastResult({ success: false });
