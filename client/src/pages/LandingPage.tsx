@@ -32,8 +32,11 @@ export default function LandingPage() {
       await loginMutation.mutateAsync({ username, password, rememberMe });
       toast.success('تم تسجيل الدخول بنجاح');
       setShowLoginDialog(false);
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
+      
+      // Wait a bit for cookie to be set, then do full page reload
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
     } catch (error: any) {
       toast.error(error.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
     } finally {
