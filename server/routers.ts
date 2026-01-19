@@ -20,7 +20,18 @@ export const appRouter = router({
   system: systemRouter,
   
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) return null;
+      
+      // Verify user still exists and is active
+      const currentUser = await db.getUserById(ctx.user.id);
+      
+      if (!currentUser || !currentUser.isActive) {
+        return null; // User deleted or deactivated
+      }
+      
+      return currentUser;
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

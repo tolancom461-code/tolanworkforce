@@ -1920,3 +1920,20 @@ Add "Approve Full Attendance" option that:
 
 ### Checkpoint
 - [x] Save checkpoint
+
+
+---
+
+## 🔧 إضافة تسجيل خروج تلقائي عند التعطيل (Jan 19, 2026 - Part 10)
+
+### Backend
+- [x] تحديث auth.me procedure لإرجاع isActive status
+- [x] إضافة error handling للمستخدمين المعطلين
+
+### Frontend
+- [x] إضافة refetchInterval في useAuth (30ث)
+- [x] تسجيل خروج تلقائي عند isActive = false
+- [x] تسجيل خروج مباشر وredirect
+
+### Checkpoint
+- [x] Save checkpoint
