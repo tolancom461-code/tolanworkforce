@@ -1453,3 +1453,43 @@ Add "Approve Full Attendance" option that:
 
 ### Phase 4: حفظ checkpoint
 - [ ] Save checkpoint
+
+## Task - إضافة 18 صلاحية جديدة وتحديث واجهة الصلاحيات
+### Phase 1: إضافة 18 صلاحية جديدة
+- [ ] إنشاء additional-permissions.mjs
+- [ ] إضافة 18 صلاحية تفصيلية
+- [ ] تشغيل additional-permissions.mjs
+- [ ] تحديث menuPermissions.ts
+
+### Phase 2: تحديث واجهة إدارة الصلاحيات
+- [ ] تحديث Permissions.tsx لعرض الصلاحيات حسب المجموعات
+- [ ] إضافة فلترة حسب الفئة
+- [ ] تحسين عرض الصلاحيات
+
+### Phase 3: إضافة جميع الصلاحيات لـ SUPER_ADMIN
+- [ ] إنشاء superadmin-all-permissions.mjs
+- [ ] تشغيل superadmin-all-permissions.mjs
+- [ ] التحقق من ربط 65 صلاحية
+
+### Phase 4: حفظ checkpoint
+- [ ] Save checkpoint
+
+## Task - إضافة 18 صلاحية جديدة وتحديث واجهة الصلاحيات
+### Phase 1: إضافة 18 صلاحية جديدة
+- [x] إنشاء add-permissions-simple.mjs
+- [x] إضافة 18 صلاحية تفصيلية إلى قاعدة البيانات
+- [x] تشغيل add-permissions-simple.mjs
+- [x] تحديث menuPermissions.ts (18 صلاحية جديدة)
+
+### Phase 2: تحديث واجهة إدارة الصلاحيات
+- [x] تحديث PERMISSION_CATEGORIES في menuPermissions.ts
+- [x] إضافة الصلاحيات الجديدة إلى MENU_PERMISSIONS
+- [x] تنظيم الصلاحيات حسب 6 فئات
+
+### Phase 3: إضافة جميع الصلاحيات لـ SUPER_ADMIN
+- [x] إنشاء superadmin-all-permissions.mjs
+- [x] تشغيل superadmin-all-permissions.mjs
+- [x] ربط 33 صلاحية بدور super_admin
+
+### Phase 4: حفظ checkpoint
+- [ ] Save checkpoint

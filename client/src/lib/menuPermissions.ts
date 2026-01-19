@@ -11,16 +11,20 @@ export const MENU_PERMISSIONS = {
   WORKERS_CREATE: 'create_worker',
   WORKERS_EDIT: 'edit_worker',
   WORKERS_DELETE: 'delete_worker',
+  WORKERS_VIEW_DETAILS: 'view_worker_details',
+  WORKERS_EXPORT: 'export_workers',
   
   GROUPS_VIEW: 'view_groups',
   GROUPS_CREATE: 'create_group',
   GROUPS_EDIT: 'edit_group',
   GROUPS_DELETE: 'delete_group',
+  GROUPS_EXPORT: 'export_groups',
   
   COST_CENTERS_VIEW: 'view_cost_centers',
   COST_CENTERS_CREATE: 'create_cost_center',
   COST_CENTERS_EDIT: 'edit_cost_center',
   COST_CENTERS_DELETE: 'delete_cost_center',
+  COST_CENTERS_EXPORT: 'export_cost_centers',
   
   // نظام الحضور والانصراف
   ATTENDANCE_SCAN: 'scan_attendance',
@@ -31,12 +35,19 @@ export const MENU_PERMISSIONS = {
   ATTENDANCE_REPORTS: 'view_attendance_reports',
   ATTENDANCE_EXPORT: 'export_attendance_reports',
   WORK_DAYS: 'manage_work_days',
+  WORKER_CARD_VIEW: 'view_worker_card',
+  WORKER_CARD_PRINT: 'print_worker_card',
+  ATTENDANCE_LOG_EXPORT: 'export_attendance_log',
+  ATTENDANCE_ADJUSTMENT_APPROVE: 'approve_attendance_adjustment',
+  ATTENDANCE_ADJUSTMENT_REJECT: 'reject_attendance_adjustment',
   
   // البلاغات التشغيلية
   OPERATIONAL_FLAGS_CREATE: 'create_operational_flags',
   OPERATIONAL_FLAGS_MANAGE: 'manage_pending_flags',
   OPERATIONAL_FLAGS_VIEW_ALL: 'view_all_flags',
   OPERATIONAL_FLAGS_DELETE: 'delete_flag',
+  OPERATIONAL_FLAGS_VIEW_DETAILS: 'view_flag_details',
+  OPERATIONAL_FLAGS_EXPORT: 'export_flags',
   
   // النظام المالي
   FINANCE_ENTRIES_VIEW: 'view_finance_entries',
@@ -52,6 +63,11 @@ export const MENU_PERMISSIONS = {
   PAYROLL_BATCH_EDIT: 'edit_payroll_batch',
   PAYROLL_BATCH_DELETE: 'delete_payroll_batch',
   PAYROLL_BATCH_APPROVE: 'approve_payroll_batch',
+  PAYROLL_BATCH_VIEW_DETAILS: 'view_payroll_batch_details',
+  PAYROLL_BATCH_CANCEL: 'cancel_payroll_batch',
+  PAYROLL_BATCH_REJECT: 'reject_payroll_batch',
+  PAYROLL_BATCH_EXPORT: 'export_payroll_batch',
+  FINANCE_ENTRY_HISTORY: 'view_finance_entry_history',
   
   FINANCE_REPORTS_VIEW: 'view_finance_reports',
   FINANCE_REPORTS_EXPORT: 'export_finance_reports',
@@ -64,6 +80,8 @@ export const MENU_PERMISSIONS = {
   USERS_DELETE: 'delete_user',
   ROLES: 'manage_roles',
   PERMISSIONS: 'manage_permissions',
+  USER_ACTIVITY_LOG: 'view_user_activity_log',
+  AUDIT_LOG_EXPORT: 'export_audit_log',
 } as const;
 
 // نوع TypeScript للصلاحيات
@@ -117,14 +135,18 @@ export const PERMISSION_CATEGORIES: Record<string, { label: string; permissions:
       'create_worker',
       'edit_worker',
       'delete_worker',
+      'view_worker_details',
+      'export_workers',
       'view_groups',
       'create_group',
       'edit_group',
       'delete_group',
+      'export_groups',
       'view_cost_centers',
       'create_cost_center',
       'edit_cost_center',
       'delete_cost_center',
+      'export_cost_centers',
     ],
   },
   attendance: {
@@ -138,6 +160,11 @@ export const PERMISSION_CATEGORIES: Record<string, { label: string; permissions:
       'view_attendance_reports',
       'export_attendance_reports',
       'manage_work_days',
+      'view_worker_card',
+      'print_worker_card',
+      'export_attendance_log',
+      'approve_attendance_adjustment',
+      'reject_attendance_adjustment',
     ],
   },
   operational_flags: {
@@ -147,6 +174,8 @@ export const PERMISSION_CATEGORIES: Record<string, { label: string; permissions:
       'manage_pending_flags',
       'view_all_flags',
       'delete_flag',
+      'view_flag_details',
+      'export_flags',
     ],
   },
   financial: {
@@ -164,6 +193,11 @@ export const PERMISSION_CATEGORIES: Record<string, { label: string; permissions:
       'edit_payroll_batch',
       'delete_payroll_batch',
       'approve_payroll_batch',
+      'view_payroll_batch_details',
+      'cancel_payroll_batch',
+      'reject_payroll_batch',
+      'export_payroll_batch',
+      'view_finance_entry_history',
       'view_finance_reports',
       'export_finance_reports',
       'view_payroll_history',
@@ -178,6 +212,8 @@ export const PERMISSION_CATEGORIES: Record<string, { label: string; permissions:
       'delete_user',
       'manage_roles',
       'manage_permissions',
+      'view_user_activity_log',
+      'export_audit_log',
     ],
   },
 };
