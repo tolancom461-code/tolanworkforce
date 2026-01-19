@@ -21,7 +21,7 @@ export default function QRScanner({
   onScan, 
   onError,
   width = 300,
-  height = 300 
+  height = 350 
 }: QRScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -29,32 +29,42 @@ export default function QRScanner({
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const permissionRequestedRef = useRef(false);
+  const initializingRef = useRef(false);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    // Request camera permission explicitly
-    requestCameraPermission();
+    mountedRef.current = true;
+    
+    // Initialize camera permission and start scanning automatically
+    initializeCamera();
 
     return () => {
-      stopScanning();
+      mountedRef.current = false;
+      cleanupScanner();
     };
   }, []);
 
-  const requestCameraPermission = async () => {
-    if (permissionRequestedRef.current) return;
-    permissionRequestedRef.current = true;
+  const initializeCamera = async () => {
+    if (initializingRef.current) return;
+    initializingRef.current = true;
 
     try {
-      // First, request permission explicitly
+      // Request camera permission explicitly with specific constraints
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: 'environment' // Prefer back camera on mobile
+          facingMode: { ideal: 'environment' }, // Prefer back camera
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
         } 
       });
       
-      // Stop the stream immediately (we just needed permission)
+      // Keep the stream active briefly to ensure permission is granted
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Stop the stream
       stream.getTracks().forEach(track => track.stop());
+      
+      if (!mountedRef.current) return;
       
       // Now get available cameras
       const devices = await Html5Qrcode.getCameras();
@@ -67,18 +77,28 @@ export default function QRScanner({
         const backCameraIndex = devices.findIndex(
           (d) => d.label.toLowerCase().includes('back') || 
                  d.label.toLowerCase().includes('rear') ||
-                 d.label.toLowerCase().includes('environment')
+                 d.label.toLowerCase().includes('environment') ||
+                 d.label.toLowerCase().includes('خلفية')
         );
         
-        if (backCameraIndex !== -1) {
-          setCurrentCameraIndex(backCameraIndex);
-        }
+        const selectedIndex = backCameraIndex !== -1 ? backCameraIndex : 0;
+        setCurrentCameraIndex(selectedIndex);
+        
+        // Auto-start scanning
+        setTimeout(() => {
+          if (mountedRef.current) {
+            startScanningWithCamera(devices[selectedIndex].id);
+          }
+        }, 500);
       } else {
         setHasPermission(false);
-        setError('لم يتم العثور على كاميرا');
+        setError('لم يتم العثور على كاميرا على هذا الجهاز');
       }
     } catch (err: any) {
-      console.error('Camera permission error:', err);
+      console.error('Camera initialization error:', err);
+      
+      if (!mountedRef.current) return;
+      
       setHasPermission(false);
       
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -86,67 +106,68 @@ export default function QRScanner({
       } else if (err.name === 'NotFoundError') {
         setError('لم يتم العثور على كاميرا على هذا الجهاز');
       } else if (err.name === 'NotReadableError') {
-        setError('الكاميرا قيد الاستخدام من قبل تطبيق آخر');
+        setError('الكاميرا قيد الاستخدام من قبل تطبيق آخر. يرجى إغلاق التطبيقات الأخرى');
       } else {
-        setError('لم يتم السماح بالوصول للكاميرا');
+        setError(`خطأ في الوصول للكاميرا: ${err.message || 'غير معروف'}`);
       }
       
       onError?.(error || 'Camera permission denied');
+    } finally {
+      initializingRef.current = false;
     }
   };
 
-  const startScanning = async () => {
-    if (!cameras.length) {
-      setError('لا توجد كاميرا متاحة');
-      return;
-    }
-
+  const startScanningWithCamera = async (cameraId: string) => {
     try {
       setError(null);
       
       // Create scanner if not exists
       if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode('qr-reader');
+        scannerRef.current = new Html5Qrcode('qr-reader', {
+          verbose: false,
+          formatsToSupport: undefined // Support all formats
+        });
       }
 
       const scanner = scannerRef.current;
       
       // Check if already scanning
-      if (scanner.getState() === Html5QrcodeScannerState.SCANNING) {
+      const currentState = scanner.getState();
+      if (currentState === Html5QrcodeScannerState.SCANNING) {
         await scanner.stop();
+        // Wait a bit before restarting
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
 
-      // Use camera ID
-      const cameraConfig = cameras[currentCameraIndex].id;
+      if (!mountedRef.current) return;
 
+      // Start scanning with optimized config
       await scanner.start(
-        cameraConfig,
+        cameraId,
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1
+          fps: 10, // Frames per second
+          qrbox: { width: 250, height: 250 }, // Scanning box size
+          aspectRatio: 1.0,
+          disableFlip: false, // Allow flipping for better detection
         },
         (decodedText) => {
           // Success callback
+          console.log('QR Code detected:', decodedText);
           onScan(decodedText);
-          // Optionally stop after successful scan
-          // stopScanning();
         },
         (errorMessage) => {
           // Error callback - ignore continuous scanning errors
-          // Only report if it's a critical error
+          // These are normal when no QR code is in view
         }
       );
 
-      setIsScanning(true);
+      if (mountedRef.current) {
+        setIsScanning(true);
+      }
     } catch (err: any) {
       console.error('Scanner start error:', err);
-      console.error('Error details:', {
-        name: err.name,
-        message: err.message,
-        cameraId: cameras[currentCameraIndex]?.id,
-        cameraLabel: cameras[currentCameraIndex]?.label
-      });
+      
+      if (!mountedRef.current) return;
       
       let errorMsg = 'فشل في تشغيل الكاميرا';
       
@@ -156,12 +177,19 @@ export default function QRScanner({
         errorMsg = 'الكاميرا قيد الاستخدام من قبل تطبيق آخر';
       } else if (err.name === 'OverconstrainedError') {
         errorMsg = 'إعدادات الكاميرا غير مدعومة. جرب كاميرا أخرى';
-      } else if (err.message && err.message.includes('Permission')) {
-        errorMsg = 'يرجى السماح بالوصول للكاميرا';
+      } else if (err.message) {
+        errorMsg = `خطأ: ${err.message}`;
       }
       
       setError(errorMsg);
       onError?.(errorMsg);
+      setIsScanning(false);
+    }
+  };
+
+  const startScanning = () => {
+    if (cameras.length > 0) {
+      startScanningWithCamera(cameras[currentCameraIndex].id);
     }
   };
 
@@ -173,36 +201,51 @@ export default function QRScanner({
           await scannerRef.current.stop();
         }
       }
-      setIsScanning(false);
+      if (mountedRef.current) {
+        setIsScanning(false);
+      }
     } catch (err) {
       console.error('Scanner stop error:', err);
+    }
+  };
+
+  const cleanupScanner = async () => {
+    try {
+      if (scannerRef.current) {
+        const state = scannerRef.current.getState();
+        if (state === Html5QrcodeScannerState.SCANNING) {
+          await scannerRef.current.stop();
+        }
+        await scannerRef.current.clear();
+        scannerRef.current = null;
+      }
+    } catch (err) {
+      console.error('Scanner cleanup error:', err);
     }
   };
 
   const switchCamera = async () => {
     if (cameras.length <= 1) return;
     
-    const wasScanning = isScanning;
-    if (wasScanning) {
-      await stopScanning();
-    }
+    await stopScanning();
     
     const nextIndex = (currentCameraIndex + 1) % cameras.length;
     setCurrentCameraIndex(nextIndex);
     
     // Small delay before restarting
-    if (wasScanning) {
-      setTimeout(() => {
-        startScanning();
-      }, 300);
-    }
+    setTimeout(() => {
+      if (mountedRef.current) {
+        startScanningWithCamera(cameras[nextIndex].id);
+      }
+    }, 500);
   };
 
   const retryPermission = () => {
-    permissionRequestedRef.current = false;
+    initializingRef.current = false;
     setHasPermission(null);
     setError(null);
-    requestCameraPermission();
+    setCameras([]);
+    initializeCamera();
   };
 
   if (hasPermission === null) {
@@ -238,12 +281,20 @@ export default function QRScanner({
               إعادة المحاولة
             </Button>
             <div className="text-xs text-muted-foreground text-right p-3 bg-muted rounded-md">
-              <p className="font-medium mb-1">خطوات الحل:</p>
+              <p className="font-medium mb-2">خطوات الحل:</p>
               <ol className="list-decimal list-inside space-y-1">
                 <li>اضغط على أيقونة القفل/الكاميرا في شريط العنوان</li>
                 <li>اختر "السماح" للكاميرا</li>
-                <li>اضغط "إعادة المحاولة"</li>
+                <li>أعد تحميل الصفحة أو اضغط "إعادة المحاولة"</li>
               </ol>
+              <p className="mt-2 text-xs">
+                <strong>ملاحظة:</strong> إذا كانت الكاميرا تعمل ولكن الشاشة سوداء، جرب:
+              </p>
+              <ul className="list-disc list-inside space-y-1 mt-1">
+                <li>إغلاق التطبيقات الأخرى التي تستخدم الكاميرا</li>
+                <li>تبديل الكاميرا (إذا كان لديك أكثر من كاميرا)</li>
+                <li>إعادة تشغيل المتصفح</li>
+              </ul>
             </div>
           </div>
         </CardContent>
@@ -257,28 +308,23 @@ export default function QRScanner({
       <Card className="overflow-hidden">
         <CardContent className="p-0">
           <div 
-            ref={containerRef}
             className="relative bg-black"
             style={{ minHeight: height }}
           >
-            {/* QR Reader Element */}
+            {/* QR Reader Element - Always visible when scanning */}
             <div 
               id="qr-reader" 
               className="w-full"
-              style={{ 
-                display: isScanning ? 'block' : 'none',
-              }}
             />
             
             {/* Placeholder when not scanning */}
             {!isScanning && (
               <div 
-                className="flex flex-col items-center justify-center bg-muted"
-                style={{ height }}
+                className="absolute inset-0 flex flex-col items-center justify-center bg-muted"
               >
                 <Camera className="h-16 w-16 text-muted-foreground opacity-50" />
                 <p className="mt-4 text-muted-foreground">
-                  اضغط على زر التشغيل لبدء المسح
+                  {cameras.length > 0 ? 'اضغط على زر التشغيل لبدء المسح' : 'جاري تحميل الكاميرا...'}
                 </p>
               </div>
             )}
@@ -299,7 +345,7 @@ export default function QRScanner({
                   </div>
                 </div>
                 {/* Scanning indicator */}
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm">
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
                   جاري المسح...
                 </div>
               </div>
@@ -311,6 +357,7 @@ export default function QRScanner({
       {/* Error Message */}
       {error && (
         <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-center text-sm">
+          <AlertCircle className="h-4 w-4 inline ml-1" />
           {error}
         </div>
       )}
@@ -331,7 +378,7 @@ export default function QRScanner({
             {cameras.length > 1 && (
               <Button onClick={switchCamera} variant="outline" size="lg" className="gap-2">
                 <SwitchCamera className="h-5 w-5" />
-                تبديل الكاميرا
+                تبديل ({cameras.length})
               </Button>
             )}
           </>
@@ -339,9 +386,10 @@ export default function QRScanner({
       </div>
 
       {/* Camera Info */}
-      {isScanning && cameras.length > 0 && (
+      {cameras.length > 0 && (
         <p className="text-center text-sm text-muted-foreground">
           الكاميرا: {cameras[currentCameraIndex]?.label || 'غير معروف'}
+          {cameras.length > 1 && ` (${currentCameraIndex + 1}/${cameras.length})`}
         </p>
       )}
     </div>

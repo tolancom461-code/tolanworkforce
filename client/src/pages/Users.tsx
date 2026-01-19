@@ -82,6 +82,7 @@ export default function Users() {
       fullName: formData.get("fullName") as string,
       email: formData.get("email") as string || undefined,
       phone: formData.get("phone") as string || undefined,
+      phoneNumber: formData.get("phoneNumber") as string || undefined,
       roleId: formData.get("roleId") ? parseInt(formData.get("roleId") as string) : undefined,
       isActive: formData.get("isActive") === "on",
     });
@@ -96,6 +97,7 @@ export default function Users() {
       fullName: formData.get("fullName") as string,
       email: formData.get("email") as string || null,
       phone: formData.get("phone") as string || null,
+      phoneNumber: formData.get("phoneNumber") as string || null,
       roleId: formData.get("roleId") ? parseInt(formData.get("roleId") as string) : null,
       isActive: formData.get("isActive") === "on",
     });
@@ -209,7 +211,11 @@ export default function Users() {
                     <Input id="phone" name="phone" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="roleId">الدور</Label>
+                    <Label htmlFor="phoneNumber">رقم هاتف الموظف</Label>
+                    <Input id="phoneNumber" name="phoneNumber" placeholder="05xxxxxxxx" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="roleId">الدور *</Label>
                     <Select name="roleId">
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الدور" />
@@ -274,9 +280,8 @@ export default function Users() {
                     <TableRow className="bg-muted/50">
                       <TableHead className="text-right">الاسم</TableHead>
                       <TableHead className="text-right">اسم المستخدم</TableHead>
-                      <TableHead className="text-right">البريد الإلكتروني</TableHead>
+                      <TableHead className="text-right">رقم الهاتف</TableHead>
                       <TableHead className="text-right">الدور</TableHead>
-                      <TableHead className="text-right">الصلاحيات الإضافية</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">الإجراءات</TableHead>
                     </TableRow>
@@ -284,7 +289,7 @@ export default function Users() {
                   <TableBody>
                     {filteredUsers?.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                           لا يوجد مستخدمين
                         </TableCell>
                       </TableRow>
@@ -293,16 +298,11 @@ export default function Users() {
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{user.fullName}</TableCell>
                           <TableCell className="text-muted-foreground">{user.username}</TableCell>
-                          <TableCell className="text-muted-foreground">{user.email || "-"}</TableCell>
+                          <TableCell className="text-muted-foreground">{user.phoneNumber || "-"}</TableCell>
                           <TableCell>
                             <Badge variant={getRoleBadgeColor(user.roleId)}>
                               {getRoleName(user.roleId)}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground">
-                              {getPermissionCount(user)}
-                            </span>
                           </TableCell>
                           <TableCell>
                             <Badge variant={user.isActive ? "default" : "secondary"}>
@@ -404,7 +404,16 @@ export default function Users() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-roleId">الدور</Label>
+                  <Label htmlFor="edit-phoneNumber">رقم هاتف الموظف</Label>
+                  <Input 
+                    id="edit-phoneNumber" 
+                    name="phoneNumber"
+                    placeholder="05xxxxxxxx"
+                    defaultValue={selectedUser?.phoneNumber || ""}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-roleId">الدور *</Label>
                   <Select name="roleId" defaultValue={selectedUser?.roleId?.toString()}>
                     <SelectTrigger>
                       <SelectValue placeholder="اختر الدور" />

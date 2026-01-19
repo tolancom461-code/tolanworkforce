@@ -138,6 +138,7 @@ export const appRouter = router({
         fullName: z.string().min(2),
         email: z.string().email().optional(),
         phone: z.string().optional(),
+        phoneNumber: z.string().optional(),
         roleId: z.number().optional(),
         isActive: z.boolean().default(true),
       }))
@@ -151,6 +152,7 @@ export const appRouter = router({
           fullName: input.fullName,
           email: input.email,
           phone: input.phone,
+          phoneNumber: input.phoneNumber,
           roleId: input.roleId,
           isActive: input.isActive,
         });
@@ -163,6 +165,7 @@ export const appRouter = router({
         fullName: z.string().min(2).optional(),
         email: z.string().email().optional().nullable(),
         phone: z.string().optional().nullable(),
+        phoneNumber: z.string().optional().nullable(),
         roleId: z.number().optional().nullable(),
         isActive: z.boolean().optional(),
       }))
