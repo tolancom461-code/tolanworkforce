@@ -290,6 +290,50 @@ export const appRouter = router({
         await db.setUserPermissions(input.userId, input.permissionIds);
         return { success: true };
       }),
+    
+    getRolePermissions: protectedProcedure
+      .input(z.object({ roleId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getRolePermissions(input.roleId);
+      }),
+    
+    updateRolePermissions: protectedProcedure
+      .input(z.object({
+        roleId: z.number(),
+        permissionIds: z.array(z.number()),
+      }))
+      .mutation(async ({ input }) => {
+        await db.setRolePermissions(input.roleId, input.permissionIds);
+        return { success: true };
+      }),
+    
+    getAllPermissionsGrouped: protectedProcedure.query(async () => {
+      const allPermissions = await db.getAllPermissions();
+      // Group permissions by category (based on code prefix)
+      const grouped: Record<string, typeof allPermissions> = {};
+      
+      for (const perm of allPermissions) {
+        let category = 'other';
+        if (perm.code.startsWith('view_dashboard') || perm.code.startsWith('view_executive_dashboard')) {
+          category = 'dashboard';
+        } else if (perm.code.includes('worker') || perm.code.includes('group') || perm.code.includes('cost_center')) {
+          category = 'hr';
+        } else if (perm.code.includes('attendance') || perm.code.includes('work_days')) {
+          category = 'attendance';
+        } else if (perm.code.includes('flag')) {
+          category = 'flags';
+        } else if (perm.code.includes('finance') || perm.code.includes('payroll') || perm.code.includes('deduction') || perm.code.includes('addition')) {
+          category = 'finance';
+        } else if (perm.code.includes('user') || perm.code.includes('role') || perm.code.includes('permission')) {
+          category = 'system';
+        }
+        
+        if (!grouped[category]) grouped[category] = [];
+        grouped[category].push(perm);
+      }
+      
+      return grouped;
+    }),
   }),
 
   // Groups Management

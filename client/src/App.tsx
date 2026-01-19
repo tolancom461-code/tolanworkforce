@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Users from "./pages/Users";
 import Permissions from "./pages/Permissions";
+import RolePermissions from "./pages/RolePermissions";
 import Profile from "./pages/Profile";
 import Groups from "./pages/Groups";
 import Workers from "./pages/Workers";
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/executive" component={ExecutiveDashboard} />
       <Route path="/users" component={Users} />
       <Route path="/permissions" component={Permissions} />
+      <Route path="/role-permissions" component={RolePermissions} />
       <Route path="/roles" component={Roles} />
       <Route path="/cost-centers" component={CostCenters} />
       <Route path="/profile" component={Profile} />

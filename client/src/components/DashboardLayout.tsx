@@ -57,7 +57,8 @@ import {
   FileCheck,
   ChevronDown,
   Flag,
-  Clock
+  Clock,
+  Settings
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -109,6 +110,7 @@ const menuSections = [
       { icon: Users, label: "المستخدمين", path: "/users", permission: MENU_PERMISSIONS.USERS_VIEW },
       { icon: Shield, label: "الأدوار والصلاحيات", path: "/roles", permission: MENU_PERMISSIONS.ROLES },
       { icon: Key, label: "إدارة الصلاحيات", path: "/permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
+      { icon: Settings, label: "توزيع الصلاحيات", path: "/role-permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
     ]
   },
 ];

@@ -1493,3 +1493,28 @@ Add "Approve Full Attendance" option that:
 
 ### Phase 4: حفظ checkpoint
 - [ ] Save checkpoint
+
+## Task - صفحة توزيع الصلاحيات على الأدوار
+### Phase 1: Backend APIs
+- [x] إضافة API getRolePermissions (جلب صلاحيات دور معين)
+- [x] إضافة API updateRolePermissions (تحديث صلاحيات دور)
+- [x] إضافة API getAllPermissionsGrouped (جلب جميع الصلاحيات مجمعة حسب الفئات)
+
+### Phase 2: Frontend
+- [x] إنشاء صفحة RolePermissions.tsx
+- [x] إضافة selector لاختيار الدور
+- [x] عرض الصلاحيات مجمعة حسب الفئات (7 فئات)
+- [x] إضافة checkboxes لكل صلاحية
+- [x] إضافة "تحديد الكل" لكل فئة
+- [x] تنفيذ الحفظ التلقائي عند التغيير (1 second debounce)
+
+### Phase 3: Integration
+- [x] إضافة route /role-permissions في App.tsx
+- [x] إضافة رابط في Sidebar (System section)
+- [x] إضافة Settings icon للرابط
+
+### Phase 4: Testing & Checkpoint
+- [x] اختبار تحديد/إلغاء تحديد الصلاحيات
+- [x] اختبار الحفظ التلقائي
+- [x] اختبار "تحديد الكل" لكل فئة
+- [ ] Save checkpoint
