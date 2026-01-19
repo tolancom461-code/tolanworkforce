@@ -21,7 +21,6 @@ import WorkDays from "./pages/WorkDays";
 
 
 import PayOverrides from "./pages/PayOverrides";
-import FinanceEntry from "./pages/FinanceEntry";
 import PayrollBatches from "./pages/PayrollBatches";
 import PayrollBatchList from "./pages/payroll/PayrollBatchList";
 import PayrollBatchCreate from "./pages/payroll/PayrollBatchCreate";
@@ -68,7 +67,6 @@ function Router() {
       <Route path="/pending-flags" component={PendingFlags} />
       {/* Finance System Routes */}
       <Route path="/finance/overrides" component={PayOverrides} />
-      <Route path="/finance/entry" component={FinanceEntry} />
       <Route path="/finance/payroll" component={PayrollBatches} />
       <Route path="/payroll/batches" component={PayrollBatchList} />
       <Route path="/payroll/batches/create" component={PayrollBatchCreate} />

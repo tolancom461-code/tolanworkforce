@@ -1978,3 +1978,54 @@ Add "Approve Full Attendance" option that:
 
 ### Checkpoint
 - [x] Save checkpoint
+
+
+---
+
+## 🔧 حذف صفحة "الخصومات والإضافات" (Jan 19, 2026 - Part 13)
+
+### الحذف
+- [x] حذف FinanceEntry.tsx
+- [x] حذف route من App.tsx
+- [x] حذف رابط من DashboardLayout
+- [x] الإبقاء على "الاستثناءات المالية" بكامل وظائفها
+
+---
+
+## 🔍 فحص وإصلاح نظام المستخدمين والصلاحيات (Jan 19, 2026 - Part 14)
+
+### فحص المستخدمين
+- [x] فحص صفحة Users.tsx - موجودة
+- [x] فحص users procedures في routers.ts - موجودة
+- [x] فحص user functions في db.ts - موجودة
+- [ ] اختبار إضافة وتعديل وحذف مستخدم
+
+### فحص الأدوار
+- [x] فحص صفحة Roles.tsx - موجودة
+- [x] فحص roles procedures في routers.ts - موجودة
+- [x] فحص role functions في db.ts - موجودة
+- [ ] اختبار إضافة وتعديل وحذف دور
+
+### فحص الصلاحيات
+- [ ] إنشاء صفحة Permissions.tsx - غير موجودة
+- [x] فحص permissions procedures في routers.ts - موجودة
+- [x] فحص permission functions في db.ts - موجودة
+- [ ] اختبار إضافة وتعديل وحذف صلاحية
+
+### فحص توزيع الصلاحيات
+- [ ] إنشاء صفحة RolePermissions.tsx - غير موجودة
+- [x] فحص rolePermissions procedures - موجودة في roles router
+- [ ] اختبار ربط صلاحيات بأدوار
+
+### فحص الصلاحيات الذرية
+- [x] فحص صفحة UserScopedPermissions.tsx - موجودة
+- [x] فحص userPermissions procedures - موجودة
+- [ ] اختبار إضافة صلاحيات ذرية
+
+### الإصلاح
+- [ ] إصلاح أي مشاكل في UI
+- [ ] إصلاح أي مشاكل في backend
+- [ ] إضافة أي جداول ناقصة
+
+### Checkpoint
+- [x] Save checkpoint

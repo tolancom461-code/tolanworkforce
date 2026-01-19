@@ -99,7 +99,6 @@ const menuSections = [
     label: "💰 الرواتب والمالية",
     items: [
       { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches", permission: MENU_PERMISSIONS.PAYROLL_BATCHES_VIEW },
-      { icon: Calculator, label: "الخصومات والإضافات", path: "/finance/entry", permission: MENU_PERMISSIONS.FINANCE_ENTRIES_VIEW },
       { icon: AlertCircle, label: "الاستثناءات المالية", path: "/finance/overrides", permission: MENU_PERMISSIONS.FINANCE_OVERRIDE_DAILY },
       { icon: FileText, label: "التقارير المالية", path: "/finance/reports", permission: MENU_PERMISSIONS.FINANCE_REPORTS_VIEW },
     ]
