@@ -236,6 +236,49 @@ export const appRouter = router({
       }),
   }),
 
+  // Permissions Management
+  permissions: router({
+    list: protectedProcedure.query(async () => {
+      return await db.getAllPermissions();
+    }),
+    
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getPermissionById(input.id);
+      }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        code: z.string().min(1),
+        name: z.string().min(1),
+        description: z.string().optional(),
+        category: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.createPermission(input);
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        code: z.string().optional(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        category: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updatePermission(id, data);
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deletePermission(input.id);
+      }),
+  }),
+
   // Groups Management
   groups: router({
     list: protectedProcedure.query(async ({ ctx }) => {

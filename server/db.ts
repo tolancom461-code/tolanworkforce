@@ -4,6 +4,8 @@ import {
   users, InsertUser, User,
   roles, Role,
   userRoles,
+  permissions, Permission,
+  rolePermissions,
   userPermissions,
   costCenters,
   groups, Group, InsertGroup,
@@ -235,6 +237,73 @@ export async function deleteRole(id: number) {
   
   // Delete role
   await db.delete(roles).where(eq(roles.id, id));
+
+  return { success: true };
+}
+
+// ============================================
+// Permission Functions
+// ============================================
+
+export async function getAllPermissions(): Promise<Permission[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(permissions).orderBy(permissions.category, permissions.name);
+}
+
+export async function getPermissionById(id: number): Promise<Permission | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(permissions).where(eq(permissions.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createPermission(data: {
+  code: string;
+  name: string;
+  description?: string;
+  category?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const [result] = await db.insert(permissions).values({
+    code: data.code,
+    name: data.name,
+    description: data.description || null,
+    category: data.category || null,
+  });
+
+  return { id: Number(result.insertId), success: true };
+}
+
+export async function updatePermission(id: number, data: {
+  code?: string;
+  name?: string;
+  description?: string;
+  category?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  await db.update(permissions)
+    .set(data)
+    .where(eq(permissions.id, id));
+
+  return { success: true };
+}
+
+export async function deletePermission(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  // Delete role permissions
+  await db.delete(rolePermissions).where(eq(rolePermissions.permissionId, id));
+  
+  // Delete permission
+  await db.delete(permissions).where(eq(permissions.id, id));
 
   return { success: true };
 }

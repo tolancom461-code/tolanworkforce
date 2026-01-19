@@ -1957,3 +1957,24 @@ Add "Approve Full Attendance" option that:
 
 ### Checkpoint
 - [x] Save checkpoint
+
+
+---
+
+## 🔧 إصلاح نظام الصلاحيات والأدوار (Jan 19, 2026 - Part 12)
+
+### فحص المشكلة
+- [x] فحص صفحة Settings/Roles
+- [x] فحص صفحة Settings/Permissions
+- [x] فحص backend procedures للصلاحيات
+- [x] فحص schema للأدوار والصلاحيات
+
+### الإصلاح
+- [x] إضافة permissions و rolePermissions tables في schema.ts
+- [x] إضافة Permission type
+- [x] إضافة permissions router في routers.ts
+- [x] إضافة permission functions في db.ts
+- [x] تشغيل pnpm db:push
+
+### Checkpoint
+- [x] Save checkpoint
