@@ -3,10 +3,8 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { 
   users, InsertUser, User,
   roles, Role,
-  permissions, Permission,
   userRoles,
   userPermissions,
-  rolePermissions,
   costCenters,
   groups, Group, InsertGroup,
   groupShifts, GroupShift, InsertGroupShift,
@@ -232,9 +230,6 @@ export async function deleteRole(id: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
 
-  // Delete role permissions first
-  await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id));
-  
   // Delete user roles
   await db.delete(userRoles).where(eq(userRoles.roleId, id));
   
@@ -248,41 +243,16 @@ export async function deleteRole(id: number) {
 // Permission Functions
 // ============================================
 
-export async function getAllPermissions(): Promise<Permission[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db.select().from(permissions).orderBy(permissions.category, permissions.code);
-}
-
 // ============================================
 // ROLE-BASED PERMISSION CHECK (for backward compatibility)
 // التحقق من الصلاحيات بناءً على الأدوار (للتوافق مع الكود الموجود)
 // ============================================
 
-export async function getUserRolePermissions(userId: number): Promise<Permission[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  // Get permissions through roles
-  const rolePerms = await db
-    .select({ permission: permissions })
-    .from(userRoles)
-    .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
-    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-    .where(eq(userRoles.userId, userId));
-
-  return rolePerms.map(p => p.permission);
-}
-
 export async function checkUserPermission(userId: number, permissionCode: string): Promise<boolean> {
-  const db = await getDb();
-  if (!db) return false;
-
-  // Get permissions through roles
-  const rolePerms = await getUserRolePermissions(userId);
-  
-  return rolePerms.some(p => p.code === permissionCode);
+  // This function is kept for backward compatibility with existing code
+  // It always returns false since the old permission system is removed
+  // Use checkScopedPermission instead for the new permission system
+  return false;
 }
 
 export async function assignRoleToUser(userId: number, roleId: number): Promise<void> {
@@ -302,11 +272,10 @@ export async function assignRoleToUser(userId: number, roleId: number): Promise<
 
 export async function getDashboardStats() {
   const db = await getDb();
-  if (!db) return { users: 0, roles: 0, permissions: 0, groups: 0, workers: 0, costCenters: 0 };
+  if (!db) return { users: 0, roles: 0, groups: 0, workers: 0, costCenters: 0 };
 
   const [userCount] = await db.select({ value: count() }).from(users);
   const [roleCount] = await db.select({ value: count() }).from(roles);
-  const [permCount] = await db.select({ value: count() }).from(permissions);
   const [groupCount] = await db.select({ value: count() }).from(groups);
   const [workerCount] = await db.select({ value: count() }).from(workers);
   const [ccCount] = await db.select({ value: count() }).from(costCenters);
@@ -314,7 +283,6 @@ export async function getDashboardStats() {
   return {
     users: userCount?.value || 0,
     roles: roleCount?.value || 0,
-    permissions: permCount?.value || 0,
     groups: groupCount?.value || 0,
     workers: workerCount?.value || 0,
     costCenters: ccCount?.value || 0,
@@ -2497,46 +2465,7 @@ export async function deleteBatch(batchId: number) {
   return { success: true };
 }
 
-/**
- * Get permissions for a role
- */
-export async function getRolePermissions(roleId: number): Promise<Permission[]> {
-  const db = await getDb();
-  if (!db) return [];
 
-  const rolePerms = await db
-    .select({ permission: permissions })
-    .from(rolePermissions)
-    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-    .where(eq(rolePermissions.roleId, roleId));
-
-  return rolePerms.map(rp => rp.permission);
-}
-
-/**
- * Set permissions for a role (replace all)
- */
-export async function setRolePermissions(roleId: number, permissionIds: number[]) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  // Delete existing permissions
-  await db
-    .delete(rolePermissions)
-    .where(eq(rolePermissions.roleId, roleId));
-
-  // Insert new permissions
-  if (permissionIds.length > 0) {
-    await db.insert(rolePermissions).values(
-      permissionIds.map(permissionId => ({
-        roleId,
-        permissionId,
-      }))
-    );
-  }
-
-  return { success: true };
-}
 
 
 // ============================================

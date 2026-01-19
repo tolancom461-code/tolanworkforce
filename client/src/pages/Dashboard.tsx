@@ -21,14 +21,7 @@ export default function Dashboard() {
       color: "text-chart-2",
       bgColor: "bg-chart-2/10",
     },
-    {
-      title: "الصلاحيات",
-      value: stats?.permissions || 0,
-      icon: Key,
-      color: "text-chart-3",
-      bgColor: "bg-chart-3/10",
-    },
-    {
+{
       title: "المجموعات",
       value: stats?.groups || 0,
       icon: Briefcase,

@@ -27,14 +27,9 @@ export const appRouter = router({
       return { success: true } as const;
     }),
     permissions: protectedProcedure.query(async ({ ctx }) => {
-      // جلب الصلاحيات من خلال الأدوار
-      const rolePerms = await db.getUserRolePermissions(ctx.user.id);
-      
-      const uniquePerms = Array.from(
-        new Map(rolePerms.map(p => [p.code, p])).values()
-      );
-      
-      return uniquePerms.map(p => p.code);
+      // Old permission system removed
+      // Use scopedPermissions router for the new atomic permissions system
+      return [];
     }),
     localLogin: publicProcedure
       .input(z.object({
@@ -225,76 +220,6 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await db.deleteRole(input.id);
       }),
-    
-    getRolePermissions: protectedProcedure
-      .input(z.object({ roleId: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getRolePermissions(input.roleId);
-      }),
-    
-    setRolePermissions: protectedProcedure
-      .input(z.object({
-        roleId: z.number(),
-        permissionIds: z.array(z.number()),
-      }))
-      .mutation(async ({ input }) => {
-        await db.setRolePermissions(input.roleId, input.permissionIds);
-        return { success: true };
-      }),
-  }),
-
-  // Permission Management
-  permissions: router({
-    list: protectedProcedure.query(async () => {
-      return await db.getAllPermissions();
-    }),
-    
-    // OLD PERMISSION PROCEDURES - REMOVED
-    // Replaced with Atomic Permissions + Scope System
-    
-    getRolePermissions: protectedProcedure
-      .input(z.object({ roleId: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getRolePermissions(input.roleId);
-      }),
-    
-    updateRolePermissions: protectedProcedure
-      .input(z.object({
-        roleId: z.number(),
-        permissionIds: z.array(z.number()),
-      }))
-      .mutation(async ({ input }) => {
-        await db.setRolePermissions(input.roleId, input.permissionIds);
-        return { success: true };
-      }),
-    
-    getAllPermissionsGrouped: protectedProcedure.query(async () => {
-      const allPermissions = await db.getAllPermissions();
-      // Group permissions by category (based on code prefix)
-      const grouped: Record<string, typeof allPermissions> = {};
-      
-      for (const perm of allPermissions) {
-        let category = 'other';
-        if (perm.code.startsWith('view_dashboard') || perm.code.startsWith('view_executive_dashboard')) {
-          category = 'dashboard';
-        } else if (perm.code.includes('worker') || perm.code.includes('group') || perm.code.includes('cost_center')) {
-          category = 'hr';
-        } else if (perm.code.includes('attendance') || perm.code.includes('work_days')) {
-          category = 'attendance';
-        } else if (perm.code.includes('flag')) {
-          category = 'flags';
-        } else if (perm.code.includes('finance') || perm.code.includes('payroll') || perm.code.includes('deduction') || perm.code.includes('addition')) {
-          category = 'finance';
-        } else if (perm.code.includes('user') || perm.code.includes('role') || perm.code.includes('permission')) {
-          category = 'system';
-        }
-        
-        if (!grouped[category]) grouped[category] = [];
-        grouped[category].push(perm);
-      }
-      
-      return grouped;
-    }),
   }),
 
   // Groups Management

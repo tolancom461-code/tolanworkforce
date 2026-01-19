@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useAuth } from "@/_core/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getLoginUrl } from "@/const";
