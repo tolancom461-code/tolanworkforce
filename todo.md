@@ -1598,3 +1598,25 @@ Add "Approve Full Attendance" option that:
 - [ ] إضافة أمثلة استخدام في التوثيق
 - [ ] تحديث todo.md بالتقدم النهائي
 - [ ] إنشاء checkpoint نهائي
+
+
+## تطبيق نظام الصلاحيات الذرية على واجهة مجموعات العمل
+
+### Phase 1: إنشاء custom hook
+- [x] إنشاء useScopedPermissions.ts في client/src/hooks/
+- [x] دالة checkPermission(permission, scopeType, scopeId)
+- [x] دالة hasAnyPermission(permissions, scopeType, scopeId)
+- [x] دالة getUserScopeIds(scopeType, permission)
+- [x] استخدام trpc.scopedPermissions.getUserPermissions
+
+### Phase 2: تحديث Groups.tsx
+- [x] استيراد useScopedPermissions
+- [x] إخفاء زر "تعديل" إذا لم يكن لديه صلاحية update على المجموعة
+- [x] إخفاء زر "حذف" إذا لم يكن لديه صلاحية delete على المجموعة
+- [x] إخفاء زر "إضافة مجموعة" إذا لم يكن لديه صلاحية create على work_group
+- [x] تطبيق التحقق على مستوى السجل الواحد (كل مجموعة مستقلة)
+
+### Phase 3: اختبار وحفظ checkpoint
+- [x] اختبار إخفاء/إظهار الأزرار حسب الصلاحيات
+- [x] التأكد من عدم وجود أخطاء TypeScript
+- [ ] Save checkpoint
