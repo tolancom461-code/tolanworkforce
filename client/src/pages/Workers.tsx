@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useScopedPermissions } from "@/hooks/useScopedPermissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshC
 import { exportToExcel, printPage } from '@/lib/exportUtils';
 
 export default function Workers() {
+  const { checkPermission, isAdmin } = useScopedPermissions();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -265,13 +267,14 @@ export default function Workers() {
               <Printer className="h-4 w-4 ml-2" />
               طباعة
             </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => { resetForm(); setSelectedWorker(null); }}>
-                  <Plus className="ml-2 h-4 w-4" />
-                  إضافة عامل
-                </Button>
-              </DialogTrigger>
+            {(isAdmin() || checkPermission('create', 'work_group', '*')) && (
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => { resetForm(); setSelectedWorker(null); }}>
+                    <Plus className="ml-2 h-4 w-4" />
+                    إضافة عامل
+                  </Button>
+                </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]" dir="rtl">
               <DialogHeader>
                 <DialogTitle>إضافة عامل جديد</DialogTitle>
@@ -385,6 +388,7 @@ export default function Workers() {
               </DialogFooter>
             </DialogContent>
             </Dialog>
+            )}
           </div>
         </div>
 
@@ -507,20 +511,23 @@ export default function Workers() {
                           >
                             <Download className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(worker)}
-                            title="تعديل"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" title="حذف">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </AlertDialogTrigger>
+                          {(isAdmin() || (worker.groupId && checkPermission('update', 'work_group', worker.groupId))) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(worker)}
+                              title="تعديل"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {(isAdmin() || (worker.groupId && checkPermission('delete', 'work_group', worker.groupId))) && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" title="حذف">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
                             <AlertDialogContent dir="rtl">
                               <AlertDialogHeader>
                                 <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
@@ -539,6 +546,7 @@ export default function Workers() {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

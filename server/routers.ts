@@ -299,8 +299,23 @@ export const appRouter = router({
 
   // Groups Management
   groups: router({
-    list: protectedProcedure.query(async () => {
-      return await db.getAllGroups();
+    list: protectedProcedure.query(async ({ ctx }) => {
+      // إذا كان admin، يرى جميع المجموعات
+      if (ctx.user.role === 'admin') {
+        return await db.getAllGroups();
+      }
+      
+      // جلب IDs المجموعات التي لديه صلاحية view عليها
+      const allowedGroupIds = await db.getUserScopeIds(ctx.user.id, 'work_group', 'view');
+      
+      // إذا لم يكن لديه أي صلاحيات، يرجع قائمة فارغة
+      if (allowedGroupIds.length === 0) {
+        return [];
+      }
+      
+      // جلب المجموعات المسموح بها فقط
+      const allGroups = await db.getAllGroups();
+      return allGroups.filter(g => allowedGroupIds.includes(String(g.id)));
     }),
     
     getById: protectedProcedure
@@ -392,8 +407,23 @@ export const appRouter = router({
 
   // Workers Management
   workers: router({
-    list: protectedProcedure.query(async () => {
-      return await db.getAllWorkers();
+    list: protectedProcedure.query(async ({ ctx }) => {
+      // إذا كان admin، يرى جميع العمال
+      if (ctx.user.role === 'admin') {
+        return await db.getAllWorkers();
+      }
+      
+      // جلب IDs المجموعات التي لديه صلاحية view عليها
+      const allowedGroupIds = await db.getUserScopeIds(ctx.user.id, 'work_group', 'view');
+      
+      // إذا لم يكن لديه أي صلاحيات، يرجع قائمة فارغة
+      if (allowedGroupIds.length === 0) {
+        return [];
+      }
+      
+      // جلب العمال المسموح بهم فقط (بناءً على groupId)
+      const allWorkers = await db.getAllWorkers();
+      return allWorkers.filter(w => w.groupId && allowedGroupIds.includes(String(w.groupId)));
     }),
     
     listByGroup: protectedProcedure
@@ -624,8 +654,23 @@ export const appRouter = router({
 
   // Cost Centers
   costCenters: router({
-    list: protectedProcedure.query(async () => {
-      return await db.getAllCostCenters();
+    list: protectedProcedure.query(async ({ ctx }) => {
+      // إذا كان admin، يرى جميع مراكز التكلفة
+      if (ctx.user.role === 'admin') {
+        return await db.getAllCostCenters();
+      }
+      
+      // جلب IDs مراكز التكلفة التي لديه صلاحية view عليها
+      const allowedCostCenterIds = await db.getUserScopeIds(ctx.user.id, 'cost_center', 'view');
+      
+      // إذا لم يكن لديه أي صلاحيات، يرجع قائمة فارغة
+      if (allowedCostCenterIds.length === 0) {
+        return [];
+      }
+      
+      // جلب مراكز التكلفة المسموح بها فقط
+      const allCostCenters = await db.getAllCostCenters();
+      return allCostCenters.filter(cc => allowedCostCenterIds.includes(String(cc.id)));
     }),
     
     create: protectedProcedure

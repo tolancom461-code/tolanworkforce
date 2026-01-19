@@ -1619,4 +1619,32 @@ Add "Approve Full Attendance" option that:
 ### Phase 3: اختبار وحفظ checkpoint
 - [x] اختبار إخفاء/إظهار الأزرار حسب الصلاحيات
 - [x] التأكد من عدم وجود أخطاء TypeScript
+- [x] Save checkpoint
+
+
+## تطبيق نظام الصلاحيات على Workers و CostCenters و APIs
+
+### Phase 1: تطبيق الصلاحيات على Workers.tsx
+- [x] استيراد useScopedPermissions في Workers.tsx
+- [x] إخفاء زر "إضافة عامل" إذا لم يكن لديه صلاحية create على work_group
+- [x] إخفاء زر "تعديل" للعامل إذا لم يكن لديه صلاحية update على مجموعة العامل
+- [x] إخفاء زر "حذف" للعامل إذا لم يكن لديه صلاحية delete على مجموعة العامل
+- [x] التحقق من الصلاحيات على مستوى المجموعة (worker.groupId)
+
+### Phase 2: تطبيق الصلاحيات على CostCenters.tsx
+- [x] استيراد useScopedPermissions في CostCenters.tsx
+- [x] إخفاء زر "إضافة مركز تكلفة" إذا لم يكن لديه صلاحية create على cost_center
+- [x] إخفاء زر "تعديل" لمركز التكلفة إذا لم يكن لديه صلاحية update عليه
+- [x] إخفاء زر "حذف" لمركز التكلفة إذا لم يكن لديه صلاحية delete عليه
+- [x] التحقق من الصلاحيات على مستوى مركز التكلفة (costCenter.id)
+
+### Phase 3: تصفية APIs حسب الصلاحيات
+- [x] تحديث groups.list procedure لتصفية المجموعات حسب صلاحية view
+- [x] تحديث workers.list procedure لتصفية العمال حسب صلاحية view على المجموعة
+- [x] تحديث costCenters.list procedure لتصفية مراكز التكلفة حسب صلاحية view
+- [x] التصفية تتم مباشرة في procedures باستخدام getUserScopeIds
+
+### Phase 4: اختبار وحفظ checkpoint
+- [x] التأكد من عدم وجود أخطاء TypeScript
+- [x] التأكد من عمل الخادم بنجاح
 - [ ] Save checkpoint
