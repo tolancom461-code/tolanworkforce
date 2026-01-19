@@ -2042,3 +2042,22 @@ Add "Approve Full Attendance" option that:
 
 ### Checkpoint
 - [x] Save checkpoint
+
+
+---
+
+## 🔧 إصلاح مشكلة تحميل الصلاحيات في Roles.tsx (Jan 19, 2026 - Part 16)
+
+### الفحص
+- [x] فحص Roles.tsx للعثور على المشكلة
+- [x] فحص permissions.list procedure
+- [x] فحص getAllPermissions في db.ts
+- [x] فحص permissions table في schema.ts
+
+### الإصلاح
+- [x] إعادة تشغيل dev server
+- [x] تشغيل seed-permissions.mjs
+- [x] إضافة 21 صلاحية افتراضية
+
+### Checkpoint
+- [x] Save checkpoint
