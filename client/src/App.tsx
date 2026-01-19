@@ -38,6 +38,7 @@ import OperationalFlags from "./pages/OperationalFlags";
 import PendingFlags from "./pages/PendingFlags";
 import UserScopedPermissions from "./pages/UserScopedPermissions";
 import PermissionsManagement from "./pages/PermissionsManagement";
+import RolePermissions from "./pages/RolePermissions";
 
 function Router() {
   return (
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/users" component={Users} />
 
       <Route path="/permissions" component={PermissionsManagement} />
+      <Route path="/role-permissions" component={RolePermissions} />
       <Route path="/scoped-permissions" component={UserScopedPermissions} />
       <Route path="/roles" component={Roles} />
       <Route path="/cost-centers" component={CostCenters} />

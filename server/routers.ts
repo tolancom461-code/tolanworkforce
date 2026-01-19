@@ -234,6 +234,38 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await db.deleteRole(input.id);
       }),
+    
+    toggleStatus: protectedProcedure
+      .input(z.object({ 
+        id: z.number(),
+        isActive: z.boolean(),
+      }))
+      .mutation(async ({ input }) => {
+        // Update role status
+        await db.updateRole(input.id, { isActive: input.isActive });
+        
+        // If deactivating, deactivate all users with this role
+        if (!input.isActive) {
+          await db.deactivateUsersByRole(input.id);
+        }
+        
+        return { success: true };
+      }),
+    
+    getPermissions: protectedProcedure
+      .input(z.object({ roleId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getRolePermissions(input.roleId);
+      }),
+    
+    updatePermissions: protectedProcedure
+      .input(z.object({
+        roleId: z.number(),
+        permissionIds: z.array(z.number()),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.updateRolePermissions(input.roleId, input.permissionIds);
+      }),
   }),
 
   // Permissions Management

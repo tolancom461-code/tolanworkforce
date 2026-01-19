@@ -217,6 +217,7 @@ export async function updateRole(id: number, data: {
   name?: string;
   description?: string;
   level?: number;
+  isActive?: boolean;
 }) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
@@ -224,6 +225,50 @@ export async function updateRole(id: number, data: {
   await db.update(roles)
     .set(data)
     .where(eq(roles.id, id));
+
+  return { success: true };
+}
+
+export async function deactivateUsersByRole(roleId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  await db.update(users)
+    .set({ isActive: false })
+    .where(eq(users.roleId, roleId));
+
+  return { success: true };
+}
+
+export async function getRolePermissions(roleId: number): Promise<Permission[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select({ permission: permissions })
+    .from(rolePermissions)
+    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+    .where(eq(rolePermissions.roleId, roleId));
+
+  return result.map(r => r.permission);
+}
+
+export async function updateRolePermissions(roleId: number, permissionIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  // Delete existing permissions for this role
+  await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+
+  // Insert new permissions
+  if (permissionIds.length > 0) {
+    await db.insert(rolePermissions).values(
+      permissionIds.map(permissionId => ({
+        roleId,
+        permissionId,
+      }))
+    );
+  }
 
   return { success: true };
 }

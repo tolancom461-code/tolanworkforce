@@ -43,6 +43,7 @@ export const roles = mysqlTable("roles", {
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   level: int("level").default(0),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
@@ -72,6 +73,7 @@ export const users = mysqlTable("users", {
   fullName: varchar("full_name", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }),
   phone: varchar("phone", { length: 20 }),
+  phoneNumber: varchar("phone_number", { length: 20 }),
   roleId: int("role_id"),
   isActive: boolean("is_active").default(true),
   loginMethod: varchar("loginMethod", { length: 64 }),

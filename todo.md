@@ -2061,3 +2061,71 @@ Add "Approve Full Attendance" option that:
 
 ### Checkpoint
 - [x] Save checkpoint
+
+
+## إعادة هيكلة نظام الصلاحيات الكامل (Permissions System Restructure)
+
+### Phase 1: Database Schema Updates
+- [ ] Add isActive field to roles table
+- [ ] Add phoneNumber field to users table
+- [ ] Create 6 fixed roles in database (Guard, Supervisor, Accountant, HR Admin, Financial Manager, General Manager)
+- [ ] Run pnpm db:push to apply schema changes
+
+### Phase 2: Backend APIs
+- [ ] Update roles APIs to support isActive field
+- [ ] Create API: toggleRoleStatus (activate/deactivate role)
+- [ ] Create API: getRolePermissions (get all permissions for a role)
+- [ ] Create API: updateRolePermissions (bulk update permissions for a role)
+- [ ] Update users APIs to include phoneNumber and roleId
+- [ ] Create API: getUserDetailedPermissions (role permissions + scoped permissions)
+- [ ] Add logic: when role is deactivated, deactivate all users with that role
+
+### Phase 3: Frontend - Roles Page
+- [ ] Update Roles.tsx to show 6 fixed roles only
+- [ ] Add isActive status indicator
+- [ ] Add toggle button to activate/deactivate role
+- [ ] Remove "Add Role" button (roles are fixed)
+- [ ] Show warning when deactivating role with active users
+
+### Phase 4: Frontend - Role Permissions Page
+- [ ] Create RolePermissions.tsx page
+- [ ] Show list of all 6 roles
+- [ ] Add "Edit Permissions" button for each role
+- [ ] Add "Toggle Status" button for each role
+- [ ] Create dialog with 21 permissions grouped by category
+- [ ] Use checkboxes to select/deselect permissions
+- [ ] Add "Select All Category" functionality
+- [ ] Save selected permissions to role_permissions table
+- [ ] Add route /role-permissions to App.tsx
+
+### Phase 5: Frontend - Users Page Updates
+- [ ] Add phoneNumber field to user form
+- [ ] Add roleId dropdown (select from 6 fixed roles)
+- [ ] Update user list to show role name
+- [ ] Update user list to show phone number
+- [ ] Filter users by role
+- [ ] Show inactive status if user's role is deactivated
+
+### Phase 6: Frontend - User Permissions Page
+- [ ] Rename UserScopedPermissions.tsx to UserPermissions.tsx
+- [ ] Update page title from "الصلاحيات الذرية" to "صلاحيات المستخدمين"
+- [ ] Show all users in a list (not dropdown)
+- [ ] Add "Edit Permissions" button for each user
+- [ ] Create comprehensive permissions dialog:
+  * Group permissions by screen name (العمال, المجموعات, الحضور, etc.)
+  * Show all operations (عرض, إضافة, تعديل, حذف, تصدير, اعتماد)
+  * Add scope selection (مجموعة عمل, مركز تكلفة, فترة رواتب)
+  * All labels in Arabic matching system names
+- [ ] Save scoped permissions to user_scoped_permissions table
+- [ ] Update route from /scoped-permissions to /user-permissions
+
+### Phase 7: Testing & Validation
+- [ ] Test role activation/deactivation
+- [ ] Test user deactivation when role is deactivated
+- [ ] Test role permissions assignment
+- [ ] Test user permissions assignment (scoped)
+- [ ] Test scenario: Supervisor sees only Group A
+- [ ] Test scenario: Accountant 1 sees only Cost Center East
+- [ ] Test scenario: Accountant 2 sees only Cost Center West
+- [ ] Write vitest tests for new APIs
+- [ ] Save checkpoint
