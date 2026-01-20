@@ -24,6 +24,8 @@ export default function Users() {
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const utils = trpc.useUtils();
   const { data: users, isLoading } = trpc.users.list.useQuery();
@@ -73,6 +75,19 @@ export default function Users() {
     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Pagination
+  const totalPages = Math.ceil((filteredUsers?.length || 0) / itemsPerPage);
+  const paginatedUsers = filteredUsers?.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to first page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
 
   const handleAddUser = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -260,7 +275,7 @@ export default function Users() {
               <Input
                 placeholder="البحث عن مستخدم..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pr-10"
               />
             </div>
@@ -294,14 +309,14 @@ export default function Users() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredUsers?.length === 0 ? (
+                    {paginatedUsers?.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                           لا يوجد مستخدمين
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredUsers?.map((user) => (
+                      paginatedUsers?.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{user.fullName}</TableCell>
                           <TableCell className="text-muted-foreground">{user.username}</TableCell>
@@ -367,6 +382,36 @@ export default function Users() {
                     )}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <p className="text-sm text-muted-foreground">
+                  عرض {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredUsers?.length || 0)} من {filteredUsers?.length || 0}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    السابق
+                  </Button>
+                  <span className="text-sm">
+                    صفحة {currentPage} من {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    التالي
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
