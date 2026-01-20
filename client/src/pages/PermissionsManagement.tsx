@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Shield, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Shield, Search, ChevronDown, ChevronRight, X, Filter } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // Permission categories with colors
@@ -23,6 +23,7 @@ const CATEGORIES = [
 
 export default function PermissionsManagement() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedPermission, setSelectedPermission] = useState<any>(null);
@@ -63,11 +64,16 @@ export default function PermissionsManagement() {
     },
   });
 
-  const filteredPermissions = permissions?.filter((perm) =>
-    perm.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    perm.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    perm.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPermissions = permissions?.filter((perm) => {
+    const matchesSearch = searchQuery === "" || 
+      perm.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      perm.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      perm.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = selectedCategory === "all" || perm.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
 
   const groupedPermissions = CATEGORIES.map(category => ({
     ...category,
@@ -243,17 +249,78 @@ export default function PermissionsManagement() {
           </Dialog>
         </div>
 
-        {/* Search Bar */}
+        {/* Search and Filter Bar */}
         <Card>
           <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="البحث في الصلاحيات (الاسم، الكود، الوصف)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
-              />
+            <div className="space-y-4">
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="البحث في الصلاحيات (الاسم، الكود، الوصف)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Category Filter */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Filter className="h-4 w-4" />
+                  <span>تصفية حسب الفئة:</span>
+                </div>
+                <Button
+                  variant={selectedCategory === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory("all")}
+                >
+                  الكل
+                </Button>
+                {CATEGORIES.map(category => (
+                  <Button
+                    key={category.key}
+                    variant={selectedCategory === category.key ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategory(category.key)}
+                    className="gap-2"
+                  >
+                    <div className={`h-2 w-2 rounded-full ${category.color}`} />
+                    {category.label}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Results Counter */}
+              {(searchQuery || selectedCategory !== "all") && (
+                <div className="flex items-center justify-between text-sm">
+                  <p className="text-muted-foreground">
+                    عرض <span className="font-semibold text-foreground">{filteredPermissions?.length || 0}</span> من أصل <span className="font-semibold text-foreground">{permissions?.length || 0}</span> صلاحية
+                  </p>
+                  {(searchQuery || selectedCategory !== "all") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setSelectedCategory("all");
+                      }}
+                      className="gap-2"
+                    >
+                      <X className="h-4 w-4" />
+                      مسح الفلاتر
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
