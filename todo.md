@@ -2355,3 +2355,20 @@ Add "Approve Full Attendance" option that:
 - [x] Fix "Invalid Date" display in attendance confirmation message
 - [x] Change event.timestamp to event.eventTime in todayEvents map
 - [x] Test date display - now shows correctly (e.g., ١٢:١٣:٠٤ م)
+
+
+## Remove "MADE WITH MANUS" Footer
+
+- [x] Find "MADE WITH MANUS" message - appears in published site bottom-right
+- [x] Verified it's injected by Manus platform, not in project code
+- [ ] Contact Manus support to request removal (https://help.manus.im)
+- [ ] Note: May require subscription upgrade to remove branding
+
+
+## QR Scanner Camera Error
+
+- [x] Fix "NotFoundError: Failed to execute 'insertBefore'" when opening camera
+- [x] Add DOM element check before starting scanner
+- [x] Improve cleanup to remove remaining video elements
+- [x] Add key prop to force component re-mount
+- [ ] Test camera opening on published site after deployment

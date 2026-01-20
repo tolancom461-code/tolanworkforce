@@ -284,6 +284,7 @@ export default function AttendanceScanner() {
                   {/* QR Scanner Component */}
                   <div className="relative">
                     <QRScanner 
+                      key="qr-scanner" 
                       onScan={handleQRScan}
                       onError={(error) => toast.error(error)}
                       height={350}
