@@ -310,19 +310,18 @@ export default function PermissionsManagement() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>كود الصلاحية</TableHead>
-                                <TableHead>الاسم</TableHead>
+                                <TableHead className="w-[250px]">اسم الصلاحية</TableHead>
                                 <TableHead>الوصف</TableHead>
-                                <TableHead className="text-left">الإجراءات</TableHead>
+                                <TableHead className="text-left w-[120px]">الإجراءات</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {category.permissions.map((permission) => (
                                 <TableRow key={permission.id}>
-                                  <TableCell className="font-medium">
+                                  <TableCell className="font-semibold">
                                     {permission.name}
                                   </TableCell>
-                                  <TableCell className="text-muted-foreground max-w-md">
+                                  <TableCell className="text-muted-foreground">
                                     {permission.description || "-"}
                                   </TableCell>
                                   <TableCell className="text-left">
