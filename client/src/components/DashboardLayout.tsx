@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { MENU_PERMISSIONS, hasPermission, type MenuPermission } from "@/lib/menuPermissions";
+import { PERMISSIONS } from "../../../shared/permissions";
+import { usePermission } from "@/hooks/usePermission";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -71,46 +72,34 @@ const menuSections = [
   {
     label: "📊 لوحات التحكم",
     items: [
-      { icon: LayoutDashboard, label: "الرئيسية", path: "/dashboard", permission: MENU_PERMISSIONS.DASHBOARD },
-      { icon: TrendingUp, label: "التنفيذية", path: "/executive", permission: MENU_PERMISSIONS.EXECUTIVE_DASHBOARD },
+      { icon: LayoutDashboard, label: "الرئيسية", path: "/dashboard" },
+      { icon: TrendingUp, label: "التقارير", path: "/reports", permission: PERMISSIONS.REPORTS_VIEW },
     ]
   },
   {
     label: "👥 الموارد البشرية",
     items: [
-      { icon: UserCircle, label: "إدارة العمال", path: "/workers", permission: MENU_PERMISSIONS.WORKERS_VIEW },
-      { icon: UsersRound, label: "إدارة المجموعات", path: "/groups", permission: MENU_PERMISSIONS.GROUPS_VIEW },
-      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers", permission: MENU_PERMISSIONS.COST_CENTERS_VIEW },
+      { icon: UserCircle, label: "إدارة العمال", path: "/workers", permission: PERMISSIONS.WORKER_VIEW },
     ]
   },
   {
     label: "⏰ الحضور والانصراف",
     items: [
-      { icon: QrCode, label: "تسجيل الحضور", path: "/attendance", permission: MENU_PERMISSIONS.ATTENDANCE_SCAN },
-      { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log", permission: MENU_PERMISSIONS.ATTENDANCE_LOG },
-
-      { icon: BarChart3, label: "تقارير الحضور", path: "/attendance/reports", permission: MENU_PERMISSIONS.ATTENDANCE_REPORTS },
-      { icon: Calendar, label: "أيام العمل", path: "/work-days", permission: MENU_PERMISSIONS.WORK_DAYS },
-      { icon: Flag, label: "البلاغات التشغيلية", path: "/operational-flags", permission: MENU_PERMISSIONS.OPERATIONAL_FLAGS_CREATE },
-      { icon: Clock, label: "البلاغات المعلقة", path: "/pending-flags", permission: MENU_PERMISSIONS.OPERATIONAL_FLAGS_MANAGE },
+      { icon: QrCode, label: "تسجيل الحضور", path: "/attendance", permission: PERMISSIONS.ATTENDANCE_RECORD },
+      { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log", permission: PERMISSIONS.ATTENDANCE_VIEW },
+      { icon: Flag, label: "البلاغات التشغيلية", path: "/operational-flags", permission: PERMISSIONS.OPERATIONAL_FLAGS_VIEW },
     ]
   },
   {
     label: "💰 الرواتب والمالية",
     items: [
-      { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches", permission: MENU_PERMISSIONS.PAYROLL_BATCHES_VIEW },
-      { icon: AlertCircle, label: "الاستثناءات المالية", path: "/finance/overrides", permission: MENU_PERMISSIONS.FINANCE_OVERRIDE_DAILY },
-      { icon: FileText, label: "التقارير المالية", path: "/finance/reports", permission: MENU_PERMISSIONS.FINANCE_REPORTS_VIEW },
+      { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches", permission: PERMISSIONS.PAYROLL_VIEW },
     ]
   },
   {
     label: "⚙️ إعدادات النظام",
     items: [
-      { icon: Users, label: "المستخدمين", path: "/users", permission: MENU_PERMISSIONS.USERS_VIEW },
-      { icon: Shield, label: "الأدوار والصلاحيات", path: "/roles", permission: MENU_PERMISSIONS.ROLES },
-      { icon: Key, label: "إدارة الصلاحيات", path: "/permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
-      { icon: Settings, label: "توزيع الصلاحيات", path: "/role-permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
-      { icon: Shield, label: "الصلاحيات الذرية", path: "/scoped-permissions", permission: MENU_PERMISSIONS.PERMISSIONS },
+      { icon: Users, label: "المستخدمين", path: "/users", permission: PERMISSIONS.USER_VIEW },
     ]
   },
 ];
@@ -214,21 +203,18 @@ function DashboardLayoutContent({
     }));
   };
   
-  // جلب صلاحيات المستخدم
-  const { data: userPermissions = [], isLoading: isLoadingPermissions } = trpc.auth.permissions.useQuery();
+  // استخدام hook الصلاحيات
+  const { hasPermission: checkPermission } = usePermission();
   
   // فلترة القوائم حسب الصلاحيات
-  // إذا لم يكن للمستخدم أي صلاحيات، عرض جميع القوائم (للتوافق مع الإصدارات السابقة)
-  const filteredMenuSections = userPermissions.length === 0 && !isLoadingPermissions
-    ? menuSections
-    : menuSections
-        .map(section => ({
-          ...section,
-          items: section.items.filter(item => 
-            !item.permission || hasPermission(userPermissions, item.permission)
-          )
-        }))
-        .filter(section => section.items.length > 0); // إخفاء الأقسام الفارغة
+  const filteredMenuSections = menuSections
+    .map(section => ({
+      ...section,
+      items: section.items.filter(item => 
+        !item.permission || checkPermission(item.permission)
+      )
+    }))
+    .filter(section => section.items.length > 0); // إخفاء الأقسام الفارغة
 
   const isMobile = useIsMobile();
 

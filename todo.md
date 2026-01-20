@@ -2221,3 +2221,15 @@ Add "Approve Full Attendance" option that:
 - [x] Add code-based search fallback in getWorkerFromQR API
 - [x] Change getWorkerFromQR to publicProcedure for unauthenticated access
 - [ ] Test with actual worker codes from database
+
+
+## Role-Based Access Control (RBAC) Implementation
+
+- [x] Define permissions for each role in shared/permissions.ts
+- [x] Create permission checking hook (usePermission)
+- [x] Update DashboardLayout to use new permission system
+- [x] Hide unauthorized menu items in sidebar based on user role
+- [x] Update ProtectedRoute component to use new permission system
+- [ ] Add permission checks to backend APIs (requirePermission middleware)
+- [ ] Assign role-based permissions to existing users
+- [ ] Test with different user roles (accountant, hr_manager, security_guard, etc.)

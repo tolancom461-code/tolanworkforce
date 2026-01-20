@@ -1,6 +1,6 @@
-// @ts-nocheck
 import { useAuth } from "@/_core/hooks/useAuth";
-import { usePermissions } from "@/hooks/usePermissions";
+import { usePermission } from "@/hooks/usePermission";
+import { Permission } from "../../../shared/permissions";
 import { getLoginUrl } from "@/const";
 import { Loader2, ShieldX } from "lucide-react";
 import { useLocation } from "wouter";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredPermissions?: string[];
+  requiredPermissions?: Permission[];
   requireAll?: boolean;
   adminOnly?: boolean;
 }
@@ -21,11 +21,12 @@ export function ProtectedRoute({
   adminOnly = false,
 }: ProtectedRouteProps) {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const { hasPermission, hasAnyPermission, hasAllPermissions, isAdmin, isLoading: permLoading } = usePermissions();
+  const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermission();
+  const isAdmin = user?.role === 'admin';
   const [, setLocation] = useLocation();
 
   // Loading state
-  if (authLoading || (isAuthenticated && permLoading)) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
         <div className="flex flex-col items-center gap-4">
@@ -62,7 +63,7 @@ export function ProtectedRoute({
   }
 
   // Admin only check
-  if (adminOnly && !isAdmin()) {
+  if (adminOnly && !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
         <Card className="w-full max-w-md shadow-xl border-0 bg-card/80 backdrop-blur-xl">
