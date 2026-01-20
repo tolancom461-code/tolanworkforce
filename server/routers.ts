@@ -782,11 +782,22 @@ export const appRouter = router({
         );
       }),
     
-    // Get worker info from QR code (without recording)
-    getWorkerFromQR: protectedProcedure
+    // Get worker info from QR code or manual code (without recording)
+    getWorkerFromQR: publicProcedure
       .input(z.object({ qrToken: z.string() }))
       .query(async ({ input }) => {
-        const worker = await db.getWorkerByQRToken(input.qrToken);
+        // Try to find worker by QR token first
+        let worker = await db.getWorkerByQRToken(input.qrToken);
+        
+        // If not found, try to extract code from token and search by code
+        if (!worker && input.qrToken.startsWith('WRK-')) {
+          const parts = input.qrToken.split('-');
+          if (parts.length >= 2) {
+            const code = parts[1];
+            worker = await db.getWorkerByCode(code);
+          }
+        }
+        
         if (!worker) throw new Error("رمز QR غير صالح");
         
         // Get last event to determine next action

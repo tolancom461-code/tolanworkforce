@@ -26,6 +26,7 @@ import QRScanner from '@/components/QRScanner';
 
 export default function AttendanceScanner() {
   const { user } = useAuth();
+  const utils = trpc.useUtils();
   const [mode, setMode] = useState<'qr' | 'manual'>('qr');
   const [manualCode, setManualCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -78,17 +79,8 @@ export default function AttendanceScanner() {
     
     setIsProcessing(true);
     try {
-      // Fetch worker data without recording
-      const response = await fetch(`/api/trpc/attendance.getWorkerFromQR?input=${encodeURIComponent(JSON.stringify({ qrToken: qrData }))}`, {
-        credentials: 'include'
-      });
-      
-      if (!response.ok) {
-        throw new Error('رمز QR غير صالح');
-      }
-      
-      const data = await response.json();
-      const result = data.result.data;
+      // Fetch worker data without recording using tRPC
+      const result = await utils.attendance.getWorkerFromQR.fetch({ qrToken: qrData });
       
       setWorkerData(result);
       setShowConfirmDialog(true);
@@ -222,10 +214,9 @@ export default function AttendanceScanner() {
             size="lg"
             onClick={() => setMode('manual')}
             className="flex items-center gap-2"
-            disabled
           >
             <Keyboard className="h-5 w-5" />
-            إدخال يدوي (قريباً)
+            إدخال يدوي
           </Button>
         </div>
         
@@ -233,39 +224,98 @@ export default function AttendanceScanner() {
         <Card className="bg-white dark:bg-gray-800 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 justify-center">
-              <Camera className="h-6 w-6" />
-              ماسح رمز QR
+              {mode === 'qr' ? (
+                <>
+                  <Camera className="h-6 w-6" />
+                  ماسح رمز QR
+                </>
+              ) : (
+                <>
+                  <Keyboard className="h-6 w-6" />
+                  إدخال يدوي
+                </>
+              )}
             </CardTitle>
             <CardDescription className="text-center">
-              وجّه الكاميرا نحو رمز QR الخاص بالعامل
+              {mode === 'qr' 
+                ? 'وجّه الكاميرا نحو رمز QR الخاص بالعامل'
+                : 'أدخل رمز العامل يدوياً'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* QR Scanner Component */}
-              <div className="relative">
-                <QRScanner 
-                  onScan={handleQRScan}
-                  onError={(error) => toast.error(error)}
-                  height={350}
-                />
-                
-                {/* Success Animation Overlay */}
-                {showSuccessAnimation && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg z-50 animate-in fade-in duration-200">
-                    <div className="animate-in zoom-in duration-500">
-                      <CheckCircle2 className="h-32 w-32 text-green-500 drop-shadow-2xl animate-pulse" strokeWidth={3} />
-                    </div>
+              {mode === 'qr' ? (
+                <>
+                  {/* QR Scanner Component */}
+                  <div className="relative">
+                    <QRScanner 
+                      key="qr-scanner"
+                      onScan={handleQRScan}
+                      onError={(error) => toast.error(error)}
+                      height={350}
+                    />
+                    
+                    {/* Success Animation Overlay */}
+                    {showSuccessAnimation && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg z-50 animate-in fade-in duration-200">
+                        <div className="animate-in zoom-in duration-500">
+                          <CheckCircle2 className="h-32 w-32 text-green-500 drop-shadow-2xl animate-pulse" strokeWidth={3} />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              {/* Processing Indicator */}
-              {isProcessing && !showConfirmDialog && (
-                <div className="flex items-center justify-center gap-2 py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  <span className="text-muted-foreground">جاري معالجة الرمز...</span>
-                </div>
+                  
+                  {/* Processing Indicator */}
+                  {isProcessing && !showConfirmDialog && (
+                    <div className="flex items-center justify-center gap-2 py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <span className="text-muted-foreground">جاري معالجة الرمز...</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Manual Input */}
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <Input
+                        ref={inputRef}
+                        type="text"
+                        placeholder="أدخل رمز العامل (مثل: re)"
+                        value={manualCode}
+                        onChange={(e) => setManualCode(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && manualCode.trim()) {
+                            handleQRScan(`WRK-${manualCode.trim()}-${Date.now()}`);
+                            setManualCode('');
+                          }
+                        }}
+                        className="flex-1 text-lg"
+                        disabled={isProcessing}
+                      />
+                      <Button
+                        onClick={() => {
+                          if (manualCode.trim()) {
+                            handleQRScan(`WRK-${manualCode.trim()}-${Date.now()}`);
+                            setManualCode('');
+                          }
+                        }}
+                        disabled={!manualCode.trim() || isProcessing}
+                        size="lg"
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          'تأكيد'
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground text-center">
+                      أدخل رمز العامل الموجود على بطاقته
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           </CardContent>

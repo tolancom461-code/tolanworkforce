@@ -2206,3 +2206,18 @@ Add "Approve Full Attendance" option that:
 - [x] Hash password with bcryptjs before storing
 - [ ] Test user creation with password
 - [ ] Test password change
+
+
+## Delete Operational Reports (البلاغات التشغيلية)
+
+- [x] Find operational reports table in database (operational_flags)
+- [x] Delete all existing reports (0 remaining)
+
+
+## QR Scanner Issues - Round 2
+
+- [x] Fix "رمز QR غير صالح" error - replaced fetch with tRPC utils
+- [x] Fix manual input not working - enabled button and added input UI
+- [x] Add code-based search fallback in getWorkerFromQR API
+- [x] Change getWorkerFromQR to publicProcedure for unauthenticated access
+- [ ] Test with actual worker codes from database

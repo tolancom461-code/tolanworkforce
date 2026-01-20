@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, code, full_name FROM workers;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name FROM workers;",
+  "rows": [
+    {
+      "id": "240001",
+      "code": "S01",
+      "full_name": "احمد علي"
+    },
+    {
+      "id": "240002",
+      "code": "S02",
+      "full_name": "ابو صالح"
+    },
+    {
+      "id": "240003",
+      "code": "A01",
+      "full_name": "وقار"
+    },
+    {
+      "id": "240004",
+      "code": "A02",
+      "full_name": "علي"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\n240001\tS01\tاحمد علي\n240002\tS02\tابو صالح\n240003\tA01\tوقار\n240004\tA02\tعلي\n",
+  "stderr": "",
+  "execution_time_ms": 1510
+}

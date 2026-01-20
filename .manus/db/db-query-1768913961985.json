@@ -1,0 +1,34 @@
+{
+  "query": "SELECT id, code, full_name, qr_token FROM workers LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, qr_token FROM workers LIMIT 5;",
+  "rows": [
+    {
+      "id": "240001",
+      "code": "S01",
+      "full_name": "احمد علي",
+      "qr_token": "WRK-S01-1768913028145"
+    },
+    {
+      "id": "240002",
+      "code": "S02",
+      "full_name": "ابو صالح",
+      "qr_token": "WRK-S02-1768913053802"
+    },
+    {
+      "id": "240003",
+      "code": "A01",
+      "full_name": "وقار",
+      "qr_token": "WRK-A01-1768913081275"
+    },
+    {
+      "id": "240004",
+      "code": "A02",
+      "full_name": "علي",
+      "qr_token": "WRK-A02-1768913104738"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tqr_token\n240001\tS01\tاحمد علي\tWRK-S01-1768913028145\n240002\tS02\tابو صالح\tWRK-S02-1768913053802\n240003\tA01\tوقار\tWRK-A01-1768913081275\n240004\tA02\tعلي\tWRK-A02-1768913104738\n",
+  "stderr": "",
+  "execution_time_ms": 1490
+}
