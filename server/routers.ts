@@ -133,6 +133,7 @@ export const appRouter = router({
       }),
     
     create: protectedProcedure
+      .use(requirePermission('manage_users'))
       .input(z.object({
         username: z.string().min(3),
         password: z.string().min(6),
@@ -166,6 +167,7 @@ export const appRouter = router({
       }),
     
     update: protectedProcedure
+      .use(requirePermission('manage_users'))
       .input(z.object({
         id: z.number(),
         fullName: z.string().min(2).optional(),
@@ -192,6 +194,7 @@ export const appRouter = router({
       }),
     
     delete: protectedProcedure
+      .use(requirePermission('manage_users'))
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteUser(input.id);
@@ -225,6 +228,7 @@ export const appRouter = router({
       }),
     
     create: protectedProcedure
+      .use(requirePermission('manage_roles'))
       .input(z.object({
         code: z.string().min(1),
         name: z.string().min(1),
@@ -236,6 +240,7 @@ export const appRouter = router({
       }),
     
     update: protectedProcedure
+      .use(requirePermission('manage_roles'))
       .input(z.object({
         id: z.number(),
         code: z.string().optional(),
@@ -249,6 +254,7 @@ export const appRouter = router({
       }),
     
     delete: protectedProcedure
+      .use(requirePermission('manage_roles'))
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         return await db.deleteRole(input.id);
@@ -278,6 +284,7 @@ export const appRouter = router({
       }),
     
     updatePermissions: protectedProcedure
+      .use(requirePermission('manage_roles'))
       .input(z.object({
         roleId: z.number(),
         permissionIds: z.array(z.number()),
@@ -300,6 +307,7 @@ export const appRouter = router({
       }),
     
     create: protectedProcedure
+      .use(requirePermission('manage_permissions'))
       .input(z.object({
         code: z.string().min(1),
         name: z.string().min(1),
@@ -311,6 +319,7 @@ export const appRouter = router({
       }),
     
     update: protectedProcedure
+      .use(requirePermission('manage_permissions'))
       .input(z.object({
         id: z.number(),
         code: z.string().optional(),
@@ -358,6 +367,7 @@ export const appRouter = router({
       }),
     
     create: protectedProcedure
+      .use(requirePermission('manage_groups'))
       .input(z.object({
         code: z.string().min(1),
         name: z.string().min(2),
@@ -373,6 +383,7 @@ export const appRouter = router({
       }),
     
     update: protectedProcedure
+      .use(requirePermission('manage_groups'))
       .input(z.object({
         id: z.number(),
         code: z.string().min(1).optional(),
@@ -390,6 +401,7 @@ export const appRouter = router({
       }),
     
     delete: protectedProcedure
+      .use(requirePermission('manage_groups'))
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteGroup(input.id);
@@ -478,6 +490,7 @@ export const appRouter = router({
       }),
     
     create: protectedProcedure
+      .use(requirePermission('manage_workers'))
       .input(z.object({
         code: z.string().min(1),
         fullName: z.string().min(2),
@@ -505,6 +518,7 @@ export const appRouter = router({
       }),
     
     update: protectedProcedure
+      .use(requirePermission('manage_workers'))
       .input(z.object({
         id: z.number(),
         code: z.string().min(1).optional(),
@@ -524,6 +538,7 @@ export const appRouter = router({
       }),
     
     delete: protectedProcedure
+      .use(requirePermission('manage_workers'))
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteWorker(input.id);
@@ -766,6 +781,7 @@ export const appRouter = router({
   attendance: router({
     // Record check-in or check-out
     record: protectedProcedure
+      .use(requirePermission('record_attendance'))
       .input(z.object({
         workerId: z.number(),
         eventType: z.enum(['check_in', 'check_out']),
@@ -903,6 +919,7 @@ export const appRouter = router({
     
     // Bulk update attendance times
     bulkUpdate: protectedProcedure
+      .use(requirePermission('edit_attendance'))
       .input(z.object({
         eventIds: z.array(z.number()),
         adjustmentMinutes: z.number(),
@@ -1296,6 +1313,7 @@ export const appRouter = router({
   payroll: router({
     // Create draft batch
     createBatch: protectedProcedure
+      .use(requirePermission('manage_payroll_batches'))
       .input(z.object({
         periodStart: z.string(),
         periodEnd: z.string(),
@@ -1344,6 +1362,7 @@ export const appRouter = router({
     
     // Update batch item (DRAFT or RETURNED only)
     updateItem: protectedProcedure
+      .use(requirePermission('manage_payroll_batches'))
       .input(z.object({
         itemId: z.number(),
         baseAmount: z.string().optional(),
@@ -1357,6 +1376,7 @@ export const appRouter = router({
     
     // Submit for accountant review
     submitForReview: protectedProcedure
+      .use(requirePermission('manage_payroll_batches'))
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");

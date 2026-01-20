@@ -137,6 +137,26 @@ export async function getUserById(id: number): Promise<User | undefined> {
   return result.length > 0 ? result[0] : undefined;
 }
 
+/**
+ * Get user with their role permissions
+ * جلب المستخدم مع صلاحيات دوره
+ */
+export async function getUserWithPermissions(id: number): Promise<(User & { permissions?: Permission[] }) | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const user = await getUserById(id);
+  if (!user) return undefined;
+
+  // If user has a role, get role permissions
+  if (user.roleId) {
+    const rolePerms = await getRolePermissions(user.roleId);
+    return { ...user, permissions: rolePerms };
+  }
+
+  return { ...user, permissions: [] };
+}
+
 export async function getUserByUsername(username: string): Promise<User | undefined> {
   const db = await getDb();
   if (!db) return undefined;
