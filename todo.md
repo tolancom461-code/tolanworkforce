@@ -2171,3 +2171,11 @@ Add "Approve Full Attendance" option that:
 - [x] Fix getUserById to load permissions from user_permissions table
 - [x] Add missing permissions to admin user (accountant_review, financial_review, manager_review)
 - [ ] Test payroll batch approval workflow on published site
+
+
+## Excel Export Dynamic Require Error
+
+- [x] Fix "Dynamic require of exceljs is not supported" error
+- [x] Add static import for ExcelJS in routers.ts
+- [x] Remove dynamic require from exportToExcel function
+- [ ] Test payroll batch Excel export on published site

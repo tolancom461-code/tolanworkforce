@@ -10,6 +10,7 @@ import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow
 import * as analytics from "./analytics";
 import * as QRCode from "qrcode";
 import PDFDocument from "pdfkit";
+import ExcelJS from "exceljs";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -1580,7 +1581,6 @@ export const appRouter = router({
     exportToExcel: protectedProcedure
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input }) => {
-        const ExcelJS = require('exceljs');
         const batchData = await db.getPayrollBatchDetails(input.batchId);
         
         if (!batchData || !batchData.batch) {
