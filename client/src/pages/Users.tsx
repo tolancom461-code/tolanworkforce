@@ -79,6 +79,7 @@ export default function Users() {
     const formData = new FormData(e.currentTarget);
     createUser.mutate({
       username: formData.get("username") as string,
+      password: formData.get("password") as string,
       fullName: formData.get("fullName") as string,
       email: formData.get("email") as string || undefined,
       phone: formData.get("phone") as string || undefined,
@@ -92,12 +93,14 @@ export default function Users() {
     e.preventDefault();
     if (!selectedUser) return;
     const formData = new FormData(e.currentTarget);
+    const password = formData.get("password") as string;
     updateUser.mutate({
       id: selectedUser.id,
       fullName: formData.get("fullName") as string,
       email: formData.get("email") as string || null,
       phone: formData.get("phone") as string || null,
       phoneNumber: formData.get("phoneNumber") as string || null,
+      password: password || undefined,
       roleId: formData.get("roleId") ? parseInt(formData.get("roleId") as string) : null,
       isActive: formData.get("isActive") === "on",
     });
@@ -215,6 +218,10 @@ export default function Users() {
                     <Input id="phoneNumber" name="phoneNumber" placeholder="05xxxxxxxx" />
                   </div>
                   <div className="grid gap-2">
+                    <Label htmlFor="password">كلمة سر المستخدم *</Label>
+                    <Input id="password" name="password" type="password" required minLength={6} placeholder="أدخل كلمة السر (6 أحرف على الأقل)" />
+                  </div>
+                  <div className="grid gap-2">
                     <Label htmlFor="roleId">الدور *</Label>
                     <Select name="roleId">
                       <SelectTrigger>
@@ -314,14 +321,6 @@ export default function Users() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleManagePermissions(user)}
-                                title="إدارة الصلاحيات"
-                              >
-                                <Shield className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
                                 onClick={() => {
                                   setSelectedUser(user);
                                   setIsEditDialogOpen(true);
@@ -411,6 +410,19 @@ export default function Users() {
                     placeholder="05xxxxxxxx"
                     defaultValue={selectedUser?.phoneNumber || ""}
                   />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-password">كلمة السر الجديدة</Label>
+                  <Input 
+                    id="edit-password" 
+                    name="password" 
+                    type="password"
+                    minLength={6}
+                    placeholder="اترك فارغاً إذا لم ترد التغيير"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    اترك الحقل فارغاً للإبقاء على كلمة السر الحالية
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-roleId">الدور *</Label>

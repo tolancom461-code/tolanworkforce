@@ -319,11 +319,6 @@ export default function PermissionsManagement() {
                             <TableBody>
                               {category.permissions.map((permission) => (
                                 <TableRow key={permission.id}>
-                                  <TableCell className="font-mono text-sm">
-                                    <code className="bg-muted px-2 py-1 rounded">
-                                      {permission.code}
-                                    </code>
-                                  </TableCell>
                                   <TableCell className="font-medium">
                                     {permission.name}
                                   </TableCell>
