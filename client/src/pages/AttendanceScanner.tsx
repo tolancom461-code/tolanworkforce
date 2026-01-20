@@ -63,6 +63,7 @@ export default function AttendanceScanner() {
     }
   };
   
+  const utils = trpc.useUtils();
   const confirmAttendanceMutation = trpc.attendance.confirmAttendance.useMutation();
   const { data: stats, refetch: refetchStats } = trpc.attendance.stats.useQuery({});
   
@@ -78,17 +79,12 @@ export default function AttendanceScanner() {
     
     setIsProcessing(true);
     try {
-      // Fetch worker data without recording
-      const response = await fetch(`/api/trpc/attendance.getWorkerFromQR?input=${encodeURIComponent(JSON.stringify({ qrToken: qrData }))}`, {
-        credentials: 'include'
-      });
+      // Fetch worker data using tRPC
+      const result = await utils.attendance.getWorkerFromQR.fetch({ qrToken: qrData });
       
-      if (!response.ok) {
-        throw new Error('رمز QR غير صالح');
+      if (!result || !result.worker) {
+        throw new Error('رمز QR غير صالح أو غير موجود');
       }
-      
-      const data = await response.json();
-      const result = data.result.data;
       
       setWorkerData(result);
       setShowConfirmDialog(true);
@@ -106,8 +102,6 @@ export default function AttendanceScanner() {
       setIsProcessing(false);
     }
   };
-  
-  const utils = trpc.useUtils();
   
   const handleManualEntry = async () => {
     if (!manualCode.trim() || isProcessing) return;

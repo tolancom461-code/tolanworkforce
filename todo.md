@@ -2339,3 +2339,12 @@ Add "Approve Full Attendance" option that:
 - [ ] اختبار مسح QR Code عبر الكاميرا
 - [ ] التأكد من ظهور نافذة التأكيد
 - [ ] تسجيل الحضور بنجاح
+
+
+## QR Scanner Camera Issue
+
+- [x] Fix "رمز QR غير صالح" error when scanning QR codes with camera
+- [x] Debug QR code format and scanner expectations
+- [x] Replace fetch with tRPC client in handleQRScan
+- [x] Test manual entry (works correctly)
+- [ ] Test camera scanning with real QR codes on mobile device
