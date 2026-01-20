@@ -486,7 +486,7 @@ export const appRouter = router({
     getByCode: protectedProcedure
       .input(z.object({ code: z.string() }))
       .query(async ({ input }) => {
-        return await db.getWorkerByCode(input.code);
+        return await db.getWorkerByManualCode(input.code);
       }),
     
     create: protectedProcedure

@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, full_name, code, manual_code, qr_token, status FROM workers WHERE full_name LIKE '%علي%' OR code = '01' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, full_name, code, manual_code, qr_token, status FROM workers WHERE full_name LIKE '%علي%' OR code = '01' LIMIT 5;",
+  "rows": [
+    {
+      "id": "150001",
+      "full_name": "علي صالح",
+      "code": "01",
+      "manual_code": "01",
+      "qr_token": "WRK-01-1768821663683",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfull_name\tcode\tmanual_code\tqr_token\tstatus\n150001\tعلي صالح\t01\t01\tWRK-01-1768821663683\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1508
+}
