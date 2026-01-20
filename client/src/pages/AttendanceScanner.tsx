@@ -424,11 +424,10 @@ export default function AttendanceScanner() {
               {workerData.todayEvents && workerData.todayEvents.length > 0 && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
                   <div className="text-sm font-semibold mb-2">سجل اليوم:</div>
-                  <div className="space-y-1 text-sm">
-                    {workerData.todayEvents.map((event: any, index: number) => (
+                  <div className="space-y-1 text-sm">                    {workerData.todayEvents?.map((event: any, index: number) => (
                       <div key={index} className="flex justify-between">
                         <span>{event.eventType === 'check_in' ? '✓ حضور' : '✗ انصراف'}</span>
-                        <span>{new Date(event.timestamp).toLocaleTimeString('ar-SA')}</span>
+                        <span>{new Date(event.eventTime).toLocaleTimeString('ar-SA')}</span>
                       </div>
                     ))}
                   </div>

@@ -2348,3 +2348,10 @@ Add "Approve Full Attendance" option that:
 - [x] Replace fetch with tRPC client in handleQRScan
 - [x] Test manual entry (works correctly)
 - [ ] Test camera scanning with real QR codes on mobile device
+
+
+## Invalid Date Issue in Attendance Confirmation
+
+- [x] Fix "Invalid Date" display in attendance confirmation message
+- [x] Change event.timestamp to event.eventTime in todayEvents map
+- [x] Test date display - now shows correctly (e.g., ١٢:١٣:٠٤ م)
