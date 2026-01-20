@@ -293,7 +293,7 @@ class SDKServer {
     try {
       const localSession = await this.verifyLocalSession(sessionCookie);
       if (localSession) {
-        user = await db.getUserWithPermissions(localSession.userId) ?? null;
+        user = await db.getUserById(localSession.userId) ?? null;
         if (user) {
           return user; // Local auth successful
         }
@@ -343,9 +343,7 @@ class SDKServer {
       lastSignedIn: signedInAt,
     });
 
-    // Load user with permissions before returning
-    const userWithPerms = await db.getUserWithPermissions(user.id);
-    return userWithPerms ?? user;
+    return user;
   }
 }
 

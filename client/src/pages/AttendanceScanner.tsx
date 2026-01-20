@@ -63,7 +63,6 @@ export default function AttendanceScanner() {
     }
   };
   
-  const utils = trpc.useUtils();
   const confirmAttendanceMutation = trpc.attendance.confirmAttendance.useMutation();
   const { data: stats, refetch: refetchStats } = trpc.attendance.stats.useQuery({});
   
@@ -79,12 +78,17 @@ export default function AttendanceScanner() {
     
     setIsProcessing(true);
     try {
-      // Fetch worker data using tRPC
-      const result = await utils.attendance.getWorkerFromQR.fetch({ qrToken: qrData });
+      // Fetch worker data without recording
+      const response = await fetch(`/api/trpc/attendance.getWorkerFromQR?input=${encodeURIComponent(JSON.stringify({ qrToken: qrData }))}`, {
+        credentials: 'include'
+      });
       
-      if (!result || !result.worker) {
-        throw new Error('رمز QR غير صالح أو غير موجود');
+      if (!response.ok) {
+        throw new Error('رمز QR غير صالح');
       }
+      
+      const data = await response.json();
+      const result = data.result.data;
       
       setWorkerData(result);
       setShowConfirmDialog(true);
@@ -98,36 +102,6 @@ export default function AttendanceScanner() {
       
     } catch (error: any) {
       toast.error(error.message || 'رمز QR غير صالح');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-  
-  const handleManualEntry = async () => {
-    if (!manualCode.trim() || isProcessing) return;
-    
-    setIsProcessing(true);
-    try {
-      // Fetch worker data by code using tRPC
-      const result = await utils.attendance.getWorkerByCode.fetch({ code: manualCode.trim() });
-      
-      if (!result || !result.worker) {
-        throw new Error('رمز العامل غير صالح أو غير موجود');
-      }
-      
-      setWorkerData(result);
-      setShowConfirmDialog(true);
-      setManualCode(''); // Clear input
-      
-      // Play success beep
-      playSuccessBeep();
-      
-      // Show success animation
-      setShowSuccessAnimation(true);
-      setTimeout(() => setShowSuccessAnimation(false), 1500);
-      
-    } catch (error: any) {
-      toast.error(error.message || 'رمز العامل غير صالح');
     } finally {
       setIsProcessing(false);
     }
@@ -248,9 +222,10 @@ export default function AttendanceScanner() {
             size="lg"
             onClick={() => setMode('manual')}
             className="flex items-center gap-2"
+            disabled
           >
             <Keyboard className="h-5 w-5" />
-            إدخال يدوي
+            إدخال يدوي (قريباً)
           </Button>
         </div>
         
@@ -258,95 +233,35 @@ export default function AttendanceScanner() {
         <Card className="bg-white dark:bg-gray-800 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 justify-center">
-              {mode === 'qr' ? (
-                <>
-                  <Camera className="h-6 w-6" />
-                  ماسح رمز QR
-                </>
-              ) : (
-                <>
-                  <Keyboard className="h-6 w-6" />
-                  إدخال الرمز اليدوي
-                </>
-              )}
+              <Camera className="h-6 w-6" />
+              ماسح رمز QR
             </CardTitle>
             <CardDescription className="text-center">
-              {mode === 'qr' 
-                ? 'وجّه الكاميرا نحو رمز QR الخاص بالعامل'
-                : 'أدخل رمز العامل اليدوي (الموجود على البطاقة)'
-              }
+              وجّه الكاميرا نحو رمز QR الخاص بالعامل
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mode === 'qr' ? (
-                <>
-                  {/* QR Scanner Component */}
-                  <div className="relative">
-                    <QRScanner 
-                      key="qr-scanner" 
-                      onScan={handleQRScan}
-                      onError={(error) => toast.error(error)}
-                      height={350}
-                    />
-                    
-                    {/* Success Animation Overlay */}
-                    {showSuccessAnimation && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg z-50 animate-in fade-in duration-200">
-                        <div className="animate-in zoom-in duration-500">
-                          <CheckCircle2 className="h-32 w-32 text-green-500 drop-shadow-2xl animate-pulse" strokeWidth={3} />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* Manual Input */}
-                  <div className="space-y-4 py-8">
-                    <div className="flex items-center justify-center">
-                      <IdCard className="h-24 w-24 text-gray-400" />
-                    </div>
-                    <div className="max-w-md mx-auto space-y-4">
-                      <Input
-                        ref={inputRef}
-                        type="text"
-                        placeholder="أدخل رمز العامل (مثال: W001)"
-                        value={manualCode}
-                        onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && manualCode.trim()) {
-                            handleManualEntry();
-                          }
-                        }}
-                        className="text-center text-2xl font-mono h-16"
-                        disabled={isProcessing}
-                      />
-                      <Button
-                        size="lg"
-                        className="w-full"
-                        onClick={handleManualEntry}
-                        disabled={!manualCode.trim() || isProcessing}
-                      >
-                        {isProcessing ? (
-                          <>
-                            <Loader2 className="h-5 w-5 animate-spin ml-2" />
-                            جاري البحث...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="h-5 w-5 ml-2" />
-                            تأكيد
-                          </>
-                        )}
-                      </Button>
+              {/* QR Scanner Component */}
+              <div className="relative">
+                <QRScanner 
+                  onScan={handleQRScan}
+                  onError={(error) => toast.error(error)}
+                  height={350}
+                />
+                
+                {/* Success Animation Overlay */}
+                {showSuccessAnimation && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg z-50 animate-in fade-in duration-200">
+                    <div className="animate-in zoom-in duration-500">
+                      <CheckCircle2 className="h-32 w-32 text-green-500 drop-shadow-2xl animate-pulse" strokeWidth={3} />
                     </div>
                   </div>
-                </>
-              )}
+                )}
+              </div>
               
               {/* Processing Indicator */}
-              {isProcessing && !showConfirmDialog && mode === 'qr' && (
+              {isProcessing && !showConfirmDialog && (
                 <div className="flex items-center justify-center gap-2 py-4">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   <span className="text-muted-foreground">جاري معالجة الرمز...</span>
@@ -425,10 +340,11 @@ export default function AttendanceScanner() {
               {workerData.todayEvents && workerData.todayEvents.length > 0 && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
                   <div className="text-sm font-semibold mb-2">سجل اليوم:</div>
-                  <div className="space-y-1 text-sm">                    {workerData.todayEvents?.map((event: any, index: number) => (
+                  <div className="space-y-1 text-sm">
+                    {workerData.todayEvents.map((event: any, index: number) => (
                       <div key={index} className="flex justify-between">
                         <span>{event.eventType === 'check_in' ? '✓ حضور' : '✗ انصراف'}</span>
-                        <span>{new Date(event.eventTime).toLocaleTimeString('ar-SA')}</span>
+                        <span>{new Date(event.timestamp).toLocaleTimeString('ar-SA')}</span>
                       </div>
                     ))}
                   </div>

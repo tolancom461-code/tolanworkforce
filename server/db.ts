@@ -134,27 +134,17 @@ export async function getUserById(id: number): Promise<User | undefined> {
   if (!db) return undefined;
 
   const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
-}
-
-/**
- * Get user with their role permissions
- * جلب المستخدم مع صلاحيات دوره
- */
-export async function getUserWithPermissions(id: number): Promise<(User & { permissions?: Permission[] }) | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const user = await getUserById(id);
-  if (!user) return undefined;
-
-  // If user has a role, get role permissions
-  if (user.roleId) {
-    const rolePerms = await getRolePermissions(user.roleId);
-    return { ...user, permissions: rolePerms };
-  }
-
-  return { ...user, permissions: [] };
+  if (result.length === 0) return undefined;
+  
+  const user = result[0];
+  
+  // Load user permissions from user_permissions table
+  const userPerms = await db.select().from(userPermissions).where(eq(userPermissions.userId, id));
+  
+  // Transform to expected format: array of objects with 'code' field
+  (user as any).permissions = userPerms.map(p => ({ code: p.permission }));
+  
+  return user;
 }
 
 export async function getUserByUsername(username: string): Promise<User | undefined> {
@@ -759,12 +749,11 @@ export async function getWorkerByManualCode(code: string) {
   if (!db) return null;
 
   const { workers } = await import('../drizzle/schema');
-  const { sql } = await import('drizzle-orm');
   
-  // Try manual code first (case-insensitive), then worker code
-  let [worker] = await db.select().from(workers).where(sql`LOWER(${workers.manualCode}) = LOWER(${code})`).limit(1);
+  // Try manual code first, then worker code
+  let [worker] = await db.select().from(workers).where(eq(workers.manualCode, code)).limit(1);
   if (!worker) {
-    [worker] = await db.select().from(workers).where(sql`LOWER(${workers.code}) = LOWER(${code})`).limit(1);
+    [worker] = await db.select().from(workers).where(eq(workers.code, code)).limit(1);
   }
   return worker || null;
 }

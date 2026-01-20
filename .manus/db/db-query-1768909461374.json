@@ -1,0 +1,28 @@
+{
+  "query": "SELECT * FROM permissions WHERE code LIKE '%payroll_batch%' LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT * FROM permissions WHERE code LIKE '%payroll_batch%' LIMIT 10;",
+  "rows": [
+    {
+      "id": "16",
+      "code": "view_payroll_batches",
+      "name": "عرض دفعات الرواتب",
+      "description": "NULL",
+      "category": "finance",
+      "created_at": "2026-01-19 13:49:32",
+      "updated_at": "2026-01-19 13:49:32"
+    },
+    {
+      "id": "17",
+      "code": "manage_payroll_batches",
+      "name": "إدارة دفعات الرواتب",
+      "description": "NULL",
+      "category": "finance",
+      "created_at": "2026-01-19 13:49:32",
+      "updated_at": "2026-01-19 13:49:32"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tname\tdescription\tcategory\tcreated_at\tupdated_at\n16\tview_payroll_batches\tعرض دفعات الرواتب\tNULL\tfinance\t2026-01-19 13:49:32\t2026-01-19 13:49:32\n17\tmanage_payroll_batches\tإدارة دفعات الرواتب\tNULL\tfinance\t2026-01-19 13:49:32\t2026-01-19 13:49:32\n",
+  "stderr": "",
+  "execution_time_ms": 1530
+}

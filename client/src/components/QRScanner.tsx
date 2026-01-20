@@ -121,14 +121,6 @@ export default function QRScanner({
     try {
       setError(null);
       
-      // Check if DOM element exists
-      const readerElement = document.getElementById('qr-reader');
-      if (!readerElement) {
-        console.error('QR reader element not found');
-        setError('عنصر القارئ غير موجود. يرجى إعادة المحاولة');
-        return;
-      }
-      
       // Create scanner if not exists
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode('qr-reader', {
@@ -224,25 +216,11 @@ export default function QRScanner({
         if (state === Html5QrcodeScannerState.SCANNING) {
           await scannerRef.current.stop();
         }
-        // Clear scanner and remove from DOM
         await scannerRef.current.clear();
         scannerRef.current = null;
       }
-      
-      // Clean up any remaining video elements
-      const readerElement = document.getElementById('qr-reader');
-      if (readerElement) {
-        readerElement.innerHTML = '';
-      }
     } catch (err) {
       console.error('Scanner cleanup error:', err);
-      // Force cleanup even if error occurs
-      try {
-        const readerElement = document.getElementById('qr-reader');
-        if (readerElement) {
-          readerElement.innerHTML = '';
-        }
-      } catch {}
     }
   };
 

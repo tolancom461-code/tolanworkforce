@@ -218,9 +218,9 @@ function DashboardLayoutContent({
   const { data: userPermissions = [], isLoading: isLoadingPermissions } = trpc.auth.permissions.useQuery();
   
   // فلترة القوائم حسب الصلاحيات
-  // إخفاء العناصر غير المصرح بها بناءً على صلاحيات المستخدم
-  const filteredMenuSections = isLoadingPermissions
-    ? [] // إخفاء القوائم أثناء التحميل
+  // إذا لم يكن للمستخدم أي صلاحيات، عرض جميع القوائم (للتوافق مع الإصدارات السابقة)
+  const filteredMenuSections = userPermissions.length === 0 && !isLoadingPermissions
+    ? menuSections
     : menuSections
         .map(section => ({
           ...section,

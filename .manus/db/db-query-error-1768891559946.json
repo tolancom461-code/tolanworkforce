@@ -1,8 +1,0 @@
-{
-  "query": "-- حذف جميع الأدوار\nDELETE FROM roles;\n\n-- إعادة إدراج الأدوار الستة الثابتة فقط\nINSERT INTO roles (code, name, description, level, isActive) VALUES\n('guard', 'الحارس', 'المستوى الأول - الحارس', 1, 1),\n('supervisor', 'المشرف', 'المستوى الثاني - المشرفين', 2, 1),\n('accountant', 'المحاسب المالي والمراجع', 'المستوى الثالث - المحاسب المالي والمراجع', 3, 1),\n('admin_affairs', 'الشؤون الإدارية', 'المستوى الرابع - الشؤون الإدارية', 4, 1),\n('financial_manager', 'المدير المالي', 'المستوى الخامس - المدير المالي', 5, 1),\n('general_manager', 'المدير العام', 'المستوى السادس - المدير العام', 6, 1);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute -- حذف جميع الأدوار\nDELETE FROM roles;\n\n-- إعادة إدراج الأدوار الستة الثابتة فقط\nINSERT INTO roles (code, name, description, level, isActive) VALUES\n('guard', 'الحارس', 'المستوى الأول - الحارس', 1, 1),\n('supervisor', 'المشرف', 'المستوى الثاني - المشرفين', 2, 1),\n('accountant', 'المحاسب المالي والمراجع', 'المستوى الثالث - المحاسب المالي والمراجع', 3, 1),\n('admin_affairs', 'الشؤون الإدارية', 'المستوى الرابع - الشؤون الإدارية', 4, 1),\n('financial_manager', 'المدير المالي', 'المستوى الخامس - المدير المالي', 5, 1),\n('general_manager', 'المدير العام', 'المستوى السادس - المدير العام', 6, 1);",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 5: Unknown column 'isActive' in 'field list'"
-  ]
-}
