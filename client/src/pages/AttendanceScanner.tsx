@@ -107,22 +107,19 @@ export default function AttendanceScanner() {
     }
   };
   
+  const utils = trpc.useUtils();
+  
   const handleManualEntry = async () => {
     if (!manualCode.trim() || isProcessing) return;
     
     setIsProcessing(true);
     try {
-      // Fetch worker data by code
-      const response = await fetch(`/api/trpc/attendance.getWorkerByCode?input=${encodeURIComponent(JSON.stringify({ code: manualCode.trim() }))}`, {
-        credentials: 'include'
-      });
+      // Fetch worker data by code using tRPC
+      const result = await utils.attendance.getWorkerByCode.fetch({ code: manualCode.trim() });
       
-      if (!response.ok) {
+      if (!result || !result.worker) {
         throw new Error('رمز العامل غير صالح أو غير موجود');
       }
-      
-      const data = await response.json();
-      const result = data.result.data;
       
       setWorkerData(result);
       setShowConfirmDialog(true);

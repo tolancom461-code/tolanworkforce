@@ -759,11 +759,12 @@ export async function getWorkerByManualCode(code: string) {
   if (!db) return null;
 
   const { workers } = await import('../drizzle/schema');
+  const { sql } = await import('drizzle-orm');
   
-  // Try manual code first, then worker code
-  let [worker] = await db.select().from(workers).where(eq(workers.manualCode, code)).limit(1);
+  // Try manual code first (case-insensitive), then worker code
+  let [worker] = await db.select().from(workers).where(sql`LOWER(${workers.manualCode}) = LOWER(${code})`).limit(1);
   if (!worker) {
-    [worker] = await db.select().from(workers).where(eq(workers.code, code)).limit(1);
+    [worker] = await db.select().from(workers).where(sql`LOWER(${workers.code}) = LOWER(${code})`).limit(1);
   }
   return worker || null;
 }

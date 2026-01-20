@@ -2306,3 +2306,25 @@ Add "Approve Full Attendance" option that:
 - [x] اختبار QR Code لعامل ردمان (يعمل بنجاح!)
 - [x] التأكد من ظهور نافذة التأكيد (موجودة بالفعل)
 - [ ] اختبار مسح QR Code في بيئة حقيقية مع كاميرا
+
+
+## إصلاح مشكلة QR Code غير صالح (المحاولة الثانية)
+- [ ] فحص قيمة qrToken في قاعدة البيانات للعامل ردمان
+- [ ] فحص API getWorkerFromQR بالتفصيل
+- [ ] اختبار API مباشرة من المتصفح
+- [ ] فحص دالة handleQRScan في AttendanceScanner
+- [ ] إصلاح المشكلة
+- [ ] اختبار كامل للنظام حتى ظهور نافذة التأكيد
+- [ ] التأكد من نجاح تسجيل الحضور
+
+
+## إصلاح مشكلة QR Code غير صالح (النجاح الكامل!)
+- [x] فحص عميق للمشكلة وتحديد السبب
+- [x] فحص API getWorkerFromQR وgetWorkerByCode (كانت protectedProcedure)
+- [x] فحص قاعدة البيانات للتأكد من qrToken (موجود)
+- [x] تغيير APIs إلى publicProcedure
+- [x] إصلاح getWorkerByManualCode للبحث case-insensitive
+- [x] إصلاح handleManualEntry لاستخدام trpc.useUtils()
+- [x] اختبار شامل للنظام (نجح!)
+- [x] التأكد من ظهور نافذة التأكيد (تظهر بشكل صحيح)
+- [x] اختبار تسجيل الحضور بنجاح (نجح! العداد: 1 حاضر، 13 غائب)

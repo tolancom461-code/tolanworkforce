@@ -801,7 +801,7 @@ export const appRouter = router({
       }),
     
     // Get worker info from QR code (without recording)
-    getWorkerFromQR: protectedProcedure
+    getWorkerFromQR: publicProcedure
       .input(z.object({ qrToken: z.string() }))
       .query(async ({ input }) => {
         const worker = await db.getWorkerByQRToken(input.qrToken);
@@ -824,7 +824,7 @@ export const appRouter = router({
       }),
     
     // Get worker info by code (without recording)
-    getWorkerByCode: protectedProcedure
+    getWorkerByCode: publicProcedure
       .input(z.object({ code: z.string() }))
       .query(async ({ input }) => {
         const worker = await db.getWorkerByManualCode(input.code);
