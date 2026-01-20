@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer, Download } from "lucide-react";
+import { QRCodeSVG } from 'qrcode.react';
 import { exportToExcel, printPage } from '@/lib/exportUtils';
 
 export default function Workers() {
@@ -729,15 +730,21 @@ export default function Workers() {
             {selectedWorker && (
               <div className="space-y-4 text-center">
                 <div className="p-4 bg-white rounded-lg inline-block mx-auto">
-                  {/* QR Code placeholder - in production, use a QR library */}
-                  <div className="w-48 h-48 bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 rounded">
-                    <div className="text-center">
-                      <QrCode className="h-16 w-16 mx-auto text-gray-400" />
-                      <p className="text-xs text-gray-500 mt-2 font-mono break-all px-2">
-                        {selectedWorker.qrToken || "لا يوجد رمز"}
-                      </p>
+                  {selectedWorker.qrToken ? (
+                    <QRCodeSVG 
+                      value={selectedWorker.qrToken} 
+                      size={192}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  ) : (
+                    <div className="w-48 h-48 bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 rounded">
+                      <div className="text-center">
+                        <QrCode className="h-16 w-16 mx-auto text-gray-400" />
+                        <p className="text-xs text-gray-500 mt-2">لا يوجد رمز</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <div>
                   <p className="font-bold">{selectedWorker.fullName}</p>

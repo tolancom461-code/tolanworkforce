@@ -2293,3 +2293,16 @@ Add "Approve Full Attendance" option that:
 - [x] فحص API auth.permissions.useQuery (كان يرجع [])
 - [x] إصلاح المشكلة في routers.ts (كان return [] بدلاً من إرجاع الصلاحيات)
 - [x] اختبار الحل (القوائم ظاهرة بالكامل!)
+
+
+## إصلاح مشكلة قراءة QR Code للعمال
+- [x] فحص صيغة QR Code المُولّد في صفحة إدارة العمال (كان placeholder فقط)
+- [x] فحص دالة قراءة QR Code في صفحة الحضور (صحيحة)
+- [x] فحص API getWorkerFromQR في Backend (صحيح)
+- [x] المشكلة: جميع العمال لديهم qr_token = null
+- [x] توليد qrToken لـ 12 عامل
+- [x] إضافة مكتبة qrcode.react
+- [x] إضافة QR Code حقيقي في Workers.tsx
+- [x] اختبار QR Code لعامل ردمان (يعمل بنجاح!)
+- [x] التأكد من ظهور نافذة التأكيد (موجودة بالفعل)
+- [ ] اختبار مسح QR Code في بيئة حقيقية مع كاميرا

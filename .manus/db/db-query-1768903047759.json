@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, full_name, code, qr_token FROM workers LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, full_name, code, qr_token FROM workers LIMIT 5;",
+  "rows": [
+    {
+      "id": "90001",
+      "full_name": "Test Worker 1",
+      "code": "W1-1768674822062",
+      "qr_token": "NULL"
+    },
+    {
+      "id": "90002",
+      "full_name": "Test Worker 2",
+      "code": "W2-1768674822287",
+      "qr_token": "NULL"
+    },
+    {
+      "id": "90003",
+      "full_name": "Test Worker 1",
+      "code": "W1-1768674855786",
+      "qr_token": "NULL"
+    },
+    {
+      "id": "90004",
+      "full_name": "Test Worker 2",
+      "code": "W2-1768674856006",
+      "qr_token": "NULL"
+    },
+    {
+      "id": "90005",
+      "full_name": "Test Worker 1",
+      "code": "W1-1768674892327",
+      "qr_token": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfull_name\tcode\tqr_token\n90001\tTest Worker 1\tW1-1768674822062\tNULL\n90002\tTest Worker 2\tW2-1768674822287\tNULL\n90003\tTest Worker 1\tW1-1768674855786\tNULL\n90004\tTest Worker 2\tW2-1768674856006\tNULL\n90005\tTest Worker 1\tW1-1768674892327\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1514
+}
