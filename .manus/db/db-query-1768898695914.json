@@ -1,0 +1,17 @@
+{
+  "query": "SELECT username, full_name, role_id, loginMethod, LENGTH(password_hash) as password_length FROM users WHERE username = 'RADMAN';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT username, full_name, role_id, loginMethod, LENGTH(password_hash) as password_length FROM users WHERE username = 'RADMAN';",
+  "rows": [
+    {
+      "username": "RADMAN",
+      "full_name": "RADMAN",
+      "role_id": "1",
+      "loginMethod": "local",
+      "password_length": "60"
+    }
+  ],
+  "messages": [],
+  "stdout": "username\tfull_name\trole_id\tloginMethod\tpassword_length\nRADMAN\tRADMAN\t1\tlocal\t60\n",
+  "stderr": "",
+  "execution_time_ms": 1518
+}

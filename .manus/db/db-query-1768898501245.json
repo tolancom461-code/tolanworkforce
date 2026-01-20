@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id, username, full_name, email, openId, role_id, role, is_active, loginMethod FROM users WHERE username LIKE '%radman%' OR full_name LIKE '%RADMAN%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, username, full_name, email, openId, role_id, role, is_active, loginMethod FROM users WHERE username LIKE '%radman%' OR full_name LIKE '%RADMAN%';",
+  "rows": [
+    {
+      "id": "1050033",
+      "username": "RADMAN",
+      "full_name": "RADMAN - المدير العام",
+      "email": "radman@tolanworkforce.com",
+      "openId": "NULL",
+      "role_id": "1",
+      "role": "admin",
+      "is_active": "1",
+      "loginMethod": "local"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tfull_name\temail\topenId\trole_id\trole\tis_active\tloginMethod\n1050033\tRADMAN\tRADMAN - المدير العام\tradman@tolanworkforce.com\tNULL\t1\tadmin\t1\tlocal\n",
+  "stderr": "",
+  "execution_time_ms": 1543
+}

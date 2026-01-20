@@ -38,8 +38,11 @@ export const appRouter = router({
       return { success: true } as const;
     }),
     permissions: protectedProcedure.query(async ({ ctx }) => {
-      // Old permission system removed
-      // Use scopedPermissions router for the new atomic permissions system
+      // Return user's role permissions
+      if (ctx.user.roleId) {
+        const rolePerms = await db.getRolePermissions(ctx.user.roleId);
+        return rolePerms.map(p => p.code);
+      }
       return [];
     }),
     localLogin: publicProcedure

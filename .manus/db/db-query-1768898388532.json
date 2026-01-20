@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO role_permissions (role_id, permission_id)\nSELECT 1, id FROM permissions\nWHERE NOT EXISTS (\n  SELECT 1 FROM role_permissions WHERE role_id = 1 AND permission_id = permissions.id\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute INSERT INTO role_permissions (role_id, permission_id)\nSELECT 1, id FROM permissions\nWHERE NOT EXISTS (\n  SELECT 1 FROM role_permissions WHERE role_id = 1 AND permission_id = permissions.id\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1493
+}
