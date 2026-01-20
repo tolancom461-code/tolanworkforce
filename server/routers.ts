@@ -819,6 +819,29 @@ export const appRouter = router({
           todayEvents
         };
       }),
+    
+    // Get worker info by code (without recording)
+    getWorkerByCode: protectedProcedure
+      .input(z.object({ code: z.string() }))
+      .query(async ({ input }) => {
+        const worker = await db.getWorkerByManualCode(input.code);
+        if (!worker) throw new Error("رمز العامل غير صالح أو غير موجود");
+        
+        // Get last event to determine next action
+        const lastEvent = await db.getWorkerLastEvent(worker.id);
+        const nextEventType = (!lastEvent || lastEvent.eventType === 'check_out') ? 'check_in' : 'check_out';
+        
+        // Get today's events
+        const today = new Date().toISOString().split('T')[0];
+        const todayEvents = await db.getAttendanceEventsForEdit(worker.id, today);
+        
+        return { 
+          worker, 
+          nextEventType,
+          lastEvent,
+          todayEvents
+        };
+      }),
 
     // Confirm and record attendance
     confirmAttendance: protectedProcedure

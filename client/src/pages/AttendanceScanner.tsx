@@ -107,6 +107,41 @@ export default function AttendanceScanner() {
     }
   };
   
+  const handleManualEntry = async () => {
+    if (!manualCode.trim() || isProcessing) return;
+    
+    setIsProcessing(true);
+    try {
+      // Fetch worker data by code
+      const response = await fetch(`/api/trpc/attendance.getWorkerByCode?input=${encodeURIComponent(JSON.stringify({ code: manualCode.trim() }))}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('رمز العامل غير صالح أو غير موجود');
+      }
+      
+      const data = await response.json();
+      const result = data.result.data;
+      
+      setWorkerData(result);
+      setShowConfirmDialog(true);
+      setManualCode(''); // Clear input
+      
+      // Play success beep
+      playSuccessBeep();
+      
+      // Show success animation
+      setShowSuccessAnimation(true);
+      setTimeout(() => setShowSuccessAnimation(false), 1500);
+      
+    } catch (error: any) {
+      toast.error(error.message || 'رمز العامل غير صالح');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
   const handleConfirmAttendance = async () => {
     if (!workerData) return;
     
@@ -222,10 +257,9 @@ export default function AttendanceScanner() {
             size="lg"
             onClick={() => setMode('manual')}
             className="flex items-center gap-2"
-            disabled
           >
             <Keyboard className="h-5 w-5" />
-            إدخال يدوي (قريباً)
+            إدخال يدوي
           </Button>
         </div>
         
@@ -233,35 +267,94 @@ export default function AttendanceScanner() {
         <Card className="bg-white dark:bg-gray-800 shadow-xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 justify-center">
-              <Camera className="h-6 w-6" />
-              ماسح رمز QR
+              {mode === 'qr' ? (
+                <>
+                  <Camera className="h-6 w-6" />
+                  ماسح رمز QR
+                </>
+              ) : (
+                <>
+                  <Keyboard className="h-6 w-6" />
+                  إدخال الرمز اليدوي
+                </>
+              )}
             </CardTitle>
             <CardDescription className="text-center">
-              وجّه الكاميرا نحو رمز QR الخاص بالعامل
+              {mode === 'qr' 
+                ? 'وجّه الكاميرا نحو رمز QR الخاص بالعامل'
+                : 'أدخل رمز العامل اليدوي (الموجود على البطاقة)'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* QR Scanner Component */}
-              <div className="relative">
-                <QRScanner 
-                  onScan={handleQRScan}
-                  onError={(error) => toast.error(error)}
-                  height={350}
-                />
-                
-                {/* Success Animation Overlay */}
-                {showSuccessAnimation && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg z-50 animate-in fade-in duration-200">
-                    <div className="animate-in zoom-in duration-500">
-                      <CheckCircle2 className="h-32 w-32 text-green-500 drop-shadow-2xl animate-pulse" strokeWidth={3} />
+              {mode === 'qr' ? (
+                <>
+                  {/* QR Scanner Component */}
+                  <div className="relative">
+                    <QRScanner 
+                      onScan={handleQRScan}
+                      onError={(error) => toast.error(error)}
+                      height={350}
+                    />
+                    
+                    {/* Success Animation Overlay */}
+                    {showSuccessAnimation && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm rounded-lg z-50 animate-in fade-in duration-200">
+                        <div className="animate-in zoom-in duration-500">
+                          <CheckCircle2 className="h-32 w-32 text-green-500 drop-shadow-2xl animate-pulse" strokeWidth={3} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Manual Input */}
+                  <div className="space-y-4 py-8">
+                    <div className="flex items-center justify-center">
+                      <IdCard className="h-24 w-24 text-gray-400" />
+                    </div>
+                    <div className="max-w-md mx-auto space-y-4">
+                      <Input
+                        ref={inputRef}
+                        type="text"
+                        placeholder="أدخل رمز العامل (مثال: W001)"
+                        value={manualCode}
+                        onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && manualCode.trim()) {
+                            handleManualEntry();
+                          }
+                        }}
+                        className="text-center text-2xl font-mono h-16"
+                        disabled={isProcessing}
+                      />
+                      <Button
+                        size="lg"
+                        className="w-full"
+                        onClick={handleManualEntry}
+                        disabled={!manualCode.trim() || isProcessing}
+                      >
+                        {isProcessing ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin ml-2" />
+                            جاري البحث...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-5 w-5 ml-2" />
+                            تأكيد
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
-                )}
-              </div>
+                </>
+              )}
               
               {/* Processing Indicator */}
-              {isProcessing && !showConfirmDialog && (
+              {isProcessing && !showConfirmDialog && mode === 'qr' && (
                 <div className="flex items-center justify-center gap-2 py-4">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   <span className="text-muted-foreground">جاري معالجة الرمز...</span>
