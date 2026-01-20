@@ -3881,3 +3881,39 @@ export async function getUserPermissionsGrouped(
 
   return grouped;
 }
+
+
+// User Permissions Management
+export async function getUserPermissions(userId: number) {
+  return await database
+    .select()
+    .from(schema.userPermissions)
+    .where(eq(schema.userPermissions.userId, userId));
+}
+
+export async function addUserPermission(data: {
+  userId: number;
+  permission: string;
+  scopeType: 'global' | 'cost_center' | 'group' | 'worker';
+  scopeId?: number;
+}) {
+  await database.insert(schema.userPermissions).values({
+    userId: data.userId,
+    permission: data.permission,
+    scopeType: data.scopeType,
+    scopeId: data.scopeId?.toString(),
+  });
+}
+
+export async function removeUserPermission(permissionId: number) {
+  await database
+    .delete(schema.userPermissions)
+    .where(eq(schema.userPermissions.id, permissionId));
+}
+
+export async function updateUserRole(userId: number, role: string) {
+  await database
+    .update(schema.users)
+    .set({ role })
+    .where(eq(schema.users.id, userId));
+}

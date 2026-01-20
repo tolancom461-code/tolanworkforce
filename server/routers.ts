@@ -199,6 +199,62 @@ export const appRouter = router({
         return { success: true };
       }),
     
+    // Permissions Management
+    getPermissions: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getUserPermissions(input.userId);
+      }),
+    
+    addPermission: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        permission: z.string(),
+        scopeType: z.enum(['global', 'cost_center', 'group', 'worker']).optional(),
+        scopeId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Only admin can manage permissions
+        if (ctx.user?.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can manage permissions' });
+        }
+        
+        await db.addUserPermission({
+          userId: input.userId,
+          permission: input.permission,
+          scopeType: input.scopeType || 'global',
+          scopeId: input.scopeId,
+        });
+        return { success: true };
+      }),
+    
+    removePermission: protectedProcedure
+      .input(z.object({ permissionId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        // Only admin can manage permissions
+        if (ctx.user?.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can manage permissions' });
+        }
+        
+        await db.removeUserPermission(input.permissionId);
+        return { success: true };
+      }),
+    
+    updateRole: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        role: z.enum(['admin', 'user', 'accountant', 'financial_reviewer', 'accounts_manager', 'hr_manager', 'security_guard']),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Only admin can change roles
+        if (ctx.user?.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can change user roles' });
+        }
+        
+        await db.updateUserRole(input.userId, input.role);
+        return { success: true };
+      }),
+    
     assignRole: protectedProcedure
       .input(z.object({
         userId: z.number(),

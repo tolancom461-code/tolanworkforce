@@ -2233,3 +2233,28 @@ Add "Approve Full Attendance" option that:
 - [ ] Add permission checks to backend APIs (requirePermission middleware)
 - [ ] Assign role-based permissions to existing users
 - [ ] Test with different user roles (accountant, hr_manager, security_guard, etc.)
+
+
+## Permissions Management Page
+
+- [ ] Add backend APIs for managing user permissions
+  - [ ] getUserPermissions - get all permissions for a user
+  - [ ] addUserPermission - add permission to user
+  - [ ] removeUserPermission - remove permission from user
+  - [ ] updateUserRole - change user role
+- [ ] Create permissions management page UI
+  - [ ] List all users with their roles and permissions
+  - [ ] Add/remove permissions for each user
+  - [ ] Change user role
+  - [ ] Admin-only access
+- [ ] Test permissions management functionality
+
+
+## User Permissions Management Page
+
+- [x] Add APIs for permission management in routers.ts (getPermissions, addPermission, removePermission)
+- [x] Add database functions in db.ts (getUserPermissions, addUserPermission, removeUserPermission)
+- [x] Create UserPermissions page with role-based permissions display
+- [x] Add route to App.tsx (/user-permissions)
+- [ ] Add menu item to DashboardLayout sidebar (for admin only)
+- [ ] Test permission management with different users
