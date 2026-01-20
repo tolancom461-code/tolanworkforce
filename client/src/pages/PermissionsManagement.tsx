@@ -142,18 +142,39 @@ export default function PermissionsManagement() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="code">كود الصلاحية *</Label>
-                    <Input
-                      id="code"
-                      name="code"
-                      placeholder="مثال: view_workers"
+                    <Label htmlFor="category">الفئة *</Label>
+                    <select
+                      id="category"
+                      name="category"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       required
-                      pattern="[a-z_]+"
-                      title="يجب أن يحتوي على أحرف صغيرة وشرطة سفلية فقط"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      استخدم أحرف صغيرة وشرطة سفلية فقط (مثال: view_workers)
-                    </p>
+                      onChange={(e) => {
+                        const nameInput = document.getElementById('name') as HTMLInputElement;
+                        const codeInput = document.getElementById('code') as HTMLInputElement;
+                        if (nameInput && codeInput && nameInput.value) {
+                          const arabicToEnglish: Record<string, string> = {
+                            'عرض': 'view', 'إضافة': 'create', 'تعديل': 'edit', 'حذف': 'delete',
+                            'إدارة': 'manage', 'تصدير': 'export', 'موافقة': 'approve',
+                            'العمال': 'workers', 'المجموعات': 'groups', 'الحضور': 'attendance',
+                            'الرواتب': 'payroll', 'التقارير': 'reports', 'المستخدمين': 'users',
+                            'الصلاحيات': 'permissions', 'الأدوار': 'roles', 'مراكز': 'cost_centers',
+                            'الاستثناءات': 'exceptions', 'الخصومات': 'deductions',
+                            'الإضافات': 'additions', 'دفعات': 'batches', 'أيام': 'days'
+                          };
+                          let code = nameInput.value.toLowerCase();
+                          Object.keys(arabicToEnglish).forEach(ar => {
+                            code = code.replace(new RegExp(ar, 'g'), arabicToEnglish[ar]);
+                          });
+                          code = code.replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+                          codeInput.value = code;
+                        }
+                      }}
+                    >
+                      <option value="">اختر الفئة...</option>
+                      {CATEGORIES.map(cat => (
+                        <option key={cat.key} value={cat.key}>{cat.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="name">اسم الصلاحية *</Label>
@@ -162,7 +183,42 @@ export default function PermissionsManagement() {
                       name="name"
                       placeholder="مثال: عرض العمال"
                       required
+                      onChange={(e) => {
+                        const codeInput = document.getElementById('code') as HTMLInputElement;
+                        if (codeInput) {
+                          const arabicToEnglish: Record<string, string> = {
+                            'عرض': 'view', 'إضافة': 'create', 'تعديل': 'edit', 'حذف': 'delete',
+                            'إدارة': 'manage', 'تصدير': 'export', 'موافقة': 'approve',
+                            'العمال': 'workers', 'المجموعات': 'groups', 'الحضور': 'attendance',
+                            'الرواتب': 'payroll', 'التقارير': 'reports', 'المستخدمين': 'users',
+                            'الصلاحيات': 'permissions', 'الأدوار': 'roles', 'مراكز': 'cost_centers',
+                            'الاستثناءات': 'exceptions', 'الخصومات': 'deductions',
+                            'الإضافات': 'additions', 'دفعات': 'batches', 'أيام': 'days'
+                          };
+                          let code = e.target.value.toLowerCase();
+                          Object.keys(arabicToEnglish).forEach(ar => {
+                            code = code.replace(new RegExp(ar, 'g'), arabicToEnglish[ar]);
+                          });
+                          code = code.replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+                          codeInput.value = code;
+                        }
+                      }}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="code">كود الصلاحية (تلقائي) *</Label>
+                    <Input
+                      id="code"
+                      name="code"
+                      placeholder="سيتم إنشاؤه تلقائياً"
+                      required
+                      pattern="[a-z_]+"
+                      title="يجب أن يحتوي على أحرف صغيرة وشرطة سفلية فقط"
+                      className="bg-muted/50"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      يتم إنشاؤه تلقائياً من اسم الصلاحية (يمكنك تعديله)
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">الوصف</Label>
@@ -171,20 +227,6 @@ export default function PermissionsManagement() {
                       name="description"
                       placeholder="وصف تفصيلي للصلاحية"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">الفئة *</Label>
-                    <select
-                      id="category"
-                      name="category"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      required
-                    >
-                      <option value="">اختر الفئة...</option>
-                      {CATEGORIES.map(cat => (
-                        <option key={cat.key} value={cat.key}>{cat.label}</option>
-                      ))}
-                    </select>
                   </div>
                 </div>
                 <DialogFooter>
