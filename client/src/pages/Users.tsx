@@ -79,6 +79,7 @@ export default function Users() {
     const formData = new FormData(e.currentTarget);
     createUser.mutate({
       username: formData.get("username") as string,
+      password: formData.get("password") as string,
       fullName: formData.get("fullName") as string,
       email: formData.get("email") as string || undefined,
       phone: formData.get("phone") as string || undefined,
@@ -92,6 +93,7 @@ export default function Users() {
     e.preventDefault();
     if (!selectedUser) return;
     const formData = new FormData(e.currentTarget);
+    const password = formData.get("password") as string;
     updateUser.mutate({
       id: selectedUser.id,
       fullName: formData.get("fullName") as string,
@@ -100,6 +102,7 @@ export default function Users() {
       phoneNumber: formData.get("phoneNumber") as string || null,
       roleId: formData.get("roleId") ? parseInt(formData.get("roleId") as string) : null,
       isActive: formData.get("isActive") === "on",
+      ...(password && password.length >= 6 ? { password } : {}),
     });
   };
 
@@ -201,6 +204,10 @@ export default function Users() {
                   <div className="grid gap-2">
                     <Label htmlFor="fullName">الاسم الكامل *</Label>
                     <Input id="fullName" name="fullName" required minLength={2} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="password">كلمة المرور *</Label>
+                    <Input id="password" name="password" type="password" required minLength={6} placeholder="أدخل كلمة المرور (6 أحرف على الأقل)" />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="email">البريد الإلكتروني</Label>
@@ -377,6 +384,17 @@ export default function Users() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
+                  <Label htmlFor="edit-username">اسم المستخدم</Label>
+                  <Input 
+                    id="edit-username" 
+                    name="username" 
+                    disabled
+                    defaultValue={selectedUser?.username}
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">لا يمكن تغيير اسم المستخدم</p>
+                </div>
+                <div className="grid gap-2">
                   <Label htmlFor="edit-fullName">الاسم الكامل *</Label>
                   <Input 
                     id="edit-fullName" 
@@ -385,6 +403,17 @@ export default function Users() {
                     minLength={2}
                     defaultValue={selectedUser?.fullName}
                   />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-password">كلمة المرور الجديدة</Label>
+                  <Input 
+                    id="edit-password" 
+                    name="password" 
+                    type="password"
+                    minLength={6}
+                    placeholder="اتركها فارغة إذا لم ترد التغيير"
+                  />
+                  <p className="text-xs text-muted-foreground">أدخل كلمة مرور جديدة فقط إذا أردت تغييرها</p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-email">البريد الإلكتروني</Label>

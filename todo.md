@@ -2179,3 +2179,30 @@ Add "Approve Full Attendance" option that:
 - [x] Add static import for ExcelJS in routers.ts
 - [x] Remove dynamic require from exportToExcel function
 - [ ] Test payroll batch Excel export on published site
+
+
+## Clean Data and Create Role-Based Users
+
+- [x] Delete approved payroll batches data (all payroll tables cleared)
+- [x] Delete operational reports - N/A (no separate table found)
+- [x] Delete pending items - N/A (no separate table found)
+- [x] Create users for each role with appropriate permissions
+  - accountant (password123) - payroll creation & review
+  - financial_reviewer (password123) - financial review
+  - accounts_manager (password123) - final approval & export
+  - hr_manager (password123) - worker & attendance management
+  - security_guard (password123) - attendance recording
+- [x] Generate credentials document (tolanworkforce_users_credentials.md)
+
+
+## Add Username and Password Fields to User Form
+
+- [x] Add username field to user creation form (already exists)
+- [x] Add password field to user creation form
+- [x] Show username (read-only) in user edit form
+- [x] Show password field in user edit form for password change (optional)
+- [x] Update backend API to handle password in create mutation
+- [x] Update backend API to handle password in update mutation (optional)
+- [x] Hash password with bcryptjs before storing
+- [ ] Test user creation with password
+- [ ] Test password change

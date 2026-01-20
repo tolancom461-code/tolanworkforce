@@ -136,6 +136,7 @@ export const appRouter = router({
     create: protectedProcedure
       .input(z.object({
         username: z.string().min(3),
+        password: z.string().min(6),
         fullName: z.string().min(2),
         email: z.string().email().optional(),
         phone: z.string().optional(),
@@ -148,8 +149,14 @@ export const appRouter = router({
         if (existingUser) {
           throw new Error("Username already exists");
         }
+        
+        // Hash password
+        const bcrypt = await import('bcryptjs');
+        const passwordHash = await bcrypt.hash(input.password, 10);
+        
         const id = await db.createUser({
           username: input.username,
+          passwordHash,
           fullName: input.fullName,
           email: input.email,
           phone: input.phone,
@@ -169,10 +176,19 @@ export const appRouter = router({
         phoneNumber: z.string().optional().nullable(),
         roleId: z.number().optional().nullable(),
         isActive: z.boolean().optional(),
+        password: z.string().min(6).optional(),
       }))
       .mutation(async ({ input }) => {
-        const { id, ...data } = input;
-        await db.updateUser(id, data);
+        const { id, password, ...data } = input;
+        
+        // Hash password if provided
+        if (password) {
+          const bcrypt = await import('bcryptjs');
+          const passwordHash = await bcrypt.hash(password, 10);
+          await db.updateUser(id, { ...data, passwordHash });
+        } else {
+          await db.updateUser(id, data);
+        }
         return { success: true };
       }),
     
