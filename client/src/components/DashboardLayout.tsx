@@ -66,10 +66,10 @@ import { Button } from "./ui/button";
 // تصنيف القوائم حسب الأدوار والوظائف
 const menuSections = [
   {
-    label: "📊 لوحات التحكم",
+    label: "📋 لوحات التحكم",
     items: [
       { icon: LayoutDashboard, label: "الرئيسية", path: "/dashboard" },
-      { icon: TrendingUp, label: "التقارير", path: "/reports", permission: PERMISSIONS.REPORTS_VIEW },
+      { icon: TrendingUp, label: "لوحة التحكم التنفيذية", path: "/executive", permission: PERMISSIONS.DASHBOARD_VIEW },
     ]
   },
   {
@@ -84,20 +84,24 @@ const menuSections = [
     items: [
       { icon: QrCode, label: "تسجيل الحضور", path: "/attendance", permission: PERMISSIONS.ATTENDANCE_RECORD },
       { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log", permission: PERMISSIONS.ATTENDANCE_VIEW },
+      { icon: FileText, label: "تقارير الحضور", path: "/attendance/reports", permission: PERMISSIONS.ATTENDANCE_REPORTS_VIEW },
+      { icon: Clock, label: "أيام العمل", path: "/work-days", permission: PERMISSIONS.SYSTEM_SETTINGS_VIEW },
       { icon: Flag, label: "البلاغات التشغيلية", path: "/operational-flags", permission: PERMISSIONS.OPERATIONAL_FLAGS_VIEW },
+      { icon: CheckCircle, label: "البلاغات المعلقة", path: "/pending-flags", permission: PERMISSIONS.OPERATIONAL_FLAGS_VIEW },
     ]
   },
   {
     label: "💰 الرواتب والمالية",
     items: [
       { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches", permission: PERMISSIONS.PAYROLL_VIEW },
+      { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report", permission: PERMISSIONS.PAYROLL_VIEW },
+      { icon: DollarSign, label: "التقارير المالية", path: "/finance/reports", permission: PERMISSIONS.FINANCIAL_REPORTS_VIEW },
     ]
   },
   {
     label: "📋 البيانات المرجعية",
     items: [
       { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers", permission: PERMISSIONS.COST_CENTER_VIEW },
-      { icon: Briefcase, label: "الوظائف", path: "/jobs", permission: PERMISSIONS.SYSTEM_SETTINGS_VIEW },
     ]
   },
   {
@@ -105,7 +109,6 @@ const menuSections = [
     items: [
       { icon: Users, label: "المستخدمين", path: "/users", permission: PERMISSIONS.USER_VIEW },
       { icon: Shield, label: "إدارة الأدوار", path: "/settings/roles", permission: PERMISSIONS.ROLE_VIEW },
-      { icon: Settings, label: "الإعدادات العامة", path: "/settings", permission: PERMISSIONS.SYSTEM_SETTINGS_VIEW },
     ]
   },
 ];
