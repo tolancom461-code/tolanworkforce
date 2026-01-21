@@ -271,9 +271,11 @@ export const appRouter = router({
 
   // Role Management
   roles: router({
-    list: protectedProcedure.query(async () => {
-      return await db.getAllRoles();
-    }),
+    list: protectedProcedure
+      .use(requirePermission('role_view'))
+      .query(async () => {
+        return await db.getAllRoles();
+      }),
     
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
@@ -282,6 +284,7 @@ export const appRouter = router({
       }),
     
     create: protectedProcedure
+      .use(requirePermission('role_manage'))
       .input(z.object({
         code: z.string().min(1),
         name: z.string().min(1),
@@ -293,6 +296,7 @@ export const appRouter = router({
       }),
     
     update: protectedProcedure
+      .use(requirePermission('role_manage'))
       .input(z.object({
         id: z.number(),
         code: z.string().optional(),
@@ -306,6 +310,7 @@ export const appRouter = router({
       }),
     
     delete: protectedProcedure
+      .use(requirePermission('role_manage'))
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         return await db.deleteRole(input.id);
@@ -335,6 +340,7 @@ export const appRouter = router({
       }),
     
     updatePermissions: protectedProcedure
+      .use(requirePermission('role_manage'))
       .input(z.object({
         roleId: z.number(),
         permissionIds: z.array(z.number()),

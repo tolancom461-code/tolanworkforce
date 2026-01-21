@@ -81,6 +81,8 @@ const PERMISSION_LABELS: Record<Permission, string> = {
   [PERMISSIONS.USER_PERMISSIONS_MANAGE]: 'إدارة صلاحيات المستخدمين',
   [PERMISSIONS.COST_CENTER_VIEW]: 'عرض مراكز التكلفة',
   [PERMISSIONS.COST_CENTER_MANAGE]: 'إدارة مراكز التكلفة',
+  [PERMISSIONS.ROLE_VIEW]: 'عرض الأدوار',
+  [PERMISSIONS.ROLE_MANAGE]: 'إدارة الأدوار',
   [PERMISSIONS.SYSTEM_SETTINGS_VIEW]: 'عرض إعدادات النظام',
   [PERMISSIONS.SYSTEM_SETTINGS_MANAGE]: 'إدارة إعدادات النظام',
 };

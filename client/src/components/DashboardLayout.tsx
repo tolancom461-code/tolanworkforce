@@ -97,9 +97,10 @@ const menuSections = [
     ]
   },
   {
-    label: "⚙️ إعدادات النظام",
+    label: "⚠️ إعدادات النظام",
     items: [
       { icon: Users, label: "المستخدمين", path: "/users", permission: PERMISSIONS.USER_VIEW },
+      { icon: Settings, label: "إدارة الأدوار", path: "/settings/roles", permission: PERMISSIONS.ROLE_VIEW },
     ]
   },
 ];

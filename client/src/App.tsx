@@ -30,6 +30,7 @@ import FinancialReview from "./pages/payroll/FinancialReview";
 import AccountsManagerReview from "./pages/payroll/AccountsManagerReview";
 import CostCenters from "./pages/CostCenters";
 import Roles from "./pages/Roles";
+import RolesManagement from "./pages/RolesManagement";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import FinancialReports from "./pages/reports/FinancialReports";
 import PayrollReport from "./pages/PayrollReport";
@@ -66,6 +67,11 @@ function Router() {
       <Route path="/scoped-permissions" component={UserScopedPermissions} />
       <Route path="/user-permissions" component={UserPermissions} />
       <Route path="/roles" component={Roles} />
+      <Route path="/settings/roles">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.ROLE_VIEW]}>
+          <RolesManagement />
+        </ProtectedRoute>
+      </Route>
       <Route path="/cost-centers" component={CostCenters} />
       <Route path="/profile" component={Profile} />
       <Route path="/groups" component={Groups} />

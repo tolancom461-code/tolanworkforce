@@ -2352,3 +2352,34 @@ Add "Approve Full Attendance" option that:
 - [x] حماية attendance APIs (register, edit, list, export)
 - [x] حماية reports APIs (financial, worker, group)
 - [x] حماية payroll remaining APIs (updateItem, submitForReview)
+
+
+## صفحة إدارة الأدوار الديناميكية (Dynamic Roles Management)
+
+### Backend APIs
+- [x] إنشاء API لعرض جميع الأدوار (roles.list)
+- [x] إنشاء API لإنشاء دور جديد (roles.create)
+- [x] إنشاء API لتعديل دور (roles.update)
+- [x] إنشاء API لحذف دور (roles.delete)
+- [x] إنشاء API لتخصيص صلاحيات الدور (roles.assignPermissions)
+- [x] إنشاء API لعرض صلاحيات دور معين (roles.getPermissions)
+
+### Frontend UI
+- [x] إنشاء صفحة RolesManagement.tsx
+- [x] عرض قائمة الأدوار الموجودة
+- [x] نموذج إضافة دور جديد
+- [x] نموذج تعديل دور
+- [x] حذف دور مع تأكيد
+- [x] واجهة تخصيص الصلاحيات (checkboxes grouped by category)
+- [x] حماية الصفحة بصلاحية Super Admin فقط
+
+### Routes & Navigation
+- [x] إضافة route /settings/roles إلى App.tsx
+- [x] إضافة قائمة "إدارة الأدوار" في DashboardLayout
+- [x] حماية القائمة بصلاحية Super Admin
+
+### Testing
+- [x] اختبار إنشاء دور جديد
+- [x] اختبار تخصيص صلاحيات
+- [x] اختبار تعديل وحذف دور
+- [x] حفظ checkpoint

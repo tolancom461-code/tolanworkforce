@@ -58,6 +58,10 @@ export const PERMISSIONS = {
   COST_CENTER_VIEW: 'cost_center_view', // عرض مراكز التكلفة
   COST_CENTER_MANAGE: 'cost_center_manage', // إدارة مراكز التكلفة
   
+  // Role Management permissions
+  ROLE_VIEW: 'role_view', // عرض الأدوار
+  ROLE_MANAGE: 'role_manage', // إدارة الأدوار (إضافة/تعديل/حذف/تخصيص صلاحيات)
+  
   // System Settings permissions
   SYSTEM_SETTINGS_VIEW: 'system_settings_view', // عرض إعدادات النظام
   SYSTEM_SETTINGS_MANAGE: 'system_settings_manage', // إدارة إعدادات النظام
