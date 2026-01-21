@@ -12,9 +12,8 @@ export function usePermission() {
    */
   const isOwner = (): boolean => {
     if (!user) return false;
-    // Check if user's openId matches OWNER_OPEN_ID from environment
-    const ownerOpenId = import.meta.env.VITE_OWNER_OPEN_ID;
-    return user.openId === ownerOpenId;
+    // Check isOwner flag set by backend
+    return (user as any).isOwner === true;
   };
   
   /**

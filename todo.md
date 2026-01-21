@@ -2423,3 +2423,18 @@ Add "Approve Full Attendance" option that:
 - [x] منح المالك صلاحيات مطلقة على جميع الصفحات والأزرار
 - [x] اختبار الصلاحيات مع المستخدم RADMAN
 - [x] حفظ checkpoint
+
+
+## إصلاح مشكلة اختفاء القوائم الجانبية للمالك RADMAN
+
+### المشكلة:
+- المستخدم RADMAN (المالك) لا يرى بعض القوائم مثل مراكز التكلفة والمجموعات
+- السبب: VITE_OWNER_OPEN_ID غير متاح في Frontend
+
+### الحل:
+- [x] إضافة حقل isOwner في user object من Backend
+- [x] تحديث getUserById للتحقق من openId === OWNER_OPEN_ID
+- [x] تحديث usePermission hook لاستخدام user.isOwner
+- [x] إعادة تشغيل السيرفر
+- [x] اختبار مع المستخدم RADMAN
+- [x] حفظ checkpoint

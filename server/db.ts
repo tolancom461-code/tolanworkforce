@@ -138,6 +138,9 @@ export async function getUserById(id: number): Promise<User | undefined> {
   
   const user = result[0];
   
+  // Check if user is the owner
+  (user as any).isOwner = user.openId === ENV.ownerOpenId;
+  
   // Load user permissions from user_permissions table
   const userPerms = await db.select().from(userPermissions).where(eq(userPermissions.userId, id));
   

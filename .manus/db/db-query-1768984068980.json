@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, username, full_name, openId, role_id FROM users WHERE username = 'RADMAN';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, username, full_name, openId, role_id FROM users WHERE username = 'RADMAN';",
+  "rows": [
+    {
+      "id": "1",
+      "username": "RADMAN",
+      "full_name": "RADMAN",
+      "openId": "fQvX5e3Eytk42QF5qSXDcP",
+      "role_id": "150006"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tfull_name\topenId\trole_id\n1\tRADMAN\tRADMAN\tfQvX5e3Eytk42QF5qSXDcP\t150006\n",
+  "stderr": "",
+  "execution_time_ms": 1520
+}
