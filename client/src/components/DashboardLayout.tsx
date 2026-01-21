@@ -48,6 +48,7 @@ import {
   Shield, 
   FileText,
   TrendingUp,
+  PlusCircle,
   DollarSign,
   CheckCircle,
   FileCheck,
@@ -94,6 +95,7 @@ const menuSections = [
     label: "💰 الرواتب والمالية",
     items: [
       { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches", permission: PERMISSIONS.PAYROLL_VIEW },
+      { icon: PlusCircle, label: "استثناءات الرواتب", path: "/finance/overrides", permission: PERMISSIONS.PAYROLL_VIEW },
       { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report", permission: PERMISSIONS.PAYROLL_VIEW },
       { icon: DollarSign, label: "التقارير المالية", path: "/finance/reports", permission: PERMISSIONS.FINANCIAL_REPORTS_VIEW },
     ]
