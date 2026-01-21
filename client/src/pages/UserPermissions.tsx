@@ -47,13 +47,18 @@ const ROLES = [
 ];
 
 const PERMISSION_LABELS: Record<Permission, string> = {
+  [PERMISSIONS.DASHBOARD_VIEW]: 'عرض لوحة التحكم',
   [PERMISSIONS.WORKER_VIEW]: 'عرض العمال',
   [PERMISSIONS.WORKER_CREATE]: 'إضافة عامل',
   [PERMISSIONS.WORKER_EDIT]: 'تعديل عامل',
   [PERMISSIONS.WORKER_DELETE]: 'حذف عامل',
+  [PERMISSIONS.WORKER_EXPORT]: 'تصدير العمال',
+  [PERMISSIONS.GROUP_VIEW]: 'عرض المجموعات',
+  [PERMISSIONS.GROUP_MANAGE]: 'إدارة المجموعات',
   [PERMISSIONS.ATTENDANCE_VIEW]: 'عرض الحضور',
   [PERMISSIONS.ATTENDANCE_RECORD]: 'تسجيل الحضور',
   [PERMISSIONS.ATTENDANCE_MANAGE]: 'إدارة الحضور',
+  [PERMISSIONS.ATTENDANCE_EXPORT]: 'تصدير الحضور',
   [PERMISSIONS.OPERATIONAL_FLAGS_VIEW]: 'عرض البلاغات',
   [PERMISSIONS.OPERATIONAL_FLAGS_MANAGE]: 'إدارة البلاغات',
   [PERMISSIONS.PAYROLL_VIEW]: 'عرض الرواتب',
@@ -62,10 +67,19 @@ const PERMISSION_LABELS: Record<Permission, string> = {
   [PERMISSIONS.PAYROLL_FINANCIAL_REVIEW]: 'مراجعة مالية',
   [PERMISSIONS.PAYROLL_MANAGER_REVIEW]: 'مراجعة مدير',
   [PERMISSIONS.PAYROLL_EXPORT]: 'تصدير الرواتب',
+  [PERMISSIONS.FINANCIAL_REPORTS_VIEW]: 'عرض التقارير المالية',
+  [PERMISSIONS.FINANCIAL_REPORTS_EXPORT]: 'تصدير التقارير المالية',
   [PERMISSIONS.REPORTS_VIEW]: 'عرض التقارير',
   [PERMISSIONS.REPORTS_EXPORT]: 'تصدير التقارير',
   [PERMISSIONS.USER_VIEW]: 'عرض المستخدمين',
-  [PERMISSIONS.USER_MANAGE]: 'إدارة المستخدمين',
+  [PERMISSIONS.USER_CREATE]: 'إضافة مستخدم',
+  [PERMISSIONS.USER_EDIT]: 'تعديل مستخدم',
+  [PERMISSIONS.USER_DELETE]: 'حذف مستخدم',
+  [PERMISSIONS.USER_PERMISSIONS_MANAGE]: 'إدارة صلاحيات المستخدمين',
+  [PERMISSIONS.COST_CENTER_VIEW]: 'عرض مراكز التكلفة',
+  [PERMISSIONS.COST_CENTER_MANAGE]: 'إدارة مراكز التكلفة',
+  [PERMISSIONS.SYSTEM_SETTINGS_VIEW]: 'عرض إعدادات النظام',
+  [PERMISSIONS.SYSTEM_SETTINGS_MANAGE]: 'إدارة إعدادات النظام',
 };
 
 export default function UserPermissions() {

@@ -497,32 +497,21 @@ export const appRouter = router({
 
   // Workers Management
   workers: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      // إذا كان admin، يرى جميع العمال
-      if (ctx.user.role === 'admin') {
+    list: protectedProcedure
+      .use(requirePermission('worker_view'))
+      .query(async ({ ctx }) => {
         return await db.getAllWorkers();
-      }
-      
-      // جلب IDs المجموعات التي لديه صلاحية view عليها
-      const allowedGroupIds = await db.getUserScopeIds(ctx.user.id, 'work_group', 'view');
-      
-      // إذا لم يكن لديه أي صلاحيات، يرجع قائمة فارغة
-      if (allowedGroupIds.length === 0) {
-        return [];
-      }
-      
-      // جلب العمال المسموح بهم فقط (بناءً على groupId)
-      const allWorkers = await db.getAllWorkers();
-      return allWorkers.filter(w => w.groupId && allowedGroupIds.includes(String(w.groupId)));
-    }),
+      }),
     
     listByGroup: protectedProcedure
+      .use(requirePermission('worker_view'))
       .input(z.object({ groupId: z.number() }))
       .query(async ({ input }) => {
         return await db.getWorkersByGroup(input.groupId);
       }),
     
     getById: protectedProcedure
+      .use(requirePermission('worker_view'))
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await db.getWorkerById(input.id);
@@ -535,6 +524,7 @@ export const appRouter = router({
       }),
     
     create: protectedProcedure
+      .use(requirePermission('worker_create'))
       .input(z.object({
         code: z.string().min(1),
         fullName: z.string().min(2),
@@ -562,6 +552,7 @@ export const appRouter = router({
       }),
     
     update: protectedProcedure
+      .use(requirePermission('worker_edit'))
       .input(z.object({
         id: z.number(),
         code: z.string().min(1).optional(),
@@ -581,6 +572,7 @@ export const appRouter = router({
       }),
     
     delete: protectedProcedure
+      .use(requirePermission('worker_delete'))
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteWorker(input.id);
@@ -1364,6 +1356,7 @@ export const appRouter = router({
   payroll: router({
     // Create draft batch
     createBatch: protectedProcedure
+      .use(requirePermission('payroll_create'))
       .input(z.object({
         periodStart: z.string(),
         periodEnd: z.string(),
@@ -1380,6 +1373,7 @@ export const appRouter = router({
     
     // List all batches
     listBatches: protectedProcedure
+      .use(requirePermission('payroll_view'))
       .input(z.object({
         costCenterId: z.number().optional(),
         groupId: z.number().optional(),
@@ -1398,6 +1392,7 @@ export const appRouter = router({
     
     // List batches by status
     listBatchesByStatus: protectedProcedure
+      .use(requirePermission('payroll_view'))
       .input(z.object({ status: z.string() }))
       .query(async ({ input }) => {
         return await db.getBatchesByStatus(input.status);
@@ -1405,6 +1400,7 @@ export const appRouter = router({
     
     // Get batch details
     getDetails: protectedProcedure
+      .use(requirePermission('payroll_view'))
       .input(z.object({ batchId: z.number() }))
       .query(async ({ input }) => {
         return await db.getPayrollBatchDetails(input.batchId);

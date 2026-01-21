@@ -1,98 +1,175 @@
 /**
  * Permission definitions for role-based access control
+ * نظام صلاحيات شامل ومحكم لجميع الأدوار
  */
 
 export const PERMISSIONS = {
+  // Dashboard permissions
+  DASHBOARD_VIEW: 'dashboard_view',
+  
   // Attendance permissions
-  ATTENDANCE_RECORD: 'attendance_record',
-  ATTENDANCE_VIEW: 'attendance_view',
-  ATTENDANCE_MANAGE: 'attendance_manage',
+  ATTENDANCE_RECORD: 'attendance_record', // تسجيل الحضور (الحارس)
+  ATTENDANCE_VIEW: 'attendance_view', // عرض سجل الحضور
+  ATTENDANCE_MANAGE: 'attendance_manage', // تعديل سجلات الحضور
+  ATTENDANCE_EXPORT: 'attendance_export', // تصدير تقارير الحضور
   
   // Worker permissions
-  WORKER_VIEW: 'worker_view',
-  WORKER_CREATE: 'worker_create',
-  WORKER_EDIT: 'worker_edit',
-  WORKER_DELETE: 'worker_delete',
+  WORKER_VIEW: 'worker_view', // عرض قائمة العمال
+  WORKER_CREATE: 'worker_create', // إضافة عامل جديد
+  WORKER_EDIT: 'worker_edit', // تعديل بيانات عامل
+  WORKER_DELETE: 'worker_delete', // حذف عامل
+  WORKER_EXPORT: 'worker_export', // تصدير قائمة العمال
+  
+  // Group permissions
+  GROUP_VIEW: 'group_view', // عرض المجموعات
+  GROUP_MANAGE: 'group_manage', // إدارة المجموعات (إضافة/تعديل/حذف)
   
   // Payroll permissions
-  PAYROLL_VIEW: 'payroll_view',
-  PAYROLL_CREATE: 'payroll_create',
-  PAYROLL_ACCOUNTANT_REVIEW: 'payroll_batch_accountant_review',
-  PAYROLL_FINANCIAL_REVIEW: 'payroll_batch_financial_review',
-  PAYROLL_MANAGER_REVIEW: 'payroll_batch_manager_review',
-  PAYROLL_EXPORT: 'payroll_export',
+  PAYROLL_VIEW: 'payroll_view', // عرض دفعات الرواتب
+  PAYROLL_CREATE: 'payroll_create', // إنشاء دفعة رواتب جديدة
+  PAYROLL_ACCOUNTANT_REVIEW: 'payroll_batch_accountant_review', // مراجعة المحاسب
+  PAYROLL_FINANCIAL_REVIEW: 'payroll_batch_financial_review', // مراجعة المالية
+  PAYROLL_MANAGER_REVIEW: 'payroll_batch_manager_review', // اعتماد مدير الحسابات
+  PAYROLL_EXPORT: 'payroll_export', // تصدير الرواتب
+  
+  // Financial Reports permissions
+  FINANCIAL_REPORTS_VIEW: 'financial_reports_view', // عرض التقارير المالية
+  FINANCIAL_REPORTS_EXPORT: 'financial_reports_export', // تصدير التقارير المالية
   
   // User management permissions
-  USER_VIEW: 'user_view',
-  USER_MANAGE: 'user_manage',
+  USER_VIEW: 'user_view', // عرض قائمة المستخدمين
+  USER_CREATE: 'user_create', // إضافة مستخدم جديد
+  USER_EDIT: 'user_edit', // تعديل بيانات مستخدم
+  USER_DELETE: 'user_delete', // حذف مستخدم
+  USER_PERMISSIONS_MANAGE: 'user_permissions_manage', // إدارة صلاحيات المستخدمين
   
   // Reports permissions
-  REPORTS_VIEW: 'reports_view',
-  REPORTS_EXPORT: 'reports_export',
+  REPORTS_VIEW: 'reports_view', // عرض التقارير
+  REPORTS_EXPORT: 'reports_export', // تصدير التقارير
   
   // Operational flags permissions
-  OPERATIONAL_FLAGS_VIEW: 'operational_flags_view',
-  OPERATIONAL_FLAGS_MANAGE: 'operational_flags_manage',
+  OPERATIONAL_FLAGS_VIEW: 'operational_flags_view', // عرض البلاغات التشغيلية
+  OPERATIONAL_FLAGS_MANAGE: 'operational_flags_manage', // إدارة البلاغات التشغيلية
+  
+  // Cost Center permissions
+  COST_CENTER_VIEW: 'cost_center_view', // عرض مراكز التكلفة
+  COST_CENTER_MANAGE: 'cost_center_manage', // إدارة مراكز التكلفة
+  
+  // System Settings permissions
+  SYSTEM_SETTINGS_VIEW: 'system_settings_view', // عرض إعدادات النظام
+  SYSTEM_SETTINGS_MANAGE: 'system_settings_manage', // إدارة إعدادات النظام
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
 /**
  * Role-based permission mappings
+ * تعريف صلاحيات كل دور بدقة
  */
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
-  // Security Guard: Only attendance recording
+  /**
+   * الحارس (Security Guard)
+   * الصلاحيات: تسجيل الحضور فقط
+   */
   security_guard: [
-    PERMISSIONS.ATTENDANCE_RECORD,
+    PERMISSIONS.ATTENDANCE_RECORD, // تسجيل الحضور والانصراف
   ],
   
-  // HR Manager: Full worker and attendance management
+  /**
+   * مدير الموارد البشرية (HR Manager)
+   * الصلاحيات: إدارة العمال والحضور والمجموعات
+   */
   hr_manager: [
-    PERMISSIONS.ATTENDANCE_VIEW,
-    PERMISSIONS.ATTENDANCE_MANAGE,
+    PERMISSIONS.DASHBOARD_VIEW,
+    // إدارة العمال
     PERMISSIONS.WORKER_VIEW,
     PERMISSIONS.WORKER_CREATE,
     PERMISSIONS.WORKER_EDIT,
     PERMISSIONS.WORKER_DELETE,
-    PERMISSIONS.REPORTS_VIEW,
-    PERMISSIONS.REPORTS_EXPORT,
+    PERMISSIONS.WORKER_EXPORT,
+    // إدارة المجموعات
+    PERMISSIONS.GROUP_VIEW,
+    PERMISSIONS.GROUP_MANAGE,
+    // إدارة الحضور
+    PERMISSIONS.ATTENDANCE_VIEW,
+    PERMISSIONS.ATTENDANCE_MANAGE,
+    PERMISSIONS.ATTENDANCE_EXPORT,
+    // البلاغات التشغيلية
     PERMISSIONS.OPERATIONAL_FLAGS_VIEW,
     PERMISSIONS.OPERATIONAL_FLAGS_MANAGE,
-  ],
-  
-  // Accountant: Payroll creation and first review
-  accountant: [
-    PERMISSIONS.WORKER_VIEW,
-    PERMISSIONS.ATTENDANCE_VIEW,
-    PERMISSIONS.PAYROLL_VIEW,
-    PERMISSIONS.PAYROLL_CREATE,
-    PERMISSIONS.PAYROLL_ACCOUNTANT_REVIEW,
-    PERMISSIONS.REPORTS_VIEW,
-  ],
-  
-  // Financial Reviewer: Financial review of payroll
-  financial_reviewer: [
-    PERMISSIONS.WORKER_VIEW,
-    PERMISSIONS.ATTENDANCE_VIEW,
-    PERMISSIONS.PAYROLL_VIEW,
-    PERMISSIONS.PAYROLL_FINANCIAL_REVIEW,
-    PERMISSIONS.REPORTS_VIEW,
-  ],
-  
-  // Accounts Manager: Final approval and export
-  accounts_manager: [
-    PERMISSIONS.WORKER_VIEW,
-    PERMISSIONS.ATTENDANCE_VIEW,
-    PERMISSIONS.PAYROLL_VIEW,
-    PERMISSIONS.PAYROLL_MANAGER_REVIEW,
-    PERMISSIONS.PAYROLL_EXPORT,
+    // التقارير
     PERMISSIONS.REPORTS_VIEW,
     PERMISSIONS.REPORTS_EXPORT,
-    PERMISSIONS.USER_VIEW,
-    PERMISSIONS.USER_MANAGE,
   ],
   
-  // Admin: All permissions
+  /**
+   * المحاسب (Accountant)
+   * الصلاحيات: إنشاء ومراجعة دفعات الرواتب
+   */
+  accountant: [
+    PERMISSIONS.DASHBOARD_VIEW,
+    // عرض العمال والحضور (للمراجعة فقط)
+    PERMISSIONS.WORKER_VIEW,
+    PERMISSIONS.ATTENDANCE_VIEW,
+    PERMISSIONS.GROUP_VIEW,
+    // إدارة الرواتب
+    PERMISSIONS.PAYROLL_VIEW,
+    PERMISSIONS.PAYROLL_CREATE,
+    PERMISSIONS.PAYROLL_ACCOUNTANT_REVIEW, // مراجعة المحاسب
+    // التقارير المالية
+    PERMISSIONS.FINANCIAL_REPORTS_VIEW,
+    PERMISSIONS.REPORTS_VIEW,
+  ],
+  
+  /**
+   * المراجع المالي (Financial Reviewer)
+   * الصلاحيات: مراجعة مالية لدفعات الرواتب
+   */
+  financial_reviewer: [
+    PERMISSIONS.DASHBOARD_VIEW,
+    // عرض العمال والحضور (للمراجعة فقط)
+    PERMISSIONS.WORKER_VIEW,
+    PERMISSIONS.ATTENDANCE_VIEW,
+    PERMISSIONS.GROUP_VIEW,
+    // مراجعة الرواتب
+    PERMISSIONS.PAYROLL_VIEW,
+    PERMISSIONS.PAYROLL_FINANCIAL_REVIEW, // مراجعة المالية
+    // التقارير المالية
+    PERMISSIONS.FINANCIAL_REPORTS_VIEW,
+    PERMISSIONS.REPORTS_VIEW,
+  ],
+  
+  /**
+   * مدير الحسابات (Accounts Manager)
+   * الصلاحيات: اعتماد نهائي وتصدير الرواتب + إدارة المستخدمين
+   */
+  accounts_manager: [
+    PERMISSIONS.DASHBOARD_VIEW,
+    // عرض العمال والحضور
+    PERMISSIONS.WORKER_VIEW,
+    PERMISSIONS.ATTENDANCE_VIEW,
+    PERMISSIONS.GROUP_VIEW,
+    // اعتماد وتصدير الرواتب
+    PERMISSIONS.PAYROLL_VIEW,
+    PERMISSIONS.PAYROLL_MANAGER_REVIEW, // الاعتماد النهائي
+    PERMISSIONS.PAYROLL_EXPORT,
+    // التقارير المالية
+    PERMISSIONS.FINANCIAL_REPORTS_VIEW,
+    PERMISSIONS.FINANCIAL_REPORTS_EXPORT,
+    PERMISSIONS.REPORTS_VIEW,
+    PERMISSIONS.REPORTS_EXPORT,
+    // إدارة المستخدمين
+    PERMISSIONS.USER_VIEW,
+    PERMISSIONS.USER_CREATE,
+    PERMISSIONS.USER_EDIT,
+    PERMISSIONS.USER_DELETE,
+    PERMISSIONS.USER_PERMISSIONS_MANAGE,
+  ],
+  
+  /**
+   * المدير العام / Super Admin (Admin)
+   * الصلاحيات: جميع الصلاحيات بدون استثناء
+   */
   admin: Object.values(PERMISSIONS),
 };
 
@@ -113,15 +190,43 @@ export function getRolePermissions(role: string): Permission[] {
 
 /**
  * Page-to-permission mappings
+ * ربط كل صفحة بالصلاحيات المطلوبة للوصول إليها
  */
 export const PAGE_PERMISSIONS: Record<string, Permission[]> = {
+  // الصفحات العامة
   '/': [], // Home page - accessible to all
-  '/attendance': [PERMISSIONS.ATTENDANCE_RECORD], // Attendance scanner
-  '/workers': [PERMISSIONS.WORKER_VIEW],
-  '/payroll': [PERMISSIONS.PAYROLL_VIEW],
-  '/reports': [PERMISSIONS.REPORTS_VIEW],
-  '/operational-flags': [PERMISSIONS.OPERATIONAL_FLAGS_VIEW],
-  '/users': [PERMISSIONS.USER_VIEW],
+  '/dashboard': [PERMISSIONS.DASHBOARD_VIEW], // لوحة التحكم
+  
+  // الحضور والانصراف
+  '/attendance': [PERMISSIONS.ATTENDANCE_RECORD], // تسجيل الحضور (الحارس)
+  '/attendance/log': [PERMISSIONS.ATTENDANCE_VIEW], // سجل الحضور
+  
+  // العمال والمجموعات
+  '/workers': [PERMISSIONS.WORKER_VIEW], // قائمة العمال
+  '/workers/add': [PERMISSIONS.WORKER_CREATE], // إضافة عامل
+  '/workers/edit': [PERMISSIONS.WORKER_EDIT], // تعديل عامل
+  '/groups': [PERMISSIONS.GROUP_VIEW], // المجموعات
+  
+  // الرواتب والمالية
+  '/payroll/batches': [PERMISSIONS.PAYROLL_VIEW], // دفعات الرواتب
+  '/payroll/create': [PERMISSIONS.PAYROLL_CREATE], // إنشاء دفعة رواتب
+  '/finance/reports': [PERMISSIONS.FINANCIAL_REPORTS_VIEW], // التقارير المالية
+  
+  // التقارير
+  '/reports': [PERMISSIONS.REPORTS_VIEW], // التقارير
+  
+  // البلاغات التشغيلية
+  '/operational-flags': [PERMISSIONS.OPERATIONAL_FLAGS_VIEW], // البلاغات التشغيلية
+  
+  // إدارة المستخدمين
+  '/users': [PERMISSIONS.USER_VIEW], // قائمة المستخدمين
+  '/users/permissions': [PERMISSIONS.USER_PERMISSIONS_MANAGE], // صلاحيات المستخدمين
+  
+  // مراكز التكلفة
+  '/cost-centers': [PERMISSIONS.COST_CENTER_VIEW], // مراكز التكلفة
+  
+  // إعدادات النظام
+  '/settings': [PERMISSIONS.SYSTEM_SETTINGS_VIEW], // إعدادات النظام
 };
 
 /**
@@ -139,4 +244,19 @@ export function canAccessPage(userPermissions: string[], pagePath: string): bool
   return requiredPermissions.some(permission => 
     userPermissions.includes(permission)
   );
+}
+
+/**
+ * Get user-friendly role name in Arabic
+ */
+export function getRoleDisplayName(role: string): string {
+  const roleNames: Record<string, string> = {
+    admin: 'مدير عام',
+    accounts_manager: 'مدير الحسابات',
+    financial_reviewer: 'مراجع مالي',
+    accountant: 'محاسب',
+    hr_manager: 'مدير الموارد البشرية',
+    security_guard: 'حارس',
+  };
+  return roleNames[role] || role;
 }

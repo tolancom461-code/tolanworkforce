@@ -16,8 +16,11 @@ import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, Search, UserPlus, Shield, ChevronDown, ChevronRight } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { PERMISSION_CATEGORIES } from "@/lib/menuPermissions";
+import { usePermission } from "@/hooks/usePermission";
+import { PERMISSIONS } from "../../../shared/permissions";
 
 export default function Users() {
+  const { hasPermission } = usePermission();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -196,13 +199,14 @@ export default function Users() {
               إضافة وتعديل وحذف المستخدمين وتعيين الأدوار والصلاحيات
             </p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                إضافة مستخدم
-              </Button>
-            </DialogTrigger>
+          {hasPermission(PERMISSIONS.USER_CREATE) && (
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  إضافة مستخدم
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <form onSubmit={handleAddUser}>
                 <DialogHeader>
@@ -265,7 +269,7 @@ export default function Users() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
+          )}        </div>
 
         {/* Search */}
         <Card className="border-0 shadow-md">
@@ -333,24 +337,29 @@ export default function Users() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleManagePermissions(user)}
-                                title="إدارة الصلاحيات"
-                              >
-                                <Shield className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setIsEditDialogOpen(true);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                              {hasPermission(PERMISSIONS.USER_PERMISSIONS_MANAGE) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleManagePermissions(user)}
+                                  title="إدارة الصلاحيات"
+                                >
+                                  <Shield className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {hasPermission(PERMISSIONS.USER_EDIT) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setIsEditDialogOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {hasPermission(PERMISSIONS.USER_DELETE) && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -375,7 +384,8 @@ export default function Users() {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
-                            </div>
+                            )}
+                          </div>
                           </TableCell>
                         </TableRow>
                       ))

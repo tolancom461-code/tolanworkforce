@@ -2271,3 +2271,56 @@ Add "Approve Full Attendance" option that:
 - [x] Add pagination for large user lists (10 items per page)
 - [ ] Test all CRUD operations
 - [ ] Save checkpoint
+
+
+## تطبيق نظام صلاحيات شامل ومحكم (RBAC Enhancement)
+
+### Phase 1: تحليل وتحديث ملف الصلاحيات
+- [ ] مراجعة ملف shared/permissions.ts الحالي
+- [ ] تحديد صلاحيات كل دور بدقة (admin, accountant, financial_reviewer, accounts_manager, hr_manager, security_guard)
+- [ ] التأكد من أن كل صفحة/وظيفة لها صلاحية محددة
+- [ ] تحديث ROLE_PERMISSIONS mapping
+
+### Phase 2: حماية القوائم الجانبية (Sidebar Protection)
+- [ ] تحديث DashboardLayout لإخفاء القوائم غير المصرح بها
+- [ ] استخدام usePermission hook لفحص كل عنصر قائمة
+- [ ] إخفاء الأقسام الفارغة تماماً
+- [ ] اختبار القوائم لكل دور
+
+### Phase 3: حماية الصفحات والروابط (Route Protection)
+- [ ] تحديث ProtectedRoute لفحص الصلاحيات قبل عرض الصفحة
+- [ ] إضافة requiredPermission prop لكل Route محمي
+- [ ] عرض صفحة "ليس لديك صلاحية" للوصول غير المصرح
+- [ ] منع الوصول المباشر عبر URL
+- [ ] اختبار جميع الروابط لكل دور
+
+### Phase 4: حماية الأزرار والوظائف (UI Elements Protection)
+- [ ] استخدام usePermission في جميع الصفحات
+- [ ] إخفاء أزرار "إضافة" و"تعديل" و"حذف" حسب الصلاحيات
+- [ ] إخفاء أزرار "اعتماد" و"رفض" في Payroll حسب الدور
+- [ ] إخفاء أزرار "تصدير" حسب الصلاحيات
+- [ ] اختبار جميع الأزرار لكل دور
+
+### Phase 5: حماية Backend APIs (Server-side Protection)
+- [ ] إنشاء middleware للتحقق من الصلاحيات في tRPC
+- [ ] تطبيق requirePermission على جميع procedures الحساسة
+- [ ] حماية APIs الخاصة بـ Users Management
+- [ ] حماية APIs الخاصة بـ Workers Management
+- [ ] حماية APIs الخاصة بـ Payroll Management
+- [ ] حماية APIs الخاصة بـ Financial Reports
+- [ ] حماية APIs الخاصة بـ Attendance Management
+- [ ] إرجاع خطأ 403 Forbidden للطلبات غير المصرح بها
+
+### Phase 6: الاختبار الشامل
+- [ ] إنشاء مستخدمين لكل دور (إن لم يكونوا موجودين)
+- [ ] اختبار تسجيل الدخول بحساب الحارس والتحقق من القوائم
+- [ ] اختبار تسجيل الدخول بحساب المحاسب والتحقق من القوائم
+- [ ] اختبار تسجيل الدخول بحساب مدير الموارد البشرية
+- [ ] اختبار الوصول المباشر للروابط غير المصرح بها
+- [ ] اختبار إرسال API requests غير مصرح بها
+- [ ] التأكد من عدم وجود ثغرات أمنية
+
+### Phase 7: التوثيق وحفظ Checkpoint
+- [ ] توثيق نظام الصلاحيات في RBAC_GUIDE.md
+- [ ] إنشاء جدول بصلاحيات كل دور
+- [ ] حفظ checkpoint نهائي

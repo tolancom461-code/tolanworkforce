@@ -40,6 +40,8 @@ import UserScopedPermissions from "./pages/UserScopedPermissions";
 import PermissionsManagement from "./pages/PermissionsManagement";
 import RolePermissions from "./pages/RolePermissions";
 import UserPermissions from "./pages/UserPermissions";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { PERMISSIONS } from "../../shared/permissions";
 
 function Router() {
   return (
@@ -47,9 +49,17 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/home" component={Home} />
       <Route path="/local-login" component={LocalLogin} />
-      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/dashboard">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.DASHBOARD_VIEW]}>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
       <Route path="/executive" component={ExecutiveDashboard} />
-      <Route path="/users" component={Users} />
+      <Route path="/users">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.USER_VIEW]}>
+          <Users />
+        </ProtectedRoute>
+      </Route>
 
       <Route path="/permissions" component={PermissionsManagement} />
       <Route path="/role-permissions" component={RolePermissions} />
@@ -59,28 +69,64 @@ function Router() {
       <Route path="/cost-centers" component={CostCenters} />
       <Route path="/profile" component={Profile} />
       <Route path="/groups" component={Groups} />
-      <Route path="/workers" component={Workers} />
-      <Route path="/workers/:id" component={WorkerDetails} />
+      <Route path="/workers">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.WORKER_VIEW]}>
+          <Workers />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/workers/:id">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.WORKER_VIEW]}>
+          <WorkerDetails />
+        </ProtectedRoute>
+      </Route>
       <Route path="/workers/:id/card" component={WorkerCard} />
       {/* Attendance System Routes */}
-      <Route path="/attendance" component={AttendanceScanner} />
-      <Route path="/attendance/log" component={AttendanceLog} />
+      <Route path="/attendance">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.ATTENDANCE_RECORD]}>
+          <AttendanceScanner />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/attendance/log">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.ATTENDANCE_VIEW]}>
+          <AttendanceLog />
+        </ProtectedRoute>
+      </Route>
       <Route path="/attendance/reports" component={AttendanceReports} />
 
 
       <Route path="/work-days" component={WorkDays} />
-      <Route path="/operational-flags" component={OperationalFlags} />
+      <Route path="/operational-flags">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.OPERATIONAL_FLAGS_VIEW]}>
+          <OperationalFlags />
+        </ProtectedRoute>
+      </Route>
       <Route path="/pending-flags" component={PendingFlags} />
       {/* Finance System Routes */}
       <Route path="/finance/overrides" component={PayOverrides} />
       <Route path="/finance/payroll" component={PayrollBatches} />
-      <Route path="/payroll/batches" component={PayrollBatchList} />
-      <Route path="/payroll/batches/create" component={PayrollBatchCreate} />
-      <Route path="/payroll/batches/:id" component={PayrollBatchDetails} />
+      <Route path="/payroll/batches">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.PAYROLL_VIEW]}>
+          <PayrollBatchList />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/payroll/batches/create">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.PAYROLL_CREATE]}>
+          <PayrollBatchCreate />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/payroll/batches/:id">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.PAYROLL_VIEW]}>
+          <PayrollBatchDetails />
+        </ProtectedRoute>
+      </Route>
       <Route path="/payroll/batches/:id/accountant-review" component={AccountantReview} />
       <Route path="/payroll/batches/:id/financial-review" component={FinancialReview} />
       <Route path="/payroll/batches/:id/manager-review" component={AccountsManagerReview} />
-      <Route path="/finance/reports" component={FinancialReports} />
+      <Route path="/finance/reports">
+        <ProtectedRoute requiredPermissions={[PERMISSIONS.FINANCIAL_REPORTS_VIEW]}>
+          <FinancialReports />
+        </ProtectedRoute>
+      </Route>
       <Route path="/payroll-report" component={PayrollReport} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

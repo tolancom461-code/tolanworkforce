@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useScopedPermissions } from "@/hooks/useScopedPermissions";
+import { usePermission } from "@/hooks/usePermission";
+import { PERMISSIONS } from "../../../shared/permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshC
 import { exportToExcel, printPage } from '@/lib/exportUtils';
 
 export default function Workers() {
-  const { checkPermission, isAdmin } = useScopedPermissions();
+  const { hasPermission } = usePermission();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -259,15 +260,17 @@ export default function Workers() {
             <p className="text-muted-foreground">إدارة بيانات العمال ومعلوماتهم</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportToExcel}>
-              <FileSpreadsheet className="h-4 w-4 ml-2" />
-              تصدير Excel
-            </Button>
+            {hasPermission(PERMISSIONS.WORKER_EXPORT) && (
+              <Button variant="outline" size="sm" onClick={handleExportToExcel}>
+                <FileSpreadsheet className="h-4 w-4 ml-2" />
+                تصدير Excel
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={handlePrint}>
               <Printer className="h-4 w-4 ml-2" />
               طباعة
             </Button>
-            {(isAdmin() || checkPermission('create', 'work_group', '*')) && (
+            {hasPermission(PERMISSIONS.WORKER_CREATE) && (
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={() => { resetForm(); setSelectedWorker(null); }}>
@@ -511,7 +514,7 @@ export default function Workers() {
                           >
                             <Download className="h-4 w-4" />
                           </Button>
-                          {(isAdmin() || (worker.groupId && checkPermission('update', 'work_group', worker.groupId))) && (
+                          {hasPermission(PERMISSIONS.WORKER_EDIT) && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -521,7 +524,7 @@ export default function Workers() {
                               <Pencil className="h-4 w-4" />
                             </Button>
                           )}
-                          {(isAdmin() || (worker.groupId && checkPermission('delete', 'work_group', worker.groupId))) && (
+                          {hasPermission(PERMISSIONS.WORKER_DELETE) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" title="حذف">
