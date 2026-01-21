@@ -27,9 +27,12 @@ export const PERMISSIONS = {
   // Payroll permissions
   PAYROLL_VIEW: 'payroll_view', // عرض دفعات الرواتب
   PAYROLL_CREATE: 'payroll_create', // إنشاء دفعة رواتب جديدة
+  PAYROLL_EDIT: 'payroll_edit', // تعديل دفعة رواتب
+  PAYROLL_DELETE: 'payroll_delete', // حذف دفعة رواتب
   PAYROLL_ACCOUNTANT_REVIEW: 'payroll_batch_accountant_review', // مراجعة المحاسب
   PAYROLL_FINANCIAL_REVIEW: 'payroll_batch_financial_review', // مراجعة المالية
   PAYROLL_MANAGER_REVIEW: 'payroll_batch_manager_review', // اعتماد مدير الحسابات
+  PAYROLL_BATCH_FINAL_APPROVE: 'payroll_batch_final_approve', // الاعتماد النهائي
   PAYROLL_EXPORT: 'payroll_export', // تصدير الرواتب
   
   // Financial Reports permissions

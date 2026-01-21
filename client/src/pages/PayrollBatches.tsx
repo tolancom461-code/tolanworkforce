@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { useScopedPermissions } from '@/hooks/useScopedPermissions';
+import { usePermission } from '@/hooks/usePermission';
+import { PERMISSIONS } from '../../../shared/permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -37,7 +38,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function PayrollBatches() {
-  const { checkPermission, isAdmin } = useScopedPermissions();
+  const { hasPermission } = usePermission();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
@@ -295,7 +296,7 @@ export default function PayrollBatches() {
               <SelectItem value="paid">مدفوع</SelectItem>
             </SelectContent>
           </Select>
-          {(isAdmin() || checkPermission('create', 'payroll_period', '*')) && (
+          {hasPermission(PERMISSIONS.PAYROLL_CREATE) && (
             <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 ml-2" />
               إنشاء دفعة
@@ -532,7 +533,7 @@ export default function PayrollBatches() {
                   {/* Delete Draft Button (only for draft status) */}
                   {batchDetails.batch.status === 'draft' && (
                     <>
-                      {(isAdmin() || checkPermission('delete', 'payroll_period', batchDetails.batch.id)) && (
+                      {hasPermission(PERMISSIONS.PAYROLL_DELETE) && (
                         <Button 
                           variant="destructive"
                           onClick={() => handleDeleteDraft(selectedBatchId!)}
@@ -542,7 +543,7 @@ export default function PayrollBatches() {
                           {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
                         </Button>
                       )}
-                      {(isAdmin() || checkPermission('update', 'payroll_period', batchDetails.batch.id)) && (
+                      {hasPermission(PERMISSIONS.PAYROLL_EDIT) && (
                         <Button 
                           onClick={() => {
                             setSelectedBatchId(batchDetails.batch.id);
@@ -580,7 +581,7 @@ export default function PayrollBatches() {
                   )}
                   
                   {/* Manager Approval Stage */}
-                  {batchDetails.batch.status === 'under_accounts_manager_review' && (isAdmin() || checkPermission('approve', 'payroll_period', batchDetails.batch.id)) && (
+                  {batchDetails.batch.status === 'under_accounts_manager_review' && hasPermission(PERMISSIONS.PAYROLL_BATCH_FINAL_APPROVE) && (
                     <>
                       <Button 
                         onClick={() => {
@@ -632,7 +633,7 @@ export default function PayrollBatches() {
                 </div>
                 
                 {/* Export Button */}
-                {(isAdmin() || checkPermission('export', 'payroll_period', batchDetails.batch.id)) && (
+                {hasPermission(PERMISSIONS.PAYROLL_EXPORT) && (
                   <Button 
                     onClick={() => exportExcelMutation.mutate({ batchId: selectedBatchId! })}
                     disabled={exportExcelMutation.isPending}

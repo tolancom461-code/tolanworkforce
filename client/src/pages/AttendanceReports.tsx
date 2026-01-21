@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
-import { useScopedPermissions } from '@/hooks/useScopedPermissions';
+import { usePermission } from '@/hooks/usePermission';
+import { PERMISSIONS } from '../../../shared/permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,7 +30,7 @@ const MONTHS = [
 ];
 
 export default function AttendanceReports() {
-  const { checkPermission, isAdmin, getUserScopeIds } = useScopedPermissions();
+  const { hasPermission } = usePermission();
   const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
@@ -39,12 +40,8 @@ export default function AttendanceReports() {
   
   const { data: allGroups } = trpc.groups.list.useQuery();
   
-  // Filter groups based on permissions
-  const groups = useMemo(() => {
-    if (isAdmin() || !allGroups) return allGroups;
-    const allowedGroupIds = getUserScopeIds('work_group', 'view');
-    return allGroups.filter(g => allowedGroupIds.includes(String(g.id)));
-  }, [allGroups, isAdmin, getUserScopeIds]);
+  // No filtering needed - backend handles permissions
+  const groups = allGroups;
   const { data: report, isLoading, refetch } = trpc.attendance.monthlyReport.useQuery({
     year: selectedYear,
     month: selectedMonth,
@@ -234,7 +231,7 @@ export default function AttendanceReports() {
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          {(isAdmin() || checkPermission('export', 'work_group', '*')) && (
+          {hasPermission(PERMISSIONS.ATTENDANCE_EXPORT) && (
             <>
               <Button onClick={exportToExcel} disabled={exportExcelMutation.isPending}>
                 <Download className="h-4 w-4 ml-2" />

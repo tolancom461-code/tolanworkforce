@@ -2324,3 +2324,31 @@ Add "Approve Full Attendance" option that:
 - [ ] توثيق نظام الصلاحيات في RBAC_GUIDE.md
 - [ ] إنشاء جدول بصلاحيات كل دور
 - [ ] حفظ checkpoint نهائي
+
+
+## إكمال حماية الصلاحيات على الصفحات المتبقية
+
+### Payroll Pages Protection
+- [x] حماية أزرار إنشاء دفعة جديدة (payroll_create)
+- [x] حماية أزرار المراجعة المحاسبية (payroll_batch_accountant_review)
+- [x] حماية أزرار المراجعة المالية (payroll_batch_financial_review)
+- [x] حماية أزرار الاعتماد النهائي (payroll_batch_final_approve)
+- [x] حماية أزرار التصدير (payroll_export)
+
+### Attendance Pages Protection
+- [x] حماية صفحة تسجيل الحضور (attendance_register)
+- [x] حماية صفحة سجل الحضور اليومي (attendance_view)
+- [x] حماية صفحة تقارير الحضور (attendance_reports_view)
+- [x] حماية أزرار التصدير (attendance_export)
+- [x] حماية أزرار تعديل الحضور (attendance_edit)
+
+### Reports Pages Protection
+- [x] حماية صفحة التقارير المالية (financial_reports_view)
+- [x] حماية أزرار تصدير التقارير (reports_export)
+- [x] حماية تقارير العمال (worker_reports_view)
+- [x] حماية تقارير المجموعات (group_reports_view)
+
+### Backend APIs Protection
+- [x] حماية attendance APIs (register, edit, list, export)
+- [x] حماية reports APIs (financial, worker, group)
+- [x] حماية payroll remaining APIs (updateItem, submitForReview)

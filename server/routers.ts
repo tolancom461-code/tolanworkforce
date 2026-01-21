@@ -815,6 +815,7 @@ export const appRouter = router({
   attendance: router({
     // Record check-in or check-out
     record: protectedProcedure
+      .use(requirePermission('attendance_record'))
       .input(z.object({
         workerId: z.number(),
         eventType: z.enum(['check_in', 'check_out']),
@@ -866,6 +867,7 @@ export const appRouter = router({
 
     // Confirm and record attendance
     confirmAttendance: protectedProcedure
+      .use(requirePermission('attendance_record'))
       .input(z.object({ 
         workerId: z.number(),
         eventType: z.enum(['check_in', 'check_out']),
@@ -884,6 +886,7 @@ export const appRouter = router({
     
     // Scan QR code to get worker and record attendance (legacy - kept for compatibility)
     scanQR: protectedProcedure
+      .use(requirePermission('attendance_record'))
       .input(z.object({ qrToken: z.string() }))
       .mutation(async ({ input, ctx }) => {
         const worker = await db.getWorkerByQRToken(input.qrToken);
