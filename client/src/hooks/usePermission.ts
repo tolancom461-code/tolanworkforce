@@ -8,10 +8,23 @@ export function usePermission() {
   const { user } = useAuth();
   
   /**
+   * Check if current user is the owner (has absolute permissions)
+   */
+  const isOwner = (): boolean => {
+    if (!user) return false;
+    // Check if user's openId matches OWNER_OPEN_ID from environment
+    const ownerOpenId = import.meta.env.VITE_OWNER_OPEN_ID;
+    return user.openId === ownerOpenId;
+  };
+  
+  /**
    * Check if current user has a specific permission
    */
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false;
+    
+    // Owner has all permissions automatically
+    if (isOwner()) return true;
     
     // Admin has all permissions
     if (user.role === 'admin') return true;
@@ -40,6 +53,9 @@ export function usePermission() {
   const canAccess = (pagePath: string): boolean => {
     if (!user) return false;
     
+    // Owner can access everything
+    if (isOwner()) return true;
+    
     // Admin can access everything
     if (user.role === 'admin') return true;
     
@@ -53,6 +69,7 @@ export function usePermission() {
     hasAnyPermission,
     hasAllPermissions,
     canAccess,
+    isOwner,
     user,
   };
 }

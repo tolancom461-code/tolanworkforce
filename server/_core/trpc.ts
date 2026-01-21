@@ -44,9 +44,20 @@ export const adminProcedure = t.procedure.use(
   }),
 );
 
+// Helper function to check if user is the owner
+function isOwner(user: any): boolean {
+  if (!user || !user.openId) return false;
+  const ownerOpenId = process.env.OWNER_OPEN_ID;
+  return user.openId === ownerOpenId;
+}
+
 // Helper function to check if user has a specific permission
 export function hasPermission(user: any, permissionCode: string): boolean {
   if (!user || !user.permissions) return false;
+  
+  // Owner has all permissions automatically
+  if (isOwner(user)) return true;
+  
   return user.permissions.some((p: any) => p.code === permissionCode);
 }
 
@@ -57,6 +68,16 @@ export function requirePermission(permissionCode: string) {
 
     if (!ctx.user) {
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+
+    // Owner bypasses all permission checks
+    if (isOwner(ctx.user)) {
+      return next({
+        ctx: {
+          ...ctx,
+          user: ctx.user,
+        },
+      });
     }
 
     if (!hasPermission(ctx.user, permissionCode)) {
