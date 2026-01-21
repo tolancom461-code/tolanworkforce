@@ -43,11 +43,6 @@ import {
   UserCircle, 
   QrCode, 
   ClipboardList, 
-  BarChart3, 
-  Calendar, 
-  Edit, 
-  AlertCircle, 
-  Calculator, 
   Wallet, 
   Building2, 
   Shield, 
@@ -59,7 +54,8 @@ import {
   ChevronDown,
   Flag,
   Clock,
-  Settings
+  Settings,
+  Briefcase
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -80,6 +76,7 @@ const menuSections = [
     label: "👥 الموارد البشرية",
     items: [
       { icon: UserCircle, label: "إدارة العمال", path: "/workers", permission: PERMISSIONS.WORKER_VIEW },
+      { icon: Users, label: "مجموعات العمل", path: "/groups", permission: PERMISSIONS.GROUP_VIEW },
     ]
   },
   {
@@ -97,10 +94,18 @@ const menuSections = [
     ]
   },
   {
-    label: "⚠️ إعدادات النظام",
+    label: "📋 البيانات المرجعية",
+    items: [
+      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers", permission: PERMISSIONS.COST_CENTER_VIEW },
+      { icon: Briefcase, label: "الوظائف", path: "/jobs", permission: PERMISSIONS.SYSTEM_SETTINGS_VIEW },
+    ]
+  },
+  {
+    label: "⚙️ إعدادات النظام",
     items: [
       { icon: Users, label: "المستخدمين", path: "/users", permission: PERMISSIONS.USER_VIEW },
-      { icon: Settings, label: "إدارة الأدوار", path: "/settings/roles", permission: PERMISSIONS.ROLE_VIEW },
+      { icon: Shield, label: "إدارة الأدوار", path: "/settings/roles", permission: PERMISSIONS.ROLE_VIEW },
+      { icon: Settings, label: "الإعدادات العامة", path: "/settings", permission: PERMISSIONS.SYSTEM_SETTINGS_VIEW },
     ]
   },
 ];
