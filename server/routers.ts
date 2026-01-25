@@ -251,7 +251,9 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can change user roles' });
         }
         
-        await db.updateUserRole(input.userId, input.role);
+        // Only allow 'user' or 'admin' roles
+        const allowedRole = input.role === 'admin' ? 'admin' : 'user';
+        await db.updateUserRole(input.userId, allowedRole);
         return { success: true };
       }),
     
@@ -842,7 +844,7 @@ export const appRouter = router({
       .input(z.object({ qrToken: z.string() }))
       .query(async ({ input }) => {
         // Try to find worker by QR token first
-        let worker = await db.getWorkerByQRToken(input.qrToken);
+        let worker: any = await db.getWorkerByQRToken(input.qrToken);
         
         // If not found, try to extract code from token and search by code
         if (!worker && input.qrToken.startsWith('WRK-')) {
@@ -1780,9 +1782,10 @@ export const appRouter = router({
         const buffer = await workbook.xlsx.writeBuffer();
         
         // Return base64 encoded file
+        const bufferData = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer as any);
         return {
           filename: `payroll_${batchData.batch.batchCode}_${Date.now()}.xlsx`,
-          data: buffer.toString('base64')
+          data: bufferData.toString('base64')
         };
       }),
     

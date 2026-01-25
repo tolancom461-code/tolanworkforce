@@ -3888,10 +3888,12 @@ export async function getUserPermissionsGrouped(
 
 // User Permissions Management
 export async function getUserPermissions(userId: number) {
-  return await database
+  const db = await getDb();
+  if (!db) return [];
+  return await db
     .select()
-    .from(schema.userPermissions)
-    .where(eq(schema.userPermissions.userId, userId));
+    .from(userPermissions)
+    .where(eq(userPermissions.userId, userId));
 }
 
 export async function addUserPermission(data: {
@@ -3900,23 +3902,32 @@ export async function addUserPermission(data: {
   scopeType: 'global' | 'cost_center' | 'group' | 'worker';
   scopeId?: number;
 }) {
-  await database.insert(schema.userPermissions).values({
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const values: any = {
     userId: data.userId,
     permission: data.permission,
     scopeType: data.scopeType,
-    scopeId: data.scopeId?.toString(),
-  });
+  };
+  if (data.scopeId) {
+    values.scopeId = data.scopeId.toString();
+  }
+  await db.insert(userPermissions).values(values);
 }
 
 export async function removeUserPermission(permissionId: number) {
-  await database
-    .delete(schema.userPermissions)
-    .where(eq(schema.userPermissions.id, permissionId));
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db
+    .delete(userPermissions)
+    .where(eq(userPermissions.id, permissionId));
 }
 
-export async function updateUserRole(userId: number, role: string) {
-  await database
-    .update(schema.users)
+export async function updateUserRole(userId: number, role: 'user' | 'admin') {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db
+    .update(users)
     .set({ role })
-    .where(eq(schema.users.id, userId));
+    .where(eq(users.id, userId));
 }

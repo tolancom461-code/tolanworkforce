@@ -85,7 +85,7 @@ const menuSections = [
     items: [
       { icon: QrCode, label: "تسجيل الحضور", path: "/attendance", permission: PERMISSIONS.ATTENDANCE_RECORD },
       { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log", permission: PERMISSIONS.ATTENDANCE_VIEW },
-      { icon: FileText, label: "تقارير الحضور", path: "/attendance/reports", permission: PERMISSIONS.ATTENDANCE_REPORTS_VIEW },
+      { icon: FileText, label: "تقارير الحضور", path: "/attendance/reports", permission: PERMISSIONS.ATTENDANCE_VIEW },
       { icon: Clock, label: "أيام العمل", path: "/work-days", permission: PERMISSIONS.SYSTEM_SETTINGS_VIEW },
       { icon: Flag, label: "البلاغات التشغيلية", path: "/operational-flags", permission: PERMISSIONS.OPERATIONAL_FLAGS_VIEW },
       { icon: CheckCircle, label: "البلاغات المعلقة", path: "/pending-flags", permission: PERMISSIONS.OPERATIONAL_FLAGS_VIEW },
