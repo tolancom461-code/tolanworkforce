@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import jwt from "jsonwebtoken";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router, requirePermission, hasPermission } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow, type PayrollReportRow } from "./excelExport";
 import * as analytics from "./analytics";
@@ -140,8 +140,6 @@ export const appRouter = router({
         fullName: z.string().min(2),
         email: z.string().email().optional(),
         phone: z.string().optional(),
-        phoneNumber: z.string().optional(),
-        roleId: z.number().optional(),
         isActive: z.boolean().default(true),
       }))
       .mutation(async ({ input }) => {
@@ -160,8 +158,6 @@ export const appRouter = router({
           fullName: input.fullName,
           email: input.email,
           phone: input.phone,
-          phoneNumber: input.phoneNumber,
-          roleId: input.roleId,
           isActive: input.isActive,
         });
         return { id, success: true };
@@ -173,8 +169,6 @@ export const appRouter = router({
         fullName: z.string().min(2).optional(),
         email: z.string().email().optional().nullable(),
         phone: z.string().optional().nullable(),
-        phoneNumber: z.string().optional().nullable(),
-        roleId: z.number().optional().nullable(),
         isActive: z.boolean().optional(),
         password: z.string().min(6).optional(),
       }))
@@ -199,46 +193,7 @@ export const appRouter = router({
         return { success: true };
       }),
     
-    // Permissions Management
-    getPermissions: protectedProcedure
-      .input(z.object({ userId: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getUserPermissions(input.userId);
-      }),
-    
-    addPermission: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        permission: z.string(),
-        scopeType: z.enum(['global', 'cost_center', 'group', 'worker']).optional(),
-        scopeId: z.number().optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        // Only admin can manage permissions
-        if (ctx.user?.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can manage permissions' });
-        }
-        
-        await db.addUserPermission({
-          userId: input.userId,
-          permission: input.permission,
-          scopeType: input.scopeType || 'global',
-          scopeId: input.scopeId,
-        });
-        return { success: true };
-      }),
-    
-    removePermission: protectedProcedure
-      .input(z.object({ permissionId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        // Only admin can manage permissions
-        if (ctx.user?.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can manage permissions' });
-        }
-        
-        await db.removeUserPermission(input.permissionId);
-        return { success: true };
-      }),
+    // NOTE: Permissions Management removed - all users have full permissions
     
     updateRole: protectedProcedure
       .input(z.object({
@@ -246,174 +201,27 @@ export const appRouter = router({
         role: z.enum(['admin', 'user', 'accountant', 'financial_reviewer', 'accounts_manager', 'hr_manager', 'security_guard']),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Only admin can change roles
-        if (ctx.user?.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admins can change user roles' });
-        }
-        
-        // Only allow 'user' or 'admin' roles
+        // All users have permission to change roles (no role system)
         const allowedRole = input.role === 'admin' ? 'admin' : 'user';
         await db.updateUserRole(input.userId, allowedRole);
         return { success: true };
       }),
     
-    assignRole: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        roleId: z.number(),
-      }))
-      .mutation(async ({ input }) => {
-        await db.assignRoleToUser(input.userId, input.roleId);
-        return { success: true };
-      }),
+    // NOTE: assignRole removed - role system no longer exists
     
     // OLD PERMISSION PROCEDURES - REMOVED
     // Replaced with Atomic Permissions + Scope System
   }),
 
   // Role Management
-  roles: router({
-    list: protectedProcedure
-      .use(requirePermission('role_view'))
-      .query(async () => {
-        return await db.getAllRoles();
-      }),
-    
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getRoleById(input.id);
-      }),
-    
-    create: protectedProcedure
-      .use(requirePermission('role_manage'))
-      .input(z.object({
-        code: z.string().min(1),
-        name: z.string().min(1),
-        description: z.string().optional(),
-        level: z.number().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        return await db.createRole(input);
-      }),
-    
-    update: protectedProcedure
-      .use(requirePermission('role_manage'))
-      .input(z.object({
-        id: z.number(),
-        code: z.string().optional(),
-        name: z.string().optional(),
-        description: z.string().optional(),
-        level: z.number().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, ...data } = input;
-        return await db.updateRole(id, data);
-      }),
-    
-    delete: protectedProcedure
-      .use(requirePermission('role_manage'))
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        return await db.deleteRole(input.id);
-      }),
-    
-    toggleStatus: protectedProcedure
-      .input(z.object({ 
-        id: z.number(),
-        isActive: z.boolean(),
-      }))
-      .mutation(async ({ input }) => {
-        // Update role status
-        await db.updateRole(input.id, { isActive: input.isActive });
-        
-        // If deactivating, deactivate all users with this role
-        if (!input.isActive) {
-          await db.deactivateUsersByRole(input.id);
-        }
-        
-        return { success: true };
-      }),
-    
-    getPermissions: protectedProcedure
-      .input(z.object({ roleId: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getRolePermissions(input.roleId);
-      }),
-    
-    updatePermissions: protectedProcedure
-      .use(requirePermission('role_manage'))
-      .input(z.object({
-        roleId: z.number(),
-        permissionIds: z.array(z.number()),
-      }))
-      .mutation(async ({ input }) => {
-        return await db.updateRolePermissions(input.roleId, input.permissionIds);
-      }),
-  }),
-
-  // Permissions Management
-  permissions: router({
-    list: protectedProcedure.query(async () => {
-      return await db.getAllPermissions();
-    }),
-    
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getPermissionById(input.id);
-      }),
-    
-    create: protectedProcedure
-      .input(z.object({
-        code: z.string().min(1),
-        name: z.string().min(1),
-        description: z.string().optional(),
-        category: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        return await db.createPermission(input);
-      }),
-    
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        code: z.string().optional(),
-        name: z.string().optional(),
-        description: z.string().optional(),
-        category: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, ...data } = input;
-        return await db.updatePermission(id, data);
-      }),
-    
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        return await db.deletePermission(input.id);
-      }),
-  }),
+  // NOTE: roles and permissions routers have been removed.
+  // All users are now treated as Admin with full access.
 
   // Groups Management
   groups: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      // إذا كان admin، يرى جميع المجموعات
-      if (ctx.user.role === 'admin') {
-        return await db.getAllGroups();
-      }
-      
-      // جلب IDs المجموعات التي لديه صلاحية view عليها
-      const allowedGroupIds = await db.getUserScopeIds(ctx.user.id, 'work_group', 'view');
-      
-      // إذا لم يكن لديه أي صلاحيات، يرجع قائمة فارغة
-      if (allowedGroupIds.length === 0) {
-        return [];
-      }
-      
-      // جلب المجموعات المسموح بها فقط
-      const allGroups = await db.getAllGroups();
-      return allGroups.filter(g => allowedGroupIds.includes(String(g.id)));
+    list: protectedProcedure.query(async () => {
+      // All users have access to all groups (no permission system)
+      return await db.getAllGroups();
     }),
     
     getById: protectedProcedure
@@ -506,20 +314,17 @@ export const appRouter = router({
   // Workers Management
   workers: router({
     list: protectedProcedure
-      .use(requirePermission('worker_view'))
       .query(async ({ ctx }) => {
         return await db.getAllWorkers();
       }),
     
     listByGroup: protectedProcedure
-      .use(requirePermission('worker_view'))
       .input(z.object({ groupId: z.number() }))
       .query(async ({ input }) => {
         return await db.getWorkersByGroup(input.groupId);
       }),
     
     getById: protectedProcedure
-      .use(requirePermission('worker_view'))
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await db.getWorkerById(input.id);
@@ -532,7 +337,6 @@ export const appRouter = router({
       }),
     
     create: protectedProcedure
-      .use(requirePermission('worker_create'))
       .input(z.object({
         code: z.string().min(1),
         fullName: z.string().min(2),
@@ -560,7 +364,6 @@ export const appRouter = router({
       }),
     
     update: protectedProcedure
-      .use(requirePermission('worker_edit'))
       .input(z.object({
         id: z.number(),
         code: z.string().min(1).optional(),
@@ -580,7 +383,6 @@ export const appRouter = router({
       }),
     
     delete: protectedProcedure
-      .use(requirePermission('worker_delete'))
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteWorker(input.id);
@@ -746,21 +548,12 @@ export const appRouter = router({
   costCenters: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       // إذا كان admin، يرى جميع مراكز التكلفة
-      if (ctx.user.role === 'admin') {
+      if (true) { // All users are treated as admin
         return await db.getAllCostCenters();
       }
       
-      // جلب IDs مراكز التكلفة التي لديه صلاحية view عليها
-      const allowedCostCenterIds = await db.getUserScopeIds(ctx.user.id, 'cost_center', 'view');
-      
-      // إذا لم يكن لديه أي صلاحيات، يرجع قائمة فارغة
-      if (allowedCostCenterIds.length === 0) {
-        return [];
-      }
-      
-      // جلب مراكز التكلفة المسموح بها فقط
-      const allCostCenters = await db.getAllCostCenters();
-      return allCostCenters.filter(cc => allowedCostCenterIds.includes(String(cc.id)));
+      // All users have access to all cost centers (no permission system)
+      return await db.getAllCostCenters();
     }),
     
     create: protectedProcedure
@@ -823,7 +616,6 @@ export const appRouter = router({
   attendance: router({
     // Record check-in or check-out
     record: protectedProcedure
-      .use(requirePermission('attendance_record'))
       .input(z.object({
         workerId: z.number(),
         eventType: z.enum(['check_in', 'check_out']),
@@ -875,7 +667,6 @@ export const appRouter = router({
 
     // Confirm and record attendance
     confirmAttendance: protectedProcedure
-      .use(requirePermission('attendance_record'))
       .input(z.object({ 
         workerId: z.number(),
         eventType: z.enum(['check_in', 'check_out']),
@@ -894,7 +685,6 @@ export const appRouter = router({
     
     // Scan QR code to get worker and record attendance (legacy - kept for compatibility)
     scanQR: protectedProcedure
-      .use(requirePermission('attendance_record'))
       .input(z.object({ qrToken: z.string() }))
       .mutation(async ({ input, ctx }) => {
         const worker = await db.getWorkerByQRToken(input.qrToken);
@@ -1367,7 +1157,6 @@ export const appRouter = router({
   payroll: router({
     // Create draft batch
     createBatch: protectedProcedure
-      .use(requirePermission('payroll_create'))
       .input(z.object({
         periodStart: z.string(),
         periodEnd: z.string(),
@@ -1384,7 +1173,6 @@ export const appRouter = router({
     
     // List all batches
     listBatches: protectedProcedure
-      .use(requirePermission('payroll_view'))
       .input(z.object({
         costCenterId: z.number().optional(),
         groupId: z.number().optional(),
@@ -1403,7 +1191,6 @@ export const appRouter = router({
     
     // List batches by status
     listBatchesByStatus: protectedProcedure
-      .use(requirePermission('payroll_view'))
       .input(z.object({ status: z.string() }))
       .query(async ({ input }) => {
         return await db.getBatchesByStatus(input.status);
@@ -1411,7 +1198,6 @@ export const appRouter = router({
     
     // Get batch details
     getDetails: protectedProcedure
-      .use(requirePermission('payroll_view'))
       .input(z.object({ batchId: z.number() }))
       .query(async ({ input }) => {
         return await db.getPayrollBatchDetails(input.batchId);
@@ -1440,7 +1226,6 @@ export const appRouter = router({
     
     // Accountant approve
     accountantApprove: protectedProcedure
-      .use(requirePermission("payroll_batch_accountant_review"))
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
@@ -1449,7 +1234,6 @@ export const appRouter = router({
     
     // Accountant reject
     accountantReject: protectedProcedure
-      .use(requirePermission("payroll_batch_accountant_review"))
       .input(z.object({
         batchId: z.number(),
         noteType: z.enum(['critical', 'warning', 'info']),
@@ -1468,7 +1252,6 @@ export const appRouter = router({
     
     // Financial reviewer approve
     financialReviewerApprove: protectedProcedure
-      .use(requirePermission("payroll_batch_financial_review"))
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
@@ -1477,7 +1260,6 @@ export const appRouter = router({
     
     // Financial reviewer reject
     financialReviewerReject: protectedProcedure
-      .use(requirePermission("payroll_batch_financial_review"))
       .input(z.object({
         batchId: z.number(),
         noteType: z.enum(['critical', 'warning', 'info']),
@@ -1496,7 +1278,6 @@ export const appRouter = router({
     
     // Accounts manager final approve
     accountsManagerApprove: protectedProcedure
-      .use(requirePermission("payroll_batch_manager_review"))
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
@@ -1505,7 +1286,6 @@ export const appRouter = router({
     
     // Accounts manager final reject
     accountsManagerReject: protectedProcedure
-      .use(requirePermission("payroll_batch_manager_review"))
       .input(z.object({
         batchId: z.number(),
         note: z.string(),
@@ -1968,117 +1748,8 @@ export const appRouter = router({
       }),
   }),
 
-  // ============================================
-  // Scoped Permissions Management
-  // إدارة الصلاحيات الذرية + النطاق
-  // ============================================
-  scopedPermissions: router({
-    // Check if user has permission on specific scope
-    check: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        permission: z.string(),
-        scopeType: z.string(),
-        scopeId: z.union([z.string(), z.number()]),
-      }))
-      .query(async ({ input }) => {
-        return await db.checkScopedPermission(
-          input.userId,
-          input.permission,
-          input.scopeType,
-          input.scopeId
-        );
-      }),
-
-    // Get all permissions for a user
-    getUserPermissions: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        scopeType: z.string().optional(),
-      }))
-      .query(async ({ input }) => {
-        return await db.getUserScopedPermissions(input.userId, input.scopeType);
-      }),
-
-    // Get all permissions grouped by scope
-    getUserPermissionsGrouped: protectedProcedure
-      .input(z.object({ userId: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getUserPermissionsGrouped(input.userId);
-      }),
-
-    // Get scope IDs user has permission on
-    getUserScopeIds: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        permission: z.string(),
-        scopeType: z.string(),
-      }))
-      .query(async ({ input }) => {
-        return await db.getUserScopeIds(
-          input.userId,
-          input.permission,
-          input.scopeType
-        );
-      }),
-
-    // Grant permission to user
-    grant: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        permission: z.string(),
-        scopeType: z.string(),
-        scopeId: z.union([z.string(), z.number()]),
-        expiresAt: z.date().optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Not authenticated");
-        return await db.grantScopedPermission(
-          input.userId,
-          input.permission,
-          input.scopeType,
-          input.scopeId,
-          ctx.user.id,
-          input.expiresAt
-        );
-      }),
-
-    // Revoke permission from user
-    revoke: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        permission: z.string(),
-        scopeType: z.string(),
-        scopeId: z.union([z.string(), z.number()]),
-      }))
-      .mutation(async ({ input }) => {
-        return await db.revokeScopedPermission(
-          input.userId,
-          input.permission,
-          input.scopeType,
-          input.scopeId
-        );
-      }),
-
-    // Bulk grant permissions
-    bulkGrant: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        permissions: z.array(z.object({
-          permission: z.string(),
-          scopeType: z.string(),
-          scopeId: z.union([z.string(), z.number()]),
-        })),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Not authenticated");
-        return await db.bulkGrantScopedPermissions(
-          input.userId,
-          input.permissions,
-          ctx.user.id
-        );
-      }),
-  }),
+  // NOTE: scopedPermissions router has been removed.
+  // All users have full permissions now.
 });
 
 export type AppRouter = typeof appRouter;

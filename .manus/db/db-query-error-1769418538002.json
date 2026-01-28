@@ -1,0 +1,8 @@
+{
+  "query": "\n-- تحديث دور المستخدم RADMAN إلى super_admin\nUPDATE users \nSET role = 'super_admin' \nWHERE username = 'RADMAN';\n\n-- التحقق من التحديث\nSELECT id, username, email, role FROM users WHERE username = 'RADMAN';\n\n-- الحصول على جميع الصلاحيات المتاحة الآن للمستخدم RADMAN\nSELECT COUNT(*) as total_permissions_for_radman\nFROM role_permissions rp\nJOIN roles r ON rp.role_id = r.id\nWHERE r.code = 'super_admin';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- تحديث دور المستخدم RADMAN إلى super_admin\nUPDATE users \nSET role = 'super_admin' \nWHERE username = 'RADMAN';\n\n-- التحقق من التحديث\nSELECT id, username, email, role FROM users WHERE username = 'RADMAN';\n\n-- الحصول على جميع الصلاحيات المتاحة الآن للمستخدم RADMAN\nSELECT COUNT(*) as total_permissions_for_radman\nFROM role_permissions rp\nJOIN roles r ON rp.role_id = r.id\nWHERE r.code = 'super_admin';\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1406 (22001) at line 3: Data Too Long, field len 5, data len 11"
+  ]
+}

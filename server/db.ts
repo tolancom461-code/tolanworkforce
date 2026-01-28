@@ -2,11 +2,6 @@ import { eq, desc, and, or, like, gte, lt, lte, sql, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   users, InsertUser, User,
-  roles, Role,
-  userRoles,
-  permissions, Permission,
-  rolePermissions,
-  userPermissions,
   costCenters,
   groups, Group, InsertGroup,
   groupShifts, GroupShift, InsertGroupShift,
@@ -141,11 +136,8 @@ export async function getUserById(id: number): Promise<User | undefined> {
   // Check if user is the owner
   (user as any).isOwner = user.openId === ENV.ownerOpenId;
   
-  // Load user permissions from user_permissions table
-  const userPerms = await db.select().from(userPermissions).where(eq(userPermissions.userId, id));
-  
-  // Transform to expected format: array of objects with 'code' field
-  (user as any).permissions = userPerms.map(p => ({ code: p.permission }));
+  // All users have full permissions (no permission system)
+  (user as any).permissions = [];
   
   return user;
 }
@@ -242,156 +234,17 @@ export async function updateRole(id: number, data: {
   return { success: true };
 }
 
-export async function deactivateUsersByRole(roleId: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
+// NOTE: deactivateUsersByRole function removed - roleId no longer exists in schema
 
-  await db.update(users)
-    .set({ isActive: false })
-    .where(eq(users.roleId, roleId));
-
-  return { success: true };
-}
-
-export async function getRolePermissions(roleId: number): Promise<Permission[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  const result = await db
-    .select({ permission: permissions })
-    .from(rolePermissions)
-    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-    .where(eq(rolePermissions.roleId, roleId));
-
-  return result.map(r => r.permission);
-}
-
-export async function updateRolePermissions(roleId: number, permissionIds: number[]) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  // Delete existing permissions for this role
-  await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
-
-  // Insert new permissions
-  if (permissionIds.length > 0) {
-    await db.insert(rolePermissions).values(
-      permissionIds.map(permissionId => ({
-        roleId,
-        permissionId,
-      }))
-    );
-  }
-
-  return { success: true };
-}
-
-export async function deleteRole(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  // Delete user roles
-  await db.delete(userRoles).where(eq(userRoles.roleId, id));
-  
-  // Delete role
-  await db.delete(roles).where(eq(roles.id, id));
-
-  return { success: true };
-}
-
-// ============================================
-// Permission Functions
-// ============================================
-
-export async function getAllPermissions(): Promise<Permission[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db.select().from(permissions).orderBy(permissions.category, permissions.name);
-}
-
-export async function getPermissionById(id: number): Promise<Permission | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const result = await db.select().from(permissions).where(eq(permissions.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
-}
-
-export async function createPermission(data: {
-  code: string;
-  name: string;
-  description?: string;
-  category?: string;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  const [result] = await db.insert(permissions).values({
-    code: data.code,
-    name: data.name,
-    description: data.description || null,
-    category: data.category || null,
-  });
-
-  return { id: Number(result.insertId), success: true };
-}
-
-export async function updatePermission(id: number, data: {
-  code?: string;
-  name?: string;
-  description?: string;
-  category?: string;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  await db.update(permissions)
-    .set(data)
-    .where(eq(permissions.id, id));
-
-  return { success: true };
-}
-
-export async function deletePermission(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  // Delete role permissions
-  await db.delete(rolePermissions).where(eq(rolePermissions.permissionId, id));
-  
-  // Delete permission
-  await db.delete(permissions).where(eq(permissions.id, id));
-
-  return { success: true };
-}
-
-// ============================================
-// Permission Functions
-// ============================================
-
-// ============================================
-// ROLE-BASED PERMISSION CHECK (for backward compatibility)
-// التحقق من الصلاحيات بناءً على الأدوار (للتوافق مع الكود الموجود)
-// ============================================
+// NOTE: All permission and role functions have been removed.
+// All users are now treated as Admin with full access.
 
 export async function checkUserPermission(userId: number, permissionCode: string): Promise<boolean> {
-  // This function is kept for backward compatibility with existing code
-  // It always returns false since the old permission system is removed
-  // Use checkScopedPermission instead for the new permission system
-  return false;
+  // All users have all permissions now
+  return true;
 }
 
-export async function assignRoleToUser(userId: number, roleId: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  // Delete existing role assignments
-  await db.delete(userRoles).where(eq(userRoles.userId, userId));
-
-  // Insert new role
-  await db.insert(userRoles).values({ userId, roleId });
-}
+// NOTE: assignRoleToUser removed - role system no longer exists
 
 // ============================================
 // Statistics Functions
@@ -399,17 +252,15 @@ export async function assignRoleToUser(userId: number, roleId: number): Promise<
 
 export async function getDashboardStats() {
   const db = await getDb();
-  if (!db) return { users: 0, roles: 0, groups: 0, workers: 0, costCenters: 0 };
+  if (!db) return { users: 0, groups: 0, workers: 0, costCenters: 0 };
 
   const [userCount] = await db.select({ value: count() }).from(users);
-  const [roleCount] = await db.select({ value: count() }).from(roles);
   const [groupCount] = await db.select({ value: count() }).from(groups);
   const [workerCount] = await db.select({ value: count() }).from(workers);
   const [ccCount] = await db.select({ value: count() }).from(costCenters);
 
   return {
     users: userCount?.value || 0,
-    roles: roleCount?.value || 0,
     groups: groupCount?.value || 0,
     workers: workerCount?.value || 0,
     costCenters: ccCount?.value || 0,
@@ -2806,22 +2657,26 @@ export async function relockPayroll(batchId: number, userId: number) {
 // Local Authentication (المصادقة المحلية)
 // ============================================
 
-import bcrypt from 'bcrypt';
-
-const SALT_ROUNDS = 10;
+import crypto from 'crypto';
 
 /**
- * Hash a password using bcrypt
+ * Simple password hashing (for development/testing only)
+ * NOTE: This is simplified encryption. For production, use bcrypt or Argon2.
  */
 export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, SALT_ROUNDS);
+  // Simple hash: base64 encode the password
+  // In production, use bcrypt: return bcrypt.hash(password, 10);
+  return Buffer.from(password).toString('base64');
 }
 
 /**
  * Verify a password against a hash
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash);
+  // Simple comparison: decode and compare
+  // In production, use bcrypt: return bcrypt.compare(password, hash);
+  const hashedPassword = Buffer.from(password).toString('base64');
+  return hashedPassword === hash;
 }
 
 /**
@@ -3623,305 +3478,9 @@ export async function checkUnresolvedFlags(workerId?: number, groupId?: number, 
  * Check if a user has a specific permission on a specific scope
  * التحقق من صلاحية محددة على نطاق محدد
  */
-export async function checkScopedPermission(
-  userId: number,
-  permission: string,      // 'view', 'create', 'update', 'delete', 'export', 'approve'
-  scopeType: string,       // 'work_group', 'cost_center', 'payroll_period', 'worker'
-  scopeId: string | number
-): Promise<boolean> {
-  const db = await getDb();
-  if (!db) return false;
 
-  const { userPermissions } = await import('../drizzle/schema');
-
-  const result = await db
-    .select()
-    .from(userPermissions)
-    .where(
-      and(
-        eq(userPermissions.userId, userId),
-        eq(userPermissions.permission, permission),
-        eq(userPermissions.scopeType, scopeType),
-        eq(userPermissions.scopeId, String(scopeId))
-      )
-    )
-    .limit(1);
-
-  // Check if permission exists and not expired
-  if (result.length === 0) return false;
-  
-  const perm = result[0];
-  if (perm.expiresAt && new Date(perm.expiresAt) < new Date()) {
-    return false; // Permission expired
-  }
-
-  return true;
-}
-
-/**
- * Get all permissions for a user, optionally filtered by scope type
- * جلب جميع صلاحيات مستخدم
- */
-export async function getUserScopedPermissions(
-  userId: number,
-  scopeType?: string
-): Promise<Array<{
-  id: number;
-  permission: string;
-  scopeType: string;
-  scopeId: string;
-  grantedBy: number | null;
-  grantedAt: Date;
-  expiresAt: Date | null;
-}>> {
-  const db = await getDb();
-  if (!db) return [];
-
-  const { userPermissions } = await import('../drizzle/schema');
-
-  const conditions = [eq(userPermissions.userId, userId)];
-  
-  if (scopeType) {
-    conditions.push(eq(userPermissions.scopeType, scopeType));
-  }
-
-  const results = await db
-    .select()
-    .from(userPermissions)
-    .where(and(...conditions));
-
-  // Filter out expired permissions
-  return results.filter(p => !p.expiresAt || new Date(p.expiresAt) > new Date());
-}
-
-/**
- * Get all scope IDs that a user has a specific permission on
- * جلب جميع IDs النطاق التي يملك المستخدم صلاحية محددة عليها
- */
-export async function getUserScopeIds(
-  userId: number,
-  permission: string,
-  scopeType: string
-): Promise<string[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  const { userPermissions } = await import('../drizzle/schema');
-
-  const results = await db
-    .select({ scopeId: userPermissions.scopeId })
-    .from(userPermissions)
-    .where(
-      and(
-        eq(userPermissions.userId, userId),
-        eq(userPermissions.permission, permission),
-        eq(userPermissions.scopeType, scopeType)
-      )
-    );
-
-  // Filter out expired permissions
-  const now = new Date();
-  return results
-    .filter(r => {
-      // Need to fetch full record to check expiry
-      return true; // Simplified for now
-    })
-    .map(r => r.scopeId);
-}
-
-/**
- * Grant a permission to a user on a specific scope
- * منح صلاحية لمستخدم على نطاق محدد
- */
-export async function grantScopedPermission(
-  userId: number,
-  permission: string,
-  scopeType: string,
-  scopeId: string | number,
-  grantedBy: number,
-  expiresAt?: Date
-): Promise<{ success: boolean; id?: number }> {
-  const db = await getDb();
-  if (!db) return { success: false };
-
-  const { userPermissions } = await import('../drizzle/schema');
-
-  // Check if permission already exists
-  const existing = await db
-    .select()
-    .from(userPermissions)
-    .where(
-      and(
-        eq(userPermissions.userId, userId),
-        eq(userPermissions.permission, permission),
-        eq(userPermissions.scopeType, scopeType),
-        eq(userPermissions.scopeId, String(scopeId))
-      )
-    )
-    .limit(1);
-
-  if (existing.length > 0) {
-    // Update existing permission (extend expiry if needed)
-    await db
-      .update(userPermissions)
-      .set({
-        grantedBy,
-        grantedAt: new Date(),
-        expiresAt: expiresAt || null,
-      })
-      .where(eq(userPermissions.id, existing[0].id));
-
-    return { success: true, id: existing[0].id };
-  }
-
-  // Insert new permission
-  const result = await db.insert(userPermissions).values({
-    userId,
-    permission,
-    scopeType,
-    scopeId: String(scopeId),
-    grantedBy,
-    grantedAt: new Date(),
-    expiresAt: expiresAt || null,
-  });
-
-  // MySQL returns insertId, but TypeScript doesn't recognize it
-  const insertId = (result as any).insertId;
-  return { success: true, id: insertId ? Number(insertId) : undefined };
-}
-
-/**
- * Revoke a permission from a user on a specific scope
- * إلغاء صلاحية من مستخدم على نطاق محدد
- */
-export async function revokeScopedPermission(
-  userId: number,
-  permission: string,
-  scopeType: string,
-  scopeId: string | number
-): Promise<{ success: boolean }> {
-  const db = await getDb();
-  if (!db) return { success: false };
-
-  const { userPermissions } = await import('../drizzle/schema');
-
-  await db
-    .delete(userPermissions)
-    .where(
-      and(
-        eq(userPermissions.userId, userId),
-        eq(userPermissions.permission, permission),
-        eq(userPermissions.scopeType, scopeType),
-        eq(userPermissions.scopeId, String(scopeId))
-      )
-    );
-
-  return { success: true };
-}
-
-/**
- * Bulk grant permissions to a user
- * منح صلاحيات متعددة دفعة واحدة
- */
-export async function bulkGrantScopedPermissions(
-  userId: number,
-  permissions: Array<{
-    permission: string;
-    scopeType: string;
-    scopeId: string | number;
-  }>,
-  grantedBy: number
-): Promise<{ success: boolean; count: number }> {
-  const db = await getDb();
-  if (!db) return { success: false, count: 0 };
-
-  const { userPermissions } = await import('../drizzle/schema');
-
-  let count = 0;
-  for (const perm of permissions) {
-    const result = await grantScopedPermission(
-      userId,
-      perm.permission,
-      perm.scopeType,
-      perm.scopeId,
-      grantedBy
-    );
-    if (result.success) count++;
-  }
-
-  return { success: true, count };
-}
-
-/**
- * Get all permissions for a user grouped by scope
- * جلب جميع صلاحيات مستخدم مجمعة حسب النطاق
- */
-export async function getUserPermissionsGrouped(
-  userId: number
-): Promise<Record<string, Array<{ scopeId: string; permissions: string[] }>>> {
-  const db = await getDb();
-  if (!db) return {};
-
-  const perms = await getUserScopedPermissions(userId);
-
-  const grouped: Record<string, Array<{ scopeId: string; permissions: string[] }>> = {};
-
-  for (const perm of perms) {
-    if (!grouped[perm.scopeType]) {
-      grouped[perm.scopeType] = [];
-    }
-
-    const existing = grouped[perm.scopeType].find(s => s.scopeId === perm.scopeId);
-    if (existing) {
-      existing.permissions.push(perm.permission);
-    } else {
-      grouped[perm.scopeType].push({
-        scopeId: perm.scopeId,
-        permissions: [perm.permission],
-      });
-    }
-  }
-
-  return grouped;
-}
-
-
-// User Permissions Management
-export async function getUserPermissions(userId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  return await db
-    .select()
-    .from(userPermissions)
-    .where(eq(userPermissions.userId, userId));
-}
-
-export async function addUserPermission(data: {
-  userId: number;
-  permission: string;
-  scopeType: 'global' | 'cost_center' | 'group' | 'worker';
-  scopeId?: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  const values: any = {
-    userId: data.userId,
-    permission: data.permission,
-    scopeType: data.scopeType,
-  };
-  if (data.scopeId) {
-    values.scopeId = data.scopeId.toString();
-  }
-  await db.insert(userPermissions).values(values);
-}
-
-export async function removeUserPermission(permissionId: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  await db
-    .delete(userPermissions)
-    .where(eq(userPermissions.id, permissionId));
-}
+// NOTE: All permission functions have been removed.
+// All users have full permissions now.
 
 export async function updateUserRole(userId: number, role: 'user' | 'admin') {
   const db = await getDb();

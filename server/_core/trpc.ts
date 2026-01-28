@@ -31,8 +31,8 @@ export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== 'admin') {
-      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
 
     return next({
@@ -44,24 +44,14 @@ export const adminProcedure = t.procedure.use(
   }),
 );
 
-// Helper function to check if user is the owner
-function isOwner(user: any): boolean {
-  if (!user || !user.openId) return false;
-  const ownerOpenId = process.env.OWNER_OPEN_ID;
-  return user.openId === ownerOpenId;
-}
+// NOTE: Permission system has been removed.
+// All users are now treated as Admin with full access.
+// These functions are kept for backward compatibility but do nothing.
 
-// Helper function to check if user has a specific permission
 export function hasPermission(user: any, permissionCode: string): boolean {
-  if (!user || !user.permissions) return false;
-  
-  // Owner has all permissions automatically
-  if (isOwner(user)) return true;
-  
-  return user.permissions.some((p: any) => p.code === permissionCode);
+  return true; // All users have all permissions
 }
 
-// Middleware to require a specific permission
 export function requirePermission(permissionCode: string) {
   return t.middleware(async opts => {
     const { ctx, next } = opts;
@@ -70,23 +60,7 @@ export function requirePermission(permissionCode: string) {
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
 
-    // Owner bypasses all permission checks
-    if (isOwner(ctx.user)) {
-      return next({
-        ctx: {
-          ...ctx,
-          user: ctx.user,
-        },
-      });
-    }
-
-    if (!hasPermission(ctx.user, permissionCode)) {
-      throw new TRPCError({ 
-        code: "FORBIDDEN", 
-        message: `ليس لديك صلاحية ${permissionCode}` 
-      });
-    }
-
+    // All users have all permissions
     return next({
       ctx: {
         ...ctx,

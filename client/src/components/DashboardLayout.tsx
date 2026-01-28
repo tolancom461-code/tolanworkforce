@@ -1,7 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { PERMISSIONS } from "../../../shared/permissions";
-import { usePermission } from "@/hooks/usePermission";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -70,47 +68,31 @@ const menuSections = [
     label: "📋 لوحات التحكم",
     items: [
       { icon: LayoutDashboard, label: "الرئيسية", path: "/dashboard" },
-      { icon: TrendingUp, label: "لوحة التحكم التنفيذية", path: "/executive", permission: PERMISSIONS.DASHBOARD_VIEW },
     ]
   },
   {
     label: "👥 الموارد البشرية",
     items: [
-      { icon: UserCircle, label: "إدارة العمال", path: "/workers", permission: PERMISSIONS.WORKER_VIEW },
-      { icon: Users, label: "مجموعات العمل", path: "/groups", permission: PERMISSIONS.GROUP_VIEW },
     ]
   },
   {
     label: "⏰ الحضور والانصراف",
     items: [
-      { icon: QrCode, label: "تسجيل الحضور", path: "/attendance", permission: PERMISSIONS.ATTENDANCE_RECORD },
-      { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log", permission: PERMISSIONS.ATTENDANCE_VIEW },
-      { icon: FileText, label: "تقارير الحضور", path: "/attendance/reports", permission: PERMISSIONS.ATTENDANCE_VIEW },
-      { icon: Clock, label: "أيام العمل", path: "/work-days", permission: PERMISSIONS.SYSTEM_SETTINGS_VIEW },
-      { icon: Flag, label: "البلاغات التشغيلية", path: "/operational-flags", permission: PERMISSIONS.OPERATIONAL_FLAGS_VIEW },
-      { icon: CheckCircle, label: "البلاغات المعلقة", path: "/pending-flags", permission: PERMISSIONS.OPERATIONAL_FLAGS_VIEW },
     ]
   },
   {
     label: "💰 الرواتب والمالية",
     items: [
-      { icon: Wallet, label: "دفعات الرواتب", path: "/payroll/batches", permission: PERMISSIONS.PAYROLL_VIEW },
-      { icon: PlusCircle, label: "استثناءات الرواتب", path: "/finance/overrides", permission: PERMISSIONS.PAYROLL_VIEW },
-      { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report", permission: PERMISSIONS.PAYROLL_VIEW },
-      { icon: DollarSign, label: "التقارير المالية", path: "/finance/reports", permission: PERMISSIONS.FINANCIAL_REPORTS_VIEW },
     ]
   },
   {
     label: "📋 البيانات المرجعية",
     items: [
-      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers", permission: PERMISSIONS.COST_CENTER_VIEW },
     ]
   },
   {
     label: "⚙️ إعدادات النظام",
     items: [
-      { icon: Users, label: "المستخدمين", path: "/users", permission: PERMISSIONS.USER_VIEW },
-      { icon: Shield, label: "إدارة الأدوار", path: "/settings/roles", permission: PERMISSIONS.ROLE_VIEW },
     ]
   },
 ];

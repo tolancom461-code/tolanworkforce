@@ -1,6 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { usePermission } from "@/hooks/usePermission";
-import { Permission } from "../../../shared/permissions";
 import { getLoginUrl } from "@/const";
 import { Loader2, ShieldX } from "lucide-react";
 import { useLocation } from "wouter";
@@ -9,11 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredPermissions?: Permission[];
+  requiredPermissions?: any[];
   requireAll?: boolean;
   adminOnly?: boolean;
 }
 
+/**
+ * NOTE: Permission system has been removed. All authenticated users have full access.
+ */
 export function ProtectedRoute({
   children,
   requiredPermissions = [],
@@ -21,8 +22,6 @@ export function ProtectedRoute({
   adminOnly = false,
 }: ProtectedRouteProps) {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const { hasPermission, hasAnyPermission, hasAllPermissions } = usePermission();
-  const isAdmin = user?.role === 'admin';
   const [, setLocation] = useLocation();
 
   // Loading state
@@ -62,57 +61,6 @@ export function ProtectedRoute({
     );
   }
 
-  // Admin only check
-  if (adminOnly && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
-        <Card className="w-full max-w-md shadow-xl border-0 bg-card/80 backdrop-blur-xl">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mb-4">
-              <ShieldX className="h-8 w-8 text-destructive" />
-            </div>
-            <CardTitle className="text-2xl">وصول مرفوض</CardTitle>
-            <CardDescription>هذه الصفحة متاحة للمسؤولين فقط</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <Button variant="outline" className="w-full" onClick={() => setLocation("/dashboard")}>
-              العودة للوحة التحكم
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Permission check
-  if (requiredPermissions.length > 0) {
-    const hasAccess = requireAll
-      ? hasAllPermissions(requiredPermissions)
-      : hasAnyPermission(requiredPermissions);
-
-    if (!hasAccess) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
-          <Card className="w-full max-w-md shadow-xl border-0 bg-card/80 backdrop-blur-xl">
-            <CardHeader className="text-center pb-2">
-              <div className="mx-auto w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mb-4">
-                <ShieldX className="h-8 w-8 text-destructive" />
-              </div>
-              <CardTitle className="text-2xl">صلاحيات غير كافية</CardTitle>
-              <CardDescription>
-                ليس لديك الصلاحيات اللازمة للوصول إلى هذه الصفحة
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <Button variant="outline" className="w-full" onClick={() => setLocation("/dashboard")}>
-                العودة للوحة التحكم
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-  }
-
+  // All authenticated users have full access
   return <>{children}</>;
 }

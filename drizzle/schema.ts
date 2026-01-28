@@ -36,34 +36,8 @@ export const settings = mysqlTable("settings", {
 // ============================================
 // Users & Permissions (المستخدمين والصلاحيات)
 // ============================================
-
-export const roles = mysqlTable("roles", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  name: varchar("name", { length: 100 }).notNull(),
-  description: text("description"),
-  level: int("level").default(0),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export const permissions = mysqlTable("permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  name: varchar("name", { length: 100 }).notNull(),
-  description: text("description"),
-  category: varchar("category", { length: 50 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export const rolePermissions = mysqlTable("role_permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  roleId: int("role_id").notNull(),
-  permissionId: int("permission_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+// NOTE: Roles and Permissions system has been removed.
+// All users are now Admin with full access.
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -73,8 +47,6 @@ export const users = mysqlTable("users", {
   fullName: varchar("full_name", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }),
   phone: varchar("phone", { length: 20 }),
-  phoneNumber: varchar("phone_number", { length: 20 }),
-  roleId: int("role_id"),
   isActive: boolean("is_active").default(true),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
@@ -83,25 +55,8 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
-export const userRoles = mysqlTable("user_roles", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  roleId: int("role_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// Atomic Permissions with Data Scope (نظام الصلاحيات الذرية مع النطاق)
-// Structure: user_id | permission | scope_type | scope_id
-export const userPermissions = mysqlTable("user_permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  permission: varchar("permission", { length: 50 }).notNull(), // 'view', 'create', 'update', 'delete', 'export', 'approve'
-  scopeType: varchar("scope_type", { length: 50 }).notNull(), // 'work_group', 'cost_center', 'payroll_period', 'worker'
-  scopeId: varchar("scope_id", { length: 100 }).notNull(), // ID or value of the scope
-  grantedBy: int("granted_by"), // User who granted this permission
-  grantedAt: timestamp("granted_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at"), // Optional: expiration date
-});
+// NOTE: userRoles and userPermissions tables have been removed.
+// All users are now Admin with full access.
 
 // ============================================
 // Groups & Workers (المجموعات والعمال)
