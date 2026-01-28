@@ -1809,8 +1809,16 @@ export async function createPayrollBatch(params: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Generate batch code
-  const batchCode = `PB-${Date.now()}`;
+  // Generate batch code with format PB-YYYY-XXX
+  const year = new Date().getFullYear();
+  // Get the next sequence number for this year
+  const existingBatches = await db
+    .select()
+    .from(payrollBatches)
+    .where(sql`YEAR(created_at) = ${year}`);
+  
+  const nextSequence = existingBatches.length + 1;
+  const batchCode = `PB-${year}-${String(nextSequence).padStart(3, '0')}`; // e.g., PB-2026-001
 
   // Get workers based on filters
   let workersQuery = db.select().from(workers).where(eq(workers.status, 'active'));
