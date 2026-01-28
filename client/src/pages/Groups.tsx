@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useScopedPermissions } from "@/hooks/useScopedPermissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,6 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, Users, Clock, Building2, Download } from "lucide-react";
 
 export default function Groups() {
-  const { checkPermission, isAdmin } = useScopedPermissions();
   const [searchQuery, setSearchQuery] = useState("");
   const [costCenterFilter, setCostCenterFilter] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -270,14 +268,13 @@ export default function Groups() {
             <h1 className="text-3xl font-bold tracking-tight">إدارة المجموعات</h1>
             <p className="text-muted-foreground">إدارة مجموعات العمل والورديات</p>
           </div>
-          {(isAdmin() || checkPermission('create', 'work_group', '*')) && (
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => { resetForm(); setSelectedGroup(null); }}>
-                  <Plus className="ml-2 h-4 w-4" />
-                  إضافة مجموعة
-                </Button>
-              </DialogTrigger>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => { resetForm(); setSelectedGroup(null); }}>
+                <Plus className="ml-2 h-4 w-4" />
+                إضافة مجموعة
+              </Button>
+            </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]" dir="rtl">
               <DialogHeader>
                 <DialogTitle>إضافة مجموعة جديدة</DialogTitle>
@@ -435,8 +432,7 @@ export default function Groups() {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
-          )}  
+          </Dialog>  
         </div>
 
         {/* Search & Filter */}
@@ -528,24 +524,21 @@ export default function Groups() {
                           >
                             <Clock className="h-4 w-4" />
                           </Button>
-                          {(isAdmin() || checkPermission('update', 'work_group', group.id)) && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(group)}
-                              title="تعديل"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {(isAdmin() || checkPermission('delete', 'work_group', group.id)) && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" title="حذف">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                            <AlertDialogContent dir="rtl">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(group)}
+                            title="تعديل"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" title="حذف">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                          <AlertDialogContent dir="rtl">
                               <AlertDialogHeader>
                                 <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
                                 <AlertDialogDescription>
@@ -563,7 +556,6 @@ export default function Groups() {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>

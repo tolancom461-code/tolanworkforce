@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { trpc } from '@/lib/trpc';
-import { useScopedPermissions } from '@/hooks/useScopedPermissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +20,6 @@ import {
 import { toast } from 'sonner';
 
 export default function CostCenters() {
-  const { checkPermission, isAdmin } = useScopedPermissions();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedCostCenter, setSelectedCostCenter] = useState<any>(null);
@@ -130,12 +128,10 @@ export default function CostCenters() {
               إدارة مراكز التكلفة في النظام
             </p>
           </div>
-          {(isAdmin() || checkPermission('create', 'cost_center', '*')) && (
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 ml-2" />
-              إضافة مركز تكلفة
-            </Button>
-          )}
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 ml-2" />
+            إضافة مركز تكلفة
+          </Button>
         </div>
 
         {/* Search and Filters */}
@@ -203,27 +199,23 @@ export default function CostCenters() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            {(isAdmin() || checkPermission('update', 'cost_center', cc.id)) && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEdit(cc)}
-                              >
-                                <Pencil className="h-4 w-4 ml-1" />
-                                تعديل
-                              </Button>
-                            )}
-                            {(isAdmin() || checkPermission('delete', 'cost_center', cc.id)) && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDelete(cc.id, cc.name)}
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 ml-1" />
-                                حذف
-                              </Button>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(cc)}
+                            >
+                              <Pencil className="h-4 w-4 ml-1" />
+                              تعديل
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(cc.id, cc.name)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 ml-1" />
+                              حذف
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>

@@ -29,18 +29,14 @@ import AccountantReview from "./pages/payroll/AccountantReview";
 import FinancialReview from "./pages/payroll/FinancialReview";
 import AccountsManagerReview from "./pages/payroll/AccountsManagerReview";
 import CostCenters from "./pages/CostCenters";
-import Roles from "./pages/Roles";
-import RolesManagement from "./pages/RolesManagement";
+
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import FinancialReports from "./pages/reports/FinancialReports";
 import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
 import OperationalFlags from "./pages/OperationalFlags";
 import PendingFlags from "./pages/PendingFlags";
-import UserScopedPermissions from "./pages/UserScopedPermissions";
-import PermissionsManagement from "./pages/PermissionsManagement";
-import RolePermissions from "./pages/RolePermissions";
-import UserPermissions from "./pages/UserPermissions";
+
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { PERMISSIONS } from "../../shared/permissions";
 
@@ -62,16 +58,7 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
-      <Route path="/permissions" component={PermissionsManagement} />
-      <Route path="/role-permissions" component={RolePermissions} />
-      <Route path="/scoped-permissions" component={UserScopedPermissions} />
-      <Route path="/user-permissions" component={UserPermissions} />
-      <Route path="/roles" component={Roles} />
-      <Route path="/settings/roles">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.ROLE_VIEW]}>
-          <RolesManagement />
-        </ProtectedRoute>
-      </Route>
+
       <Route path="/cost-centers" component={CostCenters} />
       <Route path="/profile" component={Profile} />
       <Route path="/groups" component={Groups} />
