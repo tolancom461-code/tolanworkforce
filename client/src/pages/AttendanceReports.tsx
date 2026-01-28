@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
-import { usePermission } from '@/hooks/usePermission';
 import { PERMISSIONS } from '../../../shared/permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +29,7 @@ const MONTHS = [
 ];
 
 export default function AttendanceReports() {
-  const { hasPermission } = usePermission();
+  const hasPermission = () => true; // All users have full permissions
   const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);

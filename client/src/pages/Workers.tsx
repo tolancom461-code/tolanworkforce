@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
-import { usePermission } from "@/hooks/usePermission";
 import { PERMISSIONS } from "../../../shared/permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,7 @@ import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshC
 import { exportToExcel, printPage } from '@/lib/exportUtils';
 
 export default function Workers() {
-  const { hasPermission } = usePermission();
+  const hasPermission = () => true; // All users have full permissions
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");

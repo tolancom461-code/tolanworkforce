@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { usePermission } from '@/hooks/usePermission';
 import { PERMISSIONS } from '../../../shared/permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +37,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function PayrollBatches() {
-  const { hasPermission } = usePermission();
+  const hasPermission = () => true; // All users have full permissions
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { usePermission } from '@/hooks/usePermission';
 import { PERMISSIONS } from '../../../shared/permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,7 +80,7 @@ const PERMISSION_LABELS: Record<string, string> = {
 };
 
 export default function RolesManagement() {
-  const { hasPermission } = usePermission();
+  const hasPermission = () => true; // All users have full permissions
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);

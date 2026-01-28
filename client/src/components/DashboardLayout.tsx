@@ -196,8 +196,8 @@ function DashboardLayoutContent({
     }));
   };
   
-  // استخدام hook الصلاحيات
-  const { hasPermission: checkPermission } = usePermission();
+  // NOTE: Permission system removed - all users have full permissions
+  const checkPermission = () => true; // Always return true
   
   // فلترة القوائم حسب الصلاحيات
   const filteredMenuSections = menuSections

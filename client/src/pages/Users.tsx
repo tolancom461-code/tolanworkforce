@@ -16,11 +16,10 @@ import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, Search, UserPlus, Shield, ChevronDown, ChevronRight } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { PERMISSION_CATEGORIES } from "@/lib/menuPermissions";
-import { usePermission } from "@/hooks/usePermission";
 import { PERMISSIONS } from "../../../shared/permissions";
 
 export default function Users() {
-  const { hasPermission } = usePermission();
+  const hasPermission = () => true; // All users have full permissions
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
