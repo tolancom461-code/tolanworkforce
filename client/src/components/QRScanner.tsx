@@ -24,7 +24,7 @@ export default function QRScanner({
 }: QRScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [cameras, setCameras] = useState<{ id: string; label: string }[]>([]);
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -100,7 +100,7 @@ export default function QRScanner({
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
       
       if (videoDevices.length > 0) {
-        setCameras(videoDevices);
+        setCameras(videoDevices as MediaDeviceInfo[]);
         setHasPermission(true);
         
         // Prefer back camera
@@ -272,8 +272,8 @@ export default function QRScanner({
     setCurrentCameraIndex(nextIndex);
     
     setTimeout(() => {
-      if (mountedRef.current) {
-        startScanningWithCamera(cameras[nextIndex].deviceId);
+      if (mountedRef.current && cameras[nextIndex]) {
+        startScanningWithCamera(cameras[nextIndex]?.deviceId || '');
       }
     }, 500);
   };
@@ -416,7 +416,7 @@ export default function QRScanner({
         ) : (
           <Button 
             variant="default" 
-            onClick={() => startScanningWithCamera(cameras[currentCameraIndex]?.deviceId)}
+            onClick={() => startScanningWithCamera(cameras[currentCameraIndex]?.deviceId || '')}
             className="flex-1"
           >
             <Camera className="h-4 w-4 ml-2" />
