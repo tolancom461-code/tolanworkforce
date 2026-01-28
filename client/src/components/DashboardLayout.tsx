@@ -93,6 +93,7 @@ const menuSections = [
     items: [
       { icon: DollarSign, label: "دفعات الرواتب", path: "/payroll/batches" },
       { icon: PlusCircle, label: "إنشاء دفعة رواتب", path: "/payroll/batches/create" },
+      { icon: FileText, label: "سجل دفعات الرواتب", path: "/finance/payroll/history" },
       { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
       { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
       { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },

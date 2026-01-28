@@ -2518,3 +2518,43 @@ Add "Approve Full Attendance" option that:
 - [x] إضافة رابط "استثناءات الرواتب" في قسم الرواتب والمالية
 - [x] ربط الرابط بالصلاحية المناسبة
 - [x] حفظ checkpoint
+
+
+## Payroll Batch History Page (سجل دفعات الرواتب)
+
+### Phase 1: Backend API
+- [ ] Create API: getPayrollBatches (with search and filtering)
+  - [ ] Search by batch ID (PB-2026-001)
+  - [ ] Filter by date range (from/to)
+  - [ ] Filter by status (draft, submitted, accountant_review, financial_review, manager_review, approved, paid, rejected)
+  - [ ] Filter by cost center
+  - [ ] Sort by date, batch ID, total amount
+  - [ ] Pagination support
+
+### Phase 2: Frontend UI
+- [ ] Create PayrollBatchHistory.tsx page
+- [ ] Add data table with columns: Batch ID, Date, Status, Workers, Total Amount, Actions
+- [ ] Add search box for batch ID
+- [ ] Add date range picker (from/to)
+- [ ] Add status filter dropdown
+- [ ] Add cost center filter dropdown
+- [ ] Add sort options
+- [ ] Add view details button
+- [ ] Add edit button (DRAFT only)
+- [ ] Add delete button (DRAFT only)
+- [ ] Add export to Excel button
+- [ ] Add print button
+
+### Phase 3: Integration
+- [ ] Add route /finance/payroll/history to App.tsx
+- [ ] Add menu item to DashboardLayout sidebar
+- [ ] Add link in PayrollBatches page
+
+### Phase 4: Testing & Checkpoint
+- [ ] Test search functionality
+- [ ] Test filtering by status, date, cost center
+- [ ] Test sorting
+- [ ] Test pagination
+- [ ] Test export to Excel
+- [ ] Test print functionality
+- [ ] Save checkpoint

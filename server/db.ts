@@ -1915,6 +1915,116 @@ export async function createPayrollBatch(params: {
 }
 
 /**
+ * Get payroll batches with search and filtering
+ */
+export async function getPayrollBatches(params: {
+  search?: string; // Search by batch ID
+  statusFilter?: string; // Filter by status
+  costCenterFilter?: number; // Filter by cost center
+  dateFrom?: string; // Filter by date from
+  dateTo?: string; // Filter by date to
+  sortBy?: 'date' | 'batchId' | 'totalAmount'; // Sort option
+  sortOrder?: 'asc' | 'desc'; // Sort order
+  limit?: number; // Pagination limit
+  offset?: number; // Pagination offset
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  let query = db
+    .select({
+      id: payrollBatches.id,
+      batchCode: payrollBatches.batchCode,
+      periodStart: payrollBatches.periodStart,
+      periodEnd: payrollBatches.periodEnd,
+      status: payrollBatches.status,
+      totalAmount: payrollBatches.totalAmount,
+      totalWorkers: payrollBatches.totalWorkers,
+      totalDeductions: payrollBatches.totalDeductions,
+      totalBonuses: payrollBatches.totalBonuses,
+      createdAt: payrollBatches.createdAt,
+      costCenterName: sql<string>`COALESCE(${costCenters.name}, 'All')`,
+    })
+    .from(payrollBatches)
+    .leftJoin(costCenters, eq(payrollBatches.costCenterId, costCenters.id));
+
+  // Apply filters
+  const conditions = [];
+
+  if (params.search) {
+    conditions.push(sql`${payrollBatches.batchCode} LIKE ${'%' + params.search + '%'}`);
+  }
+
+  if (params.statusFilter) {
+    conditions.push(eq(payrollBatches.status, params.statusFilter as any));
+  }
+
+  if (params.costCenterFilter) {
+    conditions.push(eq(payrollBatches.costCenterId, params.costCenterFilter));
+  }
+
+  if (params.dateFrom) {
+    conditions.push(sql`${payrollBatches.createdAt} >= ${params.dateFrom}`);
+  }
+
+  if (params.dateTo) {
+    conditions.push(sql`${payrollBatches.createdAt} <= ${params.dateTo}`);
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions));
+  }
+
+  // Apply sorting
+  if (params.sortBy === 'batchId') {
+    query = query.orderBy(
+      params.sortOrder === 'desc' 
+        ? desc(payrollBatches.batchCode) 
+        : payrollBatches.batchCode
+    );
+  } else if (params.sortBy === 'totalAmount') {
+    query = query.orderBy(
+      params.sortOrder === 'desc' 
+        ? desc(payrollBatches.totalAmount) 
+        : payrollBatches.totalAmount
+    );
+  } else {
+    // Default sort by date
+    query = query.orderBy(
+      params.sortOrder === 'desc' 
+        ? desc(payrollBatches.createdAt) 
+        : payrollBatches.createdAt
+    );
+  }
+
+  // Apply pagination
+  if (params.limit) {
+    query = query.limit(params.limit);
+  }
+  if (params.offset) {
+    query = query.offset(params.offset);
+  }
+
+  const batches = await query;
+
+  // Get total count for pagination
+  let countQuery = db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(payrollBatches);
+
+  if (conditions.length > 0) {
+    countQuery = countQuery.where(and(...conditions));
+  }
+
+  const [{ count }] = await countQuery;
+
+  return {
+    batches,
+    total: count,
+  };
+}
+
+/**
  * Get payroll batch details with items
  */
 export async function getPayrollBatchDetails(batchId: number) {

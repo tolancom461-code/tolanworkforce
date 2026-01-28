@@ -25,6 +25,7 @@ import PayrollBatches from "./pages/PayrollBatches";
 import PayrollBatchList from "./pages/payroll/PayrollBatchList";
 import PayrollBatchCreate from "./pages/payroll/PayrollBatchCreate";
 import PayrollBatchDetails from "./pages/payroll/PayrollBatchDetails";
+import PayrollBatchHistory from "./pages/PayrollBatchHistory";
 import AccountantReview from "./pages/payroll/AccountantReview";
 import FinancialReview from "./pages/payroll/FinancialReview";
 import AccountsManagerReview from "./pages/payroll/AccountsManagerReview";
@@ -96,6 +97,11 @@ function Router() {
       {/* Finance System Routes */}
       <Route path="/finance/overrides" component={PayOverrides} />
       <Route path="/finance/payroll" component={PayrollBatches} />
+      <Route path="/finance/payroll/history">
+        <ProtectedRoute>
+          <PayrollBatchHistory />
+        </ProtectedRoute>
+      </Route>
       <Route path="/payroll/batches">
         <ProtectedRoute>
           <PayrollBatchList />

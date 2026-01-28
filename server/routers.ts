@@ -1179,6 +1179,33 @@ export const appRouter = router({
         });
       }),
     
+    // Get payroll batches with search and filtering
+    getPayrollBatches: protectedProcedure
+      .input(z.object({
+        search: z.string().optional(),
+        statusFilter: z.string().optional(),
+        costCenterFilter: z.number().optional(),
+        dateFrom: z.string().optional(),
+        dateTo: z.string().optional(),
+        sortBy: z.enum(['date', 'batchId', 'totalAmount']).optional(),
+        sortOrder: z.enum(['asc', 'desc']).optional(),
+        limit: z.number().optional(),
+        offset: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getPayrollBatches({
+          search: input.search,
+          statusFilter: input.statusFilter,
+          costCenterFilter: input.costCenterFilter,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+          sortBy: input.sortBy || 'date',
+          sortOrder: input.sortOrder || 'desc',
+          limit: input.limit || 10,
+          offset: input.offset || 0,
+        });
+      }),
+    
     // List all batches
     listBatches: protectedProcedure
       .input(z.object({
