@@ -121,11 +121,19 @@ export default function QRScanner({
     try {
       setError(null);
       
+      // Check if qr-reader element exists in DOM
+      const qrReaderElement = document.getElementById('qr-reader');
+      if (!qrReaderElement) {
+        console.error('qr-reader element not found in DOM');
+        setError('خطأ في تهيئة الكاميرا. يرجى إعادة تحميل الصفحة');
+        return;
+      }
+      
       // Create scanner if not exists
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode('qr-reader', {
           verbose: false,
-          formatsToSupport: undefined // Support all formats
+          formatsToSupport: undefined
         });
       }
 
