@@ -655,7 +655,15 @@ export const appRouter = router({
         
         // Get today's events
         const today = new Date().toISOString().split('T')[0];
-        const todayEvents = await db.getAttendanceEventsForEdit(worker.id, today);
+        const todayEventsRaw = await db.getAttendanceEventsForEdit(worker.id, today);
+        
+        // Convert snake_case from DB to camelCase for frontend
+        const todayEvents = todayEventsRaw.map((event: any) => ({
+          ...event,
+          eventTime: event.event_time || event.eventTime,
+          eventType: event.event_type || event.eventType,
+          workerId: event.worker_id || event.workerId,
+        }));
         
         return { 
           worker, 
