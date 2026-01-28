@@ -38,7 +38,6 @@ import OperationalFlags from "./pages/OperationalFlags";
 import PendingFlags from "./pages/PendingFlags";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { PERMISSIONS } from "../../shared/permissions";
 
 function Router() {
   return (
@@ -47,13 +46,13 @@ function Router() {
       <Route path="/home" component={Home} />
       <Route path="/local-login" component={LocalLogin} />
       <Route path="/dashboard">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.DASHBOARD_VIEW]}>
+        <ProtectedRoute>
           <Dashboard />
         </ProtectedRoute>
       </Route>
       <Route path="/executive" component={ExecutiveDashboard} />
       <Route path="/users">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.USER_VIEW]}>
+        <ProtectedRoute>
           <Users />
         </ProtectedRoute>
       </Route>
@@ -63,24 +62,24 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/groups" component={Groups} />
       <Route path="/workers">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.WORKER_VIEW]}>
+        <ProtectedRoute>
           <Workers />
         </ProtectedRoute>
       </Route>
       <Route path="/workers/:id">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.WORKER_VIEW]}>
+        <ProtectedRoute>
           <WorkerDetails />
         </ProtectedRoute>
       </Route>
       <Route path="/workers/:id/card" component={WorkerCard} />
       {/* Attendance System Routes */}
       <Route path="/attendance">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.ATTENDANCE_RECORD]}>
+        <ProtectedRoute>
           <AttendanceScanner />
         </ProtectedRoute>
       </Route>
       <Route path="/attendance/log">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.ATTENDANCE_VIEW]}>
+        <ProtectedRoute>
           <AttendanceLog />
         </ProtectedRoute>
       </Route>
@@ -89,7 +88,7 @@ function Router() {
 
       <Route path="/work-days" component={WorkDays} />
       <Route path="/operational-flags">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.OPERATIONAL_FLAGS_VIEW]}>
+        <ProtectedRoute>
           <OperationalFlags />
         </ProtectedRoute>
       </Route>
@@ -98,17 +97,17 @@ function Router() {
       <Route path="/finance/overrides" component={PayOverrides} />
       <Route path="/finance/payroll" component={PayrollBatches} />
       <Route path="/payroll/batches">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.PAYROLL_VIEW]}>
+        <ProtectedRoute>
           <PayrollBatchList />
         </ProtectedRoute>
       </Route>
       <Route path="/payroll/batches/create">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.PAYROLL_CREATE]}>
+        <ProtectedRoute>
           <PayrollBatchCreate />
         </ProtectedRoute>
       </Route>
       <Route path="/payroll/batches/:id">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.PAYROLL_VIEW]}>
+        <ProtectedRoute>
           <PayrollBatchDetails />
         </ProtectedRoute>
       </Route>
@@ -116,7 +115,7 @@ function Router() {
       <Route path="/payroll/batches/:id/financial-review" component={FinancialReview} />
       <Route path="/payroll/batches/:id/manager-review" component={AccountsManagerReview} />
       <Route path="/finance/reports">
-        <ProtectedRoute requiredPermissions={[PERMISSIONS.FINANCIAL_REPORTS_VIEW]}>
+        <ProtectedRoute>
           <FinancialReports />
         </ProtectedRoute>
       </Route>

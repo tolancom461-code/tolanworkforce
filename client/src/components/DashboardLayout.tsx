@@ -65,34 +65,51 @@ import { Button } from "./ui/button";
 // تصنيف القوائم حسب الأدوار والوظائف
 const menuSections = [
   {
-    label: "📋 لوحات التحكم",
+    label: "📊 لوحات التحكم",
     items: [
       { icon: LayoutDashboard, label: "الرئيسية", path: "/dashboard" },
+      { icon: TrendingUp, label: "لوحة المدير", path: "/executive" },
     ]
   },
   {
-    label: "👥 الموارد البشرية",
+    label: "👥 إدارة الموارد البشرية",
     items: [
+      { icon: Users, label: "المستخدمين", path: "/users" },
+      { icon: UsersRound, label: "العمال", path: "/workers" },
+      { icon: Briefcase, label: "المجموعات", path: "/groups" },
     ]
   },
   {
-    label: "⏰ الحضور والانصراف",
+    label: "⏰ إدارة الحضور والانصراف",
     items: [
+      { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },
+      { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log" },
+      { icon: FileText, label: "تقارير الحضور", path: "/attendance/reports" },
+      { icon: Clock, label: "أيام العمل", path: "/work-days" },
     ]
   },
   {
-    label: "💰 الرواتب والمالية",
+    label: "💰 إدارة الرواتب والمالية",
     items: [
+      { icon: DollarSign, label: "دفعات الرواتب", path: "/payroll/batches" },
+      { icon: PlusCircle, label: "إنشاء دفعة رواتب", path: "/payroll/batches/create" },
+      { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
+      { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
+      { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },
     ]
   },
   {
     label: "📋 البيانات المرجعية",
     items: [
+      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
+      { icon: Flag, label: "الأعلام التشغيلية", path: "/operational-flags" },
+      { icon: CheckCircle, label: "الأعلام المعلقة", path: "/pending-flags" },
     ]
   },
   {
     label: "⚙️ إعدادات النظام",
     items: [
+      { icon: Settings, label: "الملف الشخصي", path: "/profile" },
     ]
   },
 ];
@@ -196,18 +213,8 @@ function DashboardLayoutContent({
     }));
   };
   
-  // NOTE: Permission system removed - all users have full permissions
-  const checkPermission = () => true; // Always return true
-  
-  // فلترة القوائم حسب الصلاحيات
-  const filteredMenuSections = menuSections
-    .map(section => ({
-      ...section,
-      items: section.items.filter(item => 
-        !item.permission || checkPermission(item.permission)
-      )
-    }))
-    .filter(section => section.items.length > 0); // إخفاء الأقسام الفارغة
+  // جميع المستخدمين لديهم وصول كامل - لا توجد فحوصات صلاحيات
+  const filteredMenuSections = menuSections;
 
   const isMobile = useIsMobile();
 
@@ -249,16 +256,14 @@ function DashboardLayoutContent({
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Users className="h-4 w-4" />
             </div>
-            {!isCollapsed && (
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold">TolanWorkforce</span>
-                <span className="text-xs text-muted-foreground">نظام إدارة القوى العاملة</span>
-              </div>
-            )}
+            <div className="flex flex-col gap-0.5 leading-none">
+              <span className="font-semibold">TolanWorkforce</span>
+              <span className="text-xs text-muted-foreground">نظام إدارة القوى العاملة</span>
+            </div>
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="px-2 py-2">
+        <SidebarContent>
           <SidebarMenu>
             {filteredMenuSections.map((section) => (
               <Collapsible
@@ -267,105 +272,85 @@ function DashboardLayoutContent({
                 onOpenChange={() => toggleSection(section.label)}
                 className="group/collapsible"
               >
-                <SidebarMenuItem>
+                <SidebarGroup>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton
-                      tooltip={section.label}
-                      className="w-full justify-between font-semibold"
-                    >
-                      <span>{section.label}</span>
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=closed]/collapsible:rotate-180" />
-                    </SidebarMenuButton>
+                    <SidebarGroupLabel className="cursor-pointer hover:text-foreground transition-colors">
+                      {section.label}
+                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-0 group-data-[state=closed]/collapsible:-rotate-90" />
+                    </SidebarGroupLabel>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <SidebarMenu className="mt-1 space-y-0.5">
-                      {section.items.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = location === item.path;
-                        return (
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {section.items.map((item) => (
                           <SidebarMenuItem key={item.path}>
                             <SidebarMenuButton
+                              asChild
+                              isActive={location === item.path}
                               onClick={() => setLocation(item.path)}
-                              isActive={isActive}
-                              tooltip={item.label}
-                              className="pl-8"
                             >
-                              <Icon className="h-4 w-4" />
-                              <span>{item.label}</span>
+                              <a href={item.path} className="flex items-center gap-2">
+                                <item.icon className="h-4 w-4" />
+                                <span>{item.label}</span>
+                              </a>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
-                        );
-                      })}
-                    </SidebarMenu>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
                   </CollapsibleContent>
-                </SidebarMenuItem>
+                </SidebarGroup>
               </Collapsible>
             ))}
           </SidebarMenu>
         </SidebarContent>
 
-        <SidebarFooter className="border-t p-2">
+        <SidebarFooter className="border-t">
           <SidebarMenu>
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton
-                    size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                  >
-                    <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg">
-                        {user?.fullName?.charAt(0) || "a"}
+                  <SidebarMenuButton>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-xs">
+                        {user?.fullName?.split(" ").map(n => n[0]).join("") || "U"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="grid flex-1 text-right text-sm leading-tight">
-                      <span className="truncate font-semibold">{user?.fullName || "anem2031"}</span>
-                      <span className="truncate text-xs">{user?.email || "anem2031@gmail.com"}</span>
-                    </div>
+                    <span className="truncate">{user?.fullName}</span>
+                    <ChevronDown className="ml-auto h-4 w-4" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                  side="top"
-                  align="end"
-                  sideOffset={4}
-                >
-                  <DropdownMenuItem onClick={logout}>
-                    <LogOut className="ml-2 h-4 w-4" />
-                    تسجيل الخروج
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    {user?.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>الملف الشخصي</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => logout()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>تسجيل الخروج</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <ThemeToggle />
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
-
-        {!isMobile && !isCollapsed && (
-          <div
-            className="absolute left-0 top-0 h-full w-1 cursor-ew-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
-            onMouseDown={handleMouseDown}
-            style={{
-              userSelect: "none",
-            }}
-          />
-        )}
       </Sidebar>
 
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
-          <div className="flex items-center gap-2 flex-1">
-            <span className="text-lg font-semibold">
-              {filteredMenuSections
-                .flatMap((s) => s.items)
-                .find((item) => item.path === location)?.label || "لوحة التحكم"}
-            </span>
-          </div>
+          <div className="flex-1" />
           <ThemeToggle />
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 overflow-auto">
+        <main className="flex-1 overflow-auto">
           {children}
-        </div>
+        </main>
       </SidebarInset>
     </>
   );
