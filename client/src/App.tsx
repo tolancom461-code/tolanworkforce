@@ -98,7 +98,7 @@ function Router() {
           <OperationalFlagsSimple />
         </ProtectedRoute>
       </Route>
-      <Route path="/pending-flags" component={PendingFlags} />
+      {/* Route removed: /pending-flags - using OperationalFlagsSimple instead */}
       {/* Finance System Routes */}
       <Route path="/finance/overrides" component={PayOverrides} />
       <Route path="/finance/entry">
