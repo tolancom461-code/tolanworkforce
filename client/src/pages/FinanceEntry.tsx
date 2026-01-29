@@ -227,7 +227,7 @@ export default function FinanceEntry() {
                         {getEntryTypeBadge(entry.entryType)}
                       </TableCell>
                       <TableCell className="text-center font-bold">
-                        {entry.amount.toLocaleString('ar-SA')} ر.س
+                        {entry.amount ? Number(entry.amount).toLocaleString('ar-SA') : '0'} ر.س
                       </TableCell>
                       <TableCell className="text-center text-sm max-w-xs">
                         <div className="truncate" title={entry.reason}>
