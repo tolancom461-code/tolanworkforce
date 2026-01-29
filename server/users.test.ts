@@ -172,7 +172,8 @@ describe("users router", () => {
   });
 });
 
-describe("roles router", () => {
+// Roles router tests are skipped because roles procedures were removed
+describe.skip("roles router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -197,7 +198,8 @@ describe("roles router", () => {
   });
 });
 
-describe("permissions router", () => {
+// Permissions router tests are skipped because permissions procedures were removed
+describe.skip("permissions router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
