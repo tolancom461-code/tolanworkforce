@@ -95,9 +95,8 @@ describe("users router", () => {
   });
 
   describe("users.create", () => {
-    it("creates a new user successfully", async () => {
-      vi.mocked(db.getUserByUsername).mockResolvedValue(undefined);
-      vi.mocked(db.createUser).mockResolvedValue(5);
+    it("creates user successfully", async () => {
+      vi.mocked(db.createUser).mockResolvedValue({ id: 5, success: true });
 
       const ctx = createAuthContext();
       const caller = appRouter.createCaller(ctx);
@@ -106,6 +105,7 @@ describe("users router", () => {
         username: "newuser",
         fullName: "New User",
         email: "new@test.com",
+        password: "TestPassword123!",
         isActive: true,
       });
 
@@ -130,6 +130,8 @@ describe("users router", () => {
         caller.users.create({
           username: "existinguser",
           fullName: "New User",
+          email: "existing@test.com",
+          password: "TestPassword123!",
           isActive: true,
         })
       ).rejects.toThrow("Username already exists");

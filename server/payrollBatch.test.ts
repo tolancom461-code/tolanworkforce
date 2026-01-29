@@ -1,8 +1,32 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as db from './db';
 
 describe('Advanced Payroll Batch System', () => {
   const testUserId = 1; // Assuming user ID 1 exists
+  const createdBatchIds: number[] = [];
+
+  // Generate unique batch code with timestamp
+  const generateUniqueBatchCode = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 1000);
+    return `PB-${timestamp}-${random}`;
+  };
+
+  beforeEach(() => {
+    // Clear batch IDs before each test
+    createdBatchIds.length = 0;
+  });
+
+  afterEach(async () => {
+    // Clean up created batches after each test
+    for (const batchId of createdBatchIds) {
+      try {
+        await db.deleteBatch(batchId);
+      } catch (error) {
+        // Ignore errors during cleanup
+      }
+    }
+  });
 
   describe('Phase 1: Batch Creation', () => {
     it('should create a payroll batch in DRAFT status', async () => {
@@ -12,6 +36,8 @@ describe('Advanced Payroll Batch System', () => {
         createdBy: testUserId,
       });
 
+      createdBatchIds.push(result.batchId);
+
       expect(result).toHaveProperty('batchId');
       expect(result).toHaveProperty('batchCode');
       expect(result.batchId).toBeGreaterThan(0);
@@ -19,10 +45,12 @@ describe('Advanced Payroll Batch System', () => {
 
     it('should get batch details', async () => {
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-01-01',
-        periodEnd: '2026-01-07',
+        periodStart: '2026-01-08',
+        periodEnd: '2026-01-14',
         createdBy: testUserId,
       });
+
+      createdBatchIds.push(createResult.batchId);
 
       const details = await db.getPayrollBatchDetails(createResult.batchId);
       
@@ -33,10 +61,19 @@ describe('Advanced Payroll Batch System', () => {
     });
 
     it('should list batches by status', async () => {
+      // Create a batch first
+      const createResult = await db.createPayrollBatch({
+        periodStart: '2026-01-15',
+        periodEnd: '2026-01-21',
+        createdBy: testUserId,
+      });
+
+      createdBatchIds.push(createResult.batchId);
+
       const batches = await db.getBatchesByStatus('draft');
       
       expect(Array.isArray(batches)).toBe(true);
-      expect(batches.length).toBeGreaterThan(0);
+      expect(batches.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -44,11 +81,12 @@ describe('Advanced Payroll Batch System', () => {
     it('should complete full approval workflow: draft → approved', async () => {
       // Step 1: Create batch
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-01-08',
-        periodEnd: '2026-01-14',
+        periodStart: '2026-01-22',
+        periodEnd: '2026-01-28',
         createdBy: testUserId,
       });
       const batchId = createResult.batchId;
+      createdBatchIds.push(batchId);
 
       // Step 2: Submit for review
       await db.submitBatchForReview(batchId, testUserId);
@@ -75,11 +113,12 @@ describe('Advanced Payroll Batch System', () => {
   describe('Phase 3: Rejection Workflows', () => {
     it('should allow accountant to reject batch', async () => {
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-01-15',
-        periodEnd: '2026-01-21',
+        periodStart: '2026-02-01',
+        periodEnd: '2026-02-07',
         createdBy: testUserId,
       });
       const batchId = createResult.batchId;
+      createdBatchIds.push(batchId);
 
       await db.submitBatchForReview(batchId, testUserId);
       
@@ -99,11 +138,12 @@ describe('Advanced Payroll Batch System', () => {
 
     it('should allow financial reviewer to reject batch', async () => {
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-01-22',
-        periodEnd: '2026-01-28',
+        periodStart: '2026-02-08',
+        periodEnd: '2026-02-14',
         createdBy: testUserId,
       });
       const batchId = createResult.batchId;
+      createdBatchIds.push(batchId);
 
       await db.submitBatchForReview(batchId, testUserId);
       await db.accountantApproveBatch(batchId, testUserId);
@@ -122,11 +162,12 @@ describe('Advanced Payroll Batch System', () => {
 
     it('should allow accounts manager to reject batch finally', async () => {
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-01-29',
-        periodEnd: '2026-02-04',
+        periodStart: '2026-02-15',
+        periodEnd: '2026-02-21',
         createdBy: testUserId,
       });
       const batchId = createResult.batchId;
+      createdBatchIds.push(batchId);
 
       await db.submitBatchForReview(batchId, testUserId);
       await db.accountantApproveBatch(batchId, testUserId);
@@ -144,11 +185,12 @@ describe('Advanced Payroll Batch System', () => {
 
     it('should track rejection count correctly', async () => {
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-02-05',
-        periodEnd: '2026-02-11',
+        periodStart: '2026-02-22',
+        periodEnd: '2026-02-28',
         createdBy: testUserId,
       });
       const batchId = createResult.batchId;
+      createdBatchIds.push(batchId);
 
       // First rejection
       await db.submitBatchForReview(batchId, testUserId);
@@ -179,8 +221,8 @@ describe('Advanced Payroll Batch System', () => {
   describe('Phase 4: Batch Deletion', () => {
     it('should allow deleting DRAFT batches only', async () => {
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-02-12',
-        periodEnd: '2026-02-18',
+        periodStart: '2026-03-01',
+        periodEnd: '2026-03-07',
         createdBy: testUserId,
       });
 
@@ -190,28 +232,32 @@ describe('Advanced Payroll Batch System', () => {
 
     it('should not allow deleting non-DRAFT batches', async () => {
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-02-19',
-        periodEnd: '2026-02-25',
+        periodStart: '2026-03-08',
+        periodEnd: '2026-03-14',
         createdBy: testUserId,
       });
+      const batchId = createResult.batchId;
+      createdBatchIds.push(batchId);
 
-      await db.submitBatchForReview(createResult.batchId, testUserId);
+      await db.submitBatchForReview(batchId, testUserId);
 
-      await expect(db.deleteBatch(createResult.batchId)).rejects.toThrow('Can only delete draft batches');
+      await expect(db.deleteBatch(batchId)).rejects.toThrow('Can only delete draft batches');
     });
   });
 
   describe('Phase 5: Edge Cases', () => {
     it('should not allow submitting non-DRAFT batch', async () => {
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-02-26',
-        periodEnd: '2026-03-04',
+        periodStart: '2026-03-15',
+        periodEnd: '2026-03-21',
         createdBy: testUserId,
       });
+      const batchId = createResult.batchId;
+      createdBatchIds.push(batchId);
 
-      await db.submitBatchForReview(createResult.batchId, testUserId);
+      await db.submitBatchForReview(batchId, testUserId);
 
-      await expect(db.submitBatchForReview(createResult.batchId, testUserId))
+      await expect(db.submitBatchForReview(batchId, testUserId))
         .rejects.toThrow();
     });
 
@@ -221,12 +267,14 @@ describe('Advanced Payroll Batch System', () => {
 
     it('should not allow accountant to approve non-pending batch', async () => {
       const createResult = await db.createPayrollBatch({
-        periodStart: '2026-03-05',
-        periodEnd: '2026-03-11',
+        periodStart: '2026-03-22',
+        periodEnd: '2026-03-28',
         createdBy: testUserId,
       });
+      const batchId = createResult.batchId;
+      createdBatchIds.push(batchId);
 
-      await expect(db.accountantApproveBatch(createResult.batchId, testUserId))
+      await expect(db.accountantApproveBatch(batchId, testUserId))
         .rejects.toThrow();
     });
   });
