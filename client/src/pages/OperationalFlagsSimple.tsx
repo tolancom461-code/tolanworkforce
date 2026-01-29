@@ -187,8 +187,8 @@ export default function OperationalFlagsSimple() {
         </Dialog>
       </div>
 
-      {/* Pending Flags */}
-      <Card className="p-6">
+      {/* Pending Flags - Hidden Temporarily */}
+      {false && <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">البلاغات المعلقة ({pendingFlags.length})</h2>
         {pendingFlags.length > 0 ? (
           <div className="space-y-3">
@@ -240,10 +240,11 @@ export default function OperationalFlagsSimple() {
             لا توجد بلاغات معلقة ✅
           </p>
         )}
-      </Card>
+      </Card>}
+      {/* End Hidden Pending Flags */}
 
-      {/* All Flags */}
-      <Card className="p-6">
+      {/* All Flags - Hidden Temporarily */}
+      {false && <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">جميع البلاغات</h2>
         {allFlags && allFlags.length > 0 ? (
           <div className="space-y-2">
@@ -263,7 +264,8 @@ export default function OperationalFlagsSimple() {
         ) : (
           <p className="text-center text-muted-foreground py-4">لا توجد بلاغات</p>
         )}
-      </Card>
+      </Card>}
+      {/* End Hidden All Flags */}
     </div>
   );
 }
