@@ -798,6 +798,36 @@ export const appRouter = router({
         }
         return results;
       }),
+
+    // Get daily attendance records for a specific date
+    getDailyRecords: protectedProcedure
+      .input(z.object({
+        date: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getDailyAttendanceRecords(input.date);
+      }),
+
+    // Update a daily attendance record
+    updateDailyRecord: protectedProcedure
+      .input(z.object({
+        recordId: z.number(),
+        checkInTime: z.string().nullable(),
+        checkOutTime: z.string().nullable(),
+        status: z.enum(['present', 'absent', 'late', 'early_leave', 'override']),
+        notes: z.string().nullable(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.updateDailyAttendanceRecord(
+          input.recordId,
+          input.checkInTime,
+          input.checkOutTime,
+          input.status,
+          input.notes,
+          ctx.user.id
+        );
+      }),
   }),
 
   // Work Days Management
@@ -1785,6 +1815,53 @@ export const appRouter = router({
 
   // NOTE: scopedPermissions router has been removed.
   // All users have full permissions now.
+
+  // Daily Finance Entries Router
+  dailyFinance: router({
+    list: protectedProcedure
+      .input(z.object({
+        workerId: z.number().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.listDailyFinanceEntries(input);
+      }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        entryType: z.enum(['deduction', 'bonus']),
+        amount: z.number().positive(),
+        reason: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error('Not authenticated');
+        return await db.createDailyFinanceEntry({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+      }),
+    
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        amount: z.number().positive().optional(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.updateDailyFinanceEntry(input.id, {
+          amount: input.amount,
+          reason: input.reason,
+        });
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteDailyFinanceEntry(input.id);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

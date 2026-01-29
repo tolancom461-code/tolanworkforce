@@ -17,10 +17,12 @@ import WorkerDetails from "./pages/WorkerDetails";
 import AttendanceScanner from "./pages/AttendanceScanner";
 import AttendanceLog from "./pages/AttendanceLog";
 import AttendanceReports from "./pages/AttendanceReports";
+import DailyManagement from "./pages/DailyManagement";
 import WorkDays from "./pages/WorkDays";
 
 
 import PayOverrides from "./pages/PayOverrides";
+import FinanceEntry from "./pages/FinanceEntry";
 import PayrollBatches from "./pages/PayrollBatches";
 import PayrollBatchList from "./pages/payroll/PayrollBatchList";
 import PayrollBatchCreate from "./pages/payroll/PayrollBatchCreate";
@@ -85,7 +87,11 @@ function Router() {
         </ProtectedRoute>
       </Route>
       <Route path="/attendance/reports" component={AttendanceReports} />
-
+      <Route path="/attendance/daily-management">
+        <ProtectedRoute>
+          <DailyManagement />
+        </ProtectedRoute>
+      </Route>
 
       <Route path="/work-days" component={WorkDays} />
       <Route path="/operational-flags">
@@ -96,6 +102,11 @@ function Router() {
       <Route path="/pending-flags" component={PendingFlags} />
       {/* Finance System Routes */}
       <Route path="/finance/overrides" component={PayOverrides} />
+      <Route path="/finance/entry">
+        <ProtectedRoute>
+          <FinanceEntry />
+        </ProtectedRoute>
+      </Route>
       <Route path="/finance/payroll" component={PayrollBatches} />
       <Route path="/finance/payroll/history">
         <ProtectedRoute>

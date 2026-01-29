@@ -523,32 +523,7 @@ export default function Workers() {
                               <Pencil className="h-4 w-4" />
                             </Button>
                           )}
-                          {hasPermission(PERMISSIONS.WORKER_DELETE) && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" title="حذف">
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </AlertDialogTrigger>
-                            <AlertDialogContent dir="rtl">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  هل أنت متأكد من حذف العامل "{worker.fullName}"؟
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate({ id: worker.id })}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  حذف
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                          )}
+                          {/* Delete button disabled - workers cannot be deleted after creation */}
                         </div>
                       </TableCell>
                     </TableRow>
