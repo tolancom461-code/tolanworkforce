@@ -13,7 +13,8 @@ import {
   payrollBatches,
   payrollBatchItems,
   payrollBatchNotes,
-  payrollBatchCorrections
+  payrollBatchCorrections,
+  operationalFlags
 } from "../drizzle/schema";
 
 // Rename Worker type to avoid conflict with Web Worker
