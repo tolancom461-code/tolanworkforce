@@ -3395,24 +3395,19 @@ export async function listOperationalFlags(filters?: {
   let query = db
     .select({
       id: operationalFlags.id,
-      flagType: operationalFlags.flagType,
       workerId: operationalFlags.workerId,
       workerName: workers.fullName,
       workerCode: workers.code,
       groupId: operationalFlags.groupId,
       groupName: groups.name,
       flagDate: operationalFlags.flagDate,
-      endDate: operationalFlags.endDate,
       description: operationalFlags.description,
-      attachments: operationalFlags.attachments,
-      amount: operationalFlags.amount,
       status: operationalFlags.status,
       createdBy: operationalFlags.createdBy,
       createdByName: users.fullName,
-      resolvedBy: operationalFlags.resolvedBy,
-      resolvedAt: operationalFlags.resolvedAt,
-      resolutionAction: operationalFlags.resolutionAction,
-      resolutionNotes: operationalFlags.resolutionNotes,
+      approvedBy: operationalFlags.approvedBy,
+      approvedAt: operationalFlags.approvedAt,
+      approvalNotes: operationalFlags.approvalNotes,
       createdAt: operationalFlags.createdAt,
       updatedAt: operationalFlags.updatedAt,
     })
@@ -3435,9 +3430,7 @@ export async function listOperationalFlags(filters?: {
     conditions.push(eq(operationalFlags.groupId, filters.groupId));
   }
 
-  if (filters?.flagType) {
-    conditions.push(eq(operationalFlags.flagType, filters.flagType as any));
-  }
+  // flagType filter removed - not available in schema
 
   if (filters?.startDate) {
     conditions.push(sql`${operationalFlags.flagDate} >= ${filters.startDate}`);
@@ -3468,24 +3461,19 @@ export async function getOperationalFlag(id: number) {
   const [flag] = await db
     .select({
       id: operationalFlags.id,
-      flagType: operationalFlags.flagType,
       workerId: operationalFlags.workerId,
       workerName: workers.fullName,
       workerCode: workers.code,
       groupId: operationalFlags.groupId,
       groupName: groups.name,
       flagDate: operationalFlags.flagDate,
-      endDate: operationalFlags.endDate,
       description: operationalFlags.description,
-      attachments: operationalFlags.attachments,
-      amount: operationalFlags.amount,
       status: operationalFlags.status,
       createdBy: operationalFlags.createdBy,
       createdByName: users.fullName,
-      resolvedBy: operationalFlags.resolvedBy,
-      resolvedAt: operationalFlags.resolvedAt,
-      resolutionAction: operationalFlags.resolutionAction,
-      resolutionNotes: operationalFlags.resolutionNotes,
+      approvedBy: operationalFlags.approvedBy,
+      approvedAt: operationalFlags.approvedAt,
+      approvalNotes: operationalFlags.approvalNotes,
       createdAt: operationalFlags.createdAt,
       updatedAt: operationalFlags.updatedAt,
     })
@@ -3498,54 +3486,59 @@ export async function getOperationalFlag(id: number) {
 
   if (!flag) return null;
 
-  return {
-    ...flag,
-    attachments: flag.attachments ? JSON.parse(flag.attachments as string) : null,
-  };
+  return flag;
 }
 
-export async function resolveOperationalFlag(
-  id: number,
-  resolvedBy: number,
-  action: string,
+export async function approveOperationalFlag(
+  flagId: number,
+  approvedBy: number,
   notes?: string
-) {
+): Promise<any> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
+  if (!db) throw new Error('Database not available');
   const { operationalFlags } = await import('../drizzle/schema');
 
-  await db
-    .update(operationalFlags)
-    .set({
-      status: 'RESOLVED',
-      resolvedBy,
-      resolvedAt: new Date(),
-      resolutionAction: action,
-      resolutionNotes: notes || null,
-    })
-    .where(eq(operationalFlags.id, id));
+  try {
+    await db.update(operationalFlags)
+      .set({
+        status: 'approved',
+        approvedBy,
+        approvedAt: new Date(),
+        approvalNotes: notes,
+      })
+      .where(eq(operationalFlags.id, flagId));
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    console.error('[Database] Error approving operational flag:', error);
+    throw error;
+  }
 }
 
-export async function ignoreOperationalFlag(id: number, resolvedBy: number, notes?: string) {
+export async function rejectOperationalFlag(
+  flagId: number,
+  approvedBy: number,
+  notes?: string
+): Promise<any> {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
+  if (!db) throw new Error('Database not available');
   const { operationalFlags } = await import('../drizzle/schema');
 
-  await db
-    .update(operationalFlags)
-    .set({
-      status: 'IGNORED',
-      resolvedBy,
-      resolvedAt: new Date(),
-      resolutionNotes: notes || null,
-    })
-    .where(eq(operationalFlags.id, id));
+  try {
+    await db.update(operationalFlags)
+      .set({
+        status: 'rejected',
+        approvedBy,
+        approvedAt: new Date(),
+        approvalNotes: notes,
+      })
+      .where(eq(operationalFlags.id, flagId));
 
-  return { success: true };
+    return { success: true };
+  } catch (error) {
+    console.error('[Database] Error rejecting operational flag:', error);
+    throw error;
+  }
 }
 
 export async function checkUnresolvedFlags(workerId?: number, groupId?: number, dateRange?: { start: string; end: string }) {
@@ -3693,6 +3686,14 @@ export async function listDailyFinanceEntries(input: {
       query = query.where(eq(workerDailyFinance.workerId, input.workerId));
     }
     
+    if (input.startDate) {
+      query = query.where(sql`${workerDailyFinance.workDate} >= ${input.startDate}`);
+    }
+    
+    if (input.endDate) {
+      query = query.where(sql`${workerDailyFinance.workDate} <= ${input.endDate}`);
+    }
+    
     const entries = await query;
     
     // Enrich with worker data
@@ -3703,11 +3704,14 @@ export async function listDailyFinanceEntries(input: {
         workerId: entry.workerId,
         workerName: worker[0]?.fullName || 'Unknown',
         workerCode: worker[0]?.code || '',
-        entryType: entry.entryType,
-        amount: entry.amount,
-        reason: entry.reason || '',
-        date: entry.date,
-        status: entry.status || 'pending',
+        workDate: entry.workDate,
+        baseAmount: entry.baseAmount,
+        deductions: entry.deductions,
+        bonuses: entry.bonuses,
+        netAmount: entry.netAmount,
+        lateMinutes: entry.lateMinutes,
+        earlyLeaveMinutes: entry.earlyLeaveMinutes,
+        notes: entry.notes || '',
       };
     }));
   } catch (error) {
@@ -3718,25 +3722,29 @@ export async function listDailyFinanceEntries(input: {
 
 export async function createDailyFinanceEntry(input: {
   workerId: number;
-  entryType: 'deduction' | 'bonus';
-  amount: number;
-  reason: string;
-  createdBy: number;
+  workDate: Date;
+  baseAmount?: number;
+  deductions?: number;
+  bonuses?: number;
+  notes?: string;
 }): Promise<any> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
 
   try {
+    const netAmount = (input.baseAmount || 0) - (input.deductions || 0) + (input.bonuses || 0);
+    
     const result = await db.insert(workerDailyFinance).values({
       workerId: input.workerId,
-      entryType: input.entryType,
-      amount: input.amount,
-      reason: input.reason,
-      date: new Date(),
-      status: 'pending',
+      workDate: input.workDate,
+      baseAmount: input.baseAmount || 0,
+      deductions: input.deductions || 0,
+      bonuses: input.bonuses || 0,
+      netAmount: netAmount,
+      notes: input.notes,
     });
 
-    return { success: true, id: (result as any)[0] };
+    return { success: true, id: (result as any).insertId || 0 };
   } catch (error) {
     console.error('[Database] Error creating daily finance entry:', error);
     throw error;
@@ -3746,8 +3754,10 @@ export async function createDailyFinanceEntry(input: {
 export async function updateDailyFinanceEntry(
   id: number,
   data: {
-    amount?: number;
-    reason?: string;
+    baseAmount?: number;
+    deductions?: number;
+    bonuses?: number;
+    notes?: string;
   }
 ): Promise<any> {
   const db = await getDb();
@@ -3755,8 +3765,21 @@ export async function updateDailyFinanceEntry(
 
   try {
     const updateData: any = {};
-    if (data.amount !== undefined) updateData.amount = data.amount;
-    if (data.reason !== undefined) updateData.reason = data.reason;
+    if (data.baseAmount !== undefined) updateData.baseAmount = data.baseAmount;
+    if (data.deductions !== undefined) updateData.deductions = data.deductions;
+    if (data.bonuses !== undefined) updateData.bonuses = data.bonuses;
+    if (data.notes !== undefined) updateData.notes = data.notes;
+
+    // Recalculate netAmount if any amount field changed
+    if (data.baseAmount !== undefined || data.deductions !== undefined || data.bonuses !== undefined) {
+      const entry = await db.select().from(workerDailyFinance).where(eq(workerDailyFinance.id, id)).limit(1);
+      if (entry[0]) {
+        const base = (data.baseAmount !== undefined ? data.baseAmount : (entry[0].baseAmount ? parseFloat(entry[0].baseAmount.toString()) : 0)) || 0;
+        const deductions = (data.deductions !== undefined ? data.deductions : (entry[0].deductions ? parseFloat(entry[0].deductions.toString()) : 0)) || 0;
+        const bonuses = (data.bonuses !== undefined ? data.bonuses : (entry[0].bonuses ? parseFloat(entry[0].bonuses.toString()) : 0)) || 0;
+        updateData.netAmount = base - deductions + bonuses;
+      }
+    }
 
     await db.update(workerDailyFinance)
       .set(updateData)
@@ -3851,57 +3874,7 @@ export async function getPendingOperationalFlags(): Promise<any[]> {
   }
 }
 
-export async function approveOperationalFlag(
-  flagId: number,
-  approvedBy: number,
-  notes?: string
-): Promise<any> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  const { operationalFlags } = await import('../drizzle/schema');
-
-  try {
-    await db.update(operationalFlags)
-      .set({
-        status: 'approved',
-        approvedBy,
-        approvedAt: new Date(),
-        approvalNotes: notes,
-      })
-      .where(eq(operationalFlags.id, flagId));
-
-    return { success: true };
-  } catch (error) {
-    console.error('[Database] Error approving operational flag:', error);
-    throw error;
-  }
-}
-
-export async function rejectOperationalFlag(
-  flagId: number,
-  approvedBy: number,
-  notes?: string
-): Promise<any> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-  const { operationalFlags } = await import('../drizzle/schema');
-
-  try {
-    await db.update(operationalFlags)
-      .set({
-        status: 'rejected',
-        approvedBy,
-        approvedAt: new Date(),
-        approvalNotes: notes,
-      })
-      .where(eq(operationalFlags.id, flagId));
-
-    return { success: true };
-  } catch (error) {
-    console.error('[Database] Error rejecting operational flag:', error);
-    throw error;
-  }
-}
+// Duplicate functions removed - already defined earlier in the file
 
 export async function checkPendingFlagsBeforePayroll(): Promise<number> {
   const db = await getDb();

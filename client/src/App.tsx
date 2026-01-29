@@ -38,7 +38,6 @@ import FinancialReports from "./pages/reports/FinancialReports";
 import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
 import OperationalFlagsSimple from "./pages/OperationalFlagsSimple";
-import PendingFlags from "./pages/PendingFlags";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
