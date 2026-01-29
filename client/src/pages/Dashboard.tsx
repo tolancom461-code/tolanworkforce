@@ -14,13 +14,6 @@ export default function Dashboard() {
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
-    {
-      title: "الأدوار",
-      value: stats?.roles || 0,
-      icon: Shield,
-      color: "text-chart-2",
-      bgColor: "bg-chart-2/10",
-    },
 {
       title: "المجموعات",
       value: stats?.groups || 0,

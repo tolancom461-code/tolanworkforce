@@ -73,9 +73,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.fullName = user.fullName;
       updateSet.fullName = user.fullName;
     }
-    if (user.roleId !== undefined) {
-      values.roleId = user.roleId;
-      updateSet.roleId = user.roleId;
+    if (user.role !== undefined) {
+      values.role = user.role;
+      updateSet.role = user.role;
     }
     if (user.isActive !== undefined) {
       values.isActive = user.isActive;
@@ -184,60 +184,25 @@ export async function deleteUser(id: number): Promise<void> {
 // Role Functions
 // ============================================
 
-export async function getAllRoles(): Promise<Role[]> {
-  const db = await getDb();
-  if (!db) return [];
+// NOTE: Role management functions removed - roles table no longer exists in schema
+// All users are now Admin with full access
 
-  return await db.select().from(roles).orderBy(roles.level);
+// Placeholder functions for backward compatibility
+export async function getAllRoles(): Promise<any[]> {
+  return [];
 }
 
-export async function getRoleById(id: number): Promise<Role | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const result = await db.select().from(roles).where(eq(roles.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+export async function getRoleById(id: number): Promise<any | undefined> {
+  return undefined;
 }
 
-export async function createRole(data: {
-  code: string;
-  name: string;
-  description?: string;
-  level?: number;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  const [result] = await db.insert(roles).values({
-    code: data.code,
-    name: data.name,
-    description: data.description || null,
-    level: data.level || 0,
-  });
-
-  return { id: Number(result.insertId), success: true };
+export async function createRole(data: any) {
+  return { id: 0, success: false };
 }
 
-export async function updateRole(id: number, data: {
-  code?: string;
-  name?: string;
-  description?: string;
-  level?: number;
-  isActive?: boolean;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  await db.update(roles)
-    .set(data)
-    .where(eq(roles.id, id));
-
-  return { success: true };
+export async function updateRole(id: number, data: any) {
+  return { success: false };
 }
-
-// NOTE: deactivateUsersByRole function removed - roleId no longer exists in schema
-
-// NOTE: All permission and role functions have been removed.
 // All users are now treated as Admin with full access.
 
 export async function checkUserPermission(userId: number, permissionCode: string): Promise<boolean> {
@@ -1973,7 +1938,7 @@ export async function getPayrollBatches(params: {
   }
 
   if (conditions.length > 0) {
-    query = query.where(and(...conditions));
+    query = query.where(and(...conditions)) as any;
   }
 
   // Apply sorting
@@ -1982,28 +1947,28 @@ export async function getPayrollBatches(params: {
       params.sortOrder === 'desc' 
         ? desc(payrollBatches.batchCode) 
         : payrollBatches.batchCode
-    );
+    ) as any;
   } else if (params.sortBy === 'totalAmount') {
     query = query.orderBy(
       params.sortOrder === 'desc' 
         ? desc(payrollBatches.totalAmount) 
         : payrollBatches.totalAmount
-    );
+    ) as any;
   } else {
     // Default sort by date
     query = query.orderBy(
       params.sortOrder === 'desc' 
         ? desc(payrollBatches.createdAt) 
         : payrollBatches.createdAt
-    );
+    ) as any;
   }
 
   // Apply pagination
   if (params.limit) {
-    query = query.limit(params.limit);
+    query = query.limit(params.limit) as any;
   }
   if (params.offset) {
-    query = query.offset(params.offset);
+    query = query.offset(params.offset) as any;
   }
 
   const batches = await query;
@@ -2014,7 +1979,7 @@ export async function getPayrollBatches(params: {
     .from(payrollBatches);
 
   if (conditions.length > 0) {
-    countQuery = countQuery.where(and(...conditions));
+    countQuery = countQuery.where(and(...conditions)) as any;
   }
 
   const [{ count }] = await countQuery;
@@ -2807,7 +2772,6 @@ export async function createLocalUser(data: {
   fullName: string;
   email?: string;
   phone?: string;
-  roleId?: number;
   isActive?: boolean;
 }) {
   const db = await getDb();
@@ -2815,17 +2779,16 @@ export async function createLocalUser(data: {
   
   const passwordHash = await hashPassword(data.password);
   
-  const [result] = await db.insert(users).values({
+  const [result] = await db.insert(users).values([{
     username: data.username,
     passwordHash,
     fullName: data.fullName,
     email: data.email,
     phone: data.phone,
-    roleId: data.roleId,
     isActive: data.isActive ?? true,
     loginMethod: 'local',
     role: 'user',
-  });
+  }]);
   
   return result.insertId;
 }
@@ -3448,7 +3411,7 @@ export async function listOperationalFlags(filters?: {
 
   return results.map(r => ({
     ...r,
-    attachments: r.attachments ? JSON.parse(r.attachments as string) : null,
+    // attachments field removed - not in schema
   }));
 }
 
@@ -3572,10 +3535,10 @@ export async function checkUnresolvedFlags(workerId?: number, groupId?: number, 
     count: flags.length,
     flags: flags.map(f => ({
       id: f.id,
-      flagType: f.flagType,
       workerId: f.workerId,
       flagDate: f.flagDate,
       description: f.description,
+      status: f.status,
     })),
   };
 }
@@ -3589,10 +3552,8 @@ export async function checkUnresolvedFlags(workerId?: number, groupId?: number, 
 /**
  * Check if a user has a specific permission on a specific scope
  * التحقق من صلاحية محددة على نطاق محدد
+ * NOTE: All users have full permissions now.
  */
-
-// NOTE: All permission functions have been removed.
-// All users have full permissions now.
 
 export async function updateUserRole(userId: number, role: 'user' | 'admin') {
   const db = await getDb();
@@ -3754,15 +3715,15 @@ export async function createDailyFinanceEntry(input: {
   try {
     const netAmount = (input.baseAmount || 0) - (input.deductions || 0) + (input.bonuses || 0);
     
-    const result = await db.insert(workerDailyFinance).values({
+    const result = await db.insert(workerDailyFinance).values([{
       workerId: input.workerId,
       workDate: input.workDate,
-      baseAmount: input.baseAmount || 0,
-      deductions: input.deductions || 0,
-      bonuses: input.bonuses || 0,
-      netAmount: netAmount,
+      baseAmount: input.baseAmount?.toString() || '0.00',
+      deductions: input.deductions?.toString() || '0.00',
+      bonuses: input.bonuses?.toString() || '0.00',
+      netAmount: netAmount.toString(),
       notes: input.notes,
-    });
+    }]);
 
     return { success: true, id: (result as any).insertId || 0 };
   } catch (error) {

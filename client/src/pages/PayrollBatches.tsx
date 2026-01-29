@@ -295,7 +295,7 @@ export default function PayrollBatches() {
               <SelectItem value="paid">مدفوع</SelectItem>
             </SelectContent>
           </Select>
-          {hasPermission(PERMISSIONS.PAYROLL_CREATE) && (
+          {hasPermission() && (
             <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 ml-2" />
               إنشاء دفعة
@@ -532,7 +532,7 @@ export default function PayrollBatches() {
                   {/* Delete Draft Button (only for draft status) */}
                   {batchDetails.batch.status === 'draft' && (
                     <>
-                      {hasPermission(PERMISSIONS.PAYROLL_DELETE) && (
+                      {hasPermission() && (
                         <Button 
                           variant="destructive"
                           onClick={() => handleDeleteDraft(selectedBatchId!)}
@@ -542,8 +542,7 @@ export default function PayrollBatches() {
                           {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
                         </Button>
                       )}
-                      {hasPermission(PERMISSIONS.PAYROLL_EDIT) && (
-                        <Button 
+                     {hasPermission() && (                        <Button 
                           onClick={() => {
                             setSelectedBatchId(batchDetails.batch.id);
                             setShowSubmitToAccountingDialog(true);
@@ -632,8 +631,7 @@ export default function PayrollBatches() {
                 </div>
                 
                 {/* Export Button */}
-                {hasPermission(PERMISSIONS.PAYROLL_EXPORT) && (
-                  <Button 
+                {hasPermission() && (                  <Button 
                     onClick={() => exportExcelMutation.mutate({ batchId: selectedBatchId! })}
                     disabled={exportExcelMutation.isPending}
                   >

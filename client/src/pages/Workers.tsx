@@ -259,7 +259,7 @@ export default function Workers() {
             <p className="text-muted-foreground">إدارة بيانات العمال ومعلوماتهم</p>
           </div>
           <div className="flex gap-2">
-            {hasPermission(PERMISSIONS.WORKER_EXPORT) && (
+            {hasPermission() && (
               <Button variant="outline" size="sm" onClick={handleExportToExcel}>
                 <FileSpreadsheet className="h-4 w-4 ml-2" />
                 تصدير Excel
@@ -269,7 +269,7 @@ export default function Workers() {
               <Printer className="h-4 w-4 ml-2" />
               طباعة
             </Button>
-            {hasPermission(PERMISSIONS.WORKER_CREATE) && (
+            {hasPermission() && (
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button onClick={() => { resetForm(); setSelectedWorker(null); }}>
@@ -513,8 +513,7 @@ export default function Workers() {
                           >
                             <Download className="h-4 w-4" />
                           </Button>
-                          {hasPermission(PERMISSIONS.WORKER_EDIT) && (
-                            <Button
+                         {hasPermission() && (                            <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleEdit(worker)}

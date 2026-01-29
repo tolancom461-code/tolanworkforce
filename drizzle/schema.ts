@@ -312,8 +312,9 @@ export const auditLog = mysqlTable("audit_log", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
-export type Role = typeof roles.$inferSelect;
-export type Permission = typeof permissions.$inferSelect;
+// Role and Permission types removed - tables no longer exist
+export type Role = any;
+export type Permission = any;
 
 export type CostCenter = typeof costCenters.$inferSelect;
 export type Group = typeof groups.$inferSelect;

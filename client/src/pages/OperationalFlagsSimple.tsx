@@ -22,10 +22,10 @@ export default function OperationalFlagsSimple() {
   // Queries
   const { data: groups } = trpc.groups.list.useQuery();
   const { data: workers } = trpc.workers.list.useQuery(
-    selectedGroup ? { groupId: parseInt(selectedGroup) } : undefined
+    selectedGroup ? ({ groupId: parseInt(selectedGroup) } as any) : void 0
   );
   const { data: allFlags, refetch: refetchFlags } = trpc.operationalFlags.list.useQuery();
-  const pendingFlags = allFlags?.filter((f) => f.status === "pending") || [];
+  const pendingFlags = (allFlags || []).filter((f: any) => f.status === "pending");
 
   // Mutations
   const createFlagMutation = trpc.operationalFlags.create.useMutation({
@@ -246,9 +246,9 @@ export default function OperationalFlagsSimple() {
       {/* All Flags - Hidden Temporarily */}
       {false && <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">جميع البلاغات</h2>
-        {allFlags && allFlags.length > 0 ? (
+        {(allFlags || []).length > 0 ? (
           <div className="space-y-2">
-            {allFlags.map((flag) => (
+            {(allFlags || []).map((flag: any) => (
               <div key={flag.id} className="flex items-center justify-between p-3 border rounded text-sm">
                 <div>
                   <span className="font-medium">{flag.worker?.fullName}</span>

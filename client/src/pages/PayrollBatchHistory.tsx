@@ -60,7 +60,7 @@ export default function PayrollBatchHistory() {
   const itemsPerPage = 10;
 
   // Fetch cost centers for filter
-  const { data: costCentersData } = trpc.costCenters.getAll.useQuery();
+  const { data: costCentersData } = trpc.costCenters.list.useQuery();
 
   // Fetch payroll batches
   const { data: batchesData, isLoading } = trpc.payroll.getPayrollBatches.useQuery({
@@ -85,12 +85,12 @@ export default function PayrollBatchHistory() {
       'رقم الدفعة': batch.batchCode,
       'تاريخ البداية': format(new Date(batch.periodStart), 'dd/MM/yyyy', { locale: ar }),
       'تاريخ النهاية': format(new Date(batch.periodEnd), 'dd/MM/yyyy', { locale: ar }),
-      'الحالة': STATUS_LABELS[batch.status] || batch.status,
+      'الحالة': STATUS_LABELS[batch.status as string] || batch.status,
       'عدد العمال': batch.totalWorkers,
-      'الإجمالي': parseFloat(batch.totalAmount).toLocaleString('ar-SA'),
-      'الخصومات': parseFloat(batch.totalDeductions).toLocaleString('ar-SA'),
-      'الحوافز': parseFloat(batch.totalBonuses).toLocaleString('ar-SA'),
-      'تاريخ الإنشاء': format(new Date(batch.createdAt), 'dd/MM/yyyy HH:mm', { locale: ar }),
+      'الإجمالي': parseFloat(batch.totalAmount as string).toLocaleString('ar-SA'),
+      'الخصومات': parseFloat(batch.totalDeductions as string).toLocaleString('ar-SA'),
+      'الحوافز': parseFloat(batch.totalBonuses as string).toLocaleString('ar-SA'),
+      'تاريخ الإنشاء': format(new Date(batch.createdAt as any as string), 'dd/MM/yyyy HH:mm', { locale: ar }),
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -135,9 +135,9 @@ export default function PayrollBatchHistory() {
                   <td>${batch.batchCode}</td>
                   <td>${format(new Date(batch.periodStart), 'dd/MM/yyyy', { locale: ar })}</td>
                   <td>${format(new Date(batch.periodEnd), 'dd/MM/yyyy', { locale: ar })}</td>
-                  <td>${STATUS_LABELS[batch.status] || batch.status}</td>
+                  <td>${STATUS_LABELS[batch.status as string] || batch.status}</td>
                   <td>${batch.totalWorkers}</td>
-                  <td>${parseFloat(batch.totalAmount).toLocaleString('ar-SA')}</td>
+                  <td>${parseFloat(batch.totalAmount as string).toLocaleString('ar-SA')}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -318,14 +318,14 @@ export default function PayrollBatchHistory() {
                           {format(new Date(batch.periodStart), 'dd/MM', { locale: ar })} - {format(new Date(batch.periodEnd), 'dd/MM', { locale: ar })}
                         </TableCell>
                         <TableCell>
-                          <Badge className={STATUS_COLORS[batch.status]}>
-                            {STATUS_LABELS[batch.status] || batch.status}
+                          <Badge className={STATUS_COLORS[batch.status as string]}>
+                            {STATUS_LABELS[batch.status as string] || batch.status}
                           </Badge>
                         </TableCell>
                         <TableCell>{batch.totalWorkers}</TableCell>
-                        <TableCell>{parseFloat(batch.totalAmount).toLocaleString('ar-SA')}</TableCell>
-                        <TableCell>{parseFloat(batch.totalDeductions).toLocaleString('ar-SA')}</TableCell>
-                        <TableCell>{parseFloat(batch.totalBonuses).toLocaleString('ar-SA')}</TableCell>
+                        <TableCell>{parseFloat(batch.totalAmount as string).toLocaleString('ar-SA')}</TableCell>
+                        <TableCell>{parseFloat(batch.totalDeductions as string).toLocaleString('ar-SA')}</TableCell>
+                        <TableCell>{parseFloat(batch.totalBonuses as string).toLocaleString('ar-SA')}</TableCell>
                         <TableCell>{format(new Date(batch.createdAt), 'dd/MM/yyyy HH:mm', { locale: ar })}</TableCell>
                         <TableCell>
                           <Button variant="ghost" size="sm">

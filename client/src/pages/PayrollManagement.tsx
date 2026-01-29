@@ -54,7 +54,6 @@ export default function PayrollManagement() {
 
   // Fetch data
   const { data: batches, isLoading, refetch } = trpc.payroll.listBatches.useQuery({
-    status: statusFilter !== 'all' ? (statusFilter as any) : undefined,
     ...filters,
   });
 
@@ -73,8 +72,8 @@ export default function PayrollManagement() {
       setShowCreateDialog(false);
       refetch();
     },
-    onError: (error) => {
-      toast.error(`خطأ: ${error.message}`);
+    onError: (error: any) => {
+      toast.error(`خطأ: ${error?.message || 'خطأ غير معروف'}`);
     },
   });
 
@@ -84,8 +83,8 @@ export default function PayrollManagement() {
       toast.success('تم حذف دفعة الرواتب');
       refetch();
     },
-    onError: (error) => {
-      toast.error(`خطأ: ${error.message}`);
+    onError: (error: any) => {
+      toast.error(`خطأ: ${error?.message || 'خطأ غير معروف'}`);
     },
   });
 
@@ -101,7 +100,7 @@ export default function PayrollManagement() {
 
   const handleDeleteBatch = (batchId: number) => {
     if (confirm('هل أنت متأكد من حذف هذه الدفعة؟')) {
-      deleteBatchMutation.mutate({ id: batchId });
+      deleteBatchMutation.mutate({ batchId });
     }
   };
 
