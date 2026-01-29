@@ -3680,39 +3680,59 @@ export async function listDailyFinanceEntries(input: {
   if (!db) return [];
 
   try {
-    let query = db.select().from(workerDailyFinance);
+    const { workers: workersTable } = await import('../drizzle/schema');
+    
+    let conditions = [];
     
     if (input.workerId) {
-      query = query.where(eq(workerDailyFinance.workerId, input.workerId));
+      conditions.push(eq(workerDailyFinance.workerId, input.workerId));
     }
     
     if (input.startDate) {
-      query = query.where(sql`${workerDailyFinance.workDate} >= ${input.startDate}`);
+      conditions.push(sql`${workerDailyFinance.workDate} >= ${input.startDate}`);
     }
     
     if (input.endDate) {
-      query = query.where(sql`${workerDailyFinance.workDate} <= ${input.endDate}`);
+      conditions.push(sql`${workerDailyFinance.workDate} <= ${input.endDate}`);
+    }
+    
+    let query = db
+      .select({
+        id: workerDailyFinance.id,
+        workerId: workerDailyFinance.workerId,
+        workerName: workersTable.fullName,
+        workerCode: workersTable.code,
+        workDate: workerDailyFinance.workDate,
+        baseAmount: workerDailyFinance.baseAmount,
+        deductions: workerDailyFinance.deductions,
+        bonuses: workerDailyFinance.bonuses,
+        netAmount: workerDailyFinance.netAmount,
+        lateMinutes: workerDailyFinance.lateMinutes,
+        earlyLeaveMinutes: workerDailyFinance.earlyLeaveMinutes,
+        notes: workerDailyFinance.notes,
+      })
+      .from(workerDailyFinance)
+      .leftJoin(workersTable, eq(workerDailyFinance.workerId, workersTable.id));
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
     }
     
     const entries = await query;
     
-    // Enrich with worker data
-    return Promise.all(entries.map(async (entry) => {
-      const worker = await db.select().from(workers).where(eq(workers.id, entry.workerId)).limit(1);
-      return {
-        id: entry.id,
-        workerId: entry.workerId,
-        workerName: worker[0]?.fullName || 'Unknown',
-        workerCode: worker[0]?.code || '',
-        workDate: entry.workDate,
-        baseAmount: entry.baseAmount,
-        deductions: entry.deductions,
-        bonuses: entry.bonuses,
-        netAmount: entry.netAmount,
-        lateMinutes: entry.lateMinutes,
-        earlyLeaveMinutes: entry.earlyLeaveMinutes,
-        notes: entry.notes || '',
-      };
+    return entries.map(entry => ({
+      id: entry.id,
+      workerId: entry.workerId,
+      workerName: entry.workerName || 'Unknown',
+      workerCode: entry.workerCode || '',
+      workDate: entry.workDate,
+      baseAmount: entry.baseAmount,
+      deductions: entry.deductions,
+      bonuses: entry.bonuses,
+      netAmount: entry.netAmount,
+      lateMinutes: entry.lateMinutes,
+      earlyLeaveMinutes: entry.earlyLeaveMinutes,
+      notes: entry.notes || '',
     }));
   } catch (error) {
     console.error('[Database] Error listing daily finance entries:', error);

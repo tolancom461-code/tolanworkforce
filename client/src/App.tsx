@@ -23,6 +23,7 @@ import WorkDays from "./pages/WorkDays";
 
 import PayOverrides from "./pages/PayOverrides";
 import FinanceEntry from "./pages/FinanceEntry";
+import PayrollManagement from "./pages/PayrollManagement";
 import PayrollBatches from "./pages/PayrollBatches";
 import PayrollBatchList from "./pages/payroll/PayrollBatchList";
 import PayrollBatchCreate from "./pages/payroll/PayrollBatchCreate";
@@ -104,6 +105,11 @@ function Router() {
       <Route path="/finance/entry">
         <ProtectedRoute>
           <FinanceEntry />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/payroll-management">
+        <ProtectedRoute>
+          <PayrollManagement />
         </ProtectedRoute>
       </Route>
       <Route path="/finance/payroll" component={PayrollBatches} />
