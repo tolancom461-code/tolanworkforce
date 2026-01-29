@@ -27,7 +27,7 @@ describe('Advanced Payroll Batch System', { timeout: 15000 }, () => {
       expect(result).toHaveProperty('batchId');
       expect(result).toHaveProperty('batchCode');
       expect(result.batchId).toBeGreaterThan(0);
-      expect(result.batchCode).toMatch(/^PB-/);
+      expect(result.batchCode).toMatch(/^[A-Z][a-z]{2}-\d{4}-\d{3,4}$/); // Format: Jan-2026-001
     });
 
     it('should create batches with unique codes', async () => {

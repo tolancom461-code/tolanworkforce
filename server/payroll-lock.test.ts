@@ -36,7 +36,7 @@ describe('Payroll Lock System', { timeout: 15000 }, () => {
 
     expect(batch).toBeDefined();
     expect(batch.batchCode).toBeDefined();
-    expect(batch.batchCode).toMatch(/^PB-/);
+    expect(batch.batchCode).toMatch(/^[A-Z][a-z]{2}-\d{4}-\d{3,4}$/); // Format: Jan-2026-001
     createdBatchIds.push(batch.batchId);
   });
 
