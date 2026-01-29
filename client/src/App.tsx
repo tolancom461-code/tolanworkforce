@@ -37,7 +37,7 @@ import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import FinancialReports from "./pages/reports/FinancialReports";
 import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
-import OperationalFlags from "./pages/OperationalFlags";
+import OperationalFlagsSimple from "./pages/OperationalFlagsSimple";
 import PendingFlags from "./pages/PendingFlags";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -96,7 +96,7 @@ function Router() {
       <Route path="/work-days" component={WorkDays} />
       <Route path="/operational-flags">
         <ProtectedRoute>
-          <OperationalFlags />
+          <OperationalFlagsSimple />
         </ProtectedRoute>
       </Route>
       <Route path="/pending-flags" component={PendingFlags} />

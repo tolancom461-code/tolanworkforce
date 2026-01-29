@@ -335,32 +335,19 @@ export type InsertJob = typeof jobs.$inferInsert;
 
 export const operationalFlags = mysqlTable("operational_flags", {
   id: int("id").autoincrement().primaryKey(),
-  flagType: mysqlEnum("flag_type", [
-    "emergency_call",      // استدعاء طارئ (اعتماد يوم كامل)
-    "justified_late",      // تأخير مبرر
-    "justified_early_leave", // خروج مبكر مبرر
-    "justified_absence",   // غياب مبرر
-    "proposed_deduction",  // خصم مقترح
-    "proposed_bonus",      // إضافة مقترحة
-    "general_report"       // بلاغ عام
-  ]).notNull(),
   workerId: int("worker_id").notNull(),
   groupId: int("group_id"),
-  flagDate: date("flag_date").notNull(), // تاريخ البلاغ أو بداية المدة
-  endDate: date("end_date"), // نهاية المدة (اختياري)
-  description: text("description").notNull(), // وصف مختصر (إجباري)
-  attachments: json("attachments"), // مرفقات (اختياري) - array of URLs
-  amount: decimal("amount", { precision: 10, scale: 2 }), // المبلغ (للخصم/الإضافة)
+  flagDate: date("flag_date").notNull(), // تاريخ البلاغ
+  description: text("description").notNull(), // وصف الاستثناء/التعديل
   status: mysqlEnum("status", [
-    "PENDING_ADMIN_ACTION", // بانتظار إجراء الشؤون الإدارية
-    "RESOLVED",             // تم المعالجة
-    "IGNORED"               // تم التجاهل
-  ]).default("PENDING_ADMIN_ACTION").notNull(),
-  createdBy: int("created_by").notNull(), // المشرف الذي أنشأ البلاغ
-  resolvedBy: int("resolved_by"), // من نفّذ الإجراء
-  resolvedAt: timestamp("resolved_at"), // متى تم التنفيذ
-  resolutionAction: text("resolution_action"), // ماذا نُفّذ
-  resolutionNotes: text("resolution_notes"), // ملاحظات التنفيذ
+    "pending",   // بانتظار الموافقة
+    "approved",  // تم الاعتماد
+    "rejected"   // تم الرفض
+  ]).default("pending").notNull(),
+  approvedBy: int("approved_by"), // من اعتمد البلاغ
+  approvedAt: timestamp("approved_at"), // متى تم الاعتماد
+  approvalNotes: text("approval_notes"), // ملاحظات الاعتماد/الرفض
+  createdBy: int("created_by").notNull(), // من أنشأ البلاغ
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });

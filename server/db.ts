@@ -3735,7 +3735,7 @@ export async function createDailyFinanceEntry(input: {
       status: 'pending',
     });
 
-    return { success: true, id: result.insertId };
+    return { success: true, id: (result as any)[0] };
   } catch (error) {
     console.error('[Database] Error creating daily finance entry:', error);
     throw error;
@@ -3779,6 +3779,177 @@ export async function deleteDailyFinanceEntry(id: number): Promise<any> {
     return { success: true };
   } catch (error) {
     console.error('[Database] Error deleting daily finance entry:', error);
+    throw error;
+  }
+}
+
+
+// ============================================
+// Simplified Operational Flags (البلاغات التشغيلية المبسطة)
+// ============================================
+
+export async function createSimplifiedOperationalFlag(data: {
+  workerId: number;
+  groupId?: number;
+  flagDate: Date;
+  description: string;
+  createdBy: number;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { operationalFlags } = await import('../drizzle/schema');
+
+  try {
+    const result = await db.insert(operationalFlags).values({
+      workerId: data.workerId,
+      groupId: data.groupId,
+      flagDate: data.flagDate,
+      description: data.description,
+      status: 'pending',
+      createdBy: data.createdBy,
+    });
+
+    return (result as any).insertId || 0;
+  } catch (error) {
+    console.error('[Database] Error creating operational flag:', error);
+    throw error;
+  }
+}
+
+export async function getPendingOperationalFlags(): Promise<any[]> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { operationalFlags, workers } = await import('../drizzle/schema');
+
+  try {
+    const flags = await db
+      .select({
+        id: operationalFlags.id,
+        workerId: operationalFlags.workerId,
+        groupId: operationalFlags.groupId,
+        flagDate: operationalFlags.flagDate,
+        description: operationalFlags.description,
+        status: operationalFlags.status,
+        createdBy: operationalFlags.createdBy,
+        createdAt: operationalFlags.createdAt,
+        worker: {
+          id: workers.id,
+          fullName: workers.fullName,
+          code: workers.code,
+        },
+      })
+      .from(operationalFlags)
+      .leftJoin(workers, eq(operationalFlags.workerId, workers.id))
+      .where(eq(operationalFlags.status, 'pending'))
+      .orderBy(desc(operationalFlags.createdAt));
+
+    return flags;
+  } catch (error) {
+    console.error('[Database] Error getting pending operational flags:', error);
+    throw error;
+  }
+}
+
+export async function approveOperationalFlag(
+  flagId: number,
+  approvedBy: number,
+  notes?: string
+): Promise<any> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { operationalFlags } = await import('../drizzle/schema');
+
+  try {
+    await db.update(operationalFlags)
+      .set({
+        status: 'approved',
+        approvedBy,
+        approvedAt: new Date(),
+        approvalNotes: notes,
+      })
+      .where(eq(operationalFlags.id, flagId));
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Database] Error approving operational flag:', error);
+    throw error;
+  }
+}
+
+export async function rejectOperationalFlag(
+  flagId: number,
+  approvedBy: number,
+  notes?: string
+): Promise<any> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { operationalFlags } = await import('../drizzle/schema');
+
+  try {
+    await db.update(operationalFlags)
+      .set({
+        status: 'rejected',
+        approvedBy,
+        approvedAt: new Date(),
+        approvalNotes: notes,
+      })
+      .where(eq(operationalFlags.id, flagId));
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Database] Error rejecting operational flag:', error);
+    throw error;
+  }
+}
+
+export async function checkPendingFlagsBeforePayroll(): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { operationalFlags } = await import('../drizzle/schema');
+
+  try {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(operationalFlags)
+      .where(eq(operationalFlags.status, 'pending'));
+
+    return result[0]?.count || 0;
+  } catch (error) {
+    console.error('[Database] Error checking pending flags:', error);
+    throw error;
+  }
+}
+
+
+export async function listAllOperationalFlags(): Promise<any[]> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const { operationalFlags, workers } = await import('../drizzle/schema');
+
+  try {
+    const flags = await db
+      .select({
+        id: operationalFlags.id,
+        workerId: operationalFlags.workerId,
+        groupId: operationalFlags.groupId,
+        flagDate: operationalFlags.flagDate,
+        description: operationalFlags.description,
+        status: operationalFlags.status,
+        createdBy: operationalFlags.createdBy,
+        createdAt: operationalFlags.createdAt,
+        worker: {
+          id: workers.id,
+          fullName: workers.fullName,
+          code: workers.code,
+        },
+      })
+      .from(operationalFlags)
+      .leftJoin(workers, eq(operationalFlags.workerId, workers.id))
+      .orderBy(desc(operationalFlags.createdAt));
+
+    return flags;
+  } catch (error) {
+    console.error('[Database] Error listing all operational flags:', error);
     throw error;
   }
 }

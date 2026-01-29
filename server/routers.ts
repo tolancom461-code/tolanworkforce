@@ -1667,199 +1667,55 @@ export const appRouter = router({
 
   // Operational Flags (البلاغات التشغيلية)
   operationalFlags: router({
-    // Create a new operational flag
+    // Create a new operational flag (simplified)
     create: protectedProcedure
       .input(z.object({
-        flagType: z.enum([
-          'emergency_call',
-          'justified_late',
-          'justified_early_leave',
-          'justified_absence',
-          'proposed_deduction',
-          'proposed_bonus',
-          'general_report'
-        ]),
         workerId: z.number(),
         groupId: z.number().optional(),
-        flagDate: z.string(),
-        endDate: z.string().optional(),
+        flagDate: z.date(),
         description: z.string().min(1),
-        attachments: z.array(z.string()).optional(),
-        amount: z.number().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        const flagId = await db.createOperationalFlag({
+        const flagId = await db.createSimplifiedOperationalFlag({
           ...input,
           createdBy: ctx.user.id,
         });
-        
-        // Send notification to admin
-        try {
-          const { notifyOwner } = await import('./_core/notification');
-          const flagTypeLabels: Record<string, string> = {
-            'emergency_call': 'استدعاء طارئ',
-            'justified_late': 'تأخر مبرر',
-            'justified_early_leave': 'خروج مبكر مبرر',
-            'justified_absence': 'غياب مبرر',
-            'proposed_deduction': 'خصم مقترح',
-            'proposed_bonus': 'إضافة مقترحة',
-            'general_report': 'بلاغ عام'
-          };
-          await notifyOwner({
-            title: `بلاغ تشغيلي جديد: ${flagTypeLabels[input.flagType] || input.flagType}`,
-            content: `تم إنشاء بلاغ تشغيلي جديد بواسطة ${ctx.user.fullName || ctx.user.username}\nنوع البلاغ: ${flagTypeLabels[input.flagType] || input.flagType}\nالتاريخ: ${input.flagDate}\nالوصف: ${input.description}\n\nيرجى مراجعة البلاغ ومعالجته من قسم الشؤون الإدارية.`
-          });
-        } catch (error) {
-          console.error('Failed to send notification:', error);
-        }
-        
         return { success: true, flagId };
       }),
 
-    // List operational flags with filters
+    // Get pending flags
+    getPending: protectedProcedure
+      .query(async () => {
+        return await db.getPendingOperationalFlags();
+      }),
+
+    // List all flags
     list: protectedProcedure
-      .input(z.object({
-        status: z.string().optional(),
-        workerId: z.number().optional(),
-        groupId: z.number().optional(),
-        flagType: z.string().optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .query(async ({ input }) => {
-        return await db.listOperationalFlags(input);
+      .query(async () => {
+        return await db.listAllOperationalFlags();
       }),
 
-    // Get a single flag by ID
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getOperationalFlag(input.id);
-      }),
-
-    // Resolve a flag (execute action)
-    resolve: protectedProcedure
+    // Approve a flag
+    approve: protectedProcedure
       .input(z.object({
-        id: z.number(),
-        action: z.string(),
+        flagId: z.number(),
         notes: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        
-        // Get flag details before resolving
-        const flag = await db.getOperationalFlag(input.id);
-        
-        const result = await db.resolveOperationalFlag(
-          input.id,
-          ctx.user.id,
-          input.action,
-          input.notes
-        );
-        
-        // Send notification to flag creator
-        if (flag && flag.createdBy) {
-          try {
-            const { notifyOwner } = await import('./_core/notification');
-            const flagTypeLabels: Record<string, string> = {
-              'emergency_call': 'استدعاء طارئ',
-              'justified_late': 'تأخر مبرر',
-              'justified_early_leave': 'خروج مبكر مبرر',
-              'justified_absence': 'غياب مبرر',
-              'proposed_deduction': 'خصم مقترح',
-              'proposed_bonus': 'إضافة مقترحة',
-              'general_report': 'بلاغ عام'
-            };
-            await notifyOwner({
-              title: `تم معالجة بلاغك التشغيلي`,
-              content: `تم معالجة بلاغك التشغيلي بواسطة ${ctx.user.fullName || ctx.user.username}\nنوع البلاغ: ${flagTypeLabels[flag.flagType] || flag.flagType}\nالتاريخ: ${flag.flagDate}\nالإجراء: ${input.action}${input.notes ? `\nملاحظات: ${input.notes}` : ''}`
-            });
-          } catch (error) {
-            console.error('Failed to send notification:', error);
-          }
-        }
-        
-        return result;
+        return await db.approveOperationalFlag(input.flagId, ctx.user.id, input.notes);
       }),
 
-    // Ignore a flag
-    ignore: protectedProcedure
+    // Reject a flag
+    reject: protectedProcedure
       .input(z.object({
-        id: z.number(),
+        flagId: z.number(),
         notes: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        return await db.ignoreOperationalFlag(input.id, ctx.user.id, input.notes);
-      }),
-
-    // Check for unresolved flags
-    checkUnresolved: protectedProcedure
-      .input(z.object({
-        workerId: z.number().optional(),
-        groupId: z.number().optional(),
-        dateRange: z.object({
-          start: z.string(),
-          end: z.string(),
-        }).optional(),
-      }))
-      .query(async ({ input }) => {
-        return await db.checkUnresolvedFlags(
-          input.workerId,
-          input.groupId,
-          input.dateRange
-        );
-      }),
-  }),
-
-  // NOTE: scopedPermissions router has been removed.
-  // All users have full permissions now.
-
-  // Daily Finance Entries Router
-  dailyFinance: router({
-    list: protectedProcedure
-      .input(z.object({
-        workerId: z.number().optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-      }))
-      .query(async ({ input }) => {
-        return await db.listDailyFinanceEntries(input);
-      }),
-    
-    create: protectedProcedure
-      .input(z.object({
-        workerId: z.number(),
-        entryType: z.enum(['deduction', 'bonus']),
-        amount: z.number().positive(),
-        reason: z.string(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error('Not authenticated');
-        return await db.createDailyFinanceEntry({
-          ...input,
-          createdBy: ctx.user.id,
-        });
-      }),
-    
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        amount: z.number().positive().optional(),
-        reason: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        return await db.updateDailyFinanceEntry(input.id, {
-          amount: input.amount,
-          reason: input.reason,
-        });
-      }),
-    
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        return await db.deleteDailyFinanceEntry(input.id);
+        return await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
       }),
   }),
 });
