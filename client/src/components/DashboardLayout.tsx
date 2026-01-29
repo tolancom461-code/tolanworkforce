@@ -103,8 +103,8 @@ const menuSections = [
     label: "📋 البيانات المرجعية",
     items: [
       { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
-      { icon: Flag, label: "الأعلام التشغيلية", path: "/operational-flags" },
-      { icon: CheckCircle, label: "الأعلام المعلقة", path: "/pending-flags" },
+      // { icon: Flag, label: "الأعلام التشغيلية", path: "/operational-flags" },
+      // { icon: CheckCircle, label: "الأعلام المعلقة", path: "/pending-flags" },
     ]
   },
   {
