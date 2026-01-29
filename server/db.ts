@@ -1775,11 +1775,26 @@ export async function createPayrollBatch(params: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Generate batch code with format PB-TIMESTAMP-RANDOM
-  // This ensures uniqueness even if tests run in parallel or multiple times
-  const timestamp = Date.now();
-  const randomSuffix = Math.random().toString(36).substr(2, 9);
-  const batchCode = `PB-${timestamp}-${randomSuffix}`;
+  // Generate batch code with format: MMM-YYYY-XXX
+  // Example: Jan-2026-001, Jan-2026-002, etc.
+  const now = new Date();
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = monthNames[now.getMonth()];
+  const year = now.getFullYear();
+  const randomNum = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+  const batchCode = `${month}-${year}-${randomNum}`;
+  
+  // Ensure uniqueness by checking if batch code already exists
+  let uniqueBatchCode = batchCode;
+  let counter = 1;
+  while (true) {
+    const existing = await db.select().from(payrollBatches).where(eq(payrollBatches.batchCode, uniqueBatchCode)).limit(1);
+    if (existing.length === 0) break;
+    uniqueBatchCode = `${month}-${year}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+    counter++;
+    if (counter > 100) throw new Error('Unable to generate unique batch code');
+  }
+  const finalBatchCode = uniqueBatchCode;
 
   // Get workers based on filters
   let workersQuery = db.select().from(workers).where(eq(workers.status, 'active'));
@@ -1843,7 +1858,7 @@ export async function createPayrollBatch(params: {
 
   // Insert batch
   const result = await db.insert(payrollBatches).values({
-    batchCode,
+    batchCode: finalBatchCode,
     periodStart: params.periodStart,
     periodEnd: params.periodEnd,
     groupId: params.groupId ?? null,
@@ -3929,10 +3944,10 @@ export async function createTestGroup(data: {
   const result = await db.insert(groups).values({
     code: data.code,
     name: data.name,
-    dailyWage: data.dailyWage,
+    dailyWage: data.dailyWage?.toString(),
     workMinutes: data.workMinutes,
-    latePenaltyRate: data.latePenaltyRate,
-    earlyLeavePenaltyRate: data.earlyLeavePenaltyRate,
+    latePenaltyRate: data.latePenaltyRate?.toString(),
+    earlyLeavePenaltyRate: data.earlyLeavePenaltyRate?.toString(),
     shiftStartTime: data.shiftStartTime,
     shiftEndTime: data.shiftEndTime,
     isActive: data.isActive,
@@ -3951,7 +3966,7 @@ export async function createTestWorker(data: {
   code: string;
   fullName: string;
   groupId: number;
-  dailyRate: number;
+  dailyRate?: number;
   status: 'active' | 'inactive';
 }) {
   const db = await getDb();
@@ -3961,7 +3976,7 @@ export async function createTestWorker(data: {
     code: data.code,
     fullName: data.fullName,
     groupId: data.groupId,
-    dailyRate: data.dailyRate,
+    dailyRate: data.dailyRate?.toString(),
     status: data.status,
   });
 
@@ -4005,7 +4020,10 @@ export async function calculateDailyFinance(workerId: number, date: string) {
   }
 
   // Get group
-  const group = await db.select().from(groups).where(eq(groups.id, worker[0].groupId)).limit(1);
+  if (!worker[0].groupId) {
+    throw new Error('Worker has no group assigned');
+  }
+  const group = await db.select().from(groups).where(eq(groups.id, worker[0].groupId!)).limit(1);
   if (!group || group.length === 0) {
     throw new Error(`Group ${worker[0].groupId} not found`);
   }
