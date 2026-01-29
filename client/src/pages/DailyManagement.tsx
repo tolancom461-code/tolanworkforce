@@ -66,7 +66,7 @@ export default function DailyManagement() {
     setEditFormData({
       checkInTime: record.checkInTime || "",
       checkOutTime: record.checkOutTime || "",
-      status: record.status,
+      status: "present",
       notes: record.notes || "",
     });
     setIsEditDialogOpen(true);

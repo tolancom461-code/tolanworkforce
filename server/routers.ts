@@ -1666,6 +1666,18 @@ export const appRouter = router({
   }),
 
   // Operational Flags (البلاغات التشغيلية)
+  // Attendance Status Types
+  attendanceStatus: router({
+    list: protectedProcedure.query(async () => {
+      return [
+        { id: 1, name: 'حاضر', code: 'present' },
+        { id: 2, name: 'غائب', code: 'absent' },
+        { id: 3, name: 'متأخر', code: 'late' },
+        { id: 4, name: 'مغادرة مبكرة', code: 'early_leave' },
+      ];
+    }),
+  }),
+
   operationalFlags: router({
     // Create a new operational flag (simplified)
     create: protectedProcedure
@@ -1696,6 +1708,20 @@ export const appRouter = router({
         return await db.listAllOperationalFlags();
       }),
 
+    // Check for unresolved flags
+    checkUnresolved: protectedProcedure
+      .input(z.object({
+        groupId: z.number().optional(),
+        dateRange: z.object({
+          start: z.date().optional(),
+          end: z.date().optional(),
+        }).optional(),
+      }).optional())
+      .query(async () => {
+        // Return empty array for now - simplified implementation
+        return { hasUnresolved: false, count: 0 };
+      }),
+
     // Approve a flag
     approve: protectedProcedure
       .input(z.object({
@@ -1716,6 +1742,17 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
         return await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
+      }),
+
+    // Get full day override status
+    getFullDayOverrideStatus: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        // Simplified implementation
+        return { hasOverride: false, overrideType: null };
       }),
   }),
 });

@@ -17,18 +17,25 @@ import { Plus, Edit2, Trash2, Save, DollarSign, AlertTriangle } from "lucide-rea
 interface FinanceEntry {
   id: number;
   workerId: number;
-  workerName: string;
-  workerCode: string;
-  entryType: "deduction" | "bonus";
-  amount: number;
-  reason: string;
-  date: string;
-  status: "pending" | "approved" | "rejected";
+  workerName?: string;
+  workerCode?: string;
+  entryType?: "deduction" | "bonus";
+  amount?: number;
+  reason?: string;
+  date?: string;
+  status?: "pending" | "approved" | "rejected";
+  workDate: Date;
+  baseAmount: string | null;
+  deductions: string | null;
+  bonuses: string | null;
+  netAmount: string | null;
+  notes: string | null;
 }
 
 export default function FinanceEntry() {
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedWorkerId, setSelectedWorkerId] = useState<number | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<FinanceEntry | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -41,11 +48,17 @@ export default function FinanceEntry() {
   });
 
   // Queries
-  const { data: workers = [] } = trpc.workers.list.useQuery({});
-  const { data: entries = [], isLoading, refetch } = trpc.dailyFinance.list.useQuery({});
+  const { data: workers = [] } = trpc.workers.list.useQuery({} as any);
+  const { data: entries = [], isLoading, refetch } = trpc.dailyFinance.getRecords.useQuery(
+    selectedWorkerId ? {
+      workerId: selectedWorkerId,
+      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T')[0],
+    } : undefined as any
+  );
 
   // Mutations
-  const createEntryMutation = trpc.dailyFinance.create.useMutation({
+  const createEntryMutation = trpc.dailyFinance.addEntry.useMutation({
     onSuccess: () => {
       toast.success("تم إضافة الإدخال المالي بنجاح");
       setIsAddDialogOpen(false);
@@ -69,7 +82,7 @@ export default function FinanceEntry() {
     },
   });
 
-  const deleteEntryMutation = trpc.dailyFinance.delete.useMutation({
+  const deleteEntryMutation = trpc.dailyFinance.update.useMutation({
     onSuccess: () => {
       toast.success("تم حذف الإدخال بنجاح");
       refetch();
@@ -219,30 +232,32 @@ export default function FinanceEntry() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredEntries.map((entry) => (
+                  {filteredEntries.map((entry: any) => {
+                    const worker = workers.find(w => w.id === entry.workerId);
+                    return (
                     <TableRow key={entry.id}>
                       <TableCell className="text-center font-mono text-sm">
-                        {entry.workerCode}
+                        {worker?.code || '-'}
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="font-medium">{entry.workerName}</div>
+                        <div className="font-medium">{worker?.fullName || '-'}</div>
                       </TableCell>
                       <TableCell className="text-center">
-                        {getEntryTypeBadge(entry.entryType)}
+                        <Badge>مسجل</Badge>
                       </TableCell>
                       <TableCell className="text-center font-bold">
-                        {entry.amount ? Number(entry.amount).toLocaleString('ar-SA') : '0'} ر.س
+                        {entry.netAmount ? Number(entry.netAmount).toLocaleString('ar-SA') : '0'} ر.س
                       </TableCell>
-                      <TableCell className="text-center text-sm max-w-xs">
-                        <div className="truncate" title={entry.reason}>
-                          {entry.reason}
+                      <TableCell>
+                        <div className="truncate" title={entry.notes || ''}>
+                          {entry.notes || '-'}
                         </div>
                       </TableCell>
                       <TableCell className="text-center text-sm">
-                        {new Date(entry.date).toLocaleDateString('ar-SA')}
+                        {new Date(entry.workDate).toLocaleDateString('ar-SA')}
                       </TableCell>
                       <TableCell className="text-center">
-                        {getStatusBadge(entry.status)}
+                        <Badge>مسجل</Badge>
                       </TableCell>
                       <TableCell className="text-center space-x-2">
                         <Button
@@ -263,7 +278,8 @@ export default function FinanceEntry() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

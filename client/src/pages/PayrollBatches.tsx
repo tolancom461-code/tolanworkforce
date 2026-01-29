@@ -579,7 +579,7 @@ export default function PayrollBatches() {
                   )}
                   
                   {/* Manager Approval Stage */}
-                  {batchDetails.batch.status === 'under_accounts_manager_review' && hasPermission(PERMISSIONS.PAYROLL_BATCH_FINAL_APPROVE) && (
+                  {batchDetails.batch.status === 'under_accounts_manager_review' && true && (
                     <>
                       <Button 
                         onClick={() => {

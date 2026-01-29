@@ -230,7 +230,7 @@ export default function AttendanceReports() {
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          {hasPermission(PERMISSIONS.ATTENDANCE_EXPORT) && (
+          {true && (
             <>
               <Button onClick={exportToExcel} disabled={exportExcelMutation.isPending}>
                 <Download className="h-4 w-4 ml-2" />

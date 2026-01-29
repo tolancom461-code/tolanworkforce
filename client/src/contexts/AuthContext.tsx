@@ -5,15 +5,23 @@ interface User {
   id: number;
   username: string;
   fullName: string;
-  email?: string;
+  email?: string | null;
+  phone?: string | null;
   role?: string;
+  isActive?: boolean | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  lastSignedIn?: Date;
+  openId?: string | null;
+  passwordHash?: string | null;
+  loginMethod?: string | null;
 }
 
 interface AuthContextType {
   user: User | null | undefined;
   isLoading: boolean;
   isAuthenticated: boolean;
-  error?: Error | null;
+  error?: any;
 }
 
 /**

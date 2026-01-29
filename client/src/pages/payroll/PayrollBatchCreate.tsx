@@ -31,10 +31,10 @@ export default function PayrollBatchCreate() {
     {
       groupId,
       dateRange: periodStart && periodEnd ? {
-        start: periodStart,
-        end: periodEnd,
+        start: new Date(periodStart),
+        end: new Date(periodEnd),
       } : undefined,
-    },
+    } as any,
     {
       enabled: !!periodStart && !!periodEnd,
     }
