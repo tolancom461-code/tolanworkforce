@@ -1768,23 +1768,18 @@ export async function getAllFinancialReportsSummary(
 export async function createPayrollBatch(params: {
   periodStart: string;
   periodEnd: string;
-  groupId?: number;
-  costCenterId?: number;
+  groupId?: number | null;
+  costCenterId?: number | null;
   createdBy: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Generate batch code with format PB-YYYY-XXX
-  const year = new Date().getFullYear();
-  // Get the next sequence number for this year
-  const existingBatches = await db
-    .select()
-    .from(payrollBatches)
-    .where(sql`YEAR(created_at) = ${year}`);
-  
-  const nextSequence = existingBatches.length + 1;
-  const batchCode = `PB-${year}-${String(nextSequence).padStart(3, '0')}`; // e.g., PB-2026-001
+  // Generate batch code with format PB-TIMESTAMP-RANDOM
+  // This ensures uniqueness even if tests run in parallel or multiple times
+  const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substr(2, 9);
+  const batchCode = `PB-${timestamp}-${randomSuffix}`;
 
   // Get workers based on filters
   let workersQuery = db.select().from(workers).where(eq(workers.status, 'active'));
