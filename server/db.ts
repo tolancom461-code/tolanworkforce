@@ -1913,7 +1913,7 @@ export async function createPayrollBatch(params: {
   const totalBonuses = batchItems.reduce((sum, item) => sum + parseFloat(item.totalBonuses), 0);
 
   // Insert batch
-  const result = await db.insert(payrollBatches).values({
+  await db.insert(payrollBatches).values({
     batchCode: finalBatchCode,
     periodStart: params.periodStart,
     periodEnd: params.periodEnd,
@@ -1927,12 +1927,19 @@ export async function createPayrollBatch(params: {
     createdBy: params.createdBy,
   } as any);
 
-  // Insert batch items
-  const batchId = typeof result === 'object' && 'insertId' in result 
-    ? Number(result.insertId) 
-    : Number((result as any)[0]?.insertId || (result as any).insertId);
-  
-  if (isNaN(batchId) || batchId === 0) {
+  // Get the created batch by batch code
+  const createdBatch = await db
+    .select()
+    .from(payrollBatches)
+    .where(eq(payrollBatches.batchCode, finalBatchCode))
+    .limit(1);
+
+  if (!createdBatch || createdBatch.length === 0) {
+    throw new Error('Failed to create payroll batch');
+  }
+
+  const batchId = createdBatch[0].id;
+  if (!batchId) {
     throw new Error('Failed to get batch ID after insert');
   }
 

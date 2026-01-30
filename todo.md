@@ -2797,3 +2797,11 @@ Add "Approve Full Attendance" option that:
 - [ ] Check for locked days preventing calculation
 - [ ] Analyze API response for errors
 - [ ] Create detailed bug report with findings
+
+
+## Bug: Error When Creating Payroll Batch
+
+- [ ] Investigate error message when creating payroll batch
+- [ ] Check createBatch mutation in server/routers.ts
+- [ ] Check database constraints and validations
+- [ ] Fix the issue and test
