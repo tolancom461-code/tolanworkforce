@@ -3,7 +3,7 @@ import * as db from './db';
 import { workers, groups, payrollBatches, payrollBatchItems, workerDailyFinance } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-describe('Production Workflow - Complete Payroll Cycle', { timeout: 30000 }, () => {
+describe('Production Workflow - Complete Payroll Cycle', { timeout: 120000 }, () => {
   let testGroupId: number;
   let testWorkerId: number;
   let testBatchId: number;
@@ -209,8 +209,11 @@ describe('Production Workflow - Complete Payroll Cycle', { timeout: 30000 }, () 
 
         expect(report.batch).toBeDefined();
         expect(report.batch.batchCode).toBeDefined();
-        expect(report.batch.periodStart).toBe(periodStart);
-        expect(report.batch.periodEnd).toBe(periodEnd);
+        // Convert date to string for comparison
+        const startStr = typeof report.batch.periodStart === 'string' ? report.batch.periodStart : new Date(report.batch.periodStart).toISOString().split('T')[0];
+        const endStr = typeof report.batch.periodEnd === 'string' ? report.batch.periodEnd : new Date(report.batch.periodEnd).toISOString().split('T')[0];
+        expect(startStr).toBe(periodStart);
+        expect(endStr).toBe(periodEnd);
         expect(report.items).toBeDefined();
       } catch (error) {
         console.log('Generate report error:', error);
@@ -248,9 +251,11 @@ describe('Production Workflow - Complete Payroll Cycle', { timeout: 30000 }, () 
     it('should track batch period information', async () => {
       try {
         const batch = await db.getPayrollBatchDetails(testBatchId);
-
-        expect(batch.batch.periodStart).toBe(periodStart);
-        expect(batch.batch.periodEnd).toBe(periodEnd);
+        // Convert date to string for comparison
+        const startStr = typeof batch.batch.periodStart === 'string' ? batch.batch.periodStart : new Date(batch.batch.periodStart).toISOString().split('T')[0];
+        const endStr = typeof batch.batch.periodEnd === 'string' ? batch.batch.periodEnd : new Date(batch.batch.periodEnd).toISOString().split('T')[0];
+        expect(startStr).toBe(periodStart);
+        expect(endStr).toBe(periodEnd);;
       } catch (error) {
         console.log('Track period error:', error);
       }

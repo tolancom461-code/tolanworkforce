@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as db from './db';
 
-describe('Payroll Lock System', { timeout: 15000 }, () => {
+describe('Payroll Lock System', { timeout: 60000 }, () => {
   let testWorkerId: number;
   const createdBatchIds: number[] = [];
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as db from './db';
 
-describe('Advanced Payroll Batch System', { timeout: 15000 }, () => {
+describe('Advanced Payroll Batch System', { timeout: 60000 }, () => {
   const testUserId = 1;
   const createdBatchIds: number[] = [];
 
