@@ -188,23 +188,28 @@ export default function Groups() {
     setIsEditDialogOpen(true);
   };
 
-  // تحديث البيانات عند فتح نموذج التعديل
+  // جلب بيانات المجموعة الحديثة من قاعدة البيانات عند فتح نموذج التعديل
+  const { data: freshGroupData } = trpc.groups.getById.useQuery(
+    { id: selectedGroup?.id || 0 },
+    { enabled: !!selectedGroup && isEditDialogOpen }
+  );
+
   useEffect(() => {
-    if (isEditDialogOpen && selectedGroup) {
+    if (isEditDialogOpen && freshGroupData) {
       setFormData({
-        code: selectedGroup.code || "",
-        name: selectedGroup.name || "",
-        costCenterId: selectedGroup.costCenterId || null,
-        dailyWage: selectedGroup.dailyWage ? String(selectedGroup.dailyWage) : "",
-        workMinutes: selectedGroup.workMinutes ? String(selectedGroup.workMinutes) : "",
-        latePenaltyRate: selectedGroup.latePenaltyRate ? String(selectedGroup.latePenaltyRate) : "",
-        earlyLeavePenaltyRate: selectedGroup.earlyLeavePenaltyRate ? String(selectedGroup.earlyLeavePenaltyRate) : "",
-        shiftStartTime: selectedGroup.shiftStartTime || "",
-        shiftEndTime: selectedGroup.shiftEndTime || "",
-        isActive: selectedGroup.isActive !== undefined ? selectedGroup.isActive : true,
+        code: freshGroupData.code || "",
+        name: freshGroupData.name || "",
+        costCenterId: freshGroupData.costCenterId || null,
+        dailyWage: freshGroupData.dailyWage ? String(freshGroupData.dailyWage) : "",
+        workMinutes: freshGroupData.workMinutes ? String(freshGroupData.workMinutes) : "",
+        latePenaltyRate: freshGroupData.latePenaltyRate ? String(freshGroupData.latePenaltyRate) : "",
+        earlyLeavePenaltyRate: freshGroupData.earlyLeavePenaltyRate ? String(freshGroupData.earlyLeavePenaltyRate) : "",
+        shiftStartTime: freshGroupData.shiftStartTime || "",
+        shiftEndTime: freshGroupData.shiftEndTime || "",
+        isActive: freshGroupData.isActive ?? true,
       });
     }
-  }, [isEditDialogOpen, selectedGroup]);
+  }, [isEditDialogOpen, freshGroupData]);
 
   const handleViewShifts = (group: any) => {
     setSelectedGroup(group);
