@@ -135,32 +135,44 @@ export const appRouter = router({
     
     create: protectedProcedure
       .input(z.object({
-        username: z.string().min(3),
-        password: z.string().min(6),
-        fullName: z.string().min(2),
-        email: z.string().email().optional(),
-        phone: z.string().optional(),
+        code: z.string().min(1),
+        name: z.string().min(2),
+        costCenterId: z.number().optional().nullable(),
+        supervisorId: z.number().optional().nullable(),
+        dailyRate: z.string().optional(),
+        workHours: z.string().optional(),
+        dailyWage: z.string().optional().nullable(),
+        workMinutes: z.string().optional().nullable(),
+        latePenaltyRate: z.string().optional().nullable(),
+        earlyLeavePenaltyRate: z.string().optional().nullable(),
+        shiftStartTime: z.string().optional().nullable(),
+        shiftEndTime: z.string().optional().nullable(),
         isActive: z.boolean().default(true),
       }))
       .mutation(async ({ input }) => {
-        const existingUser = await db.getUserByUsername(input.username);
-        if (existingUser) {
-          throw new Error("Username already exists");
+        try {
+          const id = await db.createGroup({
+            code: input.code,
+            name: input.name,
+            costCenterId: input.costCenterId,
+            supervisorId: input.supervisorId,
+            dailyRate: input.dailyRate ? input.dailyRate : undefined,
+            workHours: input.workHours ? input.workHours : undefined,
+            dailyWage: input.dailyWage ? parseFloat(input.dailyWage) : null,
+            workMinutes: input.workMinutes ? parseInt(input.workMinutes) : null,
+            latePenaltyRate: input.latePenaltyRate ? parseFloat(input.latePenaltyRate) : null,
+            earlyLeavePenaltyRate: input.earlyLeavePenaltyRate ? parseFloat(input.earlyLeavePenaltyRate) : null,
+            shiftStartTime: input.shiftStartTime,
+            shiftEndTime: input.shiftEndTime,
+            isActive: input.isActive,
+          } as any);
+          return { id, success: true };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message || 'فشل إنشاء المجموعة',
+          });
         }
-        
-        // Hash password
-        const bcrypt = await import('bcryptjs');
-        const passwordHash = await bcrypt.hash(input.password, 10);
-        
-        const id = await db.createUser({
-          username: input.username,
-          passwordHash,
-          fullName: input.fullName,
-          email: input.email,
-          phone: input.phone,
-          isActive: input.isActive,
-        });
-        return { id, success: true };
       }),
     
     update: protectedProcedure
@@ -238,11 +250,31 @@ export const appRouter = router({
         supervisorId: z.number().optional().nullable(),
         dailyRate: z.string().optional(),
         workHours: z.string().optional(),
+        dailyWage: z.string().optional().nullable(),
+        workMinutes: z.string().optional().nullable(),
+        latePenaltyRate: z.string().optional().nullable(),
+        earlyLeavePenaltyRate: z.string().optional().nullable(),
+        shiftStartTime: z.string().optional().nullable(),
+        shiftEndTime: z.string().optional().nullable(),
         isActive: z.boolean().default(true),
       }))
       .mutation(async ({ input }) => {
         try {
-          const id = await db.createGroup(input);
+          const id = await db.createGroup({
+            code: input.code,
+            name: input.name,
+            costCenterId: input.costCenterId,
+            supervisorId: input.supervisorId,
+            dailyRate: input.dailyRate,
+            workHours: input.workHours,
+            dailyWage: input.dailyWage ? parseFloat(input.dailyWage) : null,
+            workMinutes: input.workMinutes ? parseInt(input.workMinutes) : null,
+            latePenaltyRate: input.latePenaltyRate ? parseFloat(input.latePenaltyRate) : null,
+            earlyLeavePenaltyRate: input.earlyLeavePenaltyRate ? parseFloat(input.earlyLeavePenaltyRate) : null,
+            shiftStartTime: input.shiftStartTime,
+            shiftEndTime: input.shiftEndTime,
+            isActive: input.isActive,
+          } as any);
           return { id, success: true };
         } catch (error: any) {
           throw new TRPCError({
@@ -261,11 +293,33 @@ export const appRouter = router({
         supervisorId: z.number().optional().nullable(),
         dailyRate: z.string().optional(),
         workHours: z.string().optional(),
+        dailyWage: z.string().optional().nullable(),
+        workMinutes: z.string().optional().nullable(),
+        latePenaltyRate: z.string().optional().nullable(),
+        earlyLeavePenaltyRate: z.string().optional().nullable(),
+        shiftStartTime: z.string().optional().nullable(),
+        shiftEndTime: z.string().optional().nullable(),
         isActive: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        await db.updateGroup(id, data);
+        const updateData: any = {};
+        
+        if (data.code !== undefined) updateData.code = data.code;
+        if (data.name !== undefined) updateData.name = data.name;
+        if (data.costCenterId !== undefined) updateData.costCenterId = data.costCenterId;
+        if (data.supervisorId !== undefined) updateData.supervisorId = data.supervisorId;
+        if (data.dailyRate !== undefined) updateData.dailyRate = data.dailyRate;
+        if (data.workHours !== undefined) updateData.workHours = data.workHours;
+        if (data.dailyWage !== undefined) updateData.dailyWage = data.dailyWage ? parseFloat(data.dailyWage) : null;
+        if (data.workMinutes !== undefined) updateData.workMinutes = data.workMinutes ? parseInt(data.workMinutes) : null;
+        if (data.latePenaltyRate !== undefined) updateData.latePenaltyRate = data.latePenaltyRate ? parseFloat(data.latePenaltyRate) : null;
+        if (data.earlyLeavePenaltyRate !== undefined) updateData.earlyLeavePenaltyRate = data.earlyLeavePenaltyRate ? parseFloat(data.earlyLeavePenaltyRate) : null;
+        if (data.shiftStartTime !== undefined) updateData.shiftStartTime = data.shiftStartTime;
+        if (data.shiftEndTime !== undefined) updateData.shiftEndTime = data.shiftEndTime;
+        if (data.isActive !== undefined) updateData.isActive = data.isActive;
+        
+        await db.updateGroup(id, updateData);
         return { success: true };
       }),
     

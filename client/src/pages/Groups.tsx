@@ -236,13 +236,10 @@ export default function Groups() {
   };
 
   const saveGroup = () => {
-    // Convert string values to numbers or null
+    // Send data as strings (tRPC will handle conversion)
     const payload = {
       ...formData,
-      dailyWage: formData.dailyWage ? parseFloat(formData.dailyWage) : null,
-      workMinutes: formData.workMinutes ? parseInt(formData.workMinutes) : null,
-      latePenaltyRate: formData.latePenaltyRate ? parseFloat(formData.latePenaltyRate) : null,
-      earlyLeavePenaltyRate: formData.earlyLeavePenaltyRate ? parseFloat(formData.earlyLeavePenaltyRate) : null,
+      // Keep as strings - tRPC will convert them
     };
 
     if (selectedGroup) {
