@@ -215,7 +215,7 @@ export default function PayrollBatchList() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">جميع مراكز التكلفة</SelectItem>
-                    {costCenters?.map((cc) => (
+                    {costCenters && costCenters.length > 0 && costCenters.map((cc) => (
                       <SelectItem key={cc.id} value={cc.id.toString()}>
                         {cc.name}
                       </SelectItem>
@@ -246,7 +246,7 @@ export default function PayrollBatchList() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">جميع المجموعات</SelectItem>
-                    {filteredGroups?.map((group) => (
+                    {filteredGroups && filteredGroups.length > 0 && filteredGroups.map((group) => (
                       <SelectItem key={group.id} value={group.id.toString()}>
                         {group.name}
                       </SelectItem>
