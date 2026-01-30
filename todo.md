@@ -2734,3 +2734,13 @@ Add "Approve Full Attendance" option that:
 - [ ] Add error boundaries
 - [ ] Add loading skeletons
 - [ ] Save checkpoint
+
+
+## Add Calculate Payroll Button to PayrollBatchCreate
+
+- [x] Add state for calculated payroll data
+- [x] Add "Calculate Payroll" button with calculation logic
+- [x] Display summary of calculated data
+- [x] Update "Create Batch" button to work after calculation
+- [x] Test the new functionality (PayrollBatchCreate.test.ts with 18 tests)
+- [ ] Save checkpoint
