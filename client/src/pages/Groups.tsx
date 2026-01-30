@@ -1,4 +1,3 @@
-import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, Users, Clock, Building2, Download } from "lucide-react";
-import { useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
