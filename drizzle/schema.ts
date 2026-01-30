@@ -14,24 +14,7 @@ export const costCenters = mysqlTable("cost_centers", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export const jobs = mysqlTable("jobs", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
 
-export const settings = mysqlTable("settings", {
-  id: int("id").autoincrement().primaryKey(),
-  key: varchar("key", { length: 100 }).notNull().unique(),
-  value: text("value"),
-  description: text("description"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
 
 // ============================================
 // Users & Permissions (المستخدمين والصلاحيات)
@@ -146,16 +129,7 @@ export const attendanceEvents = mysqlTable("attendance_events", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const devices = mysqlTable("devices", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  location: varchar("location", { length: 255 }),
-  isActive: boolean("is_active").default(true),
-  lastSeen: timestamp("last_seen"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+
 
 // ============================================
 // Deductions & Overrides (الخصومات والاستثناءات)
@@ -326,8 +300,7 @@ export type InsertGroup = typeof groups.$inferInsert;
 export type GroupShift = typeof groupShifts.$inferSelect;
 export type InsertGroupShift = typeof groupShifts.$inferInsert;
 export type InsertWorker = typeof workers.$inferInsert;
-export type Job = typeof jobs.$inferSelect;
-export type InsertJob = typeof jobs.$inferInsert;
+
 
 
 // ============================================
