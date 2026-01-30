@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, Users, Clock, Building2, Download } from "lucide-react";
+import { useEffect } from "react";
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -173,19 +174,37 @@ export default function Groups() {
   const handleEdit = (group: any) => {
     setSelectedGroup(group);
     setFormData({
-      code: group.code,
-      name: group.name,
-      costCenterId: group.costCenterId,
-      dailyWage: group.dailyWage || "",
-      workMinutes: group.workMinutes || "",
-      latePenaltyRate: group.latePenaltyRate || "",
-      earlyLeavePenaltyRate: group.earlyLeavePenaltyRate || "",
+      code: group.code || "",
+      name: group.name || "",
+      costCenterId: group.costCenterId || null,
+      dailyWage: group.dailyWage ? String(group.dailyWage) : "",
+      workMinutes: group.workMinutes ? String(group.workMinutes) : "",
+      latePenaltyRate: group.latePenaltyRate ? String(group.latePenaltyRate) : "",
+      earlyLeavePenaltyRate: group.earlyLeavePenaltyRate ? String(group.earlyLeavePenaltyRate) : "",
       shiftStartTime: group.shiftStartTime || "",
       shiftEndTime: group.shiftEndTime || "",
-      isActive: group.isActive,
+      isActive: group.isActive !== undefined ? group.isActive : true,
     });
     setIsEditDialogOpen(true);
   };
+
+  // تحديث البيانات عند فتح نموذج التعديل
+  useEffect(() => {
+    if (isEditDialogOpen && selectedGroup) {
+      setFormData({
+        code: selectedGroup.code || "",
+        name: selectedGroup.name || "",
+        costCenterId: selectedGroup.costCenterId || null,
+        dailyWage: selectedGroup.dailyWage ? String(selectedGroup.dailyWage) : "",
+        workMinutes: selectedGroup.workMinutes ? String(selectedGroup.workMinutes) : "",
+        latePenaltyRate: selectedGroup.latePenaltyRate ? String(selectedGroup.latePenaltyRate) : "",
+        earlyLeavePenaltyRate: selectedGroup.earlyLeavePenaltyRate ? String(selectedGroup.earlyLeavePenaltyRate) : "",
+        shiftStartTime: selectedGroup.shiftStartTime || "",
+        shiftEndTime: selectedGroup.shiftEndTime || "",
+        isActive: selectedGroup.isActive !== undefined ? selectedGroup.isActive : true,
+      });
+    }
+  }, [isEditDialogOpen, selectedGroup]);
 
   const handleViewShifts = (group: any) => {
     setSelectedGroup(group);

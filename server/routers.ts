@@ -241,8 +241,15 @@ export const appRouter = router({
         isActive: z.boolean().default(true),
       }))
       .mutation(async ({ input }) => {
-        const id = await db.createGroup(input);
-        return { id, success: true };
+        try {
+          const id = await db.createGroup(input);
+          return { id, success: true };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message || 'فشل إنشاء المجموعة',
+          });
+        }
       }),
     
     update: protectedProcedure
@@ -350,17 +357,24 @@ export const appRouter = router({
         status: z.enum(["active", "inactive", "archived"]).default("active"),
       }))
       .mutation(async ({ input }) => {
-        // Generate QR token
-        const qrToken = `WRK-${input.code}-${Date.now()}`;
-        const manualCode = input.code.toUpperCase();
-        
-        const id = await db.createWorker({
-          ...input,
-          qrToken,
-          manualCode,
-          hireDate: input.hireDate ? new Date(input.hireDate) : null,
-        });
-        return { id, qrToken, success: true };
+        try {
+          // Generate QR token
+          const qrToken = `WRK-${input.code}-${Date.now()}`;
+          const manualCode = input.code.toUpperCase();
+          
+          const id = await db.createWorker({
+            ...input,
+            qrToken,
+            manualCode,
+            hireDate: input.hireDate ? new Date(input.hireDate) : null,
+          });
+          return { id, qrToken, success: true };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message || 'فشل إنشاء العامل',
+          });
+        }
       }),
     
     update: protectedProcedure

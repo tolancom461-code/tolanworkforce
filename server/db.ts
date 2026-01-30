@@ -255,9 +255,24 @@ export async function getGroupById(id: number): Promise<Group | undefined> {
   return result.length > 0 ? result[0] : undefined;
 }
 
+// التحقق من وجود كود المجموعة مسبقاً
+export async function getGroupByCode(code: string): Promise<Group | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(groups).where(eq(groups.code, code)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
 export async function createGroup(group: InsertGroup): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // التحقق من وجود الكود مسبقاً
+  const existingGroup = await getGroupByCode(group.code);
+  if (existingGroup) {
+    throw new Error(`الكود "${group.code}" مسجل مسبقاً للمجموعة "${existingGroup.name}"`);
+  }
 
   const result = await db.insert(groups).values(group);
   return result[0].insertId;
@@ -359,9 +374,24 @@ export async function getWorkerByCode(code: string): Promise<DbWorker | undefine
   return result.length > 0 ? result[0] : undefined;
 }
 
+// التحقق من وجود كود العامل مسبقاً
+export async function getWorkerByCodeDirect(code: string): Promise<DbWorker | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(workers).where(eq(workers.code, code)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
 export async function createWorker(worker: InsertWorker): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // التحقق من وجود الكود مسبقاً
+  const existingWorker = await getWorkerByCodeDirect(worker.code);
+  if (existingWorker) {
+    throw new Error(`الكود "${worker.code}" مسجل مسبقاً للعامل "${existingWorker.fullName}"`);
+  }
 
   const result = await db.insert(workers).values(worker);
   return result[0].insertId;
