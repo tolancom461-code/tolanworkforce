@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { SelectSkeleton, FilterSkeleton } from "@/components/SkeletonLoader";
 
 export default function PayrollBatchList() {
   const [activeTab, setActiveTab] = useState("all");
@@ -38,8 +39,8 @@ export default function PayrollBatchList() {
   const utils = trpc.useUtils();
   
   // Fetch cost centers and groups for filters
-  const { data: costCenters } = trpc.costCenters.list.useQuery();
-  const { data: allGroups } = trpc.groups.list.useQuery();
+  const { data: costCenters, isLoading: loadingCostCenters } = trpc.costCenters.list.useQuery();
+  const { data: allGroups, isLoading: loadingGroups } = trpc.groups.list.useQuery();
   
   // Filter groups based on selected cost center
   const filteredGroups = filters.costCenterId
@@ -196,10 +197,16 @@ export default function PayrollBatchList() {
             <CardTitle>فلاتر البحث</CardTitle>
           </CardHeader>
           <CardContent>
+            {loadingCostCenters || loadingGroups ? (
+              <FilterSkeleton />
+            ) : (
             <div className="grid grid-cols-4 gap-4">
               {/* Cost Center Filter */}
               <div>
                 <Label>مركز التكلفة</Label>
+                {loadingCostCenters ? (
+                  <SelectSkeleton />
+                ) : (
                 <Select
                   value={filters.costCenterId?.toString() || "all"}
                   onValueChange={(value) => {
@@ -222,11 +229,15 @@ export default function PayrollBatchList() {
                     ))}
                   </SelectContent>
                 </Select>
+                )}
               </div>
 
               {/* Group Filter */}
               <div>
                 <Label>المجموعة</Label>
+                {loadingGroups ? (
+                  <SelectSkeleton />
+                ) : (
                 <Select
                   value={filters.groupId?.toString() || "all"}
                   onValueChange={(value) => {
@@ -253,6 +264,7 @@ export default function PayrollBatchList() {
                     ))}
                   </SelectContent>
                 </Select>
+                )}
               </div>
 
               {/* Start Date Filter */}
@@ -275,6 +287,7 @@ export default function PayrollBatchList() {
                 />
               </div>
             </div>
+            )}
 
             {/* Clear Filters Button */}
             <div className="mt-4">
