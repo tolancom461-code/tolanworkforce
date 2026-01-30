@@ -2676,3 +2676,61 @@ Add "Approve Full Attendance" option that:
 - [ ] Create user guide for payroll workflow
 - [ ] Update DEMO_DATA.md with new features
 - [ ] Save checkpoint
+
+
+## Advanced Payroll UI System (نظام واجهة الرواتب المتقدمة)
+
+### Phase 1: Dynamic Period Selection ✅
+- [x] Create PeriodSelector component with multiple period types
+- [x] Support daily, weekly, monthly, and custom date ranges
+- [x] Add period validation and error handling
+- [x] Test period calculations
+
+### Phase 2: Double Payment Protection ✅
+- [x] Add lockedBatchId field to worker_daily_finance table
+- [x] Create database functions for locking/unlocking days
+- [x] Implement getUnlockedDailyFinances function
+- [x] Implement lockDailyFinancesForBatch function
+- [x] Implement unlockDailyFinancesForBatch function
+- [x] Add protection logic to prevent duplicate payments
+
+### Phase 3: Advanced Backend Functions ✅
+- [x] Create calculateDailyFinancesForPeriod function
+- [x] Create aggregatePayrollData function
+- [x] Create checkLockedDaysInPeriod function
+- [x] Add all functions to db.ts with proper error handling
+- [x] Create tRPC procedures for all functions
+
+### Phase 4: Frontend Components ✅
+- [x] Create PayrollSummaryCard component
+- [x] Create PayrollTable component with sorting and filtering
+- [x] Add search functionality to PayrollTable
+- [x] Add expandable rows for notes
+- [x] Add summary footer to PayrollTable
+
+### Phase 5: Advanced Payroll Page ✅
+- [x] Create AdvancedPayrollPage component
+- [x] Integrate PeriodSelector
+- [x] Integrate PayrollSummaryCard
+- [x] Integrate PayrollTable
+- [x] Add group selection
+- [x] Add calculate button
+- [x] Add approve batch button
+- [x] Add proper state management
+- [x] Add loading states and error handling
+
+### Phase 6: Testing ✅
+- [x] Create comprehensive vitest tests for PayrollComponents
+- [x] Test period calculations (daily, weekly, monthly)
+- [x] Test payroll calculations (net, deductions, bonuses)
+- [x] Test sorting and filtering in PayrollTable
+- [x] Test data aggregation and summaries
+- [x] Test numeric conversions and decimal handling
+
+### Phase 7: Integration & Finalization
+- [ ] Add route for AdvancedPayrollPage in App.tsx
+- [ ] Add menu item to DashboardLayout
+- [ ] Test full workflow with real data
+- [ ] Add error boundaries
+- [ ] Add loading skeletons
+- [ ] Save checkpoint
