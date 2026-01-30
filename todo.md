@@ -2785,3 +2785,15 @@ Add "Approve Full Attendance" option that:
 - [x] Test table sorting and filtering
 - [x] Test review and approval workflow
 - [x] Test error handling (PayrollBatchCreateAdvanced.test.ts with 30+ tests)
+
+
+## Bug: No Financial Data in Payroll Batch for Tolan Cost Center
+
+- [ ] Investigate attendance data for Tolan cost center
+- [ ] Check daily finance records in database
+- [ ] Verify calculation logic in server
+- [ ] Check if attendance events exist for the selected period
+- [ ] Verify daily wage calculation from attendance
+- [ ] Check for locked days preventing calculation
+- [ ] Analyze API response for errors
+- [ ] Create detailed bug report with findings
