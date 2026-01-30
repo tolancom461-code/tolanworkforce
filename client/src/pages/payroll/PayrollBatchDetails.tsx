@@ -145,10 +145,18 @@ export default function PayrollBatchDetails() {
     
     // Fetch daily finance data
     try {
+      // Convert dates safely - handle both Date objects and strings
+      const periodStart = batch!.batch.periodStart instanceof Date 
+        ? batch!.batch.periodStart.toISOString().split('T')[0]
+        : new Date(batch!.batch.periodStart).toISOString().split('T')[0];
+      const periodEnd = batch!.batch.periodEnd instanceof Date
+        ? batch!.batch.periodEnd.toISOString().split('T')[0]
+        : new Date(batch!.batch.periodEnd).toISOString().split('T')[0];
+      
       const data = await utils.client.payroll.getDailyFinanceForWorker.query({
         workerId: worker.workerId,
-        periodStart: batch!.batch.periodStart.toISOString().split('T')[0],
-        periodEnd: batch!.batch.periodEnd.toISOString().split('T')[0],
+        periodStart,
+        periodEnd,
       });
       setDailyData(data);
       
