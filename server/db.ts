@@ -240,11 +240,36 @@ export async function getDashboardStats() {
 
 
 
+// Helper function to transform Group from database format to API format
+function transformGroup(group: any): any {
+  if (!group) return group;
+  return {
+    id: group.id,
+    code: group.code,
+    name: group.name,
+    costCenterId: group.costCenterId,
+    supervisorId: group.supervisorId,
+    dailyRate: group.dailyRate,
+    workHours: group.workHours,
+    dailyWage: group.dailyWage,
+    workMinutes: group.workMinutes,
+    minuteCost: group.minuteCost,
+    latePenaltyRate: group.latePenaltyRate,
+    earlyLeavePenaltyRate: group.earlyLeavePenaltyRate,
+    shiftStartTime: group.shiftStartTime,
+    shiftEndTime: group.shiftEndTime,
+    isActive: group.isActive,
+    createdAt: group.createdAt,
+    updatedAt: group.updatedAt,
+  };
+}
+
 export async function getAllGroups(): Promise<Group[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return await db.select().from(groups).orderBy(desc(groups.createdAt));
+  const result = await db.select().from(groups).orderBy(desc(groups.createdAt));
+  return result.map(transformGroup);
 }
 
 export async function getGroupById(id: number): Promise<Group | undefined> {
@@ -252,7 +277,7 @@ export async function getGroupById(id: number): Promise<Group | undefined> {
   if (!db) return undefined;
 
   const result = await db.select().from(groups).where(eq(groups.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? transformGroup(result[0]) : undefined;
 }
 
 // التحقق من وجود كود المجموعة مسبقاً
@@ -261,7 +286,7 @@ export async function getGroupByCode(code: string): Promise<Group | null> {
   if (!db) return null;
 
   const result = await db.select().from(groups).where(eq(groups.code, code)).limit(1);
-  return result.length > 0 ? result[0] : null;
+  return result.length > 0 ? transformGroup(result[0]) : null;
 }
 
 export async function createGroup(group: InsertGroup): Promise<number> {

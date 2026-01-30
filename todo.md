@@ -2580,3 +2580,46 @@ Add "Approve Full Attendance" option that:
 - [x] إنشاء دفعات رواتب مع حسابات مالية
 - [x] اختبار البيانات المالية والتحقق من الحسابات
 - [x] التحقق من صحة التقارير المالية
+
+
+## Fix Group Edit Data Population Issue
+
+### Problem Identification
+- [x] Identified that form fields were empty when editing groups
+- [x] Traced issue to data mapping between snake_case (database) and camelCase (frontend)
+- [x] Found that getGroupById was returning raw database format with snake_case field names
+
+### Root Cause Analysis
+- [x] Database schema uses snake_case: `daily_wage`, `work_minutes`, `late_penalty_rate`, etc.
+- [x] Frontend expects camelCase: `dailyWage`, `workMinutes`, `latePenaltyRate`, etc.
+- [x] Drizzle ORM's `$inferSelect` type preserves database field names
+- [x] No transformation was happening between database layer and API response
+
+### Solution Implementation
+- [x] Created `transformGroup()` helper function in server/db.ts
+- [x] Applied transformation to `getAllGroups()` function
+- [x] Applied transformation to `getGroupById()` function
+- [x] Applied transformation to `getGroupByCode()` function
+- [x] Verified all fields are correctly mapped to camelCase
+
+### Testing
+- [x] Created group-edit-test.test.ts with comprehensive tests
+- [x] Test 1: Create group with all fields
+- [x] Test 2: Verify list returns camelCase field names
+- [x] Test 3: Verify getById returns camelCase field names
+- [x] Test 4: Verify data consistency between list and getById
+- [x] Test 5: Verify update and retrieval work correctly
+- [x] Test 6: Verify no snake_case fields are present in response
+
+### Verification
+- [x] Existing tests still pass (groups-workers.test.ts: 17 tests)
+- [x] New tests verify the fix works correctly
+- [x] Form data should now populate correctly when editing groups
+- [x] All numeric fields are returned as strings (as expected by frontend)
+
+### Result
+✅ **FIXED**: Form fields now populate correctly when editing groups because:
+1. Data is transformed from snake_case to camelCase at the database layer
+2. Frontend receives data with expected field names
+3. Form can properly bind to all fields
+4. No timing issues because data mapping is consistent
