@@ -666,7 +666,7 @@ export async function getMonthlyAttendanceReport(year: number, month: number, gr
   
   // Calculate statistics for each worker
   const report = filteredWorkers.map(worker => {
-    const workerEvents = events.filter(e => e.workerId === worker.id);
+    const workerEvents = events.filter((e: any) => e.workerId === worker.id);
     
     // Group events by date
     const eventsByDate = workerEvents.reduce((acc, event) => {
@@ -677,14 +677,14 @@ export async function getMonthlyAttendanceReport(year: number, month: number, gr
     }, {} as Record<string, typeof workerEvents>);
     
     const daysPresent = Object.keys(eventsByDate).length;
-    const totalCheckIns = workerEvents.filter(e => e.eventType === 'check_in').length;
-    const totalCheckOuts = workerEvents.filter(e => e.eventType === 'check_out').length;
+    const totalCheckIns = workerEvents.filter((e: any) => e.eventType === 'check_in').length;
+    const totalCheckOuts = workerEvents.filter((e: any) => e.eventType === 'check_out').length;
     
     // Calculate total work hours
     let totalHours = 0;
-    Object.values(eventsByDate).forEach(dayEvents => {
-      const checkIn = dayEvents.find(e => e.eventType === 'check_in');
-      const checkOut = dayEvents.find(e => e.eventType === 'check_out');
+    Object.values(eventsByDate).forEach((dayEvents: any) => {
+      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
+      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
       if (checkIn && checkOut) {
         const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
         totalHours += hours;
@@ -3595,7 +3595,7 @@ export async function getDailyAttendanceRecords(date: string) {
   const recordMap = new Map();
   
   for (const worker of allWorkers) {
-    const workerEvents = events.filter(e => e.workerId === worker.id);
+    const workerEvents = events.filter((e: any) => e.workerId === worker.id);
     const checkInEvent = workerEvents.find(e => e.eventType === 'check_in');
     const checkOutEvent = workerEvents.find(e => e.eventType === 'check_out');
     
@@ -4055,3 +4055,319 @@ export async function calculateDailyFinance(workerId: number, date: string) {
 }
 
 
+
+
+// ============================================
+// Attendance Export Functions (Excel Reports)
+// ============================================
+
+export async function getAttendanceReportData(
+  startDate: string,
+  endDate: string,
+  groupId?: number,
+  costCenterId?: number
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  
+  // Build query
+  let query = db
+    .select({
+      workerId: workers.id,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      groupId: workers.groupId,
+      groupName: groups.name,
+      costCenterId: groups.costCenterId,
+      costCenterName: costCenters.name,
+      eventType: attendanceEvents.eventType,
+      eventTime: attendanceEvents.eventTime,
+      method: attendanceEvents.method,
+    })
+    .from(attendanceEvents)
+    .innerJoin(workers, eq(attendanceEvents.workerId, workers.id))
+    .innerJoin(groups, eq(workers.groupId, groups.id))
+    .leftJoin(costCenters, eq(groups.costCenterId, costCenters.id))
+    .where(and(
+      gte(attendanceEvents.eventTime, start),
+      lte(attendanceEvents.eventTime, end)
+    ));
+  
+  // Apply filters
+  if (groupId) {
+    query = (query as any).where(eq(workers.groupId, groupId));
+  }
+  if (costCenterId) {
+    query = (query as any).where(eq(groups.costCenterId, costCenterId));
+  }
+  
+  const results = await (query as any).orderBy(
+    workers.fullName,
+    attendanceEvents.eventTime
+  );
+  
+  return results;
+}
+
+export async function getAttendanceSummaryByWorker(
+  startDate: string,
+  endDate: string,
+  groupId?: number,
+  costCenterId?: number
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  
+  // Get all workers
+  let workersQuery = db.select().from(workers) as any;
+  if (groupId) {
+    workersQuery = workersQuery.where(eq(workers.groupId, groupId));
+  }
+  const allWorkers = await workersQuery;
+  
+  // Get attendance events
+  let eventsQuery = db
+    .select()
+    .from(attendanceEvents)
+    .where(and(
+      gte(attendanceEvents.eventTime, start),
+      lte(attendanceEvents.eventTime, end)
+    ));
+  
+  const events = await eventsQuery;
+  
+  // Get groups and cost centers for joining
+  const groupsData = await db.select().from(groups);
+  const costCentersData = await db.select().from(costCenters);
+  
+  // Calculate summary for each worker
+  const summary = allWorkers.map((worker: any) => {
+    const workerGroup = groupsData.find(g => g.id === worker.groupId);
+    const costCenter = workerGroup ? costCentersData.find(c => c.id === workerGroup.costCenterId) : null;
+    
+    // Apply cost center filter if specified
+    if (costCenterId && workerGroup?.costCenterId !== costCenterId) {
+      return null;
+    }
+    
+    const workerEvents = events.filter((e: any) => e.workerId === worker.id);
+    
+    // Group events by date
+    const eventsByDate: Record<string, any[]> = {};
+    workerEvents.forEach(event => {
+      const dateKey = new Date(event.eventTime).toISOString().split('T')[0];
+      if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
+      eventsByDate[dateKey].push(event);
+    });
+    
+    const daysPresent = Object.keys(eventsByDate).length;
+    const totalCheckIns = workerEvents.filter((e: any) => e.eventType === 'check_in').length;
+    const totalCheckOuts = workerEvents.filter((e: any) => e.eventType === 'check_out').length;
+    
+    // Calculate total work hours
+    let totalHours = 0;
+    Object.values(eventsByDate).forEach((dayEvents: any) => {
+      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
+      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
+      if (checkIn && checkOut) {
+        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+        totalHours += hours;
+      }
+    });
+    
+    return {
+      workerId: worker.id,
+      workerName: worker.fullName,
+      workerCode: worker.code,
+      groupId: worker.groupId,
+      groupName: workerGroup?.name || 'N/A',
+      costCenterId: workerGroup?.costCenterId,
+      costCenterName: costCenter?.name || 'N/A',
+      daysPresent,
+      totalCheckIns,
+      totalCheckOuts,
+      totalHours: Math.round(totalHours * 100) / 100,
+      avgHoursPerDay: daysPresent > 0 ? Math.round((totalHours / daysPresent) * 100) / 100 : 0,
+    };
+  }).filter((item: any) => item !== null);
+  
+  return summary;
+}
+
+export async function getAttendanceSummaryByGroup(
+  startDate: string,
+  endDate: string,
+  costCenterId?: number
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  
+  // Get all groups
+  let groupsQuery = db.select().from(groups) as any;
+  if (costCenterId) {
+    groupsQuery = groupsQuery.where(eq(groups.costCenterId, costCenterId));
+  }
+  const allGroups = await groupsQuery;
+  
+  // Get all workers
+  const allWorkers = await db.select().from(workers);
+  
+  // Get attendance events
+  const events = await db
+    .select()
+    .from(attendanceEvents)
+    .where(and(
+      gte(attendanceEvents.eventTime, start),
+      lte(attendanceEvents.eventTime, end)
+    ));
+  
+  // Get cost centers
+  const costCentersData = await db.select().from(costCenters);
+  
+  // Calculate summary for each group
+  const summary = allGroups.map((group: any) => {
+    const groupWorkers = allWorkers.filter(w => w.groupId === group.id);
+    const groupEvents = events.filter(e => groupWorkers.some(w => w.id === e.workerId));
+    
+    const costCenter = costCentersData.find(c => c.id === group.costCenterId);
+    
+    // Calculate totals
+    const totalCheckIns = groupEvents.filter(e => e.eventType === 'check_in').length;
+    const totalCheckOuts = groupEvents.filter(e => e.eventType === 'check_out').length;
+    
+    // Get unique days with attendance
+    const daysWithAttendance = new Set(
+      groupEvents.map(e => new Date(e.eventTime).toISOString().split('T')[0])
+    ).size;
+    
+    // Calculate total work hours
+    let totalHours = 0;
+    const eventsByDate: Record<string, any[]> = {};
+    groupEvents.forEach(event => {
+      const dateKey = new Date(event.eventTime).toISOString().split('T')[0];
+      if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
+      eventsByDate[dateKey].push(event);
+    });
+    
+    Object.values(eventsByDate).forEach((dayEvents: any) => {
+      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
+      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
+      if (checkIn && checkOut) {
+        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+        totalHours += hours;
+      }
+    });
+    
+    return {
+      groupId: group.id,
+      groupName: group.name,
+      costCenterId: group.costCenterId,
+      costCenterName: costCenter?.name || 'N/A',
+      totalWorkers: groupWorkers.length,
+      totalCheckIns,
+      totalCheckOuts,
+      daysWithAttendance,
+      totalHours: Math.round(totalHours * 100) / 100,
+      avgHoursPerDay: daysWithAttendance > 0 ? Math.round((totalHours / daysWithAttendance) * 100) / 100 : 0,
+    };
+  });
+  
+  return summary;
+}
+
+export async function getAttendanceSummaryByCostCenter(
+  startDate: string,
+  endDate: string
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
+  
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  
+  // Get all cost centers
+  const allCostCenters = await db.select().from(costCenters);
+  
+  // Get all groups
+  const allGroups = await db.select().from(groups);
+  
+  // Get all workers
+  const allWorkers = await db.select().from(workers);
+  
+  // Get attendance events
+  const events = await db
+    .select()
+    .from(attendanceEvents)
+    .where(and(
+      gte(attendanceEvents.eventTime, start),
+      lte(attendanceEvents.eventTime, end)
+    ));
+  
+  // Calculate summary for each cost center
+  const summary = allCostCenters.map((costCenter: any) => {
+    const costCenterGroups = allGroups.filter(g => g.costCenterId === costCenter.id);
+    const costCenterWorkers = allWorkers.filter(w => costCenterGroups.some(g => g.id === w.groupId));
+    const costCenterEvents = events.filter(e => costCenterWorkers.some(w => w.id === e.workerId));
+    
+    const totalCheckIns = costCenterEvents.filter(e => e.eventType === 'check_in').length;
+    const totalCheckOuts = costCenterEvents.filter(e => e.eventType === 'check_out').length;
+    
+    // Get unique days with attendance
+    const daysWithAttendance = new Set(
+      costCenterEvents.map(e => new Date(e.eventTime).toISOString().split('T')[0])
+    ).size;
+    
+    // Calculate total work hours
+    let totalHours = 0;
+    const eventsByDate: Record<string, any[]> = {};
+    costCenterEvents.forEach(event => {
+      const dateKey = new Date(event.eventTime).toISOString().split('T')[0];
+      if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
+      eventsByDate[dateKey].push(event);
+    });
+    
+    Object.values(eventsByDate).forEach((dayEvents: any) => {
+      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
+      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
+      if (checkIn && checkOut) {
+        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+        totalHours += hours;
+      }
+    });
+    
+    return {
+      costCenterId: costCenter.id,
+      costCenterName: costCenter.name,
+      totalGroups: costCenterGroups.length,
+      totalWorkers: costCenterWorkers.length,
+      totalCheckIns,
+      totalCheckOuts,
+      daysWithAttendance,
+      totalHours: Math.round(totalHours * 100) / 100,
+      avgHoursPerDay: daysWithAttendance > 0 ? Math.round((totalHours / daysWithAttendance) * 100) / 100 : 0,
+    };
+  });
+  
+  return summary;
+}

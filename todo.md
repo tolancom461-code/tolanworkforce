@@ -456,6 +456,18 @@
 - [ ] Note: Tests need demo financial data for the test periods to pass
 - [ ] Test role-based permissions (future)
 - [ ] Test executive summary calculations (future)
+
+
+## Export Attendance Reports to Excel
+
+- [x] Add export data functions in database (db.ts)
+- [x] Create tRPC export procedures
+- [x] Create AttendanceExport page
+- [x] Update AttendanceReports page
+- [x] Add export route in App.tsx
+- [x] Write and test Vitest for new functions (7 tests)
+- [ ] Manual testing from UI
+- [ ] Verify Excel file format
 - [ ] Test report generation and export (future)
 - [x] Save checkpoint
 ## المرحلة 1: الاستقرار والموثوقية
