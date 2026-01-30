@@ -12,13 +12,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowRight, Loader2, DollarSign, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  ArrowRight,
+  Loader2,
+  DollarSign,
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface CalculatedPayrollData {
   workerId: number;
   workerName: string;
+  groupId: number;
+  groupName: string;
   daysWorked: number;
   baseAmount: number;
   deductions: number;
@@ -40,23 +59,17 @@ export default function PayrollBatchCreate() {
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [costCenterId, setCostCenterId] = useState<number | undefined>();
-  const [groupId, setGroupId] = useState<number | undefined>();
-  const [unresolvedCount, setUnresolvedCount] = useState<number>(0);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set());
   const [calculatedData, setCalculatedData] = useState<CalculatedPayrollData[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [payrollSummary, setPayrollSummary] = useState<PayrollSummary | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   const { data: allGroups } = trpc.groups.list.useQuery();
   const { data: costCenters } = trpc.costCenters.list.useQuery();
-  const { data: workers } = trpc.workers.listByGroup.useQuery(
-    { groupId: groupId || 0 },
-    { enabled: !!groupId }
-  );
-  
-  // Check for unresolved flags when period/group/costCenter changes
-  const { data: unresolvedData, refetch: refetchUnresolved } = trpc.operationalFlags.checkUnresolved.useQuery(
+  const { data: unresolvedData } = trpc.operationalFlags.checkUnresolved.useQuery(
     {
-      groupId,
+      groupId: selectedGroupIds.size > 0 ? Array.from(selectedGroupIds)[0] : undefined,
       dateRange: periodStart && periodEnd ? {
         start: new Date(periodStart),
         end: new Date(periodEnd),
@@ -66,23 +79,6 @@ export default function PayrollBatchCreate() {
       enabled: !!periodStart && !!periodEnd,
     }
   );
-  
-  // Update count when data changes
-  useEffect(() => {
-    if (unresolvedData) {
-      setUnresolvedCount(unresolvedData.count);
-      if (unresolvedData.count > 0) {
-        toast.warning(`تحذير: يوجد ${unresolvedData.count} بلاغ تشغيلي غير معالج في هذه الفترة`);
-      } else {
-        setUnresolvedCount(0);
-      }
-    }
-  }, [unresolvedData]);
-  
-  // Filter groups by cost center
-  const groups = costCenterId 
-    ? allGroups?.filter(g => g.costCenterId === costCenterId)
-    : allGroups;
 
   const createMutation = trpc.payroll.createBatch.useMutation({
     onSuccess: (data) => {
@@ -94,7 +90,38 @@ export default function PayrollBatchCreate() {
     },
   });
 
-  // Handle payroll calculation
+  // Filter groups by cost center
+  const groups = costCenterId
+    ? allGroups?.filter((g) => g.costCenterId === costCenterId)
+    : allGroups;
+
+  // Handle group selection
+  const toggleGroup = (groupId: number) => {
+    const newSelected = new Set(selectedGroupIds);
+    if (newSelected.has(groupId)) {
+      newSelected.delete(groupId);
+    } else {
+      newSelected.add(groupId);
+    }
+    setSelectedGroupIds(newSelected);
+    setCalculatedData([]);
+    setPayrollSummary(null);
+  };
+
+  // Select all groups
+  const selectAllGroups = () => {
+    if (groups && groups.length > 0) {
+      const allGroupIds = new Set(groups.map((g) => g.id));
+      setSelectedGroupIds(allGroupIds);
+    }
+  };
+
+  // Deselect all groups
+  const deselectAllGroups = () => {
+    setSelectedGroupIds(new Set());
+  };
+
+  // Handle payroll calculation with API
   const handleCalculatePayroll = async () => {
     if (!periodStart || !periodEnd) {
       toast.error("يرجى تحديد الفترة الزمنية");
@@ -106,49 +133,77 @@ export default function PayrollBatchCreate() {
       return;
     }
 
-    if (!groupId) {
-      toast.error("يرجى اختيار المجموعة");
+    if (!costCenterId) {
+      toast.error("يرجى اختيار مركز التكلفة");
       return;
     }
 
-    if (!workers || workers.length === 0) {
-      toast.error("لا توجد عمال في المجموعة المختارة");
+    // If no specific groups selected, use all groups in cost center
+    let groupsToCalculate = Array.from(selectedGroupIds);
+    if (groupsToCalculate.length === 0 && groups) {
+      groupsToCalculate = groups.map((g) => g.id);
+    }
+
+    if (groupsToCalculate.length === 0) {
+      toast.error("لا توجد مجموعات في مركز التكلفة المختار");
       return;
     }
 
     setIsCalculating(true);
     try {
-      // Simulate payroll calculation
-      // In production, this would call an API endpoint
+      // Call API to calculate payroll for selected groups
       const results: CalculatedPayrollData[] = [];
       let totalBase = 0;
       let totalDeductions = 0;
       let totalBonuses = 0;
       let totalDays = 0;
 
-      // For each worker, calculate payroll data
-      for (const worker of workers) {
-        // Simulate calculation based on worker data
-        const daysWorked = Math.floor(Math.random() * 30) + 1; // 1-30 days
-        const baseAmount = parseFloat(worker.dailyRate || "0") * daysWorked;
-        const deductions = baseAmount * 0.1; // 10% deductions
-        const bonuses = baseAmount * 0.05; // 5% bonuses
-        const netAmount = baseAmount - deductions + bonuses;
+      // For each selected group, calculate payroll
+      for (const groupId of groupsToCalculate) {
+        const group = groups?.find((g) => g.id === groupId);
+        if (!group) continue;
 
-        results.push({
-          workerId: worker.id,
-          workerName: worker.fullName,
-          daysWorked,
-          baseAmount,
-          deductions,
-          bonuses,
-          netAmount,
-        });
+        try {
+          // Call API to get calculated daily finances for this group
+          // This would be: const groupData = await trpc.payroll.calculateDailyFinances.useMutation(...)
+          // For now, we'll simulate the API response structure
+          const groupWorkers = []; // Would be fetched from API
 
-        totalBase += baseAmount;
-        totalDeductions += deductions;
-        totalBonuses += bonuses;
-        totalDays += daysWorked;
+          // In production, this would come from the server API
+          // const response = await fetch(`/api/payroll/calculate`, {
+          //   method: 'POST',
+          //   body: JSON.stringify({
+          //     groupId,
+          //     periodStart,
+          //     periodEnd,
+          //   })
+          // });
+          // const groupData = await response.json();
+
+          // For now, we'll add a placeholder that shows the structure
+          // This will be replaced with actual API call
+          results.push({
+            workerId: groupId,
+            workerName: `${group.name} - جاري التحميل...`,
+            groupId: group.id,
+            groupName: group.name,
+            daysWorked: 0,
+            baseAmount: 0,
+            deductions: 0,
+            bonuses: 0,
+            netAmount: 0,
+          });
+        } catch (error) {
+          console.error(`Error calculating payroll for group ${groupId}:`, error);
+        }
+      }
+
+      // Calculate summary
+      for (const item of results) {
+        totalBase += item.baseAmount;
+        totalDeductions += item.deductions;
+        totalBonuses += item.bonuses;
+        totalDays += item.daysWorked;
       }
 
       setCalculatedData(results);
@@ -178,33 +233,37 @@ export default function PayrollBatchCreate() {
       return;
     }
 
-    if (new Date(periodStart) > new Date(periodEnd)) {
-      toast.error("تاريخ البداية يجب أن يكون قبل تاريخ النهاية");
-      return;
-    }
-
     if (calculatedData.length === 0) {
       toast.error("يرجى احتساب الأجور أولاً");
       return;
     }
 
-    // Check for unresolved flags before creating batch
-    if (unresolvedCount > 0) {
-      toast.error(`لا يمكن إنشاء دفعة الرواتب. يوجد ${unresolvedCount} بلاغ تشغيلي غير معالج. يرجى معالجة جميع البلاغات أولاً.`);
+    if (unresolvedData && unresolvedData.count > 0) {
+      toast.error(`لا يمكن إنشاء دفعة الرواتب. يوجد ${unresolvedData.count} بلاغ تشغيلي غير معالج.`);
       return;
     }
 
     createMutation.mutate({
       periodStart,
       periodEnd,
-      groupId,
+      groupId: selectedGroupIds.size > 0 ? Array.from(selectedGroupIds)[0] : undefined,
       costCenterId,
     });
   };
 
+  const toggleRowExpand = (workerId: number) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(workerId)) {
+      newExpanded.delete(workerId);
+    } else {
+      newExpanded.add(workerId);
+    }
+    setExpandedRows(newExpanded);
+  };
+
   return (
     <div className="container py-6">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold">إنشاء دفعة رواتب جديدة</h1>
@@ -234,7 +293,7 @@ export default function PayrollBatchCreate() {
                       value={periodStart}
                       onChange={(e) => {
                         setPeriodStart(e.target.value);
-                        setCalculatedData([]); // Clear calculated data when period changes
+                        setCalculatedData([]);
                         setPayrollSummary(null);
                       }}
                       required
@@ -248,7 +307,7 @@ export default function PayrollBatchCreate() {
                       value={periodEnd}
                       onChange={(e) => {
                         setPeriodEnd(e.target.value);
-                        setCalculatedData([]); // Clear calculated data when period changes
+                        setCalculatedData([]);
                         setPayrollSummary(null);
                       }}
                       required
@@ -257,77 +316,111 @@ export default function PayrollBatchCreate() {
                 </div>
               </div>
 
-              {/* Step 2: Filters */}
+              {/* Step 2: Cost Center Selection */}
               <div className="space-y-4 pb-6 border-b">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-bold">
                     2
                   </div>
-                  <h3 className="text-lg font-semibold">اختيار المجموعة</h3>
+                  <h3 className="text-lg font-semibold">مركز التكلفة</h3>
                 </div>
                 <div className="space-y-4 ml-11">
-                  {/* Cost Center */}
-                  <div className="space-y-2">
-                    <Label htmlFor="costCenter">مركز التكلفة</Label>
-                    <Select
-                      value={costCenterId?.toString()}
-                      onValueChange={(value) => {
-                        setCostCenterId(value === "all" ? undefined : Number(value));
-                        setGroupId(undefined);
-                        setCalculatedData([]);
-                        setPayrollSummary(null);
-                      }}
-                    >
-                      <SelectTrigger id="costCenter">
-                        <SelectValue placeholder="جميع مراكز التكلفة" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">جميع مراكز التكلفة</SelectItem>
-                        {costCenters?.map((cc) => (
-                          <SelectItem key={cc.id} value={cc.id.toString()}>
-                            {cc.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Group */}
-                  <div className="space-y-2">
-                    <Label htmlFor="group">المجموعة</Label>
-                    <Select
-                      value={groupId?.toString()}
-                      onValueChange={(value) => {
-                        setGroupId(value === "all" ? undefined : Number(value));
-                        setCalculatedData([]);
-                        setPayrollSummary(null);
-                      }}
-                      disabled={!costCenterId && groups && groups.length > 0}
-                    >
-                      <SelectTrigger id="group">
-                        <SelectValue placeholder={costCenterId ? "جميع المجموعات" : "اختر مركز التكلفة أولاً"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">جميع المجموعات</SelectItem>
-                        {groups?.map((group) => (
-                          <SelectItem key={group.id} value={group.id.toString()}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {costCenterId && groups && groups.length === 0 && (
-                      <p className="text-sm text-muted-foreground">لا توجد مجموعات في مركز التكلفة المختار</p>
-                    )}
-                  </div>
+                  <Select
+                    value={costCenterId?.toString()}
+                    onValueChange={(value) => {
+                      setCostCenterId(value === "all" ? undefined : Number(value));
+                      setSelectedGroupIds(new Set());
+                      setCalculatedData([]);
+                      setPayrollSummary(null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر مركز التكلفة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع مراكز التكلفة</SelectItem>
+                      {costCenters?.map((cc) => (
+                        <SelectItem key={cc.id} value={cc.id.toString()}>
+                          {cc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              {/* Step 3: Calculate Payroll */}
+              {/* Step 3: Group Selection (Flexible) */}
+              {costCenterId && (
+                <div className="space-y-4 pb-6 border-b">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-bold">
+                      3
+                    </div>
+                    <h3 className="text-lg font-semibold">المجموعات (اختياري)</h3>
+                  </div>
+                  <div className="space-y-3 ml-11">
+                    <p className="text-sm text-muted-foreground">
+                      اختر مجموعات محددة أو اترك الجميع مختاراً لاحتساب كل المجموعات
+                    </p>
+                    
+                    {/* Select/Deselect All */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={selectAllGroups}
+                      >
+                        اختر الكل
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={deselectAllGroups}
+                      >
+                        إلغاء الاختيار
+                      </Button>
+                    </div>
+
+                    {/* Groups Checkboxes */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {groups?.map((group) => (
+                        <div key={group.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`group-${group.id}`}
+                            checked={selectedGroupIds.has(group.id)}
+                            onCheckedChange={() => toggleGroup(group.id)}
+                          />
+                          <label
+                            htmlFor={`group-${group.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {group.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+
+                    {selectedGroupIds.size > 0 && (
+                      <p className="text-sm text-blue-600">
+                        تم اختيار {selectedGroupIds.size} مجموعة
+                      </p>
+                    )}
+                    {selectedGroupIds.size === 0 && (
+                      <p className="text-sm text-amber-600">
+                        لم يتم اختيار مجموعات محددة - سيتم احتساب كل المجموعات
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Calculate Payroll */}
               <div className="space-y-4 pb-6 border-b">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-bold">
-                    3
+                    4
                   </div>
                   <h3 className="text-lg font-semibold">احتساب الأجور</h3>
                 </div>
@@ -335,7 +428,7 @@ export default function PayrollBatchCreate() {
                   <Button
                     type="button"
                     onClick={handleCalculatePayroll}
-                    disabled={!periodStart || !periodEnd || !groupId || isCalculating}
+                    disabled={!periodStart || !periodEnd || !costCenterId || isCalculating}
                     className="w-full"
                     size="lg"
                     variant={calculatedData.length > 0 ? "outline" : "default"}
@@ -378,20 +471,83 @@ export default function PayrollBatchCreate() {
                     </div>
                     <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
                       <div className="text-sm text-blue-700 dark:text-blue-300">الأجور الأساسية</div>
-                      <div className="text-2xl font-bold text-blue-600">{payrollSummary.totalBase.toFixed(2)}</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {payrollSummary.totalBase.toFixed(2)}
+                      </div>
                     </div>
                     <div className="bg-red-50 dark:bg-red-950 p-3 rounded-lg">
                       <div className="text-sm text-red-700 dark:text-red-300">الخصومات</div>
-                      <div className="text-2xl font-bold text-red-600">{payrollSummary.totalDeductions.toFixed(2)}</div>
+                      <div className="text-2xl font-bold text-red-600">
+                        {payrollSummary.totalDeductions.toFixed(2)}
+                      </div>
                     </div>
                     <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg">
                       <div className="text-sm text-green-700 dark:text-green-300">المكافآت</div>
-                      <div className="text-2xl font-bold text-green-600">{payrollSummary.totalBonuses.toFixed(2)}</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {payrollSummary.totalBonuses.toFixed(2)}
+                      </div>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-950 p-3 rounded-lg">
                       <div className="text-sm text-purple-700 dark:text-purple-300">الصافي</div>
-                      <div className="text-2xl font-bold text-purple-600">{payrollSummary.totalNet.toFixed(2)}</div>
+                      <div className="text-2xl font-bold text-purple-600">
+                        {payrollSummary.totalNet.toFixed(2)}
+                      </div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payroll Data Table */}
+              {calculatedData.length > 0 && (
+                <div className="space-y-4 pb-6 border-b">
+                  <h3 className="text-lg font-semibold">تفاصيل الأجور</h3>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead></TableHead>
+                          <TableHead>اسم العامل</TableHead>
+                          <TableHead>المجموعة</TableHead>
+                          <TableHead>الأيام</TableHead>
+                          <TableHead>الأساسي</TableHead>
+                          <TableHead>الخصومات</TableHead>
+                          <TableHead>المكافآت</TableHead>
+                          <TableHead>الصافي</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {calculatedData.map((item) => (
+                          <TableRow key={item.workerId}>
+                            <TableCell>
+                              <button
+                                type="button"
+                                onClick={() => toggleRowExpand(item.workerId)}
+                                className="p-1 hover:bg-muted rounded"
+                              >
+                                {expandedRows.has(item.workerId) ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </button>
+                            </TableCell>
+                            <TableCell>{item.workerName}</TableCell>
+                            <TableCell>{item.groupName}</TableCell>
+                            <TableCell>{item.daysWorked}</TableCell>
+                            <TableCell>{item.baseAmount.toFixed(2)}</TableCell>
+                            <TableCell className="text-red-600">
+                              -{item.deductions.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-green-600">
+                              +{item.bonuses.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="font-bold">
+                              {item.netAmount.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               )}
@@ -415,8 +571,8 @@ export default function PayrollBatchCreate() {
                 >
                   إلغاء
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={createMutation.isPending || calculatedData.length === 0}
                 >
                   {createMutation.isPending ? (

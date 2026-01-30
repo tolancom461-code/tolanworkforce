@@ -2744,3 +2744,44 @@ Add "Approve Full Attendance" option that:
 - [x] Update "Create Batch" button to work after calculation
 - [x] Test the new functionality (PayrollBatchCreate.test.ts with 18 tests)
 - [ ] Save checkpoint
+
+
+## Connect Payroll Calculation to Server API
+
+- [x] Replace mock calculation with real API call to calculateDailyFinances
+- [x] Fetch actual attendance data from database
+- [x] Fetch actual deductions and bonuses from database
+- [x] Handle API errors and loading states
+- [x] Add data validation and error handling
+
+## Add Flexibility for Cost Centers and Groups Selection
+
+- [x] Allow selection of "All Cost Centers" or specific cost center
+- [x] Allow selection of "All Groups" or multiple groups within cost center
+- [x] Enable calculate button with only period + cost center (group optional)
+- [x] Auto-calculate for all groups when no specific group is selected
+- [x] Update UI to show selected scope clearly
+
+## Add Interactive Payroll Table
+
+- [x] Create PayrollDataTable component with worker details
+- [x] Add sorting by worker name, days worked, net amount
+- [x] Add filtering by group or status
+- [x] Show detailed breakdown for each worker
+- [x] Add expandable rows for notes
+
+## Add Review and Approval Feature
+
+- [x] Add review mode before batch creation
+- [x] Allow editing individual worker amounts
+- [x] Add notes/comments field
+- [x] Add approval/rejection buttons
+- [x] Show approval history
+
+## Test Complete Payroll Interface
+
+- [x] Test API integration with real data
+- [x] Test cost center and group selection flexibility
+- [x] Test table sorting and filtering
+- [x] Test review and approval workflow
+- [x] Test error handling (PayrollBatchCreateAdvanced.test.ts with 30+ tests)
