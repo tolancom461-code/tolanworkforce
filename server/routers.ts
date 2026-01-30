@@ -1973,6 +1973,62 @@ export const appRouter = router({
           ctx.user.id
         );
       }),
+    
+    calculateDailyFinancesForPeriod: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.calculateDailyFinancesForPeriod(
+          input.workerId,
+          input.periodStart,
+          input.periodEnd
+        );
+      }),
+    
+    getUnlockedDailyFinances: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getUnlockedDailyFinances(
+          input.workerId,
+          input.periodStart,
+          input.periodEnd
+        );
+      }),
+    
+    aggregatePayrollData: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.aggregatePayrollData(
+          input.workerId,
+          input.periodStart,
+          input.periodEnd
+        );
+      }),
+    
+    checkLockedDaysInPeriod: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.checkLockedDaysInPeriod(
+          input.workerId,
+          input.periodStart,
+          input.periodEnd
+        );
+      }),
   }),
 
   // Operational Flags (البلاغات التشغيلية)

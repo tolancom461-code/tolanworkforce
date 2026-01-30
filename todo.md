@@ -2623,3 +2623,56 @@ Add "Approve Full Attendance" option that:
 2. Frontend receives data with expected field names
 3. Form can properly bind to all fields
 4. No timing issues because data mapping is consistent
+
+
+## Advanced Payroll System (نظام الرواتب المتقدم)
+
+### Phase 1: Database Schema Updates
+- [x] Add `lockedBatchId` field to worker_daily_finance table
+- [x] Add migration to update schema
+- [ ] Add index on (workerId, workDate, lockedBatchId)
+
+### Phase 2: Backend Logic - Daily Finance Calculation
+- [x] Create `calculateDailyFinancesForPeriod()` function
+- [x] Implement period aggregation (daily, weekly, monthly)
+- [x] Add double payment protection logic
+- [x] Create `lockDailyFinancesForBatch()` function
+- [x] Create `getUnlockedDailyFinances()` function
+
+### Phase 3: Backend APIs - tRPC Procedures
+- [x] Add `payroll.calculateDailyFinances` procedure
+- [x] Add `payroll.getDailyFinancesForPeriod` procedure
+- [x] Add `payroll.getPayOverridesForPeriod` procedure
+- [x] Add `payroll.aggregatePayrollData` procedure
+- [x] Add `payroll.approveBatch` procedure (with locking)
+- [x] Add vitest tests for all procedures
+
+### Phase 4: Frontend - Payroll Page Enhancement
+- [x] Create advanced period selector component (PeriodSelector.tsx)
+- [ ] Add dynamic date range picker (daily, weekly, monthly) - in PeriodSelector
+- [ ] Create payroll aggregation display
+- [ ] Add "Calculate Daily Finances" button
+- [ ] Add payroll summary cards
+- [ ] Add batch creation with period selection
+- [ ] Add batch approval workflow
+
+### Phase 5: Frontend - Batch Management
+- [ ] Update batch details page with locked days indicator
+- [ ] Add visual indicator for locked/unlocked days
+- [ ] Add batch approval confirmation dialog
+- [ ] Add batch rejection workflow
+- [ ] Add batch unlock feature (with audit trail)
+
+### Phase 6: Testing & Validation
+- [ ] Write vitest tests for daily finance calculation
+- [ ] Write vitest tests for double payment protection
+- [ ] Write vitest tests for batch locking
+- [ ] Test with demo data (multiple batches)
+- [ ] Test period selection (daily, weekly, monthly)
+- [ ] Test double payment prevention
+
+### Phase 7: Documentation & Checkpoint
+- [ ] Document new APIs and procedures
+- [ ] Create user guide for payroll workflow
+- [ ] Update DEMO_DATA.md with new features
+- [ ] Save checkpoint

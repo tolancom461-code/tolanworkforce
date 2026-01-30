@@ -183,6 +183,8 @@ export const workerDailyFinance = mysqlTable("worker_daily_finance", {
   overrideBy: int("override_by"),
   overrideAt: timestamp("override_at"),
   notes: text("notes"),
+  // Double payment protection: links day to approved batch
+  lockedBatchId: int("locked_batch_id"), // NULL = unlocked, set when batch is approved
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
