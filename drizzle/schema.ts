@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, date, json } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, date, json, index } from "drizzle-orm/mysql-core";
 
 // ============================================
 // Reference Tables (المراجع)
@@ -95,7 +95,11 @@ export const workers = mysqlTable("workers", {
   hireDate: date("hire_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  groupIdIdx: index("idx_workers_group_id").on(table.groupId),
+  statusIdx: index("idx_workers_status").on(table.status),
+  codeIdx: index("idx_workers_code").on(table.code),
+}));
 
 export const workerArchive = mysqlTable("worker_archive", {
   id: int("id").autoincrement().primaryKey(),
@@ -127,7 +131,11 @@ export const attendanceEvents = mysqlTable("attendance_events", {
   method: varchar("method", { length: 50 }),
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  workerIdIdx: index("idx_attendance_worker_id").on(table.workerId),
+  eventTimeIdx: index("idx_attendance_event_time").on(table.eventTime),
+  workerEventIdx: index("idx_attendance_worker_event").on(table.workerId, table.eventTime),
+}));
 
 
 
@@ -162,7 +170,11 @@ export const payOverrides = mysqlTable("pay_overrides", {
   createdBy: int("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  workerIdIdx: index("idx_pay_overrides_worker_id").on(table.workerId),
+  overrideDateIdx: index("idx_pay_overrides_override_date").on(table.overrideDate),
+  statusIdx: index("idx_pay_overrides_status").on(table.status),
+}));
 
 // ============================================
 // Finance & Payroll (المالية والرواتب)
@@ -187,7 +199,12 @@ export const workerDailyFinance = mysqlTable("worker_daily_finance", {
   lockedBatchId: int("locked_batch_id"), // NULL = unlocked, set when batch is approved
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  workerIdIdx: index("idx_daily_finance_worker_id").on(table.workerId),
+  workDateIdx: index("idx_daily_finance_work_date").on(table.workDate),
+  lockedBatchIdx: index("idx_daily_finance_locked_batch").on(table.lockedBatchId),
+  workerDateIdx: index("idx_daily_finance_worker_date").on(table.workerId, table.workDate),
+}));
 
 export const payrollBatches = mysqlTable("payroll_batches", {
   id: int("id").autoincrement().primaryKey(),
@@ -223,7 +240,12 @@ export const payrollBatches = mysqlTable("payroll_batches", {
   unlockReason: text("unlock_reason"),
   unlockedBy: int("unlocked_by"),
   unlockedAt: timestamp("unlocked_at"),
-});
+}, (table) => ({
+  statusIdx: index("idx_payroll_batches_status").on(table.status),
+  periodStartIdx: index("idx_payroll_batches_period_start").on(table.periodStart),
+  periodEndIdx: index("idx_payroll_batches_period_end").on(table.periodEnd),
+  groupIdIdx: index("idx_payroll_batches_group_id").on(table.groupId),
+}));
 
 export const payrollBatchItems = mysqlTable("payroll_batch_items", {
   id: int("id").autoincrement().primaryKey(),
@@ -237,7 +259,11 @@ export const payrollBatchItems = mysqlTable("payroll_batch_items", {
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  batchIdIdx: index("idx_payroll_items_batch_id").on(table.batchId),
+  workerIdIdx: index("idx_payroll_items_worker_id").on(table.workerId),
+  batchWorkerIdx: index("idx_payroll_items_batch_worker").on(table.batchId, table.workerId),
+}));
 
 // Payroll Batch Notes (ملاحظات المراجعة)
 export const payrollBatchNotes = mysqlTable("payroll_batch_notes", {

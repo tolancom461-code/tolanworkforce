@@ -42,6 +42,18 @@ import LocalLogin from "./pages/LocalLogin";
 import OperationalFlagsSimple from "./pages/OperationalFlagsSimple";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { lazy } from "react";
+import LazyPage from "./components/LazyPage";
+
+// Lazy load heavy pages for code splitting
+const LazyWorkers = lazy(() => import("./pages/Workers"));
+const LazyGroups = lazy(() => import("./pages/Groups"));
+const LazyPayrollBatches = lazy(() => import("./pages/PayrollBatches"));
+const LazyUsers = lazy(() => import("./pages/Users"));
+const LazyDashboard = lazy(() => import("./pages/Dashboard"));
+const LazyPayrollBatchList = lazy(() => import("./pages/payroll/PayrollBatchList"));
+const LazyPayrollBatchCreate = lazy(() => import("./pages/payroll/PayrollBatchCreate"));
+const LazyPayrollBatchDetails = lazy(() => import("./pages/payroll/PayrollBatchDetails"));
 
 function Router() {
   return (
@@ -51,23 +63,35 @@ function Router() {
       <Route path="/local-login" component={LocalLogin} />
       <Route path="/dashboard">
         <ProtectedRoute>
-          <Dashboard />
+          <LazyPage>
+            <LazyDashboard />
+          </LazyPage>
         </ProtectedRoute>
       </Route>
       <Route path="/executive" component={ExecutiveDashboard} />
       <Route path="/users">
         <ProtectedRoute>
-          <Users />
+          <LazyPage>
+            <LazyUsers />
+          </LazyPage>
         </ProtectedRoute>
       </Route>
 
 
       <Route path="/cost-centers" component={CostCenters} />
       <Route path="/profile" component={Profile} />
-      <Route path="/groups" component={Groups} />
+      <Route path="/groups">
+        <ProtectedRoute>
+          <LazyPage>
+            <LazyGroups />
+          </LazyPage>
+        </ProtectedRoute>
+      </Route>
       <Route path="/workers">
         <ProtectedRoute>
-          <Workers />
+          <LazyPage>
+            <LazyWorkers />
+          </LazyPage>
         </ProtectedRoute>
       </Route>
       <Route path="/workers/:id">
@@ -114,7 +138,13 @@ function Router() {
           <PayrollManagement />
         </ProtectedRoute>
       </Route>
-      <Route path="/finance/payroll" component={PayrollBatches} />
+      <Route path="/finance/payroll">
+        <ProtectedRoute>
+          <LazyPage>
+            <LazyPayrollBatches />
+          </LazyPage>
+        </ProtectedRoute>
+      </Route>
       <Route path="/finance/payroll/history">
         <ProtectedRoute>
           <PayrollBatchHistory />
@@ -122,17 +152,23 @@ function Router() {
       </Route>
       <Route path="/payroll/batches">
         <ProtectedRoute>
-          <PayrollBatchList />
+          <LazyPage>
+            <LazyPayrollBatchList />
+          </LazyPage>
         </ProtectedRoute>
       </Route>
       <Route path="/payroll/batches/create">
         <ProtectedRoute>
-          <PayrollBatchCreate />
+          <LazyPage>
+            <LazyPayrollBatchCreate />
+          </LazyPage>
         </ProtectedRoute>
       </Route>
       <Route path="/payroll/batches/:id">
         <ProtectedRoute>
-          <PayrollBatchDetails />
+          <LazyPage>
+            <LazyPayrollBatchDetails />
+          </LazyPage>
         </ProtectedRoute>
       </Route>
       <Route path="/payroll/batches/:id/accountant-review" component={AccountantReview} />

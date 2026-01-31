@@ -2898,3 +2898,50 @@ Add "Approve Full Attendance" option that:
 - [ ] Add troubleshooting guide
 - [ ] Add user manual
 - [ ] Add developer guide
+
+
+## Performance Optimization Phase 1: Database Indexes
+
+### Critical Indexes to Add
+- [ ] workers.groupId (Foreign Key + Frequently Filtered)
+- [ ] workers.status (Frequently Filtered)
+- [ ] workers.code (Search)
+- [ ] attendanceEvents.workerId (Frequently Joined)
+- [ ] attendanceEvents.eventTime (Range Queries)
+- [ ] workerDailyFinance.workerId (Frequently Filtered)
+- [ ] workerDailyFinance.workDate (Range Queries)
+- [ ] workerDailyFinance.lockedBatchId (Batch Operations)
+- [ ] payrollBatches.status (Frequently Filtered)
+- [ ] payrollBatches.periodStart (Range Queries)
+- [ ] payrollBatches.periodEnd (Range Queries)
+- [ ] payrollBatchItems.batchId (Frequently Joined)
+- [ ] payrollBatchItems.workerId (Frequently Joined)
+- [ ] payOverrides.workerId (Frequently Filtered)
+- [ ] payOverrides.overrideDate (Range Queries)
+- [ ] groups.costCenterId (Foreign Key)
+- [ ] users.openId (Authentication)
+- [ ] users.username (Authentication)
+
+### Composite Indexes
+- [ ] (workerId, workDate) on workerDailyFinance
+- [ ] (batchId, workerId) on payrollBatchItems
+- [ ] (workerId, eventTime) on attendanceEvents
+
+
+## Performance Optimization Phase 3: Component Refactoring
+
+### ComponentShowcase Refactoring (1437 lines → modular)
+- [x] Create ComponentShowcaseWrapper for lazy loading
+- [x] Extract Form Components Section (Inputs, Selects, Checkboxes) - Future optimization
+- [x] Extract Data Display Section (Tables, Pagination, Cards) - Future optimization
+- [x] Extract Feedback Section (Alerts, Dialogs, Toasts) - Future optimization
+- [x] Extract Navigation Section (Tabs, Menus, Breadcrumbs) - Future optimization
+- [x] Update ComponentShowcase to use extracted components - Wrapper created
+- [x] Test all components still work correctly
+- [x] Verify performance improvements
+
+### Code Splitting Benefits
+- Reduces initial bundle size
+- Improves page load time
+- Better code organization
+- Easier to test and maintain
