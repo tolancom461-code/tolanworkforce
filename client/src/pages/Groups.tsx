@@ -79,6 +79,7 @@ export default function Groups() {
       toast.success("تم إنشاء المجموعة بنجاح");
       setIsAddDialogOpen(false);
       resetForm();
+      utils.groups.listWithPagination.invalidate();
       utils.groups.list.invalidate();
       utils.dashboard.stats.invalidate();
     },
@@ -93,6 +94,7 @@ export default function Groups() {
       setIsEditDialogOpen(false);
       setSelectedGroup(null);
       resetForm();
+      utils.groups.listWithPagination.invalidate();
       utils.groups.list.invalidate();
     },
     onError: (error) => {
@@ -103,6 +105,7 @@ export default function Groups() {
   const deleteMutation = trpc.groups.delete.useMutation({
     onSuccess: () => {
       toast.success("تم حذف المجموعة بنجاح");
+      utils.groups.listWithPagination.invalidate();
       utils.groups.list.invalidate();
       utils.dashboard.stats.invalidate();
     },

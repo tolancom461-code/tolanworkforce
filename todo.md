@@ -2945,3 +2945,11 @@ Add "Approve Full Attendance" option that:
 - Improves page load time
 - Better code organization
 - Easier to test and maintain
+
+
+## Bug: Groups Not Updating Immediately After Add/Delete
+
+- [x] Fix Groups page to show new groups immediately after creation
+- [x] Fix Groups page to remove deleted groups immediately
+- [x] Add optimistic updates for better UX
+- [x] Test the fix in browser
