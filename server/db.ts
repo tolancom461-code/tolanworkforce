@@ -4690,3 +4690,76 @@ export async function checkLockedDaysInPeriod(
     })),
   };
 }
+
+
+// ============================================
+// Pagination Functions (with LIMIT/OFFSET)
+// ============================================
+
+export async function getWorkersWithPagination(
+  page: number = 1,
+  limit: number = 10,
+  groupId?: number
+): Promise<{ data: DbWorker[]; total: number; page: number; limit: number; totalPages: number }> {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0, page, limit, totalPages: 0 };
+
+  const offset = (page - 1) * limit;
+  
+  // Get total count
+  const countResult = groupId
+    ? await db.select({ count: count() }).from(workers).where(eq(workers.groupId, groupId))
+    : await db.select({ count: count() }).from(workers);
+  
+  const total = countResult[0]?.count || 0;
+
+  // Get paginated data
+  let query: any = db.select().from(workers).orderBy(desc(workers.createdAt));
+  if (groupId) {
+    query = query.where(eq(workers.groupId, groupId));
+  }
+  
+  const data = await query.limit(limit).offset(offset);
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}
+
+export async function getGroupsWithPagination(
+  page: number = 1,
+  limit: number = 10,
+  costCenterId?: number
+): Promise<{ data: Group[]; total: number; page: number; limit: number; totalPages: number }> {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0, page, limit, totalPages: 0 };
+
+  const offset = (page - 1) * limit;
+  
+  // Get total count
+  const countResult = costCenterId
+    ? await db.select({ count: count() }).from(groups).where(eq(groups.costCenterId, costCenterId))
+    : await db.select({ count: count() }).from(groups);
+  
+  const total = countResult[0]?.count || 0;
+
+  // Get paginated data
+  let query: any = db.select().from(groups).orderBy(desc(groups.createdAt));
+  if (costCenterId) {
+    query = query.where(eq(groups.costCenterId, costCenterId));
+  }
+  
+  const data = await query.limit(limit).offset(offset);
+
+  return {
+    data: data.map(transformGroup),
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+}

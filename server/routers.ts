@@ -236,6 +236,16 @@ export const appRouter = router({
       return await db.getAllGroups();
     }),
     
+    listWithPagination: protectedProcedure
+      .input(z.object({
+        page: z.number().default(1),
+        limit: z.number().default(10),
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getGroupsWithPagination(input.page, input.limit, input.costCenterId);
+      }),
+    
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
@@ -377,6 +387,16 @@ export const appRouter = router({
     list: protectedProcedure
       .query(async ({ ctx }) => {
         return await db.getAllWorkers();
+      }),
+    
+    listWithPagination: protectedProcedure
+      .input(z.object({
+        page: z.number().default(1),
+        limit: z.number().default(10),
+        groupId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getWorkersWithPagination(input.page, input.limit, input.groupId);
       }),
     
     listByGroup: protectedProcedure
