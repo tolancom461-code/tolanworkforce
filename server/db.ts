@@ -1831,26 +1831,19 @@ export async function createPayrollBatch(params: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Generate batch code with format: MMM-YYYY-XXX
-  // Example: Jan-2026-001, Jan-2026-002, etc.
+  // Generate batch code with format: Batch-YYYY-MM-SEQ
+  // Example: Batch-2026-01-001, Batch-2026-01-002, etc.
   const now = new Date();
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = monthNames[now.getMonth()];
   const year = now.getFullYear();
-  const randomNum = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-  const batchCode = `${month}-${year}-${randomNum}`;
+  const monthPad = String(now.getMonth() + 1).padStart(2, '0');
+  const batchCode = `Batch-${year}-${monthPad}`;
   
-  // Ensure uniqueness by checking if batch code already exists
-  let uniqueBatchCode = batchCode;
-  let counter = 1;
-  while (true) {
-    const existing = await db.select().from(payrollBatches).where(eq(payrollBatches.batchCode, uniqueBatchCode)).limit(1);
-    if (existing.length === 0) break;
-    uniqueBatchCode = `${month}-${year}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
-    counter++;
-    if (counter > 100) throw new Error('Unable to generate unique batch code');
-  }
-  const finalBatchCode = uniqueBatchCode;
+  // Get sequence number for this month
+  const monthStart = new Date(year, now.getMonth(), 1);
+  const monthEnd = new Date(year, now.getMonth() + 1, 0);
+  const batchesThisMonth = await db.select().from(payrollBatches).where(and(gte(payrollBatches.createdAt, monthStart), lte(payrollBatches.createdAt, monthEnd)));
+  const sequence = String(batchesThisMonth.length + 1).padStart(3, '0');
+  const finalBatchCode = `${batchCode}-${sequence}`;
 
   // Get workers based on filters
   let workersQuery = db.select().from(workers).where(eq(workers.status, 'active'));
