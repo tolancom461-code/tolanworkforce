@@ -17,6 +17,8 @@ import { useState, useEffect, useMemo } from "react";
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
   const [costCenterFilter, setCostCenterFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isShiftsDialogOpen, setIsShiftsDialogOpen] = useState(false);
@@ -56,8 +58,16 @@ export default function Groups() {
   }, [formData.dailyWage, formData.workMinutes]);
 
   const utils = trpc.useUtils();
-  const { data: groups, isLoading } = trpc.groups.list.useQuery();
+  const costCenterId = costCenterFilter !== "all" ? parseInt(costCenterFilter) : undefined;
+  const { data: groupsData, isLoading } = trpc.groups.listWithPagination.useQuery({
+    page: currentPage,
+    limit: pageSize,
+    costCenterId,
+  });
   const { data: costCenters } = trpc.costCenters.list.useQuery();
+  
+  const groups = groupsData?.data || [];
+  const totalPages = groupsData?.totalPages || 1;
   const { data: shifts } = trpc.groups.getShifts.useQuery(
     { groupId: selectedGroup?.id || 0 },
     { enabled: !!selectedGroup }
@@ -874,6 +884,33 @@ export default function Groups() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 p-4 bg-muted rounded-lg">
+            <div className="text-sm text-muted-foreground">
+              الصفحة {currentPage} من {totalPages}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                السابقة
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                التالية
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

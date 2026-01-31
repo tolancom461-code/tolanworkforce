@@ -21,6 +21,8 @@ export default function Workers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -41,8 +43,16 @@ export default function Workers() {
   });
 
   const utils = trpc.useUtils();
-  const { data: workers, isLoading } = trpc.workers.list.useQuery();
+  const groupId = filterGroup !== "all" ? parseInt(filterGroup) : undefined;
+  const { data: workersData, isLoading } = trpc.workers.listWithPagination.useQuery({
+    page: currentPage,
+    limit: pageSize,
+    groupId,
+  });
   const { data: groups } = trpc.groups.list.useQuery();
+  
+  const workers = workersData?.data || [];
+  const totalPages = workersData?.totalPages || 1;
 
   const createMutation = trpc.workers.create.useMutation({
     onSuccess: (data) => {
@@ -740,6 +750,33 @@ export default function Workers() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 p-4 bg-muted rounded-lg">
+            <div className="text-sm text-muted-foreground">
+              الصفحة {currentPage} من {totalPages}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                السابقة
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                التالية
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
