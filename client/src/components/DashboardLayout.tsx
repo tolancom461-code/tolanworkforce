@@ -54,7 +54,8 @@ import {
   Flag,
   Clock,
   Settings,
-  Briefcase
+  Briefcase,
+  Home as HomeIcon
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -346,6 +347,16 @@ function DashboardLayoutContent({
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation('/home', { replace: true })}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            title="العودة للرئيسية"
+          >
+            <HomeIcon className="h-4 w-4" />
+            <span className="hidden sm:inline text-sm">الرئيسية</span>
+          </Button>
           <div className="flex-1" />
           <ThemeToggle />
         </header>
