@@ -15,6 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer, Download } from "lucide-react";
 import { exportToExcel, printPage } from '@/lib/exportUtils';
+import { memo, useCallback, useMemo } from 'react';
+import WorkerRow from '@/components/WorkerRow';
 
 export default function Workers() {
   const hasPermission = () => true; // All users have full permissions
@@ -478,64 +480,18 @@ export default function Workers() {
                 </TableHeader>
                 <TableBody>
                   {filteredWorkers?.map((worker) => (
-                    <TableRow key={worker.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={worker.photoUrl || undefined} />
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {getInitials(worker.fullName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{worker.fullName}</div>
-                            <div className="text-sm text-muted-foreground">{worker.phone || "-"}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono">{worker.code}</TableCell>
-                      <TableCell>{worker.nationalId || "-"}</TableCell>
-                      <TableCell>{getGroupName(worker.groupId)}</TableCell>
-                      <TableCell>{getStatusBadge(worker.status || "active")}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleView(worker)}
-                            title="عرض التفاصيل"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleShowQR(worker)}
-                            title="رمز QR"
-                          >
-                            <QrCode className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleExportWorkerQR(worker.id)}
-                            title="تصدير QR إلى PDF"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                         {hasPermission() && (                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(worker)}
-                              title="تعديل"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {/* Delete button disabled - workers cannot be deleted after creation */}
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <WorkerRow
+                      key={worker.id}
+                      worker={worker}
+                      onView={handleView}
+                      onShowQR={handleShowQR}
+                      onExportQR={handleExportWorkerQR}
+                      onEdit={handleEdit}
+                      hasPermission={hasPermission()}
+                      getInitials={getInitials}
+                      getGroupName={getGroupName}
+                      getStatusBadge={getStatusBadge}
+                    />
                   ))}
                   {filteredWorkers?.length === 0 && (
                     <TableRow>

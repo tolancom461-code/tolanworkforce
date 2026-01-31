@@ -12,7 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, Users, Clock, Building2, Download } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
+import GroupRow from '@/components/GroupRow';
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -219,6 +220,10 @@ export default function Groups() {
       });
     }
   }, [isEditDialogOpen, freshGroupData]);
+
+  const handleView = useCallback((group: any) => {
+    handleViewShifts(group);
+  }, []);
 
   const handleViewShifts = (group: any) => {
     setSelectedGroup(group);
