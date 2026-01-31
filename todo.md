@@ -2805,3 +2805,42 @@ Add "Approve Full Attendance" option that:
 - [ ] Check createBatch mutation in server/routers.ts
 - [ ] Check database constraints and validations
 - [ ] Fix the issue and test
+
+
+## UI/UX Improvements: Loading Indicators
+
+### Phase 1: Create Loading Components
+- [x] Create Skeleton Loader component for tables
+- [x] Create Spinner component for quick operations
+- [x] Create Loading state for cards and sections
+- [x] Create Toast notifications for errors and success
+
+### Phase 2: Add Loading Indicators to Workers Page
+- [x] Show skeleton loader while fetching workers
+- [x] Show spinner on pagination buttons
+- [x] Show loading state on search input
+- [x] Add error toast on fetch failure
+
+### Phase 3: Add Loading Indicators to Groups Page
+- [x] Show skeleton loader while fetching groups
+- [x] Show spinner on pagination buttons
+- [x] Show loading state on search input
+- [x] Add error toast on fetch failure
+
+### Phase 4: Add Loading Indicators to Payroll Pages
+- [x] Show skeleton loader on PayrollBatches page
+- [x] Show spinner on pagination buttons
+- [x] Show loading state during batch creation
+- [x] Add success/error toast notifications
+
+### Phase 5: Add Loading Indicators to Other Pages
+- [x] Add loading states to Users page
+- [x] Add loading states to Permissions page
+- [x] Add loading states to CostCenters page
+- [x] Add loading states to Dashboard page
+
+### Phase 6: Testing & Optimization
+- [x] Write vitest tests for loading components
+- [x] Test loading states on all pages
+- [x] Verify performance with loading indicators
+- [x] Save checkpoint
