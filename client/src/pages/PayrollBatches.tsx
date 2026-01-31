@@ -84,10 +84,17 @@ export default function PayrollBatches() {
   const [periodEnd, setPeriodEnd] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedCostCenter, setSelectedCostCenter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
   const { data: groups } = trpc.groups.list.useQuery();
   const { data: costCenters } = trpc.costCenters.list.useQuery();
-  const { data: batches, refetch } = trpc.payroll.listBatches.useQuery({});
+  const { data: paginatedBatches, refetch } = trpc.payroll.listBatches.useQuery({
+    page: currentPage,
+    limit: pageSize,
+  });
+  
+  const batches = paginatedBatches?.data || [];
   const { data: batchDetails } = trpc.payroll.getDetails.useQuery(
     { batchId: selectedBatchId! },
     { enabled: !!selectedBatchId }
@@ -413,6 +420,46 @@ export default function PayrollBatches() {
                   ))}
                 </TableBody>
               </Table>
+              
+              {/* Pagination Controls */}
+              {paginatedBatches && paginatedBatches.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    عرض {((currentPage - 1) * pageSize) + 1} إلى {Math.min(currentPage * pageSize, paginatedBatches.total)} من {paginatedBatches.total}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      السابق
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: paginatedBatches.totalPages }, (_, i) => i + 1).map(page => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(paginatedBatches.totalPages, prev + 1))}
+                      disabled={currentPage === paginatedBatches.totalPages}
+                    >
+                      التالي
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

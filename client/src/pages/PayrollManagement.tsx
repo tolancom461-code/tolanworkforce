@@ -53,9 +53,13 @@ export default function PayrollManagement() {
   });
 
   // Fetch data
-  const { data: batches, isLoading, refetch } = trpc.payroll.listBatches.useQuery({
+  const { data: paginatedBatches, isLoading, refetch } = trpc.payroll.listBatches.useQuery({
     ...filters,
+    page: 1,
+    limit: 100,
   });
+  
+  const batches = paginatedBatches?.data || [];
 
   const { data: costCenters } = trpc.costCenters.list.useQuery();
   const { data: allGroups } = trpc.groups.list.useQuery();

@@ -1553,6 +1553,8 @@ export const appRouter = router({
         groupId: z.number().optional(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
+        page: z.number().default(1),
+        limit: z.number().default(10),
       }))
       .query(async ({ input }) => {
         const filters: any = {};
@@ -1561,7 +1563,20 @@ export const appRouter = router({
         if (input.startDate) filters.startDate = new Date(input.startDate);
         if (input.endDate) filters.endDate = new Date(input.endDate);
         
-        return await db.getBatchesByStatus(undefined, filters);
+        const offset = (input.page - 1) * input.limit;
+        const batches = await db.getBatchesByStatus(undefined, filters);
+        
+        // Simple pagination (can be optimized in db layer later)
+        const total = batches.length;
+        const paginatedBatches = batches.slice(offset, offset + input.limit);
+        
+        return {
+          data: paginatedBatches,
+          total,
+          page: input.page,
+          limit: input.limit,
+          totalPages: Math.ceil(total / input.limit),
+        };
       }),
     
     // List batches by status

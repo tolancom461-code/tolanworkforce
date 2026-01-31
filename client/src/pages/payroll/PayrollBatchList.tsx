@@ -54,7 +54,12 @@ export default function PayrollBatchList() {
   if (filters.startDate) queryParams.startDate = filters.startDate;
   if (filters.endDate) queryParams.endDate = filters.endDate;
   
-  const { data: allBatches, isLoading: loadingAll } = trpc.payroll.listBatches.useQuery(queryParams);
+  const { data: paginatedBatches, isLoading: loadingAll } = trpc.payroll.listBatches.useQuery({
+    ...queryParams,
+    page: 1,
+    limit: 100,
+  });
+  const allBatches = paginatedBatches?.data || [];
   const { data: draftBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "draft" });
   const { data: pendingBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "under_accountant_review" });
   const { data: approvedBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "approved" });
