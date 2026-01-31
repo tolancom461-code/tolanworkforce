@@ -157,7 +157,6 @@ export function AttendanceExport() {
                     <SelectValue placeholder="اختر مجموعة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">الكل</SelectItem>
                     {groups.map((group) => (
                       <SelectItem key={group.id} value={group.id.toString()}>
                         {group.name}
@@ -183,7 +182,6 @@ export function AttendanceExport() {
                     <SelectValue placeholder="اختر مركز تكلفة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">الكل</SelectItem>
                     {costCenters.map((center) => (
                       <SelectItem key={center.id} value={center.id.toString()}>
                         {center.name}

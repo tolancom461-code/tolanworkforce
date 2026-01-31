@@ -350,7 +350,6 @@ export default function PayrollBatchCreate() {
                     <SelectValue placeholder="اختر مركز التكلفة" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع مراكز التكلفة</SelectItem>
                     {costCenters?.map((cc) => (
                       <SelectItem key={cc.id} value={cc.id.toString()}>
                         {cc.name}

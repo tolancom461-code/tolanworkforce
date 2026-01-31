@@ -198,7 +198,6 @@ export default function PayrollBatchHistory() {
                   <SelectValue placeholder="اختر الحالة" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع الحالات</SelectItem>
                   <SelectItem value="draft">مسودة</SelectItem>
                   <SelectItem value="under_accountant_review">تحت مراجعة المحاسب</SelectItem>
                   <SelectItem value="under_financial_review">تحت المراجعة المالية</SelectItem>
@@ -221,7 +220,6 @@ export default function PayrollBatchHistory() {
                   <SelectValue placeholder="اختر مركز التكلفة" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع المراكز</SelectItem>
                   {costCentersData?.map(center => (
                     <SelectItem key={center.id} value={center.id.toString()}>
                       {center.name}
