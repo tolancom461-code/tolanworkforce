@@ -2953,3 +2953,11 @@ Add "Approve Full Attendance" option that:
 - [x] Fix Groups page to remove deleted groups immediately
 - [x] Add optimistic updates for better UX
 - [x] Test the fix in browser
+
+
+## Bug: Workers Not Updating Immediately After Add/Delete
+
+- [x] Fix Workers page to show new workers immediately after creation
+- [x] Fix Workers page to remove deleted workers immediately
+- [x] Add invalidation for listWithPagination query
+- [x] Test the fix in browser

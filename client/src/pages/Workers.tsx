@@ -61,6 +61,7 @@ export default function Workers() {
       toast.success("تم إضافة العامل بنجاح");
       setIsAddDialogOpen(false);
       resetForm();
+      utils.workers.listWithPagination.invalidate();
       utils.workers.list.invalidate();
       utils.dashboard.stats.invalidate();
     },
@@ -75,6 +76,7 @@ export default function Workers() {
       setIsEditDialogOpen(false);
       setSelectedWorker(null);
       resetForm();
+      utils.workers.listWithPagination.invalidate();
       utils.workers.list.invalidate();
     },
     onError: (error) => {
@@ -85,6 +87,7 @@ export default function Workers() {
   const deleteMutation = trpc.workers.delete.useMutation({
     onSuccess: () => {
       toast.success("تم حذف العامل بنجاح");
+      utils.workers.listWithPagination.invalidate();
       utils.workers.list.invalidate();
       utils.dashboard.stats.invalidate();
     },
@@ -99,6 +102,7 @@ export default function Workers() {
       if (selectedWorker) {
         setSelectedWorker({ ...selectedWorker, qrToken: data.qrToken });
       }
+      utils.workers.listWithPagination.invalidate();
       utils.workers.list.invalidate();
     },
     onError: (error) => {
