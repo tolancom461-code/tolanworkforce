@@ -2156,6 +2156,173 @@ export const appRouter = router({
         return { hasOverride: false, overrideType: null };
       }),
   }),
+
+  // ============================================
+  // Payroll Advanced Functions
+  // ============================================
+  payrollFunctions: router({
+    // Calculate daily payroll for a worker
+    calculateDailyPayroll: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          // Note: This will call the database function when implemented
+          // For now, return a placeholder response
+          return {
+            workerId: input.workerId,
+            workDate: input.workDate,
+            scheduledHours: 8,
+            actualHours: 8,
+            lateMinutes: 0,
+            earlyDepartureMinutes: 0,
+            dailyRate: 500,
+            calculatedPay: 500,
+            isAutoCompleted: false,
+            status: 'COMPLETED',
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to calculate daily payroll',
+            cause: error,
+          });
+        }
+      }),
+
+    // Calculate group payroll summary
+    calculateGroupPayroll: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        workDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          // Note: This will call the database function when implemented
+          // For now, return a placeholder response
+          return {
+            groupId: input.groupId,
+            workDate: input.workDate,
+            totalEmployees: 5,
+            employeesWithIssues: 0,
+            totalHoursWorked: 40,
+            totalScheduledHours: 40,
+            totalPayroll: 2500,
+            averageDailyPay: 500,
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to calculate group payroll',
+            cause: error,
+          });
+        }
+      }),
+
+    // Detect missing punches
+    detectMissingPunches: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        workDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          // Note: This will call the database function when implemented
+          // For now, return a placeholder response
+          return {
+            workerId: input.workerId,
+            workDate: input.workDate,
+            hasCheckIn: true,
+            hasCheckOut: true,
+            issueType: 'COMPLETE',
+            needsReview: false,
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to detect missing punches',
+            cause: error,
+          });
+        }
+      }),
+
+    // Get daily payroll summary for all workers
+    getDailyPayrollSummary: protectedProcedure
+      .input(z.object({
+        workDate: z.date(),
+        groupId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          // Note: This will query the vw_daily_payroll_summary view
+          // For now, return a placeholder response
+          return {
+            date: input.workDate,
+            groupId: input.groupId,
+            summary: [],
+            totalRecords: 0,
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to get daily payroll summary',
+            cause: error,
+          });
+        }
+      }),
+
+    // Get group payroll summary for all groups
+    getGroupPayrollSummary: protectedProcedure
+      .input(z.object({
+        workDate: z.date(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          // Note: This will query the vw_group_payroll_summary view
+          // For now, return a placeholder response
+          return {
+            date: input.workDate,
+            summary: [],
+            totalGroups: 0,
+            totalEmployees: 0,
+            totalPayroll: 0,
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to get group payroll summary',
+            cause: error,
+          });
+        }
+      }),
+
+    // Get workers with missing punches for a date
+    getWorkersWithMissingPunches: protectedProcedure
+      .input(z.object({
+        workDate: z.date(),
+        groupId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          // Note: This will detect missing punches for all workers
+          // For now, return a placeholder response
+          return {
+            date: input.workDate,
+            groupId: input.groupId,
+            workers: [],
+            totalCount: 0,
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to get workers with missing punches',
+            cause: error,
+          });
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

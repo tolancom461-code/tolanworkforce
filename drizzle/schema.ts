@@ -356,3 +356,16 @@ export const operationalFlags = mysqlTable("operational_flags", {
 
 export type OperationalFlag = typeof operationalFlags.$inferSelect;
 export type InsertOperationalFlag = typeof operationalFlags.$inferInsert;
+
+// Group Schedules - Flexible Weekly Schedules (جداول الورديات المتغيرة)
+export const groupSchedules = mysqlTable("group_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  dayOfWeek: int("day_of_week").notNull(), // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime: varchar("start_time", { length: 10 }).notNull(), // HH:MM format
+  endTime: varchar("end_time", { length: 10 }).notNull(), // HH:MM format
+  requiredHours: decimal("required_hours", { precision: 4, scale: 2 }).notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
