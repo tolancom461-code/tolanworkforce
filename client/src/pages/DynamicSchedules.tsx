@@ -42,11 +42,15 @@ export function DynamicSchedules() {
   const { data: groups, isLoading: groupsLoading } = trpc.groups.list.useQuery();
 
   // Fetch schedules for all groups
-  const { data: schedulesData, isLoading: schedulesLoading, refetch: refetchSchedules } = 
+  const { data: schedulesData, isLoading: schedulesLoading, error: schedulesError, refetch: refetchSchedules } = 
     trpc.groupSchedules.listByGroup.useQuery(
       { groupId: undefined }, // Fetch all schedules
       { enabled: true }
     );
+
+  // Debug logging
+  console.log('Groups:', groups, 'Loading:', groupsLoading);
+  console.log('Schedules:', schedulesData, 'Loading:', schedulesLoading, 'Error:', schedulesError);
 
   // Prepare schedule rows
   const scheduleRows = useMemo(() => {
@@ -212,7 +216,22 @@ export function DynamicSchedules() {
       {groupsLoading || schedulesLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <p className="text-gray-500 mr-3">جاري تحميل البيانات...</p>
         </div>
+      ) : schedulesError || !schedulesData ? (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            حدث خطأ في تحميل الورديات. يرجى تحديث الصفحة والمحاولة مرة أخرى.
+          </AlertDescription>
+        </Alert>
+      ) : Object.entries(groupedByGroup).length === 0 ? (
+        <Alert className="bg-blue-50 border-blue-200">
+          <Clock className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            لا توجد ورديات محددة حالياً. يرجى التأكد من وجود مجموعات وورديات في النظام.
+          </AlertDescription>
+        </Alert>
       ) : (
         /* Schedule Tables by Group */
         Object.entries(groupedByGroup).map(([groupId, schedules]) => {

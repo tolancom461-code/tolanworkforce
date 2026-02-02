@@ -2963,7 +2963,7 @@ Add "Approve Full Attendance" option that:
 - [x] Test the fix in browser
 
 
-## Excel Import/Export Feature (استيراد وتصدير Excel)
+## Excel Import/Export Feature (استيراد وتصدير Excel) - COMPLETED ✅
 
 ### Backend APIs
 - [x] Create importGroups API (read Excel, validate, insert)
@@ -2988,9 +2988,9 @@ Add "Approve Full Attendance" option that:
 - [x] Test error handling and validation
 
 ### Documentation
-- [ ] Create user guide for import/export feature
-- [ ] Create sample Excel templates
-- [ ] Document validation rules
+- [x] Create user guide for import/export feature
+- [x] Create sample Excel templates
+- [x] Document validation rules
 
 
 ## Bug: عدم تطابق المجموعات في نظام دفعات الرواتب (Payroll Batch) - FIXED ✅
@@ -3058,3 +3058,24 @@ Add "Approve Full Attendance" option that:
 - تخزين مؤقت لمدة 5 دقائق
 - memoization لتجنب إعادة الحسابات
 - تقليل استدعاءات API المتكررة
+
+
+## Bug: صفحة الورديات الديناميكية لا تعرض الجداول
+
+### المشكلة
+- [ ] الصفحة تعرض الملاحظات المهمة فقط
+- [ ] لا تظهر جداول المجموعات والورديات
+- [ ] المساحة أسفل الملاحظات فارغة تماماً
+- [ ] قد تكون هناك مشكلة في تحميل البيانات من API
+
+### التشخيص
+- [ ] فحص أخطاء المتصفح (Console)
+- [ ] التحقق من استدعاء API للمجموعات
+- [ ] التحقق من استدعاء API للورديات
+- [ ] فحص البيانات المرجعة من الخادم
+
+### الحل
+- [ ] إصلاح مشكلة تحميل البيانات
+- [ ] إضافة معالجة أخطاء أفضل
+- [ ] إضافة رسائل تحميل واضحة
+- [ ] اختبار الصفحة بعد الإصلاح
