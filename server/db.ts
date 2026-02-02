@@ -360,7 +360,41 @@ export async function createGroupShift(shift: InsertGroupShift): Promise<number>
   if (!db) throw new Error("Database not available");
 
   const result = await db.insert(groupShifts).values(shift);
-  return result[0].insertId;
+  const shiftId = result[0].insertId;
+  
+  // إنشاء جداول ديناميكية لكل أيام الأسبوع (1-7)
+  const schedules: any[] = [];
+  for (let dayOfWeek = 1; dayOfWeek <= 7; dayOfWeek++) {
+    schedules.push({
+      groupId: shift.groupId,
+      dayOfWeek,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      requiredHours: calculateRequiredHours(shift.startTime, shift.endTime),
+      isActive: shift.isActive ?? true,
+    });
+  }
+  
+  // إدراج الجداول الديناميكية
+  if (schedules.length > 0) {
+    await db.insert(groupSchedules).values(schedules as any);
+  }
+  
+  return shiftId;
+}
+
+// دالة مساعدة لحساب الساعات المطلوبة
+function calculateRequiredHours(startTime: string, endTime: string): number {
+  const [startHour, startMin] = startTime.split(':').map(Number);
+  const [endHour, endMin] = endTime.split(':').map(Number);
+  
+  const startTotalMin = startHour * 60 + startMin;
+  const endTotalMin = endHour * 60 + endMin;
+  
+  let diffMin = endTotalMin - startTotalMin;
+  if (diffMin < 0) diffMin += 24 * 60; // إذا كانت النهاية في اليوم التالي
+  
+  return Math.round((diffMin / 60) * 100) / 100; // تقريب لمنزلتين عشريتين
 }
 
 export async function updateGroupShift(id: number, data: Partial<InsertGroupShift>): Promise<void> {
