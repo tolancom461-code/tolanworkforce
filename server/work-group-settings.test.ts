@@ -38,8 +38,8 @@ describe('Work Group Settings - Calculation Functions', () => {
 
     it('should calculate late penalty with penalty rate', () => {
       const result = calculateLatePenalty(150, 480, 30, 0.5);
-      // (150 / 480) * 30 * (1 + 0.5) = 14.0625 rounded to 14.06
-      expect(result).toBe(14.06);
+      // (150 / 480) * 30 * 0.5 = 4.6875 rounded to 4.69
+      expect(result).toBe(4.69);
     });
 
     it('should return 0 when lateMinutes is 0', () => {
@@ -67,8 +67,8 @@ describe('Work Group Settings - Calculation Functions', () => {
 
     it('should calculate early leave penalty with penalty rate', () => {
       const result = calculateEarlyLeavePenalty(150, 480, 45, 0.5);
-      // (150 / 480) * 45 * (1 + 0.5) = 21.09375 rounded to 21.09
-      expect(result).toBe(21.09);
+      // (150 / 480) * 45 * 0.5 = 7.03125 rounded to 7.03
+      expect(result).toBe(7.03);
     });
 
     it('should return 0 when earlyLeaveMinutes is 0', () => {
@@ -116,14 +116,14 @@ describe('Work Group Settings - Calculation Functions', () => {
 
     it('should handle penalty rate of 1 (100%)', () => {
       const result = calculateLatePenalty(150, 480, 30, 1);
-      // (150 / 480) * 30 * (1 + 1) = 18.75 rounded to 18.75
-      expect(result).toBe(18.75);
+      // (150 / 480) * 30 * 1 = 9.375 rounded to 9.38
+      expect(result).toBe(9.38);
     });
 
     it('should handle penalty rate of 2 (200%)', () => {
       const result = calculateEarlyLeavePenalty(150, 480, 30, 2);
-      // (150 / 480) * 30 * (1 + 2) = 28.125 rounded to 28.13
-      expect(result).toBe(28.13);
+      // (150 / 480) * 30 * 2 = 18.75 rounded to 18.75
+      expect(result).toBe(18.75);
     });
   });
 });

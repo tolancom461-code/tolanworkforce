@@ -3119,7 +3119,7 @@ export function calculateMinuteCost(dailyWage: number | null, workMinutes: numbe
 
 /**
  * Calculate late penalty based on group settings
- * Formula: (dailyWage ÷ workMinutes) × lateMinutes × (1 + latePenaltyRate)
+ * Formula: (dailyWage ÷ workMinutes) × lateMinutes × latePenaltyRate
  * Returns rounded to 2 decimal places
  */
 export function calculateLatePenalty(
@@ -3130,13 +3130,13 @@ export function calculateLatePenalty(
 ): number {
   if (!dailyWage || !workMinutes || workMinutes <= 0 || !latePenaltyRate) return 0;
   const minuteCost = dailyWage / workMinutes;
-  const penalty = minuteCost * lateMinutes * (1 + latePenaltyRate);
+  const penalty = minuteCost * lateMinutes * latePenaltyRate;
   return Math.round(penalty * 100) / 100;
 }
 
 /**
  * Calculate early leave penalty based on group settings
- * Formula: (dailyWage ÷ workMinutes) × earlyLeaveMinutes × (1 + earlyLeavePenaltyRate)
+ * Formula: (dailyWage ÷ workMinutes) × earlyLeaveMinutes × earlyLeavePenaltyRate
  * Returns rounded to 2 decimal places
  */
 export function calculateEarlyLeavePenalty(
@@ -3147,7 +3147,7 @@ export function calculateEarlyLeavePenalty(
 ): number {
   if (!dailyWage || !workMinutes || workMinutes <= 0 || !earlyLeavePenaltyRate) return 0;
   const minuteCost = dailyWage / workMinutes;
-  const penalty = minuteCost * earlyLeaveMinutes * (1 + earlyLeavePenaltyRate);
+  const penalty = minuteCost * earlyLeaveMinutes * earlyLeavePenaltyRate;
   return Math.round(penalty * 100) / 100;
 }
 
