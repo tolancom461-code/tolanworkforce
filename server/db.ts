@@ -419,6 +419,43 @@ export async function getWorkerByCodeDirect(code: string): Promise<DbWorker | nu
   const result = await db.select().from(workers).where(eq(workers.code, code)).limit(1);
   return result.length > 0 ? result[0] : null;
 }
+// Helper function to create worker from simplified import data
+export async function createWorkerFromImportData(data: {
+  code: string;
+  fullName: string;
+  nationalId?: string | null;
+  phone?: string | null;
+  groupCode: string;
+  hireDate?: string | null;
+  status?: string;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get group by code
+  const group = await getGroupByCode(data.groupCode);
+  if (!group) {
+    throw new Error(`المجموعة "${data.groupCode}" غير موجودة`);
+  }
+
+  // Create worker with default values
+  const workerData: InsertWorker = {
+    code: data.code,
+    fullName: data.fullName,
+    nationalId: data.nationalId || null,
+    phone: data.phone || null,
+    groupId: group.id,
+    jobId: 1, // Default job ID
+    dailyRate: group.dailyRate ? String(group.dailyRate) : '0',
+    status: (data.status as any) || "active",
+    hireDate: data.hireDate ? new Date(data.hireDate) : new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  return createWorker(workerData);
+}
+
 
 export async function createWorker(worker: InsertWorker): Promise<number> {
   const db = await getDb();

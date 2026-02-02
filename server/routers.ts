@@ -2540,17 +2540,7 @@ export const appRouter = router({
           const results = [];
           for (const worker of data) {
             try {
-              const id = await db.createWorker({
-                code: worker.code,
-                fullName: worker.fullName,
-                nationalId: worker.nationalId,
-                phone: worker.phone,
-                groupId: worker.groupId,
-                jobId: worker.jobId,
-                dailyRate: worker.dailyRate,
-                status: worker.status,
-                hireDate: worker.hireDate,
-              } as any);
+              const id = await db.createWorkerFromImportData(worker);
               results.push({ success: true, id, name: worker.fullName });
             } catch (error: any) {
               results.push({ success: false, name: worker.fullName, error: error.message });

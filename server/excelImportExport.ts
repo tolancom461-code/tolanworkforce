@@ -22,15 +22,13 @@ export const GroupImportSchema = z.object({
 });
 
 export const WorkerImportSchema = z.object({
-  code: z.string().min(1, 'الكود مطلوب'),
-  fullName: z.string().min(2, 'الاسم الكامل مطلوب'),
+  code: z.string().min(1, 'كود العامل مطلوب'),
+  fullName: z.string().min(2, 'اسم العامل مطلوب'),
   nationalId: z.string().optional().nullable(),
   phone: z.string().optional().nullable(),
-  groupId: z.number().optional().nullable(),
-  jobId: z.number().optional().nullable(),
-  dailyRate: z.string().optional().nullable(),
-  status: z.enum(['active', 'inactive', 'archived']).optional().default('active'),
+  groupCode: z.string().min(1, 'كود المجموعة مطلوب'),
   hireDate: z.string().optional().nullable(),
+  status: z.enum(['active', 'inactive', 'archived']).optional().default('active'),
 });
 
 export type GroupImportData = z.infer<typeof GroupImportSchema>;
@@ -109,7 +107,7 @@ export async function parseWorkersFromExcel(buffer: any): Promise<{
   const data: WorkerImportData[] = [];
   const errors: Array<{ row: number; message: string }> = [];
 
-  // Skip header row
+  // Skip header row - الحقول الأساسية فقط (7 حقول)
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return; // Skip header
 
@@ -123,11 +121,9 @@ export async function parseWorkersFromExcel(buffer: any): Promise<{
         fullName: String(values[2] || '').trim(),
         nationalId: values[3] ? String(values[3]) : null,
         phone: values[4] ? String(values[4]) : null,
-        groupId: values[5] ? parseInt(String(values[5])) : null,
-        jobId: values[6] ? parseInt(String(values[6])) : null,
-        dailyRate: values[7] ? String(values[7]) : null,
-        status: values[8] ? String(values[8]) : 'active',
-        hireDate: values[9] ? String(values[9]) : null,
+        groupCode: String(values[5] || '').trim(),
+        hireDate: values[6] ? String(values[6]) : null,
+        status: values[7] ? String(values[7]) : 'active',
       };
 
       const validated = WorkerImportSchema.parse(workerData);
@@ -199,17 +195,15 @@ export async function generateWorkersExcelTemplate(): Promise<any> {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('العمال');
 
-  // Set column widths
+  // Set column widths - الحقول الأساسية فقط (7 حقول)
   worksheet.columns = [
-    { header: 'الكود', key: 'code', width: 15 },
-    { header: 'الاسم الكامل', key: 'fullName', width: 25 },
+    { header: 'كود العامل', key: 'code', width: 15 },
+    { header: 'اسم العامل', key: 'fullName', width: 25 },
     { header: 'رقم الهوية', key: 'nationalId', width: 20 },
-    { header: 'الهاتف', key: 'phone', width: 15 },
-    { header: 'معرف المجموعة', key: 'groupId', width: 15 },
-    { header: 'معرف الوظيفة', key: 'jobId', width: 15 },
-    { header: 'معدل الراتب اليومي', key: 'dailyRate', width: 18 },
+    { header: 'رقم الجوال', key: 'phone', width: 15 },
+    { header: 'كود المجموعة', key: 'groupCode', width: 15 },
+    { header: 'تاريخ التعيين', key: 'hireDate', width: 15 },
     { header: 'الحالة', key: 'status', width: 15 },
-    { header: 'تاريخ التوظيف', key: 'hireDate', width: 15 },
   ];
 
   // Style header row
@@ -224,11 +218,9 @@ export async function generateWorkersExcelTemplate(): Promise<any> {
     fullName: 'أحمد محمد',
     nationalId: '1234567890',
     phone: '0501234567',
-    groupId: 1,
-    jobId: 1,
-    dailyRate: '100.00',
-    status: 'active',
+    groupCode: 'TECH',
     hireDate: '2026-01-01',
+    status: 'active',
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
