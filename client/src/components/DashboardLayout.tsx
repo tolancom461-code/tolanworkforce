@@ -55,7 +55,11 @@ import {
   Clock,
   Settings,
   Briefcase,
-  Home as HomeIcon
+  Home as HomeIcon,
+  Banknote,
+  Calendar,
+  ClipboardCheck,
+  AlertCircle
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -92,12 +96,25 @@ const menuSections = [
   {
     label: "💰 إدارة الرواتب والمالية",
     items: [
+      { icon: Banknote, label: "لوحة تحكم الرواتب", path: "/payroll/dashboard", color: "text-green-600" },
       { icon: DollarSign, label: "دفعات الرواتب", path: "/payroll/batches" },
       { icon: PlusCircle, label: "إنشاء دفعة رواتب", path: "/payroll/batches/create" },
       { icon: FileText, label: "سجل دفعات الرواتب", path: "/finance/payroll/history" },
       { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
       { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
       { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },
+    ]
+  },
+  {
+    label: "⏳ إدارة الورديات والجداول",
+    items: [
+      { icon: Calendar, label: "الورديات الديناميكية", path: "/schedules/dynamic", color: "text-blue-600" },
+    ]
+  },
+  {
+    label: "✓ مراجعة البصمات",
+    items: [
+      { icon: ClipboardCheck, label: "مركز مراجعة البصمات", path: "/punches/review", color: "text-orange-600" },
     ]
   },
   {
@@ -181,6 +198,18 @@ export default function DashboardLayout({
     </SidebarProvider>
   );
 }
+
+type MenuItem = {
+  icon: any;
+  label: string;
+  path: string;
+  color?: string;
+};
+
+type MenuSection = {
+  label: string;
+  items: MenuItem[];
+};
 
 type DashboardLayoutContentProps = {
   children: React.ReactNode;
@@ -292,7 +321,7 @@ function DashboardLayoutContent({
                               onClick={() => setLocation(item.path)}
                             >
                               <a href={item.path} className="flex items-center gap-2">
-                                <item.icon className="h-4 w-4" />
+                                <item.icon className={`h-4 w-4 ${(item as any).color || ''}`} />
                                 <span>{item.label}</span>
                               </a>
                             </SidebarMenuButton>
