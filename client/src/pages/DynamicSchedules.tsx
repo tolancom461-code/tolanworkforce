@@ -48,9 +48,7 @@ export function DynamicSchedules() {
       { enabled: true }
     );
 
-  // Debug logging
-  console.log('Groups:', groups, 'Loading:', groupsLoading);
-  console.log('Schedules:', schedulesData, 'Loading:', schedulesLoading, 'Error:', schedulesError);
+
 
   // Prepare schedule rows
   const scheduleRows = useMemo(() => {
