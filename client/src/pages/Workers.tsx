@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer, Download } from "lucide-react";
+import { ExcelImportExportDialog } from "@/components/ExcelImportExportDialog";
 import { exportToExcel, printPage } from '@/lib/exportUtils';
 import { memo, useCallback, useMemo } from 'react';
 import WorkerRow from '@/components/WorkerRow';
@@ -285,6 +286,10 @@ export default function Workers() {
               <Printer className="h-4 w-4 ml-2" />
               طباعة
             </Button>
+            <ExcelImportExportDialog type="workers" onImportSuccess={() => {
+              utils.workers.listWithPagination.invalidate();
+              utils.workers.list.invalidate();
+            }} />
             {hasPermission() && (
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>

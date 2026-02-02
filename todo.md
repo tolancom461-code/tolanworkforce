@@ -2961,3 +2961,33 @@ Add "Approve Full Attendance" option that:
 - [x] Fix Workers page to remove deleted workers immediately
 - [x] Add invalidation for listWithPagination query
 - [x] Test the fix in browser
+
+
+## Excel Import/Export Feature (استيراد وتصدير Excel)
+
+### Backend APIs
+- [x] Create importGroups API (read Excel, validate, insert)
+- [x] Create importWorkers API (read Excel, validate, insert)
+- [x] Create exportGroups API (export all groups to Excel)
+- [x] Create exportWorkers API (export all workers to Excel)
+- [x] Add error handling and validation
+- [x] Create sample Excel templates for download
+
+### Frontend UI
+- [x] Add Import/Export buttons to Groups page
+- [x] Add Import/Export buttons to Workers page
+- [x] Create ImportDialog component for file upload
+- [x] Create ExportDialog component with options
+- [x] Add progress indicators for import/export
+- [x] Display validation errors and warnings
+
+### Testing
+- [x] Write vitest tests for import APIs (11 tests)
+- [x] Write vitest tests for export APIs
+- [x] Test with sample Excel files
+- [x] Test error handling and validation
+
+### Documentation
+- [ ] Create user guide for import/export feature
+- [ ] Create sample Excel templates
+- [ ] Document validation rules

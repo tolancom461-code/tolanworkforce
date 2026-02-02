@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, Users, Clock, Building2, Download } from "lucide-react";
+import { ExcelImportExportDialog } from "@/components/ExcelImportExportDialog";
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import GroupRow from '@/components/GroupRow';
 
@@ -306,13 +307,18 @@ export default function Groups() {
             <h1 className="text-3xl font-bold tracking-tight">إدارة المجموعات</h1>
             <p className="text-muted-foreground">إدارة مجموعات العمل والورديات</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { resetForm(); setSelectedGroup(null); }}>
-                <Plus className="ml-2 h-4 w-4" />
-                إضافة مجموعة
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <ExcelImportExportDialog type="groups" onImportSuccess={() => {
+              utils.groups.listWithPagination.invalidate();
+              utils.groups.list.invalidate();
+            }} />
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => { resetForm(); setSelectedGroup(null); }}>
+                  <Plus className="ml-2 h-4 w-4" />
+                  إضافة مجموعة
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]" dir="rtl">
               <DialogHeader>
                 <DialogTitle>إضافة مجموعة جديدة</DialogTitle>
@@ -470,7 +476,8 @@ export default function Groups() {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>  
+            </Dialog>
+          </div>
         </div>
 
         {/* Search & Filter */}
