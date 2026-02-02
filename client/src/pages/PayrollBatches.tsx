@@ -87,7 +87,12 @@ export default function PayrollBatches() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   
-  const { data: groups } = trpc.groups.list.useQuery();
+  // Get groups filtered by selected cost center
+  const costCenterId = selectedCostCenter !== 'all' ? parseInt(selectedCostCenter) : undefined;
+  const { data: groups } = trpc.groups.listByCostCenter.useQuery(
+    { costCenterId },
+    { enabled: true }
+  );
   const { data: costCenters } = trpc.costCenters.list.useQuery();
   const { data: paginatedBatches, refetch } = trpc.payroll.listBatches.useQuery({
     page: currentPage,

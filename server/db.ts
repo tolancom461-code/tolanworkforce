@@ -328,6 +328,16 @@ export async function updateGroup(id: number, data: Partial<InsertGroup>): Promi
   await db.update(groups).set({ ...updatedData, updatedAt: new Date() }).where(eq(groups.id, id));
 }
 
+export async function getGroupsByCostCenter(costCenterId: number): Promise<Group[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db.select().from(groups)
+    .where(eq(groups.costCenterId, costCenterId))
+    .orderBy(desc(groups.createdAt));
+  return result.map(transformGroup);
+}
+
 export async function deleteGroup(id: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

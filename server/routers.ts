@@ -239,6 +239,19 @@ export const appRouter = router({
       return await db.getAllGroups();
     }),
     
+    listByCostCenter: protectedProcedure
+      .input(z.object({
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        // If no costCenterId provided, return all groups
+        if (!input.costCenterId) {
+          return await db.getAllGroups();
+        }
+        // Otherwise, return only groups for that cost center
+        return await db.getGroupsByCostCenter(input.costCenterId);
+      }),
+    
     listWithPagination: protectedProcedure
       .input(z.object({
         page: z.number().default(1),
