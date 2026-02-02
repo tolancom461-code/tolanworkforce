@@ -40,12 +40,15 @@ export default function PayrollBatchList() {
   
   // Fetch cost centers and groups for filters
   const { data: costCenters, isLoading: loadingCostCenters } = trpc.costCenters.list.useQuery();
-  const { data: allGroups, isLoading: loadingGroups } = trpc.groups.list.useQuery();
   
-  // Filter groups based on selected cost center
-  const filteredGroups = filters.costCenterId
-    ? allGroups?.filter(g => g.costCenterId === filters.costCenterId)
-    : allGroups;
+  // Get groups filtered by cost center
+  const { data: filteredGroups, isLoading: loadingGroups } = trpc.groups.listByCostCenter.useQuery(
+    { costCenterId: filters.costCenterId },
+    { enabled: true }
+  );
+  
+  // Also keep allGroups for backward compatibility
+  const allGroups = filteredGroups;
   
   // Build query params
   const queryParams: any = {};

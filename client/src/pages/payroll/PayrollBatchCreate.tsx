@@ -67,7 +67,11 @@ export default function PayrollBatchCreate() {
   const [payrollSummary, setPayrollSummary] = useState<PayrollSummary | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
-  const { data: allGroups } = trpc.groups.list.useQuery();
+  // Get groups filtered by cost center
+  const { data: allGroups } = trpc.groups.listByCostCenter.useQuery(
+    { costCenterId },
+    { enabled: true }
+  );
   const { data: allWorkers } = trpc.workers.list.useQuery();
   const { data: costCenters } = trpc.costCenters.list.useQuery();
   const { data: unresolvedData } = trpc.operationalFlags.checkUnresolved.useQuery(

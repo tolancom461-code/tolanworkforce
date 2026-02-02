@@ -20,6 +20,7 @@ export default function OperationalFlagsSimple() {
   const [description, setDescription] = useState<string>("");
 
   // Queries
+  // Get all groups (OperationalFlags page doesn't filter by cost center)
   const { data: groups } = trpc.groups.list.useQuery();
   const { data: workers } = trpc.workers.list.useQuery(
     selectedGroup ? ({ groupId: parseInt(selectedGroup) } as any) : void 0

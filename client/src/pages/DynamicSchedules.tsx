@@ -38,7 +38,7 @@ export function DynamicSchedules() {
   const [error, setError] = useState<string | null>(null);
   const [modifiedSchedules, setModifiedSchedules] = useState<Map<number, any>>(new Map());
 
-  // Fetch groups
+  // Fetch groups (DynamicSchedules page doesn't filter by cost center)
   const { data: groups, isLoading: groupsLoading } = trpc.groups.list.useQuery();
 
   // Fetch schedules for all groups

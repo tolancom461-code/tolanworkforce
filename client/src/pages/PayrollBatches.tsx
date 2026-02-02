@@ -25,6 +25,7 @@ import {
   Lock
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { EmptyGroupsMessage } from '@/components/EmptyGroupsMessage';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft: { label: 'مسودة', color: 'bg-gray-100 text-gray-800' },
@@ -497,19 +498,25 @@ export default function PayrollBatches() {
             </div>
             <div className="space-y-2">
               <Label>المجموعة (اختياري)</Label>
-              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                <SelectTrigger>
-                  <SelectValue placeholder="جميع المجموعات" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع المجموعات</SelectItem>
-                  {groups?.map((group) => (
-                    <SelectItem key={group.id} value={group.id.toString()}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {groups && groups.length === 0 && selectedCostCenter !== 'all' ? (
+                <EmptyGroupsMessage 
+                  costCenterName={costCenters?.find(cc => cc.id.toString() === selectedCostCenter)?.name || 'مركز التكلفة'}
+                />
+              ) : (
+                <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="جميع المجموعات" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المجموعات</SelectItem>
+                    {groups?.map((group) => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
+                        {group.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
               <Label>مركز التكلفة (اختياري)</Label>

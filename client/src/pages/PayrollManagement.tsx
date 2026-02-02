@@ -62,12 +62,15 @@ export default function PayrollManagement() {
   const batches = paginatedBatches?.data || [];
 
   const { data: costCenters } = trpc.costCenters.list.useQuery();
-  const { data: allGroups } = trpc.groups.list.useQuery();
-
-  // Filter groups based on selected cost center
-  const filteredGroups = filters.costCenterId
-    ? allGroups?.filter((g) => g.costCenterId === filters.costCenterId)
-    : allGroups;
+  
+  // Get groups filtered by cost center
+  const { data: filteredGroups } = trpc.groups.listByCostCenter.useQuery(
+    { costCenterId: filters.costCenterId },
+    { enabled: true }
+  );
+  
+  // Also keep allGroups for backward compatibility
+  const allGroups = filteredGroups;
 
   // Create batch mutation
   const createBatchMutation = trpc.payroll.createBatch.useMutation({

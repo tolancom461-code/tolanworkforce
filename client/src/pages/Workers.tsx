@@ -52,6 +52,7 @@ export default function Workers() {
     limit: pageSize,
     groupId,
   });
+  // Get all groups (Workers page doesn't filter by cost center)
   const { data: groups } = trpc.groups.list.useQuery();
   
   const workers = workersData?.data || [];

@@ -39,6 +39,7 @@ export default function PayOverrides() {
     reason: '',
   });
   
+  // Get all groups (PayOverrides page doesn't filter by cost center)
   const { data: groups } = trpc.groups.list.useQuery();
   const { data: workers } = trpc.workers.list.useQuery();
   const { data: pendingOverrides, refetch } = trpc.payOverrides.pending.useQuery({
