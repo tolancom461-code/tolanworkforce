@@ -5,6 +5,7 @@ import {
   costCenters,
   groups, Group, InsertGroup,
   groupShifts, GroupShift, InsertGroupShift,
+  groupSchedules,
   workers, InsertWorker,
   attendanceEvents,
   workDays,
@@ -4755,4 +4756,44 @@ export async function getGroupsWithPagination(
     limit,
     totalPages: Math.ceil(total / limit),
   };
+}
+
+// ============================================
+// Group Schedules Functions
+// ============================================
+
+export async function getGroupSchedules(groupId?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (groupId) {
+    return await db.select().from(groupSchedules).where(eq(groupSchedules.groupId, groupId));
+  }
+
+  return await db.select().from(groupSchedules);
+}
+
+export async function updateGroupSchedule(
+  id: number,
+  startTime?: string,
+  endTime?: string,
+  requiredHours?: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const updates: any = {};
+  if (startTime) updates.startTime = startTime;
+  if (endTime) updates.endTime = endTime;
+  if (requiredHours !== undefined) updates.requiredHours = requiredHours;
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error("No fields to update");
+  }
+
+  const result = await db.update(groupSchedules)
+    .set(updates)
+    .where(eq(groupSchedules.id, id));
+
+  return result;
 }

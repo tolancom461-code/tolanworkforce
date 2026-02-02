@@ -67,7 +67,7 @@ export function PayrollDashboard() {
   // Filter group payroll data
   const filteredGroupPayroll = useMemo(() => {
     if (!groupPayrollData?.summary) return [];
-    if (!selectedGroupId) return groupPayrollData.summary;
+    if (!selectedGroupId || selectedGroupId === 'all') return groupPayrollData.summary;
     return groupPayrollData.summary.filter(
       (item: PayrollSummary) => item.groupId === parseInt(selectedGroupId)
     );
@@ -151,7 +151,7 @@ export function PayrollDashboard() {
                   <SelectValue placeholder="اختر مجموعة (اختياري)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع المجموعات</SelectItem>
+                  <SelectItem value="all">جميع المجموعات</SelectItem>
                   {groups?.map((group: any) => (
                     <SelectItem key={group.id} value={group.id.toString()}>
                       {group.name} ({group.code})

@@ -40,6 +40,9 @@ import FinancialReports from "./pages/reports/FinancialReports";
 import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
 import OperationalFlagsSimple from "./pages/OperationalFlagsSimple";
+import { PayrollDashboard } from "./pages/PayrollDashboard";
+import { DynamicSchedules } from "./pages/DynamicSchedules";
+import { PunchesReviewCenter } from "./pages/PunchesReviewCenter";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { lazy } from "react";
@@ -180,6 +183,21 @@ function Router() {
         </ProtectedRoute>
       </Route>
       <Route path="/payroll-report" component={PayrollReport} />
+      <Route path="/payroll/dashboard">
+        <ProtectedRoute>
+          <PayrollDashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/schedules/dynamic">
+        <ProtectedRoute>
+          <DynamicSchedules />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/punches/review">
+        <ProtectedRoute>
+          <PunchesReviewCenter />
+        </ProtectedRoute>
+      </Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

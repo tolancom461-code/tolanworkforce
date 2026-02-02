@@ -2378,6 +2378,51 @@ export const appRouter = router({
         }
       }),
   }),
+
+  // Group Schedules Router
+  groupSchedules: router({
+    listByGroup: protectedProcedure
+      .input(z.object({
+        groupId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const schedules = await db.getGroupSchedules(input.groupId);
+          return schedules;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to fetch group schedules',
+            cause: error,
+          });
+        }
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        requiredHours: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const updated = await db.updateGroupSchedule(
+            input.id,
+            input.startTime,
+            input.endTime,
+            input.requiredHours
+          );
+          return updated;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to update group schedule',
+            cause: error,
+          });
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
