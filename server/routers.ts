@@ -552,7 +552,7 @@ export const appRouter = router({
           doc.on('end', () => resolve());
           
           // Add worker code at top
-          doc.fontSize(24).text(worker.manualCode || 'N/A', { align: 'center' });
+          doc.fontSize(24).text(worker.code || worker.manualCode || 'N/A', { align: 'center' });
           doc.moveDown(2);
           
           // Add QR Code (centered)
@@ -617,7 +617,7 @@ export const appRouter = router({
             });
             
             // Worker code at top
-            doc.fontSize(18).text(worker.manualCode || 'N/A', { align: 'center' });
+            doc.fontSize(18).text(worker.code || worker.manualCode || 'N/A', { align: 'center' });
             doc.moveDown(1);
             
             // Add QR Code
