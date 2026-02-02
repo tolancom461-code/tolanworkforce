@@ -66,6 +66,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 
 // تصنيف القوائم حسب الأدوار والوظائف
 const menuSections = [
@@ -204,6 +205,7 @@ type MenuItem = {
   label: string;
   path: string;
   color?: string;
+  badge?: number | null;
 };
 
 type MenuSection = {
@@ -227,6 +229,9 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   
+  // جلب عدد البصمات المعلقة
+  const { data: pendingPunchesCount = 0 } = trpc.attendance.getPendingCount.useQuery();
+  
   // حفظ حالة الطي/الفتح لكل قسم
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_SECTIONS_KEY);
@@ -245,7 +250,16 @@ function DashboardLayoutContent({
   };
   
   // جميع المستخدمين لديهم وصول كامل - لا توجد فحوصات صلاحيات
-  const filteredMenuSections = menuSections;
+  const filteredMenuSections = menuSections.map(section => ({
+    ...section,
+    items: section.items.map(item => {
+      // إضافة Badge للبصمات المعلقة
+      if (item.path === "/punches/review") {
+        return { ...item, badge: pendingPunchesCount };
+      }
+      return item;
+    })
+  }));
 
   const isMobile = useIsMobile();
 
@@ -320,9 +334,16 @@ function DashboardLayoutContent({
                               isActive={location === item.path}
                               onClick={() => setLocation(item.path)}
                             >
-                              <a href={item.path} className="flex items-center gap-2">
-                                <item.icon className={`h-4 w-4 ${(item as any).color || ''}`} />
-                                <span>{item.label}</span>
+                              <a href={item.path} className="flex items-center gap-2 justify-between w-full">
+                                <div className="flex items-center gap-2">
+                                  <item.icon className={`h-4 w-4 ${(item as any).color || ''}`} />
+                                  <span>{item.label}</span>
+                                </div>
+                                {(item as any).badge !== undefined && (item as any).badge !== null && (item as any).badge > 0 && (
+                                  <Badge variant="destructive" className="ml-auto text-xs h-5 flex items-center justify-center">
+                                    {(item as any).badge}
+                                  </Badge>
+                                )}
                               </a>
                             </SidebarMenuButton>
                           </SidebarMenuItem>

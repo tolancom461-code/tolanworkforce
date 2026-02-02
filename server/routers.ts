@@ -6,6 +6,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
+import { sql } from "drizzle-orm";
+import { attendanceEvents } from "../drizzle/schema";
 import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow, type PayrollReportRow } from "./excelExport";
 import * as analytics from "./analytics";
 import * as QRCode from "qrcode";
@@ -761,6 +763,26 @@ export const appRouter = router({
         };
       }),
 
+    // Get count of pending punches
+    getPendingCount: protectedProcedure
+      .query(async ({ ctx }) => {
+        // جلب عدد البصمات المعلقة من قاعدة البيانات
+        try {
+          const database = await db.getDb();
+          if (!database) return 0;
+          
+          // استخدم Drizzle ORM للعد
+          const result = await database.select()
+            .from(attendanceEvents)
+            .where(sql`is_automatic = 1 OR needs_review = true`);
+          
+          return result.length || 0;
+        } catch (error) {
+          console.error('Error getting pending count:', error);
+          return 0;
+        }
+      }),
+    
     // Get attendance events for review
     getForReview: protectedProcedure
       .input(z.object({
