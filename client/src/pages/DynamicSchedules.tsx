@@ -1,14 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, AlertTriangle, CheckCircle, Clock, Save, Calendar, Lock } from 'lucide-react';
+import { Loader2, AlertTriangle, Save } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ScheduleRow {
   id: number;
@@ -21,8 +20,6 @@ interface ScheduleRow {
   requiredHours: number;
   isActive: boolean;
   isModified: boolean;
-  effectiveDate?: Date | null;
-  isLocked?: boolean;
 }
 
 const dayNames: { [key: number]: string } = {
@@ -39,23 +36,15 @@ export function DynamicSchedules() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modifiedSchedules, setModifiedSchedules] = useState<Map<number, any>>(new Map());
-  const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
-  const [effectiveDateOption, setEffectiveDateOption] = useState<'current' | 'next' | 'previous' | 'custom'>('current');
-  const [customDate, setCustomDate] = useState<string>('');
+  const [dayEffectiveDates, setDayEffectiveDates] = useState<Map<number, 'current' | 'next' | 'previous'>>(new Map());
 
-  // Fetch groups (DynamicSchedules page doesn't filter by cost center)
   const { data: groups, isLoading: groupsLoading } = trpc.groups.list.useQuery();
-
-  // Fetch schedules for all groups
   const { data: schedulesData, isLoading: schedulesLoading, error: schedulesError, refetch: refetchSchedules } = 
     trpc.groupSchedules.listByGroup.useQuery(
-      { groupId: undefined }, // Fetch all schedules
+      { groupId: undefined },
       { enabled: true }
     );
 
-
-
-  // Prepare schedule rows
   const scheduleRows = useMemo(() => {
     if (!schedulesData || !groups) return [];
 
@@ -83,7 +72,6 @@ export function DynamicSchedules() {
     return rows;
   }, [schedulesData, groups, modifiedSchedules]);
 
-  // Handle time change
   const handleTimeChange = (scheduleId: number, field: 'startTime' | 'endTime', value: string) => {
     const modified = new Map(modifiedSchedules);
     const existing = modified.get(scheduleId) || {};
@@ -96,43 +84,37 @@ export function DynamicSchedules() {
     setModifiedSchedules(modified);
   };
 
-  // Handle hours change
   const handleHoursChange = (scheduleId: number, value: string) => {
     const modified = new Map(modifiedSchedules);
     const existing = modified.get(scheduleId) || {};
     
+    const hours = parseFloat(value);
     modified.set(scheduleId, {
       ...existing,
-      requiredHours: parseFloat(value) || 0,
+      requiredHours: isNaN(hours) ? 0 : hours,
     });
     
     setModifiedSchedules(modified);
   };
 
-  // Get effective date based on option
   const getEffectiveDate = (dayOfWeek: number): Date | null => {
     const today = new Date();
-    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const currentDay = today.getDay();
     
-    // Convert dayOfWeek (1-7, where 1=Saturday) to JS day (0-6, where 0=Sunday)
     const targetDay = dayOfWeek === 7 ? 0 : dayOfWeek;
+    const option = dayEffectiveDates.get(dayOfWeek) || 'current';
     
     let daysToAdd = 0;
     
-    if (effectiveDateOption === 'current') {
-      // Get this week's occurrence of the day
+    if (option === 'current') {
       daysToAdd = (targetDay - currentDay + 7) % 7;
       if (daysToAdd === 0 && currentDay !== targetDay) daysToAdd = 0;
-    } else if (effectiveDateOption === 'next') {
-      // Get next week's occurrence
+    } else if (option === 'next') {
       daysToAdd = (targetDay - currentDay + 7) % 7;
       if (daysToAdd <= 0) daysToAdd += 7;
-    } else if (effectiveDateOption === 'previous') {
-      // Get last week's occurrence
+    } else if (option === 'previous') {
       daysToAdd = (targetDay - currentDay - 7 + 14) % 7;
       if (daysToAdd >= 0) daysToAdd -= 7;
-    } else if (effectiveDateOption === 'custom' && customDate) {
-      return new Date(customDate);
     }
     
     const result = new Date(today);
@@ -140,13 +122,6 @@ export function DynamicSchedules() {
     return result;
   };
 
-  // Check if payroll batch is locked for a date
-  const isDateLocked = (date: Date): boolean => {
-    // This will be checked via API call
-    return false; // Placeholder
-  };
-
-  // Save all changes
   const handleSaveAll = async () => {
     if (modifiedSchedules.size === 0) {
       toast.info('لا توجد تغييرات للحفظ');
@@ -157,29 +132,35 @@ export function DynamicSchedules() {
     setError(null);
 
     try {
-      // Get the update mutation
       const updateMutation = trpc.groupSchedules.update.useMutation();
 
-      // Save each modified schedule
       const entries = Array.from(modifiedSchedules.entries());
       for (const [scheduleId, changes] of entries) {
         const schedule = scheduleRows.find(s => s.id === scheduleId);
         if (!schedule) continue;
 
-        const effectiveDate = changes.effectiveDate || getEffectiveDate(schedule.dayOfWeek);
+        const effectiveDate = getEffectiveDate(schedule.dayOfWeek);
         
-        await updateMutation.mutateAsync({
-          id: scheduleId,
-          startTime: changes.startTime || schedule.startTime,
-          endTime: changes.endTime || schedule.endTime,
-          requiredHours: changes.requiredHours !== undefined ? changes.requiredHours : schedule.requiredHours,
-          effectiveDate: effectiveDate,
-        });
+        try {
+          await updateMutation.mutateAsync({
+            id: scheduleId,
+            startTime: changes.startTime || schedule.startTime,
+            endTime: changes.endTime || schedule.endTime,
+            requiredHours: changes.requiredHours !== undefined ? changes.requiredHours : schedule.requiredHours,
+            effectiveDate: effectiveDate || undefined,
+          });
+        } catch (err: any) {
+          if (err.message.includes('تم اعتماد دفعة الراتب')) {
+            toast.error(`${schedule.dayName}: تم اعتماد دفعة الراتب لا يمكن التعديل`);
+          } else {
+            throw err;
+          }
+        }
       }
 
       toast.success(`تم حفظ ${modifiedSchedules.size} تغيير بنجاح`);
       setModifiedSchedules(new Map());
-      setEditingScheduleId(null);
+      setDayEffectiveDates(new Map());
       await refetchSchedules();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'حدث خطأ أثناء الحفظ';
@@ -205,15 +186,24 @@ export function DynamicSchedules() {
 
   const modifiedCount = modifiedSchedules.size;
 
+  if (schedulesError) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          لا توجد ورديات محددة حالياً. يرجى التأكد من وجود مجموعات وورديات في النظام.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">إدارة الورديات الديناميكية</h1>
         <p className="text-gray-600 mt-2">تعديل جداول العمل والساعات المطلوبة لكل مجموعة</p>
       </div>
 
-      {/* Error Alert */}
       {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
@@ -221,63 +211,81 @@ export function DynamicSchedules() {
         </Alert>
       )}
 
-      {/* Effective Date Selection */}
-      {modifiedCount > 0 && (
-        <Card className="bg-blue-50 border-blue-200">
+      {Object.entries(groupedByGroup).map(([groupId, groupSchedules]) => (
+        <Card key={groupId}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              متى تريد تطبيق هذا التغيير؟
-            </CardTitle>
-            <CardDescription>
-              اختر التاريخ الذي سيبدأ من
-ه تطبيق التعديلات على الورديات
-            </CardDescription>
+            <CardTitle>{groupSchedules[0]?.groupName}</CardTitle>
+            <CardDescription>تعديل جداول العمل والساعات المطلوبة</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Button
-                variant={effectiveDateOption === 'previous' ? 'default' : 'outline'}
-                onClick={() => setEffectiveDateOption('previous')}
-              >
-                الجمعة الماضية
-              </Button>
-              <Button
-                variant={effectiveDateOption === 'current' ? 'default' : 'outline'}
-                onClick={() => setEffectiveDateOption('current')}
-              >
-                الجمعة الحالية
-              </Button>
-              <Button
-                variant={effectiveDateOption === 'next' ? 'default' : 'outline'}
-                onClick={() => setEffectiveDateOption('next')}
-              >
-                الجمعة القادمة
-              </Button>
-              <Button
-                variant={effectiveDateOption === 'custom' ? 'default' : 'outline'}
-                onClick={() => setEffectiveDateOption('custom')}
-              >
-                تاريخ محدد
-              </Button>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>اليوم</TableHead>
+                    <TableHead>وقت البداية</TableHead>
+                    <TableHead>وقت النهاية</TableHead>
+                    <TableHead>الساعات المطلوبة</TableHead>
+                    <TableHead>متى التطبيق؟</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {groupSchedules.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-medium">{row.dayName}</TableCell>
+                      <TableCell>
+                        <input
+                          type="time"
+                          value={modifiedSchedules.get(row.id)?.startTime || row.startTime}
+                          onChange={(e) => handleTimeChange(row.id, 'startTime', e.target.value)}
+                          className="border rounded px-2 py-1"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <input
+                          type="time"
+                          value={modifiedSchedules.get(row.id)?.endTime || row.endTime}
+                          onChange={(e) => handleTimeChange(row.id, 'endTime', e.target.value)}
+                          className="border rounded px-2 py-1"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <input
+                          type="number"
+                          step="0.5"
+                          value={modifiedSchedules.get(row.id)?.requiredHours !== undefined ? modifiedSchedules.get(row.id).requiredHours : row.requiredHours}
+                          onChange={(e) => handleHoursChange(row.id, e.target.value)}
+                          className="border rounded px-2 py-1 w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={dayEffectiveDates.get(row.dayOfWeek) || 'current'}
+                          onValueChange={(value: any) => {
+                            const dates = new Map(dayEffectiveDates);
+                            dates.set(row.dayOfWeek, value);
+                            setDayEffectiveDates(dates);
+                          }}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="previous">الماضي</SelectItem>
+                            <SelectItem value="current">الحالي</SelectItem>
+                            <SelectItem value="next">القادم</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-            
-            {effectiveDateOption === 'custom' && (
-              <div className="mt-4">
-                <Label>اختر التاريخ:</Label>
-                <Input
-                  type="date"
-                  value={customDate}
-                  onChange={(e) => setCustomDate(e.target.value)}
-                  className="mt-2"
-                />
-              </div>
-            )}
           </CardContent>
         </Card>
-      )}
+      ))}
 
-      {/* Save Button */}
       {modifiedCount > 0 && (
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="pt-6">
@@ -303,7 +311,7 @@ export function DynamicSchedules() {
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    حفظ جميع التغييرات
+                    حفظ التغييرات
                   </>
                 )}
               </Button>
@@ -311,153 +319,6 @@ export function DynamicSchedules() {
           </CardContent>
         </Card>
       )}
-
-      {/* Loading State */}
-      {groupsLoading || schedulesLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          <p className="text-gray-500 mr-3">جاري تحميل البيانات...</p>
-        </div>
-      ) : schedulesError || !schedulesData ? (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            حدث خطأ في تحميل الورديات. يرجى تحديث الصفحة والمحاولة مرة أخرى.
-          </AlertDescription>
-        </Alert>
-      ) : Object.entries(groupedByGroup).length === 0 ? (
-        <Alert className="bg-blue-50 border-blue-200">
-          <Clock className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800">
-            لا توجد ورديات محددة حالياً. يرجى التأكد من وجود مجموعات وورديات في النظام.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        /* Schedule Tables by Group */
-        Object.entries(groupedByGroup).map(([groupId, schedules]) => {
-          const group = groups?.find((g: any) => g.id === parseInt(groupId));
-          
-          return (
-            <Card key={groupId}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-blue-600"></div>
-                  {group?.name}
-                </CardTitle>
-                <CardDescription>
-                  تعديل جدول العمل والساعات المطلوبة
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>اليوم</TableHead>
-                        <TableHead className="text-right">وقت البداية</TableHead>
-                        <TableHead className="text-right">وقت النهاية</TableHead>
-                        <TableHead className="text-right">الساعات المطلوبة</TableHead>
-                        <TableHead className="text-right">الحالة</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {schedules.map((schedule: ScheduleRow) => (
-                        <TableRow 
-                          key={schedule.id}
-                          className={schedule.isModified ? 'bg-yellow-50' : ''}
-                        >
-                          <TableCell className="font-medium">
-                            {schedule.dayName}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-2 items-center">
-                              <Input
-                                type="time"
-                                value={
-                                  modifiedSchedules.get(schedule.id)?.startTime || 
-                                  schedule.startTime
-                                }
-                                onChange={(e) => 
-                                  handleTimeChange(schedule.id, 'startTime', e.target.value)
-                                }
-                                className="w-32"
-                              />
-                              {editingScheduleId === schedule.id && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => setEditingScheduleId(null)}
-                                >
-                                  ✓
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Input
-                              type="time"
-                              value={
-                                modifiedSchedules.get(schedule.id)?.endTime || 
-                                schedule.endTime
-                              }
-                              onChange={(e) => 
-                                handleTimeChange(schedule.id, 'endTime', e.target.value)
-                              }
-                              className="w-32"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Input
-                              type="number"
-                              min="0"
-                              max="24"
-                              step="0.5"
-                              value={
-                                modifiedSchedules.get(schedule.id)?.requiredHours !== undefined
-                                  ? modifiedSchedules.get(schedule.id).requiredHours
-                                  : schedule.requiredHours
-                              }
-                              onChange={(e) => 
-                                handleHoursChange(schedule.id, e.target.value)
-                              }
-                              className="w-24"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {schedule.isModified ? (
-                              <Badge className="bg-yellow-100 text-yellow-800">
-                                معدل
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-green-100 text-green-800">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                نشط
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })
-      )}
-
-      {/* Info Card */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-blue-900">ملاحظات مهمة</CardTitle>
-        </CardHeader>
-        <CardContent className="text-blue-800 space-y-2">
-          <p>• عدّل أوقات البداية والنهاية والساعات المطلوبة حسب احتياجاتك</p>
-          <p>• الصفوف المعدلة تظهر بخلفية صفراء</p>
-          <p>• انقر على "حفظ جميع التغييرات" لتطبيق جميع التعديلات</p>
-          <p>• التغييرات تُحفظ فوراً في قاعدة البيانات</p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
