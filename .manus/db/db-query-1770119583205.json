@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM workers; DELETE FROM attendance_events; DELETE FROM payroll_batch_items; DELETE FROM payroll_batch_corrections; DELETE FROM payroll_batch_notes; DELETE FROM payroll_batches; DELETE FROM worker_daily_finance; DELETE FROM pay_overrides; DELETE FROM group_schedules;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute DELETE FROM workers; DELETE FROM attendance_events; DELETE FROM payroll_batch_items; DELETE FROM payroll_batch_corrections; DELETE FROM payroll_batch_notes; DELETE FROM payroll_batches; DELETE FROM worker_daily_finance; DELETE FROM pay_overrides; DELETE FROM group_schedules;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3241
+}

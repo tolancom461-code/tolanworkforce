@@ -4950,7 +4950,24 @@ export async function getGroupSchedules(groupId?: number) {
     }
   });
   
-  return Array.from(scheduleMap.values());
+  const filteredSchedules = Array.from(scheduleMap.values());
+  
+  // Filter out schedules from weeks with approved payroll batches
+  const schedulesWithoutApprovedWeeks: any[] = [];
+  
+  for (const schedule of filteredSchedules) {
+    // Get the week start date for this schedule
+    const scheduleDate = schedule.effectiveDate ? new Date(schedule.effectiveDate) : new Date(schedule.createdAt);
+    
+    // Check if there's an approved payroll batch for this week
+    const isApproved = await isPayrollBatchLockedForDate(scheduleDate);
+    
+    if (!isApproved) {
+      schedulesWithoutApprovedWeeks.push(schedule);
+    }
+  }
+  
+  return schedulesWithoutApprovedWeeks;
 }
 
 export async function isPayrollBatchLockedForDate(date: Date): Promise<boolean> {

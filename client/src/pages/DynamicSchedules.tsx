@@ -2,24 +2,35 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertTriangle, Save } from 'lucide-react';
+import { Loader2, AlertTriangle, Save, Edit2, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
-interface ScheduleRow {
+interface DaySchedule {
   id: number;
-  groupId: number;
-  groupName: string;
   dayOfWeek: number;
   dayName: string;
   startTime: string;
   endTime: string;
   requiredHours: number;
-  isActive: boolean;
-  isModified: boolean;
+}
+
+interface GroupWeekSchedules {
+  groupId: number;
+  groupName: string;
+  weekStart: Date;
+  weekEnd: Date;
+  weekLabel: string;
+  days: DaySchedule[];
 }
 
 const dayNames: { [key: number]: string } = {
@@ -32,11 +43,13 @@ const dayNames: { [key: number]: string } = {
   7: 'الجمعة',
 };
 
+const dayOrder = [1, 2, 3, 4, 5, 6, 7];
+
 export function DynamicSchedules() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modifiedSchedules, setModifiedSchedules] = useState<Map<number, any>>(new Map());
-  const [dayEffectiveDates, setDayEffectiveDates] = useState<Map<number, 'current' | 'next' | 'previous'>>(new Map());
+  const [editingSchedule, setEditingSchedule] = useState<any>(null);
+  const [editValues, setEditValues] = useState<any>({});
 
   const { data: groups, isLoading: groupsLoading } = trpc.groups.list.useQuery();
   const { data: schedulesData, isLoading: schedulesLoading, error: schedulesError, refetch: refetchSchedules } = 
@@ -45,151 +58,87 @@ export function DynamicSchedules() {
       { enabled: true }
     );
   
-  // ✅ تم نقل useMutation إلى أعلى المكون (خارج الدوال)
   const updateMutation = trpc.groupSchedules.update.useMutation();
 
-  const scheduleRows = useMemo(() => {
+  // Group schedules by week and group
+  const groupedByWeek = useMemo(() => {
     if (!schedulesData || !groups) return [];
 
-    const rows: ScheduleRow[] = [];
+    const weekMap = new Map<string, GroupWeekSchedules>();
     
-    groups.forEach((group: any) => {
-      const groupSchedules = schedulesData.filter((s: any) => s.groupId === group.id);
+    schedulesData.forEach((schedule: any) => {
+      const group = groups.find((g: any) => g.id === schedule.groupId);
+      if (!group) return;
+
+      // Calculate week start and end
+      const scheduleDate = schedule.effectiveDate ? new Date(schedule.effectiveDate) : new Date(schedule.createdAt);
+      const weekStart = getWeekStart(scheduleDate);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
       
-      groupSchedules.forEach((schedule: any) => {
-        rows.push({
-          id: schedule.id,
-          groupId: group.id,
+      const weekKey = `${schedule.groupId}-${weekStart.toISOString().split('T')[0]}`;
+      
+      if (!weekMap.has(weekKey)) {
+        weekMap.set(weekKey, {
+          groupId: schedule.groupId,
           groupName: group.name,
-          dayOfWeek: schedule.dayOfWeek,
-          dayName: dayNames[schedule.dayOfWeek] || `يوم ${schedule.dayOfWeek}`,
-          startTime: schedule.startTime,
-          endTime: schedule.endTime,
-          requiredHours: schedule.requiredHours,
-          isActive: schedule.isActive,
-          isModified: modifiedSchedules.has(schedule.id),
+          weekStart,
+          weekEnd,
+          weekLabel: formatWeekRange(weekStart),
+          days: [],
         });
+      }
+      
+      const week = weekMap.get(weekKey)!;
+      week.days.push({
+        id: schedule.id,
+        dayOfWeek: schedule.dayOfWeek,
+        dayName: dayNames[schedule.dayOfWeek] || `يوم ${schedule.dayOfWeek}`,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        requiredHours: parseFloat(schedule.requiredHours),
       });
     });
 
-    return rows;
-  }, [schedulesData, groups, modifiedSchedules]);
-
-  const handleTimeChange = (scheduleId: number, field: 'startTime' | 'endTime', value: string) => {
-    const modified = new Map(modifiedSchedules);
-    const existing = modified.get(scheduleId) || {};
-    
-    modified.set(scheduleId, {
-      ...existing,
-      [field]: value,
+    // Sort days within each week
+    weekMap.forEach((week) => {
+      week.days.sort((a, b) => dayOrder.indexOf(a.dayOfWeek) - dayOrder.indexOf(b.dayOfWeek));
     });
-    
-    setModifiedSchedules(modified);
-  };
 
-  const handleHoursChange = (scheduleId: number, value: string) => {
-    const modified = new Map(modifiedSchedules);
-    const existing = modified.get(scheduleId) || {};
-    
-    const hours = parseFloat(value);
-    modified.set(scheduleId, {
-      ...existing,
-      requiredHours: isNaN(hours) ? 0 : hours,
+    return Array.from(weekMap.values()).sort((a, b) => b.weekStart.getTime() - a.weekStart.getTime());
+  }, [schedulesData, groups]);
+
+  const handleEditDay = (day: DaySchedule) => {
+    setEditingSchedule(day);
+    setEditValues({
+      startTime: day.startTime,
+      endTime: day.endTime,
+      requiredHours: day.requiredHours,
     });
-    
-    setModifiedSchedules(modified);
   };
 
-  const getEffectiveDate = (dayOfWeek: number): Date | null => {
-    const today = new Date();
-    const currentDay = today.getDay();
-    
-    const targetDay = dayOfWeek === 7 ? 0 : dayOfWeek;
-    const option = dayEffectiveDates.get(dayOfWeek) || 'current';
-    
-    let daysToAdd = 0;
-    
-    if (option === 'current') {
-      daysToAdd = (targetDay - currentDay + 7) % 7;
-      if (daysToAdd === 0 && currentDay !== targetDay) daysToAdd = 0;
-    } else if (option === 'next') {
-      daysToAdd = (targetDay - currentDay + 7) % 7;
-      if (daysToAdd <= 0) daysToAdd += 7;
-    } else if (option === 'previous') {
-      daysToAdd = (targetDay - currentDay - 7 + 14) % 7;
-      if (daysToAdd >= 0) daysToAdd -= 7;
-    }
-    
-    const result = new Date(today);
-    result.setDate(result.getDate() + daysToAdd);
-    return result;
-  };
-
-  const handleSaveAll = async () => {
-    if (modifiedSchedules.size === 0) {
-      toast.info('لا توجد تغييرات للحفظ');
-      return;
-    }
+  const handleSaveEdit = async () => {
+    if (!editingSchedule) return;
 
     setLoading(true);
-    setError(null);
-
     try {
-      const entries = Array.from(modifiedSchedules.entries());
-      for (const [scheduleId, changes] of entries) {
-        const schedule = scheduleRows.find(s => s.id === scheduleId);
-        if (!schedule) continue;
+      await updateMutation.mutateAsync({
+        id: editingSchedule.id,
+        startTime: editValues.startTime,
+        endTime: editValues.endTime,
+        requiredHours: parseFloat(editValues.requiredHours) || 0,
+      });
 
-        const effectiveDate = getEffectiveDate(schedule.dayOfWeek);
-        
-        try {
-          // ✅ تحويل requiredHours إلى number دائماً
-          const requiredHoursValue = changes.requiredHours !== undefined ? changes.requiredHours : schedule.requiredHours;
-          const requiredHoursNumber = typeof requiredHoursValue === 'string' ? parseFloat(requiredHoursValue) : requiredHoursValue;
-          
-          await updateMutation.mutateAsync({
-            id: scheduleId,
-            startTime: changes.startTime || schedule.startTime,
-            endTime: changes.endTime || schedule.endTime,
-            requiredHours: isNaN(requiredHoursNumber) ? 0 : requiredHoursNumber,
-            effectiveDate: effectiveDate || undefined,
-          });
-        } catch (err: any) {
-          if (err.message.includes('تم اعتماد دفعة الراتب')) {
-            toast.error(`${schedule.dayName}: تم اعتماد دفعة الراتب لا يمكن التعديل`);
-          } else {
-            throw err;
-          }
-        }
-      }
-
-      toast.success(`تم حفظ ${modifiedSchedules.size} تغيير بنجاح`);
-      setModifiedSchedules(new Map());
-      setDayEffectiveDates(new Map());
+      toast.success('تم تحديث الوردية بنجاح');
+      setEditingSchedule(null);
       await refetchSchedules();
-    } catch (err) {
+    } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : 'حدث خطأ أثناء الحفظ';
-      setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
-  const groupedByGroup = useMemo(() => {
-    const grouped: { [key: number]: ScheduleRow[] } = {};
-    
-    scheduleRows.forEach((row) => {
-      if (!grouped[row.groupId]) {
-        grouped[row.groupId] = [];
-      }
-      grouped[row.groupId].push(row);
-    });
-
-    return grouped;
-  }, [scheduleRows]);
-
-  const modifiedCount = modifiedSchedules.size;
 
   if (schedulesError) {
     return (
@@ -216,114 +165,176 @@ export function DynamicSchedules() {
         </Alert>
       )}
 
-      {Object.entries(groupedByGroup).map(([groupId, groupSchedules]) => (
-        <Card key={groupId}>
-          <CardHeader>
-            <CardTitle>{groupSchedules[0]?.groupName}</CardTitle>
-            <CardDescription>تعديل جداول العمل والساعات المطلوبة</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>اليوم</TableHead>
-                    <TableHead>وقت البداية</TableHead>
-                    <TableHead>وقت النهاية</TableHead>
-                    <TableHead>الساعات المطلوبة</TableHead>
-                    <TableHead>متى التطبيق؟</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {groupSchedules.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell className="font-medium">{row.dayName}</TableCell>
-                      <TableCell>
-                        <input
-                          type="time"
-                          value={modifiedSchedules.get(row.id)?.startTime || row.startTime}
-                          onChange={(e) => handleTimeChange(row.id, 'startTime', e.target.value)}
-                          className="border rounded px-2 py-1"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <input
-                          type="time"
-                          value={modifiedSchedules.get(row.id)?.endTime || row.endTime}
-                          onChange={(e) => handleTimeChange(row.id, 'endTime', e.target.value)}
-                          className="border rounded px-2 py-1"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <input
-                          type="number"
-                          step="0.5"
-                          value={modifiedSchedules.get(row.id)?.requiredHours !== undefined ? modifiedSchedules.get(row.id).requiredHours : row.requiredHours}
-                          onChange={(e) => handleHoursChange(row.id, e.target.value)}
-                          className="border rounded px-2 py-1 w-20"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={dayEffectiveDates.get(row.dayOfWeek) || 'current'}
-                          onValueChange={(value: any) => {
-                            const dates = new Map(dayEffectiveDates);
-                            dates.set(row.dayOfWeek, value);
-                            setDayEffectiveDates(dates);
-                          }}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="previous">الماضي</SelectItem>
-                            <SelectItem value="current">الحالي</SelectItem>
-                            <SelectItem value="next">القادم</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-
-      {modifiedCount > 0 && (
-        <Card className="bg-blue-50 border-blue-200">
+      {groupsLoading || schedulesLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      ) : groupedByWeek.length === 0 ? (
+        <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-blue-900">
-                  {modifiedCount} تغيير معلق
-                </p>
-                <p className="text-sm text-blue-800">
-                  انقر على حفظ لتطبيق جميع التغييرات
-                </p>
-              </div>
-              <Button
-                onClick={handleSaveAll}
-                disabled={loading}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    جاري الحفظ...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    حفظ التغييرات
-                  </>
-                )}
-              </Button>
-            </div>
+            <p className="text-center text-gray-500">لا توجد ورديات متاحة للتعديل</p>
           </CardContent>
         </Card>
+      ) : (
+        groupedByWeek.map((week) => (
+          <Card key={`${week.groupId}-${week.weekStart.toISOString()}`} className="overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">{week.groupName}</CardTitle>
+                  <CardDescription className="text-base mt-1">
+                    📅 {week.weekLabel}
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
+                {dayOrder.map((dayNum) => {
+                  const day = week.days.find((d) => d.dayOfWeek === dayNum);
+                  
+                  if (!day) {
+                    return (
+                      <div key={dayNum} className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                        <p className="text-sm text-gray-500">{dayNames[dayNum]}</p>
+                        <p className="text-xs text-gray-400 mt-2">لا توجد وردية</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={day.id}
+                      className="p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <p className="font-semibold text-gray-900">{day.dayName}</p>
+                          <p className="text-xs text-gray-500 mt-1">الساعات: {day.requiredHours}</p>
+                        </div>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditDay(day)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit2 className="h-4 w-4 text-blue-600" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>تعديل وردية {day.dayName}</DialogTitle>
+                              <DialogDescription>
+                                تحديث أوقات العمل والساعات المطلوبة
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <Label htmlFor="startTime">وقت البداية</Label>
+                                <input
+                                  id="startTime"
+                                  type="time"
+                                  value={editValues.startTime}
+                                  onChange={(e) =>
+                                    setEditValues({ ...editValues, startTime: e.target.value })
+                                  }
+                                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="endTime">وقت النهاية</Label>
+                                <input
+                                  id="endTime"
+                                  type="time"
+                                  value={editValues.endTime}
+                                  onChange={(e) =>
+                                    setEditValues({ ...editValues, endTime: e.target.value })
+                                  }
+                                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="requiredHours">الساعات المطلوبة</Label>
+                                <input
+                                  id="requiredHours"
+                                  type="number"
+                                  step="0.5"
+                                  value={editValues.requiredHours}
+                                  onChange={(e) =>
+                                    setEditValues({ ...editValues, requiredHours: e.target.value })
+                                  }
+                                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <Button
+                                onClick={handleSaveEdit}
+                                disabled={loading}
+                                className="w-full bg-green-600 hover:bg-green-700"
+                              >
+                                {loading ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    جاري الحفظ...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Save className="h-4 w-4 mr-2" />
+                                    حفظ التغييرات
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">البداية:</span>
+                          <span className="font-mono font-semibold text-gray-900">{day.startTime}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">النهاية:</span>
+                          <span className="font-mono font-semibold text-gray-900">{day.endTime}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        ))
       )}
     </div>
   );
+}
+
+// Helper functions
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sunday, 6 = Saturday
+  
+  const daysToSubtract = day === 6 ? 0 : (day + 1) % 7;
+  d.setDate(d.getDate() - daysToSubtract);
+  d.setHours(0, 0, 0, 0);
+  
+  return d;
+}
+
+function formatWeekRange(date: Date): string {
+  const start = getWeekStart(date);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  
+  const formatDate = (d: Date) => {
+    return d.toLocaleDateString('ar-SA', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit' 
+    });
+  };
+  
+  return `${formatDate(start)} إلى ${formatDate(end)}`;
 }
