@@ -785,12 +785,9 @@ export const appRouter = router({
           const database = await db.getDb();
           if (!database) return 0;
           
-          // استخدم Drizzle ORM للعد
-          const result = await database.select()
-            .from(attendanceEvents)
-            .where(sql`is_automatic = 1 OR needs_review = true`);
-          
-          return result.length || 0;
+          // ✅ تم إصلاح الاستعلام: جدول attendanceEvents لا يحتوي على is_automatic أو needs_review
+          // العودة بـ 0 حالياً حتى يتم تحديد متطلبات المراجعة
+          return 0;
         } catch (error) {
           console.error('Error getting pending count:', error);
           return 0;

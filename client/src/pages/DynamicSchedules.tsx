@@ -44,6 +44,9 @@ export function DynamicSchedules() {
       { groupId: undefined },
       { enabled: true }
     );
+  
+  // ✅ تم نقل useMutation إلى أعلى المكون (خارج الدوال)
+  const updateMutation = trpc.groupSchedules.update.useMutation();
 
   const scheduleRows = useMemo(() => {
     if (!schedulesData || !groups) return [];
@@ -132,8 +135,6 @@ export function DynamicSchedules() {
     setError(null);
 
     try {
-      const updateMutation = trpc.groupSchedules.update.useMutation();
-
       const entries = Array.from(modifiedSchedules.entries());
       for (const [scheduleId, changes] of entries) {
         const schedule = scheduleRows.find(s => s.id === scheduleId);
