@@ -25,6 +25,30 @@ import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
+// ============================================
+// Utility Functions
+// ============================================
+
+/**
+ * Safely parse a decimal value to float
+ * Returns 0 if parsing fails
+ */
+export function safeParseDecimal(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+  const parsed = parseFloat(String(value));
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
+ * Safely parse an integer value
+ * Returns 0 if parsing fails
+ */
+export function safeParseInt(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+  const parsed = parseInt(String(value), 10);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -1010,7 +1034,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     if (worker && worker.groupId) {
       const [group] = await db.select().from(groups).where(eq(groups.id, worker.groupId)).limit(1);
       if (group && group.dailyWage) {
-        dailyWage = parseFloat(group.dailyWage.toString());
+        dailyWage = safeParseDecimal(group.dailyWage);
       }
     }
     
@@ -1028,7 +1052,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   if (!worker) throw new Error("العامل غير موجود");
   
   // Get group and shift info
-  let dailyRate = parseFloat(worker.dailyRate?.toString() || '0');
+  let dailyRate = safeParseDecimal(worker.dailyRate);
   let expectedStartTime = '08:00';
   let expectedEndTime = '17:00';
   
@@ -1044,13 +1068,13 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     const [group] = await db.select().from(groups).where(eq(groups.id, worker.groupId)).limit(1);
     if (group) {
       if (group.dailyRate) {
-        dailyRate = dailyRate || parseFloat(group.dailyRate.toString());
+        dailyRate = dailyRate || safeParseDecimal(group.dailyRate);
       }
       // Load new flexible settings
-      groupDailyWage = group.dailyWage ? parseFloat(group.dailyWage.toString()) : null;
-      groupWorkMinutes = group.workMinutes;
-      groupLatePenaltyRate = group.latePenaltyRate ? parseFloat(group.latePenaltyRate.toString()) : null;
-      groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? parseFloat(group.earlyLeavePenaltyRate.toString()) : null;
+      groupDailyWage = group.dailyWage ? safeParseDecimal(group.dailyWage) : null;
+      groupWorkMinutes = safeParseInt(group.workMinutes);
+      groupLatePenaltyRate = group.latePenaltyRate ? safeParseDecimal(group.latePenaltyRate) : null;
+      groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? safeParseDecimal(group.earlyLeavePenaltyRate) : null;
       // Load shift times for financial calculation
       shiftStartTime = group.shiftStartTime;
       shiftEndTime = group.shiftEndTime;
