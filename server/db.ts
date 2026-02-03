@@ -4915,11 +4915,42 @@ export async function getGroupSchedules(groupId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Get all schedules
+  let allSchedules: any[];
+  
   if (groupId) {
-    return await db.select().from(groupSchedules).where(eq(groupSchedules.groupId, groupId));
+    allSchedules = await db.select().from(groupSchedules).where(eq(groupSchedules.groupId, groupId));
+  } else {
+    allSchedules = await db.select().from(groupSchedules);
   }
-
-  return await db.select().from(groupSchedules);
+  
+  // Filter to get only the latest effective schedule for each day per group
+  const today = new Date();
+  const scheduleMap = new Map<string, any>();
+  
+  allSchedules.forEach((schedule: any) => {
+    const key = `${schedule.groupId}-${schedule.dayOfWeek}`;
+    const existing = scheduleMap.get(key);
+    
+    // If no existing schedule for this day, or if this schedule's effectiveDate is more recent and not in the future
+    if (!existing) {
+      // Check if effectiveDate is in the past or today (not future)
+      if (!schedule.effectiveDate || new Date(schedule.effectiveDate) <= today) {
+        scheduleMap.set(key, schedule);
+      }
+    } else {
+      // Compare effective dates - prefer the more recent one that's not in the future
+      const existingEffectiveDate = existing.effectiveDate ? new Date(existing.effectiveDate) : new Date(existing.createdAt);
+      const currentEffectiveDate = schedule.effectiveDate ? new Date(schedule.effectiveDate) : new Date(schedule.createdAt);
+      
+      // Only consider schedules with effectiveDate in the past or today
+      if (currentEffectiveDate <= today && currentEffectiveDate > existingEffectiveDate) {
+        scheduleMap.set(key, schedule);
+      }
+    }
+  });
+  
+  return Array.from(scheduleMap.values());
 }
 
 export async function isPayrollBatchLockedForDate(date: Date): Promise<boolean> {
