@@ -4882,7 +4882,8 @@ export async function updateGroupSchedule(
   id: number,
   startTime?: string,
   endTime?: string,
-  requiredHours?: number
+  requiredHours?: number,
+  effectiveDate?: Date
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -4891,6 +4892,7 @@ export async function updateGroupSchedule(
   if (startTime) updates.startTime = startTime;
   if (endTime) updates.endTime = endTime;
   if (requiredHours !== undefined) updates.requiredHours = requiredHours;
+  if (effectiveDate) updates.effectiveDate = effectiveDate;
 
   if (Object.keys(updates).length === 0) {
     throw new Error("No fields to update");

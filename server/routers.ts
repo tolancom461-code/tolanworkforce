@@ -2418,6 +2418,7 @@ export const appRouter = router({
         startTime: z.string().optional(),
         endTime: z.string().optional(),
         requiredHours: z.number().optional(),
+        effectiveDate: z.date().optional(),
       }))
       .mutation(async ({ input }) => {
         try {
@@ -2425,7 +2426,8 @@ export const appRouter = router({
             input.id,
             input.startTime,
             input.endTime,
-            input.requiredHours
+            input.requiredHours,
+            input.effectiveDate
           );
           return updated;
         } catch (error) {

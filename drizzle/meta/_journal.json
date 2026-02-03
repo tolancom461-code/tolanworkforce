@@ -134,6 +134,13 @@
       "when": 1769928013028,
       "tag": "0018_abandoned_newton_destine",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1770100073466,
+      "tag": "0019_high_magma",
+      "breakpoints": true
     }
   ]
 }
