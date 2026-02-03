@@ -2422,6 +2422,17 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         try {
+          // Check if payroll batch is locked for the effective date
+          if (input.effectiveDate) {
+            const isLocked = await db.isPayrollBatchLockedForDate(input.effectiveDate);
+            if (isLocked) {
+              throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'تم اعتماد دفعة الراتب لا يمكن التعديل',
+              });
+            }
+          }
+          
           const updated = await db.updateGroupSchedule(
             input.id,
             input.startTime,
@@ -2431,6 +2442,7 @@ export const appRouter = router({
           );
           return updated;
         } catch (error) {
+          if (error instanceof TRPCError) throw error;
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Failed to update group schedule',

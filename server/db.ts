@@ -4878,6 +4878,26 @@ export async function getGroupSchedules(groupId?: number) {
   return await db.select().from(groupSchedules);
 }
 
+export async function isPayrollBatchLockedForDate(date: Date): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  
+  // Check if there's an approved payroll batch that includes this date
+  const lockedBatch = await db
+    .select()
+    .from(payrollBatches)
+    .where(
+      and(
+        eq(payrollBatches.status, 'approved'),
+        lte(payrollBatches.periodStart, date),
+        gte(payrollBatches.periodEnd, date)
+      )
+    )
+    .limit(1);
+  
+  return lockedBatch.length > 0;
+}
+
 export async function updateGroupSchedule(
   id: number,
   startTime?: string,

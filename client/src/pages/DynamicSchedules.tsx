@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, AlertTriangle, CheckCircle, Clock, Save } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle, Clock, Save, Calendar, Lock } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 
@@ -21,6 +21,8 @@ interface ScheduleRow {
   requiredHours: number;
   isActive: boolean;
   isModified: boolean;
+  effectiveDate?: Date | null;
+  isLocked?: boolean;
 }
 
 const dayNames: { [key: number]: string } = {
@@ -37,6 +39,9 @@ export function DynamicSchedules() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modifiedSchedules, setModifiedSchedules] = useState<Map<number, any>>(new Map());
+  const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
+  const [effectiveDateOption, setEffectiveDateOption] = useState<'current' | 'next' | 'previous' | 'custom'>('current');
+  const [customDate, setCustomDate] = useState<string>('');
 
   // Fetch groups (DynamicSchedules page doesn't filter by cost center)
   const { data: groups, isLoading: groupsLoading } = trpc.groups.list.useQuery();
@@ -104,6 +109,43 @@ export function DynamicSchedules() {
     setModifiedSchedules(modified);
   };
 
+  // Get effective date based on option
+  const getEffectiveDate = (dayOfWeek: number): Date | null => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    
+    // Convert dayOfWeek (1-7, where 1=Saturday) to JS day (0-6, where 0=Sunday)
+    const targetDay = dayOfWeek === 7 ? 0 : dayOfWeek;
+    
+    let daysToAdd = 0;
+    
+    if (effectiveDateOption === 'current') {
+      // Get this week's occurrence of the day
+      daysToAdd = (targetDay - currentDay + 7) % 7;
+      if (daysToAdd === 0 && currentDay !== targetDay) daysToAdd = 0;
+    } else if (effectiveDateOption === 'next') {
+      // Get next week's occurrence
+      daysToAdd = (targetDay - currentDay + 7) % 7;
+      if (daysToAdd <= 0) daysToAdd += 7;
+    } else if (effectiveDateOption === 'previous') {
+      // Get last week's occurrence
+      daysToAdd = (targetDay - currentDay - 7 + 14) % 7;
+      if (daysToAdd >= 0) daysToAdd -= 7;
+    } else if (effectiveDateOption === 'custom' && customDate) {
+      return new Date(customDate);
+    }
+    
+    const result = new Date(today);
+    result.setDate(result.getDate() + daysToAdd);
+    return result;
+  };
+
+  // Check if payroll batch is locked for a date
+  const isDateLocked = (date: Date): boolean => {
+    // This will be checked via API call
+    return false; // Placeholder
+  };
+
   // Save all changes
   const handleSaveAll = async () => {
     if (modifiedSchedules.size === 0) {
@@ -124,16 +166,20 @@ export function DynamicSchedules() {
         const schedule = scheduleRows.find(s => s.id === scheduleId);
         if (!schedule) continue;
 
+        const effectiveDate = changes.effectiveDate || getEffectiveDate(schedule.dayOfWeek);
+        
         await updateMutation.mutateAsync({
           id: scheduleId,
           startTime: changes.startTime || schedule.startTime,
           endTime: changes.endTime || schedule.endTime,
           requiredHours: changes.requiredHours !== undefined ? changes.requiredHours : schedule.requiredHours,
+          effectiveDate: effectiveDate,
         });
       }
 
       toast.success(`تم حفظ ${modifiedSchedules.size} تغيير بنجاح`);
       setModifiedSchedules(new Map());
+      setEditingScheduleId(null);
       await refetchSchedules();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'حدث خطأ أثناء الحفظ';
@@ -173,6 +219,62 @@ export function DynamicSchedules() {
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {/* Effective Date Selection */}
+      {modifiedCount > 0 && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              متى تريد تطبيق هذا التغيير؟
+            </CardTitle>
+            <CardDescription>
+              اختر التاريخ الذي سيبدأ من
+ه تطبيق التعديلات على الورديات
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button
+                variant={effectiveDateOption === 'previous' ? 'default' : 'outline'}
+                onClick={() => setEffectiveDateOption('previous')}
+              >
+                الجمعة الماضية
+              </Button>
+              <Button
+                variant={effectiveDateOption === 'current' ? 'default' : 'outline'}
+                onClick={() => setEffectiveDateOption('current')}
+              >
+                الجمعة الحالية
+              </Button>
+              <Button
+                variant={effectiveDateOption === 'next' ? 'default' : 'outline'}
+                onClick={() => setEffectiveDateOption('next')}
+              >
+                الجمعة القادمة
+              </Button>
+              <Button
+                variant={effectiveDateOption === 'custom' ? 'default' : 'outline'}
+                onClick={() => setEffectiveDateOption('custom')}
+              >
+                تاريخ محدد
+              </Button>
+            </div>
+            
+            {effectiveDateOption === 'custom' && (
+              <div className="mt-4">
+                <Label>اختر التاريخ:</Label>
+                <Input
+                  type="date"
+                  value={customDate}
+                  onChange={(e) => setCustomDate(e.target.value)}
+                  className="mt-2"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Save Button */}
@@ -268,17 +370,28 @@ export function DynamicSchedules() {
                             {schedule.dayName}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Input
-                              type="time"
-                              value={
-                                modifiedSchedules.get(schedule.id)?.startTime || 
-                                schedule.startTime
-                              }
-                              onChange={(e) => 
-                                handleTimeChange(schedule.id, 'startTime', e.target.value)
-                              }
-                              className="w-32"
-                            />
+                            <div className="flex gap-2 items-center">
+                              <Input
+                                type="time"
+                                value={
+                                  modifiedSchedules.get(schedule.id)?.startTime || 
+                                  schedule.startTime
+                                }
+                                onChange={(e) => 
+                                  handleTimeChange(schedule.id, 'startTime', e.target.value)
+                                }
+                                className="w-32"
+                              />
+                              {editingScheduleId === schedule.id && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setEditingScheduleId(null)}
+                                >
+                                  ✓
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <Input
