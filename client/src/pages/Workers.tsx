@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { PERMISSIONS } from "../../../shared/permissions";
@@ -13,10 +12,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer, Download, Clock } from "lucide-react";
 import { ExcelImportExportDialog } from "@/components/ExcelImportExportDialog";
 import { exportToExcel, printPage } from '@/lib/exportUtils';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState, useEffect } from 'react';
 import WorkerRow from '@/components/WorkerRow';
 
 export default function Workers() {
@@ -47,13 +46,22 @@ export default function Workers() {
 
   const utils = trpc.useUtils();
   const groupId = filterGroup !== "all" ? parseInt(filterGroup) : undefined;
-  const { data: workersData, isLoading } = trpc.workers.listWithPagination.useQuery({
+  const { data: workersData, isLoading, refetch } = trpc.workers.listWithPagination.useQuery({
     page: currentPage,
     limit: pageSize,
     groupId,
   });
   // Get all groups (Workers page doesn't filter by cost center)
   const { data: groups } = trpc.groups.list.useQuery();
+  
+  // تحديث تلقائي كل 5 ثوان
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [refetch]);
   
   const workers = workersData?.data || [];
   const totalPages = workersData?.totalPages || 1;
@@ -181,7 +189,12 @@ export default function Workers() {
     exportWorkerQRMutation.mutate({ workerId });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
+    // منع الضغط المتكرر
+    if (createMutation.isPending || updateMutation.isPending) {
+      return;
+    }
+    
     if (selectedWorker) {
       updateMutation.mutate({
         id: selectedWorker.id,
@@ -196,7 +209,7 @@ export default function Workers() {
         jobId: formData.jobId || undefined,
       });
     }
-  };
+  }, [selectedWorker, formData, createMutation, updateMutation]);
 
   const getGroupName = (id: number | null) => {
     if (!id) return "-";

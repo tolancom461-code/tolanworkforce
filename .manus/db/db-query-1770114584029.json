@@ -1,0 +1,26 @@
+{
+  "query": "SELECT id, code, full_name, national_id, phone, group_id FROM workers WHERE full_name LIKE '%سارة%' OR phone = '0501234575' OR national_id = 'W205563456388';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, national_id, phone, group_id FROM workers WHERE full_name LIKE '%سارة%' OR phone = '0501234575' OR national_id = 'W205563456388';",
+  "rows": [
+    {
+      "id": "180009",
+      "code": "W20",
+      "full_name": "سارة الكتبي",
+      "national_id": "5563456388",
+      "phone": "0501234575",
+      "group_id": "960002"
+    },
+    {
+      "id": "180011",
+      "code": "W11",
+      "full_name": "سارة الخالدي",
+      "national_id": "5563456390",
+      "phone": "0501234577",
+      "group_id": "960002"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tnational_id\tphone\tgroup_id\n180009\tW20\tسارة الكتبي\t5563456388\t0501234575\t960002\n180011\tW11\tسارة الخالدي\t5563456390\t0501234577\t960002\n",
+  "stderr": "",
+  "execution_time_ms": 1496
+}

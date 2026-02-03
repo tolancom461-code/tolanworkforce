@@ -326,7 +326,40 @@ export async function createGroup(group: InsertGroup): Promise<number> {
   }
 
   const result = await db.insert(groups).values(group);
-  return result[0].insertId;
+  const groupId = result[0].insertId;
+  
+  // إنشاء وردية واحدة فقط لكل مجموعة
+  if (group.shiftStartTime && group.shiftEndTime) {
+    const shiftResult = await db.insert(groupShifts).values({
+      groupId,
+      shiftName: `${group.name} - الوردية الأساسية`,
+      startTime: group.shiftStartTime,
+      endTime: group.shiftEndTime,
+      isActive: group.isActive ?? true,
+    });
+    
+    const shiftId = shiftResult[0].insertId;
+    
+    // إنشاء 7 جداول ديناميكية (واحد لكل يوم من أيام الأسبوع)
+    const schedules: any[] = [];
+    for (let dayOfWeek = 1; dayOfWeek <= 7; dayOfWeek++) {
+      schedules.push({
+        groupId,
+        dayOfWeek,
+        startTime: group.shiftStartTime,
+        endTime: group.shiftEndTime,
+        requiredHours: calculateRequiredHours(group.shiftStartTime, group.shiftEndTime),
+        isActive: group.isActive ?? true,
+      });
+    }
+    
+    // إدراج الجداول الديناميكية
+    if (schedules.length > 0) {
+      await db.insert(groupSchedules).values(schedules as any);
+    }
+  }
+  
+  return groupId;
 }
 
 export async function updateGroup(id: number, data: Partial<InsertGroup>): Promise<void> {
@@ -525,7 +558,18 @@ export async function createWorker(worker: InsertWorker): Promise<number> {
     throw new Error(`الكود "${worker.code}" مسجل مسبقاً للعامل "${existingWorker.fullName}"`);
   }
 
-  const result = await db.insert(workers).values(worker);
+  // التحقق من أن حالة العامل ليست archived
+  if (worker.status === 'archived') {
+    throw new Error("لا يمكن إضافة عامل بحالة مؤرشفة");
+  }
+
+  // تعيين الحالة الافتراضية إذا لم تكن محددة
+  const workerWithStatus = {
+    ...worker,
+    status: worker.status || 'active'
+  };
+
+  const result = await db.insert(workers).values(workerWithStatus);
   return result[0].insertId;
 }
 

@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, code, full_name, status FROM workers WHERE code = 'W3';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, status FROM workers WHERE code = 'W3';",
+  "rows": [
+    {
+      "id": "180003",
+      "code": "W3",
+      "full_name": "فاطمة الجنوبي",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tstatus\n180003\tW3\tفاطمة الجنوبي\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1491
+}

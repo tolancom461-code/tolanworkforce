@@ -1,0 +1,402 @@
+{
+  "query": "SELECT id, group_id, day_of_week, start_time, end_time, required_hours FROM group_schedules WHERE group_id IN (SELECT id FROM `groups` WHERE name LIKE '%امن%' OR name LIKE '%security%') ORDER BY group_id, day_of_week;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, group_id, day_of_week, start_time, end_time, required_hours FROM group_schedules WHERE group_id IN (SELECT id FROM `groups` WHERE name LIKE '%امن%' OR name LIKE '%security%') ORDER BY group_id, day_of_week;",
+  "rows": [
+    {
+      "id": "90177",
+      "group_id": "960001",
+      "day_of_week": "1",
+      "start_time": "13:00",
+      "end_time": "22:00",
+      "required_hours": "9.00"
+    },
+    {
+      "id": "90170",
+      "group_id": "960001",
+      "day_of_week": "1",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90198",
+      "group_id": "960001",
+      "day_of_week": "1",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90184",
+      "group_id": "960001",
+      "day_of_week": "1",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90205",
+      "group_id": "960001",
+      "day_of_week": "1",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90212",
+      "group_id": "960001",
+      "day_of_week": "1",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90191",
+      "group_id": "960001",
+      "day_of_week": "1",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90206",
+      "group_id": "960001",
+      "day_of_week": "2",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90178",
+      "group_id": "960001",
+      "day_of_week": "2",
+      "start_time": "13:00",
+      "end_time": "22:00",
+      "required_hours": "9.00"
+    },
+    {
+      "id": "90192",
+      "group_id": "960001",
+      "day_of_week": "2",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90171",
+      "group_id": "960001",
+      "day_of_week": "2",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90213",
+      "group_id": "960001",
+      "day_of_week": "2",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90185",
+      "group_id": "960001",
+      "day_of_week": "2",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90199",
+      "group_id": "960001",
+      "day_of_week": "2",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90214",
+      "group_id": "960001",
+      "day_of_week": "3",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90200",
+      "group_id": "960001",
+      "day_of_week": "3",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90186",
+      "group_id": "960001",
+      "day_of_week": "3",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90172",
+      "group_id": "960001",
+      "day_of_week": "3",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90207",
+      "group_id": "960001",
+      "day_of_week": "3",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90193",
+      "group_id": "960001",
+      "day_of_week": "3",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90179",
+      "group_id": "960001",
+      "day_of_week": "3",
+      "start_time": "13:00",
+      "end_time": "22:00",
+      "required_hours": "9.00"
+    },
+    {
+      "id": "90194",
+      "group_id": "960001",
+      "day_of_week": "4",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90201",
+      "group_id": "960001",
+      "day_of_week": "4",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90180",
+      "group_id": "960001",
+      "day_of_week": "4",
+      "start_time": "13:00",
+      "end_time": "22:00",
+      "required_hours": "9.00"
+    },
+    {
+      "id": "90208",
+      "group_id": "960001",
+      "day_of_week": "4",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90187",
+      "group_id": "960001",
+      "day_of_week": "4",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90215",
+      "group_id": "960001",
+      "day_of_week": "4",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90173",
+      "group_id": "960001",
+      "day_of_week": "4",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90195",
+      "group_id": "960001",
+      "day_of_week": "5",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90174",
+      "group_id": "960001",
+      "day_of_week": "5",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90209",
+      "group_id": "960001",
+      "day_of_week": "5",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90181",
+      "group_id": "960001",
+      "day_of_week": "5",
+      "start_time": "13:00",
+      "end_time": "22:00",
+      "required_hours": "9.00"
+    },
+    {
+      "id": "90202",
+      "group_id": "960001",
+      "day_of_week": "5",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90188",
+      "group_id": "960001",
+      "day_of_week": "5",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90216",
+      "group_id": "960001",
+      "day_of_week": "5",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90210",
+      "group_id": "960001",
+      "day_of_week": "6",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90175",
+      "group_id": "960001",
+      "day_of_week": "6",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90217",
+      "group_id": "960001",
+      "day_of_week": "6",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90203",
+      "group_id": "960001",
+      "day_of_week": "6",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90182",
+      "group_id": "960001",
+      "day_of_week": "6",
+      "start_time": "13:00",
+      "end_time": "22:00",
+      "required_hours": "9.00"
+    },
+    {
+      "id": "90189",
+      "group_id": "960001",
+      "day_of_week": "6",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90196",
+      "group_id": "960001",
+      "day_of_week": "6",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90204",
+      "group_id": "960001",
+      "day_of_week": "7",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90183",
+      "group_id": "960001",
+      "day_of_week": "7",
+      "start_time": "13:00",
+      "end_time": "22:00",
+      "required_hours": "9.00"
+    },
+    {
+      "id": "90197",
+      "group_id": "960001",
+      "day_of_week": "7",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90211",
+      "group_id": "960001",
+      "day_of_week": "7",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90190",
+      "group_id": "960001",
+      "day_of_week": "7",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90176",
+      "group_id": "960001",
+      "day_of_week": "7",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "90218",
+      "group_id": "960001",
+      "day_of_week": "7",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tgroup_id\tday_of_week\tstart_time\tend_time\trequired_hours\n90177\t960001\t1\t13:00\t22:00\t9.00\n90170\t960001\t1\t08:00\t16:00\t8.00\n90198\t960001\t1\t08:00\t16:00\t8.00\n90184\t960001\t1\t08:00\t16:00\t8.00\n90205\t960001\t1\t08:00\t16:00\t8.00\n90212\t960001\t1\t08:00\t16:00\t8.00\n90191\t960001\t1\t08:00\t16:00\t8.00\n90206\t960001\t2\t08:00\t16:00\t8.00\n90178\t960001\t2\t13:00\t22:00\t9.00\n90192\t960001\t2\t08:00\t16:00\t8.00\n90171\t960001\t2\t08:00\t16:00\t8.00\n90213\t960001\t2\t08:00\t16:00\t8.00\n90185\t960001\t2\t08:00\t16:00\t8.00\n90199\t960001\t2\t08:00\t16:00\t8.00\n90214\t960001\t3\t08:00\t16:00\t8.00\n90200\t960001\t3\t08:00\t16:00\t8.00\n90186\t960001\t3\t08:00\t16:00\t8.00\n90172\t960001\t3\t08:00\t16:00\t8.00\n90207\t960001\t3\t08:00\t16:00\t8.00\n90193\t960001\t3\t08:00\t16:00\t8.00\n90179\t960001\t3\t13:00\t22:00\t9.00\n90194\t960001\t4\t08:00\t16:00\t8.00\n90201\t960001\t4\t08:00\t16:00\t8.00\n90180\t960001\t4\t13:00\t22:00\t9.00\n90208\t960001\t4\t08:00\t16:00\t8.00\n90187\t960001\t4\t08:00\t16:00\t8.00\n90215\t960001\t4\t08:00\t16:00\t8.00\n90173\t960001\t4\t08:00\t16:00\t8.00\n90195\t960001\t5\t08:00\t16:00\t8.00\n90174\t960001\t5\t08:00\t16:00\t8.00\n90209\t960001\t5\t08:00\t16:00\t8.00\n90181\t960001\t5\t13:00\t22:00\t9.00\n90202\t960001\t5\t08:00\t16:00\t8.00\n90188\t960001\t5\t08:00\t16:00\t8.00\n90216\t960001\t5\t08:00\t16:00\t8.00\n90210\t960001\t6\t08:00\t16:00\t8.00\n90175\t960001\t6\t08:00\t16:00\t8.00\n90217\t960001\t6\t08:00\t16:00\t8.00\n90203\t960001\t6\t08:00\t16:00\t8.00\n90182\t960001\t6\t13:00\t22:00\t9.00\n90189\t960001\t6\t08:00\t16:00\t8.00\n90196\t960001\t6\t08:00\t16:00\t8.00\n90204\t960001\t7\t08:00\t16:00\t8.00\n90183\t960001\t7\t13:00\t22:00\t9.00\n90197\t960001\t7\t08:00\t16:00\t8.00\n90211\t960001\t7\t08:00\t16:00\t8.00\n90190\t960001\t7\t08:00\t16:00\t8.00\n90176\t960001\t7\t08:00\t16:00\t8.00\n90218\t960001\t7\t08:00\t16:00\t8.00\n",
+  "stderr": "",
+  "execution_time_ms": 1702
+}
