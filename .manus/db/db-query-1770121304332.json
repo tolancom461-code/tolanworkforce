@@ -1,0 +1,28 @@
+{
+  "query": "SELECT * FROM workers WHERE code = 'W11';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT * FROM workers WHERE code = 'W11';",
+  "rows": [
+    {
+      "id": "210031",
+      "code": "W11",
+      "full_name": "نور الخالدي",
+      "national_id": "5563456402",
+      "phone": "0501234589",
+      "group_id": "960002",
+      "job_id": "1",
+      "daily_rate": "0.00",
+      "photo_url": "NULL",
+      "qr_token": "NULL",
+      "manual_code": "NULL",
+      "status": "active",
+      "last_attendance_at": "NULL",
+      "hire_date": "2026-01-01",
+      "created_at": "2026-02-03 12:13:25",
+      "updated_at": "2026-02-03 12:13:25"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tnational_id\tphone\tgroup_id\tjob_id\tdaily_rate\tphoto_url\tqr_token\tmanual_code\tstatus\tlast_attendance_at\thire_date\tcreated_at\tupdated_at\n210031\tW11\tنور الخالدي\t5563456402\t0501234589\t960002\t1\t0.00\tNULL\tNULL\tNULL\tactive\tNULL\t2026-01-01\t2026-02-03 12:13:25\t2026-02-03 12:13:25\n",
+  "stderr": "",
+  "execution_time_ms": 1565
+}

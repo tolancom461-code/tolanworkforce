@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, code, full_name, group_id FROM workers WHERE code = 'W11';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, group_id FROM workers WHERE code = 'W11';",
+  "rows": [
+    {
+      "id": "210031",
+      "code": "W11",
+      "full_name": "نور الخالدي",
+      "group_id": "960002"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tgroup_id\n210031\tW11\tنور الخالدي\t960002\n",
+  "stderr": "",
+  "execution_time_ms": 1517
+}

@@ -1,0 +1,8 @@
+{
+  "query": "SELECT w.id, w.code, w.full_name, w.group_id, w.status, g.name as group_name FROM workers w LEFT JOIN groups g ON w.group_id = g.id WHERE w.code = 'W11';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT w.id, w.code, w.full_name, w.group_id, w.status, g.name as group_name FROM workers w LEFT JOIN groups g ON w.group_id = g.id WHERE w.code = 'W11';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 108 near \"groups g ON w.group_id = g.id WHERE w.code = 'W11'\""
+  ]
+}
