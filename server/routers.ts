@@ -2498,15 +2498,18 @@ export const appRouter = router({
           const buffer = Buffer.from(input.fileData, 'base64');
           const { data, errors } = await parseGroupsFromExcel(buffer);
 
+          const results: any[] = [];
+          
           if (errors.length > 0) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `خطأ في البيانات: ${errors.map(e => `صف ${e.row}: ${e.message}`).join(', ')}`,
+            errors.forEach(err => {
+              results.push({
+                success: false,
+                name: `صف ${err.row}`,
+                error: err.message
+              });
             });
           }
 
-          // Insert groups
-          const results = [];
           for (const group of data) {
             try {
               const id = await db.createGroup(group as any);
@@ -2514,6 +2517,13 @@ export const appRouter = router({
             } catch (error: any) {
               results.push({ success: false, name: group.name, error: error.message });
             }
+          }
+
+          if (data.length === 0 && errors.length > 0) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `خطأ في البيانات: ${errors.map(e => `صف ${e.row}: ${e.message}`).join(', ')}`,
+            });
           }
 
           return {
@@ -2540,15 +2550,18 @@ export const appRouter = router({
           const buffer = Buffer.from(input.fileData, 'base64');
           const { data, errors } = await parseWorkersFromExcel(buffer);
 
+          const results: any[] = [];
+          
           if (errors.length > 0) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `خطأ في البيانات: ${errors.map(e => `صف ${e.row}: ${e.message}`).join(', ')}`,
+            errors.forEach(err => {
+              results.push({
+                success: false,
+                name: `صف ${err.row}`,
+                error: err.message
+              });
             });
           }
 
-          // Insert workers
-          const results = [];
           for (const worker of data) {
             try {
               const id = await db.createWorkerFromImportData(worker);
@@ -2556,6 +2569,13 @@ export const appRouter = router({
             } catch (error: any) {
               results.push({ success: false, name: worker.fullName, error: error.message });
             }
+          }
+
+          if (data.length === 0 && errors.length > 0) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `خطأ في البيانات: ${errors.map(e => `صف ${e.row}: ${e.message}`).join(', ')}`,
+            });
           }
 
           return {
