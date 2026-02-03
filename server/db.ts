@@ -1,4 +1,4 @@
-import { eq, desc, asc, and, or, like, gte, lt, lte, sql, count } from "drizzle-orm";
+import { eq, desc, and, or, like, gte, lt, lte, sql, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   users, InsertUser, User,
@@ -4857,7 +4857,7 @@ export async function getWorkersWithPagination(
   const total = countResult[0]?.count || 0;
 
   // Get paginated data
-  let query: any = db.select().from(workers).orderBy(asc(workers.code));
+  let query: any = db.select().from(workers).orderBy(desc(workers.createdAt));
   if (groupId) {
     query = query.where(eq(workers.groupId, groupId));
   }
