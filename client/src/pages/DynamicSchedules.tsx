@@ -143,11 +143,15 @@ export function DynamicSchedules() {
         const effectiveDate = getEffectiveDate(schedule.dayOfWeek);
         
         try {
+          // ✅ تحويل requiredHours إلى number دائماً
+          const requiredHoursValue = changes.requiredHours !== undefined ? changes.requiredHours : schedule.requiredHours;
+          const requiredHoursNumber = typeof requiredHoursValue === 'string' ? parseFloat(requiredHoursValue) : requiredHoursValue;
+          
           await updateMutation.mutateAsync({
             id: scheduleId,
             startTime: changes.startTime || schedule.startTime,
             endTime: changes.endTime || schedule.endTime,
-            requiredHours: changes.requiredHours !== undefined ? changes.requiredHours : schedule.requiredHours,
+            requiredHours: isNaN(requiredHoursNumber) ? 0 : requiredHoursNumber,
             effectiveDate: effectiveDate || undefined,
           });
         } catch (err: any) {

@@ -1,0 +1,90 @@
+{
+  "query": "SELECT id, group_id, day_of_week, start_time, end_time, required_hours FROM group_schedules ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, group_id, day_of_week, start_time, end_time, required_hours FROM group_schedules ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "60008",
+      "group_id": "900011",
+      "day_of_week": "7",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "60007",
+      "group_id": "900011",
+      "day_of_week": "6",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "60006",
+      "group_id": "900011",
+      "day_of_week": "5",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "60005",
+      "group_id": "900011",
+      "day_of_week": "4",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "60004",
+      "group_id": "900011",
+      "day_of_week": "3",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "60003",
+      "group_id": "900011",
+      "day_of_week": "2",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "60002",
+      "group_id": "900011",
+      "day_of_week": "1",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "30008",
+      "group_id": "870032",
+      "day_of_week": "7",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "30007",
+      "group_id": "870032",
+      "day_of_week": "6",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    },
+    {
+      "id": "30006",
+      "group_id": "870032",
+      "day_of_week": "5",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "required_hours": "8.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tgroup_id\tday_of_week\tstart_time\tend_time\trequired_hours\n60008\t900011\t7\t08:00\t16:00\t8.00\n60007\t900011\t6\t08:00\t16:00\t8.00\n60006\t900011\t5\t08:00\t16:00\t8.00\n60005\t900011\t4\t08:00\t16:00\t8.00\n60004\t900011\t3\t08:00\t16:00\t8.00\n60003\t900011\t2\t08:00\t16:00\t8.00\n60002\t900011\t1\t08:00\t16:00\t8.00\n30008\t870032\t7\t08:00\t16:00\t8.00\n30007\t870032\t6\t08:00\t16:00\t8.00\n30006\t870032\t5\t08:00\t16:00\t8.00\n",
+  "stderr": "",
+  "execution_time_ms": 1602
+}

@@ -1,0 +1,9 @@
+{
+  "query": "SELECT id, group_id, day_of_week, start_time, end_time, required_hours, effective_date FROM group_schedules WHERE day_of_week = 0 LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, group_id, day_of_week, start_time, end_time, required_hours, effective_date FROM group_schedules WHERE day_of_week = 0 LIMIT 5;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1611
+}
