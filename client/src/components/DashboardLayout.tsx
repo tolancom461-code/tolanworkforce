@@ -90,6 +90,7 @@ const menuSections = [
     items: [
       { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },
       { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log" },
+      { icon: ClipboardCheck, label: "إدارة الحضور اليومي", path: "/attendance/daily" },
       { icon: FileText, label: "تقارير الحضور", path: "/attendance/reports" },
       { icon: Clock, label: "أيام العمل", path: "/work-days" },
     ]
