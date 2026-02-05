@@ -167,6 +167,70 @@ export const appRouter = router({
     count: publicProcedure.query(async () => {
       return await getWorkersCount();
     }),
+
+    /**
+     * Create a new worker
+     */
+    create: publicProcedure
+      .input(z.object({
+        code: z.string(),
+        fullName: z.string(),
+        nationalId: z.string().optional(),
+        phone: z.string().optional(),
+        groupId: z.number().optional(),
+        jobId: z.number().optional(),
+        dailyRate: z.number().optional(),
+        photoUrl: z.string().optional(),
+        hireDate: z.string().optional(),
+        status: z.enum(['active', 'inactive', 'archived']).default('active'),
+      }))
+      .mutation(async ({ input }) => {
+        // Placeholder for create logic
+        return { success: true, id: 'new-id' };
+      }),
+
+    /**
+     * Update a worker
+     */
+    update: publicProcedure
+      .input(z.object({
+        id: z.string(),
+        code: z.string().optional(),
+        fullName: z.string().optional(),
+        nationalId: z.string().optional(),
+        phone: z.string().optional(),
+        groupId: z.number().optional(),
+        jobId: z.number().optional(),
+        dailyRate: z.number().optional(),
+        photoUrl: z.string().optional(),
+        hireDate: z.string().optional(),
+        status: z.enum(['active', 'inactive', 'archived']).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        // Placeholder for update logic
+        return { success: true };
+      }),
+
+    /**
+     * Delete a worker
+     */
+    delete: publicProcedure
+      .input(z.object({ id: z.string() }))
+      .mutation(async ({ input }) => {
+        // Placeholder for delete logic
+        return { success: true };
+      }),
+  }),
+
+  // Groups Router
+  groups: router({
+    /**
+     * Get all groups
+     */
+    list: publicProcedure.query(async () => {
+      // Placeholder for groups list
+      return [];
+    }),
   }),
 
   // Attendance Router
@@ -207,7 +271,7 @@ export const appRouter = router({
         todayAttendance: 0,
       };
     }),
-  }),
+  })
 });
 
 export type AppRouter = typeof appRouter;

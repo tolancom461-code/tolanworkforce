@@ -13,15 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer } from "lucide-react";
-// import { exportToExcel, printPage } from '@/lib/exportUtils';
-// Placeholder functions - will be implemented
-const exportToExcel = (data: any[], filename: string, sheetName: string) => {
-  console.log('Export to Excel:', filename);
-};
-const printPage = (elementId: string) => {
-  const element = document.getElementById(elementId);
-  if (element) window.print();
-};
+import { exportToExcel, printPage } from '@/lib/exportUtils';
 
 export default function Workers() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -119,15 +111,15 @@ export default function Workers() {
   const handleEdit = (worker: any) => {
     setSelectedWorker(worker);
     setFormData({
-      code: worker.code || '',
-      fullName: worker.full_name || worker.full_name || worker.fullName || '',
-      nationalId: (worker.national_id || worker.national_id || worker.nationalId) || "",
+      code: worker.code,
+      fullName: worker.fullName,
+      nationalId: worker.nationalId || "",
       phone: worker.phone || "",
-      groupId: worker.group_id || worker.group_id || worker.groupId,
-      jobId: worker.job_id || worker.jobId,
-      dailyRate: (worker.daily_rate || worker.daily_rate || worker.dailyRate) || "",
-      photoUrl: (worker.photo_url || worker.photo_url || worker.photoUrl) || "",
-      hireDate: (worker.hire_date || worker.hire_date || worker.hireDate) ? new Date(worker.hire_date || worker.hire_date || worker.hireDate).toISOString().split('T')[0] : "",
+      groupId: worker.groupId,
+      jobId: worker.jobId,
+      dailyRate: worker.dailyRate || "",
+      photoUrl: worker.photoUrl || "",
+      hireDate: worker.hireDate ? new Date(worker.hireDate).toISOString().split('T')[0] : "",
       status: worker.status || "active",
     });
     setIsEditDialogOpen(true);
@@ -162,7 +154,7 @@ export default function Workers() {
 
   const getGroupName = (id: number | null) => {
     if (!id) return "-";
-    const group = groups?.find((g: any) => g.id === id);
+    const group = groups?.find((g) => g.id === id);
     return group?.name || "-";
   };
 
@@ -179,7 +171,8 @@ export default function Workers() {
     }
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return "--";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -188,17 +181,19 @@ export default function Workers() {
       .slice(0, 2);
   };
 
-  const filteredWorkers = workers?.filter((worker: any) => {
-    const matchesSearch =
-      (worker.full_name || worker.full_name || worker.fullName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (worker.code || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ((worker.national_id || worker.national_id || worker.nationalId) && (worker.national_id || worker.national_id || worker.nationalId).includes(searchQuery));
+  const filteredWorkers = workers?.filter((worker) => {
+    if (!worker || !worker.full_name) return false;
     
-    const matchesGroup = filterGroup === "all" || (worker.group_id || worker.group_id || worker.groupId)?.toString() === filterGroup;
+    const matchesSearch =
+      (worker.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (worker.code || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (worker.national_id && worker.national_id.includes(searchQuery));
+    
+    const matchesGroup = filterGroup === "all" || (worker.group_id?.toString() === filterGroup);
     const matchesStatus = filterStatus === "all" || worker.status === filterStatus;
     
     return matchesSearch && matchesGroup && matchesStatus;
-  });
+  })
 
   // Export handlers
   const handleExportToExcel = () => {
@@ -207,16 +202,16 @@ export default function Workers() {
       return;
     }
 
-    const exportData = filteredWorkers.map((worker: any) => {
-      const groupName = groups?.find((g: any) => g.id === (worker.group_id || worker.group_id || worker.groupId))?.name || '-';
+    const exportData = filteredWorkers.map(worker => {
+      const groupName = groups?.find(g => g.id === worker.groupId)?.name || '-';
       return {
-        'كود العامل': worker.code || '-',
-        'الاسم الكامل': worker.full_name || worker.full_name || worker.fullName || '-',
-        'رقم الهوية': (worker.national_id || worker.national_id || worker.nationalId) || '-',
+        'كود العامل': worker.code,
+        'الاسم الكامل': worker.fullName,
+        'رقم الهوية': worker.nationalId || '-',
         'رقم الجوال': worker.phone || '-',
         'المجموعة': groupName,
-        'الأجر اليومي': (worker.daily_rate || worker.daily_rate || worker.dailyRate) || '-',
-        'تاريخ التوظيف': (worker.hire_date || worker.hire_date || worker.hireDate) ? new Date(worker.hire_date || worker.hire_date || worker.hireDate).toLocaleDateString('ar-SA') : '-',
+        'الأجر اليومي': worker.dailyRate || '-',
+        'تاريخ التوظيف': worker.hireDate ? new Date(worker.hireDate).toLocaleDateString('ar-SA') : '-',
         'الحالة': worker.status === 'active' ? 'نشط' : worker.status === 'inactive' ? 'غير نشط' : 'مؤرشف',
       };
     });
@@ -312,7 +307,7 @@ export default function Workers() {
                         <SelectValue placeholder="اختر المجموعة" />
                       </SelectTrigger>
                       <SelectContent>
-                        {groups?.map((group: any) => (
+                        {groups?.map((group) => (
                           <SelectItem key={group.id} value={group.id.toString()}>
                             {group.name}
                           </SelectItem>
@@ -460,21 +455,21 @@ export default function Workers() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={worker.photo_url || worker.photoUrl || undefined} />
+                            <AvatarImage src={worker.photoUrl || undefined} />
                             <AvatarFallback className="bg-primary/10 text-primary">
-                              {getInitials(worker.full_name || worker.fullName)}
+                              {getInitials(worker.fullName)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{worker.full_name || worker.fullName}</div>
+                            <div className="font-medium">{worker.fullName}</div>
                             <div className="text-sm text-muted-foreground">{worker.phone || "-"}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="font-mono">{worker.code}</TableCell>
-                      <TableCell>{(worker.national_id || worker.national_id || worker.nationalId) || "-"}</TableCell>
-                      <TableCell>{getGroupName(worker.group_id || worker.group_id || worker.groupId)}</TableCell>
-                      <TableCell>{(worker.daily_rate || worker.daily_rate || worker.dailyRate) || "-"}</TableCell>
+                      <TableCell>{worker.nationalId || "-"}</TableCell>
+                      <TableCell>{getGroupName(worker.groupId)}</TableCell>
+                      <TableCell>{worker.dailyRate || "-"}</TableCell>
                       <TableCell>{getStatusBadge(worker.status || "active")}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -511,7 +506,8 @@ export default function Workers() {
                             <AlertDialogContent dir="rtl">
                               <AlertDialogHeader>
                                 <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                                <AlertDialogDescription>                                  هل أنت متأكد من حذف العامل "{worker.full_name || worker.full_name || worker.fullName}"?؟
+                                <AlertDialogDescription>
+                                  هل أنت متأكد من حذف العامل "{worker.fullName}"؟
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -597,7 +593,7 @@ export default function Workers() {
                       <SelectValue placeholder="اختر المجموعة" />
                     </SelectTrigger>
                     <SelectContent>
-                      {groups?.map((group: any) => (
+                      {groups?.map((group) => (
                         <SelectItem key={group.id} value={group.id.toString()}>
                           {group.name}
                         </SelectItem>
