@@ -24,19 +24,6 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react')) return 'vendor-react';
-            if (id.includes('radix-ui')) return 'vendor-ui';
-            if (id.includes('trpc')) return 'vendor-trpc';
-            return 'vendor';
-          }
-        }
-      }
-    },
-    chunkSizeWarningLimit: 1000,
   },
   server: {
     host: true,

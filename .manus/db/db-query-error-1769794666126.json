@@ -1,8 +1,0 @@
-{
-  "query": "\n-- حذف بيانات الحضور والانصراف أولاً (لأنها تعتمد على العمال)\nDELETE FROM attendance_events;\n\n-- حذف بيانات التمويل اليومي للعمال\nDELETE FROM worker_daily_finance;\n\n-- حذف بيانات العمال\nDELETE FROM workers;\n\n-- حذف بيانات الشفتات (المناوبات)\nDELETE FROM group_shifts;\n\n-- حذف بيانات المجموعات\nDELETE FROM groups;\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- حذف بيانات الحضور والانصراف أولاً (لأنها تعتمد على العمال)\nDELETE FROM attendance_events;\n\n-- حذف بيانات التمويل اليومي للعمال\nDELETE FROM worker_daily_finance;\n\n-- حذف بيانات العمال\nDELETE FROM workers;\n\n-- حذف بيانات الشفتات (المناوبات)\nDELETE FROM group_shifts;\n\n-- حذف بيانات المجموعات\nDELETE FROM groups;\n",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1064 (42000) at line 15: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 18 near \"groups\""
-  ]
-}

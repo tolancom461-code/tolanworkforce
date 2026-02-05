@@ -1,1 +1,0 @@
-ALTER TABLE `worker_daily_finance` ADD `locked_batch_id` int;

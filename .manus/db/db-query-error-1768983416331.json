@@ -1,8 +1,0 @@
-{
-  "query": "SELECT u.id, u.username, u.fullName, u.role_id, r.name as roleName, r.code as roleCode, r.level\nFROM users u\nLEFT JOIN roles r ON u.role_id = r.id\nWHERE u.username = 'RADMAN';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT u.id, u.username, u.fullName, u.role_id, r.name as roleName, r.code as roleCode, r.level\nFROM users u\nLEFT JOIN roles r ON u.role_id = r.id\nWHERE u.username = 'RADMAN';",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'u.fullname' in 'field list'"
-  ]
-}

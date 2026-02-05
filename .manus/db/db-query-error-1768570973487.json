@@ -1,8 +1,0 @@
-{
-  "query": "SELECT id, batch_code, status, period_start, period_end, total_amount, worker_count FROM payroll_batches ORDER BY id;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, batch_code, status, period_start, period_end, total_amount, worker_count FROM payroll_batches ORDER BY id;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'worker_count' in 'field list'"
-  ]
-}

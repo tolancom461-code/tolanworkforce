@@ -1,8 +1,0 @@
-{
-  "query": "\n-- فحص هيكل جدول المجموعات\nDESC groups;\n\n-- عرض جميع المجموعات المحفوظة\nSELECT id, code, name, dailyWage, workMinutes, latePenaltyRate, earlyLeavePenaltyRate, shiftStartTime, shiftEndTime, isActive, createdAt, updatedAt \nFROM groups \nLIMIT 10;\n\n-- عدد المجموعات الكلي\nSELECT COUNT(*) as total_groups FROM groups;\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- فحص هيكل جدول المجموعات\nDESC groups;\n\n-- عرض جميع المجموعات المحفوظة\nSELECT id, code, name, dailyWage, workMinutes, latePenaltyRate, earlyLeavePenaltyRate, shiftStartTime, shiftEndTime, isActive, createdAt, updatedAt \nFROM groups \nLIMIT 10;\n\n-- عدد المجموعات الكلي\nSELECT COUNT(*) as total_groups FROM groups;\n",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1064 (42000) at line 3: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 11 near \"groups\""
-  ]
-}

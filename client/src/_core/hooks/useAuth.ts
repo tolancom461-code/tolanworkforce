@@ -16,7 +16,6 @@ export function useAuth(options?: UseAuthOptions) {
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
-    refetchInterval: 30000, // Check every 30 seconds
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -76,20 +75,6 @@ export function useAuth(options?: UseAuthOptions) {
     meQuery.isLoading,
     state.user,
   ]);
-
-  // Auto logout if user becomes null (deactivated or deleted)
-  useEffect(() => {
-    if (meQuery.isLoading) return;
-    if (meQuery.data === null && !meQuery.isLoading && meQuery.isFetched) {
-      // User was authenticated but now returns null - force logout
-      const wasAuthenticated = localStorage.getItem('manus-runtime-user-info');
-      if (wasAuthenticated && wasAuthenticated !== 'null') {
-        logout().then(() => {
-          window.location.href = getLoginUrl();
-        });
-      }
-    }
-  }, [meQuery.data, meQuery.isLoading, meQuery.isFetched, logout]);
 
   return {
     ...state,

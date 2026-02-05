@@ -1,8 +1,0 @@
-{
-  "query": "DELETE FROM attendance_events; DELETE FROM worker_daily_finance; DELETE FROM workers; DELETE FROM group_shifts; DELETE FROM groups;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute DELETE FROM attendance_events; DELETE FROM worker_daily_finance; DELETE FROM workers; DELETE FROM group_shifts; DELETE FROM groups;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 18 near \"groups\""
-  ]
-}
