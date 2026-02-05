@@ -16,7 +16,9 @@ import {
   groupSchedules,
   workerDeductions,
   workerBonuses,
+  users,
 } from "../drizzle/schema";
+import { getDb } from "./db";
 import { notifyOwner } from "./notification";
 import { invokeLLM } from "./_core/llm";
 import { calculateDailyFinanceFromAttendance } from "./attendance-to-finance";
@@ -652,6 +654,60 @@ export const router = t.router({
       // Logout logic handled by middleware
       return { success: true };
     }),
+
+    localLogin: t.procedure
+      .input(
+        z.object({
+          username: z.string(),
+          password: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const database = await getDb();
+        if (!database) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+        }
+
+        const user = await database
+          .select()
+          .from(users)
+          .where(eq(users.username, input.username))
+          .limit(1);
+
+        if (!user || user.length === 0) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "اسم المستخدم أو كلمة السر غير صحيحة",
+          });
+        }
+
+        const foundUser = user[0];
+
+        if (foundUser.passwordHash !== input.password) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "اسم المستخدم أو كلمة السر غير صحيحة",
+          });
+        }
+
+        await database
+          .update(users)
+          .set({ lastSignedIn: new Date() })
+          .where(eq(users.id, foundUser.id));
+
+        return {
+          success: true,
+          user: {
+            id: foundUser.id,
+            username: foundUser.username,
+            fullName: foundUser.fullName,
+            role: foundUser.role,
+          },
+        };
+      }),
   }),
 });
 
