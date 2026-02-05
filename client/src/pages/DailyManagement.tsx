@@ -45,6 +45,16 @@ export default function DailyManagement() {
   );
 
   // Mutations
+  const calculateFinanceMutation = trpc.attendance.calculateDailyFinance.useMutation({
+    onSuccess: (result: any) => {
+      toast.success(`تم حساب البيانات المالية: ${result.processed} عامل معالج`);
+      refetch();
+    },
+    onError: (error: any) => {
+      toast.error(`فشل الحساب: ${error.message}`);
+    },
+  });
+
   const updateRecordMutation = trpc.attendance.updateDailyRecord.useMutation({
     onSuccess: () => {
       toast.success("تم تحديث السجل بنجاح");
@@ -70,6 +80,10 @@ export default function DailyManagement() {
       notes: record.notes || "",
     });
     setIsEditDialogOpen(true);
+  };
+
+  const handleCalculateDailyFinance = () => {
+    calculateFinanceMutation.mutate({ date: selectedDate });
   };
 
   const handleSaveEdit = () => {
@@ -111,6 +125,13 @@ export default function DailyManagement() {
         </div>
         <Button variant="outline" onClick={() => navigate("/attendance/log")}>
           العودة
+        </Button>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <Button onClick={() => handleCalculateDailyFinance()} className="w-full">
+          حساب البيانات المالية ليوم اليوم
         </Button>
       </div>
 

@@ -962,6 +962,17 @@ export const appRouter = router({
         return await db.getDailyAttendanceRecords(input.date);
       }),
 
+    // Calculate daily finance from attendance
+    calculateDailyFinance: protectedProcedure
+      .input(z.object({
+        date: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const { calculateDailyFinanceFromAttendance } = await import("./attendance-to-finance");
+        return await calculateDailyFinanceFromAttendance(input.date);
+      }),
+
     // Update a daily attendance record
     updateDailyRecord: protectedProcedure
       .input(z.object({

@@ -1,0 +1,230 @@
+{
+  "query": "SELECT * FROM attendance_events WHERE DATE(event_time) = '2026-02-03' LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT * FROM attendance_events WHERE DATE(event_time) = '2026-02-03' LIMIT 20;",
+  "rows": [
+    {
+      "id": "210001",
+      "worker_id": "210021",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:47:33",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:47:33"
+    },
+    {
+      "id": "210002",
+      "worker_id": "210022",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:47:40",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:47:39"
+    },
+    {
+      "id": "210003",
+      "worker_id": "210023",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:47:46",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:47:45"
+    },
+    {
+      "id": "210004",
+      "worker_id": "210024",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:47:51",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:47:51"
+    },
+    {
+      "id": "210005",
+      "worker_id": "210025",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:47:57",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:47:56"
+    },
+    {
+      "id": "210006",
+      "worker_id": "210026",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:01",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:01"
+    },
+    {
+      "id": "210007",
+      "worker_id": "210027",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:06",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:05"
+    },
+    {
+      "id": "210008",
+      "worker_id": "210028",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:11",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:11"
+    },
+    {
+      "id": "210009",
+      "worker_id": "210029",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:16",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:16"
+    },
+    {
+      "id": "210010",
+      "worker_id": "210030",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:22",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:22"
+    },
+    {
+      "id": "210011",
+      "worker_id": "210031",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:30",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:30"
+    },
+    {
+      "id": "210012",
+      "worker_id": "210032",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:36",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:35"
+    },
+    {
+      "id": "210013",
+      "worker_id": "210033",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:41",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:40"
+    },
+    {
+      "id": "210014",
+      "worker_id": "210034",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:46",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:46"
+    },
+    {
+      "id": "210015",
+      "worker_id": "210035",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:48:52",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:48:51"
+    },
+    {
+      "id": "210016",
+      "worker_id": "210037",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:50:59",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:50:58"
+    },
+    {
+      "id": "210017",
+      "worker_id": "210036",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:51:15",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:51:15"
+    },
+    {
+      "id": "210018",
+      "worker_id": "210039",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:51:40",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:51:40"
+    },
+    {
+      "id": "210019",
+      "worker_id": "210038",
+      "event_type": "check_in",
+      "event_time": "2026-02-03 12:51:51",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 12:51:51"
+    },
+    {
+      "id": "240001",
+      "worker_id": "210030",
+      "event_type": "check_out",
+      "event_time": "2026-02-03 13:30:26",
+      "device_id": "NULL",
+      "verified_by": "1320001",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-03 13:30:26"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tevent_type\tevent_time\tdevice_id\tverified_by\tmethod\tnote\tcreated_at\n210001\t210021\tcheck_in\t2026-02-03 12:47:33\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:47:33\n210002\t210022\tcheck_in\t2026-02-03 12:47:40\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:47:39\n210003\t210023\tcheck_in\t2026-02-03 12:47:46\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:47:45\n210004\t210024\tcheck_in\t2026-02-03 12:47:51\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:47:51\n210005\t210025\tcheck_in\t2026-02-03 12:47:57\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:47:56\n210006\t210026\tcheck_in\t2026-02-03 12:48:01\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:01\n210007\t210027\tcheck_in\t2026-02-03 12:48:06\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:05\n210008\t210028\tcheck_in\t2026-02-03 12:48:11\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:11\n210009\t210029\tcheck_in\t2026-02-03 12:48:16\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:16\n210010\t210030\tcheck_in\t2026-02-03 12:48:22\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:22\n210011\t210031\tcheck_in\t2026-02-03 12:48:30\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:30\n210012\t210032\tcheck_in\t2026-02-03 12:48:36\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:35\n210013\t210033\tcheck_in\t2026-02-03 12:48:41\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:40\n210014\t210034\tcheck_in\t2026-02-03 12:48:46\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:46\n210015\t210035\tcheck_in\t2026-02-03 12:48:52\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:48:51\n210016\t210037\tcheck_in\t2026-02-03 12:50:59\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:50:58\n210017\t210036\tcheck_in\t2026-02-03 12:51:15\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:51:15\n210018\t210039\tcheck_in\t2026-02-03 12:51:40\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:51:40\n210019\t210038\tcheck_in\t2026-02-03 12:51:51\tNULL\t1320001\tqr\tNULL\t2026-02-03 12:51:51\n240001\t210030\tcheck_out\t2026-02-03 13:30:26\tNULL\t1320001\tqr\tNULL\t2026-02-03 13:30:26\n",
+  "stderr": "",
+  "execution_time_ms": 1746
+}
