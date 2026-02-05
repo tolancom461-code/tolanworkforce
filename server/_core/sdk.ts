@@ -286,14 +286,14 @@ class SDKServer {
         const { id, username } = payload as Record<string, unknown>;
 
         // Verify this is a local auth token (has id and username)
-        if (typeof id === 'number' && typeof username === 'string') {
-          const database = await db.getDb();
-          if (database) {
-            const result = await database.select().from(users).where(eq(users.id, id)).limit(1);
-            if (result.length > 0) {
-              return result[0];
-            }
-          }
+        if (typeof id === 'string' && typeof username === 'string') {
+          // For now, just return the user info from the token
+          // In a production app, you might want to verify the user still exists in the database
+          return {
+            id,
+            username,
+            role: 'user',
+          } as any;
         }
       } catch (error) {
         console.warn("[Auth] Bearer token verification failed", String(error));
@@ -313,38 +313,10 @@ class SDKServer {
       throw ForbiddenError("Invalid session cookie");
     }
 
-    const sessionUserId = session.openId;
-    const signedInAt = new Date();
-    let user = await db.getUserByOpenId(sessionUserId);
-
-    // If user not in DB, sync from OAuth server automatically
-    if (!user) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
-        });
-        user = await db.getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
-      }
-    }
-
-    if (!user) {
-      throw ForbiddenError("User not found");
-    }
-
-    await db.upsertUser({
-      openId: user.openId,
-      lastSignedIn: signedInAt,
-    });
-
-    return user;
+    // For now, we only support local authentication via username
+    // OAuth support would require additional setup
+    throw ForbiddenError("OAuth authentication not yet configured");
+    // TODO: Implement OAuth support when needed
   }
 }
 

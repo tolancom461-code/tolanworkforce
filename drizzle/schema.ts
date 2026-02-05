@@ -1,32 +1,44 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { pgTable, varchar, timestamp, uuid } from "drizzle-orm/pg-core";
 
 /**
  * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
+ * This schema matches the users table structure in Supabase.
+ * All column names use snake_case to match PostgreSQL conventions.
  */
-export const users = mysqlTable("users", {
+
+export const users = pgTable("users", {
   /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
+   * Surrogate primary key. UUID managed by the database.
    * Use this for relations between tables.
    */
-  id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).unique(),
-  /** Local authentication username (optional, for local login) */
-  username: varchar("username", { length: 64 }).unique(),
-  /** Local authentication password hash (optional, for local login) */
-  passwordHash: text("passwordHash"),
-  name: text("name"),
+  id: uuid("id").primaryKey(),
+  
+  /** Local authentication username (unique, required for local login) */
+  username: varchar("username", { length: 64 }).unique().notNull(),
+  
+  /** User email address */
   email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  
+  /** Local authentication password hash (for local login) */
+  passwordHash: varchar("password_hash", { length: 255 }),
+  
+  /** User full name (English) */
+  fullName: varchar("full_name", { length: 255 }),
+  
+  /** User full name in Arabic */
+  fullNameAr: varchar("full_name_ar", { length: 255 }),
+  
+  /** User phone number */
+  phone: varchar("phone", { length: 20 }),
+  
+  /** User role (user or admin) */
+  role: varchar("role", { length: 50 }).default("user"),
+  
+  /** Is user active (timestamp of activation) */
+  isActive: timestamp("is_active", { withTimezone: true }),
 });
 
 export type User = typeof users.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
+export type InsertUser = Partial<typeof users.$inferInsert>;
 
 // TODO: Add your tables here

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getUserByUsername } from "./db";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { testSupabaseConnection, getTablesList, getAllTables } from "./supabase";
 
 /**
  * Authentication Router
@@ -88,12 +89,58 @@ export const appRouter = router({
           user: {
             id: user.id,
             username: user.username,
-            name: user.name,
+            name: user.fullName,
             role: user.role,
           },
           accessToken: token,
         };
       }),
+  }),
+
+  // Supabase Integration Router
+  supabase: router({
+    /**
+     * Test connection to Supabase
+     */
+    testConnection: publicProcedure.query(async () => {
+      return await testSupabaseConnection();
+    }),
+
+    /**
+     * Get list of known tables from Supabase
+     */
+    getTables: publicProcedure.query(async () => {
+      try {
+        const tables = await getTablesList();
+        return {
+          success: true,
+          tables,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    }),
+
+    /**
+     * Get all tables from Supabase (comprehensive search)
+     */
+    getAllTables: publicProcedure.query(async () => {
+      try {
+        const tables = await getAllTables();
+        return {
+          success: true,
+          tables,
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    }),
   }),
 
   // TODO: Add feature routers here as your app grows

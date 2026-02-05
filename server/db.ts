@@ -1,104 +1,163 @@
-import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
-let _db: ReturnType<typeof drizzle> | null = null;
+/**
+ * Supabase REST API client for database operations.
+ * Since the Manus environment blocks direct PostgreSQL connections (port 5432/6543),
+ * we use Supabase's REST API instead.
+ * 
+ * This module provides a thin wrapper around Supabase REST API calls
+ * that mimics the Drizzle ORM interface we defined in schema.ts
+ */
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
-export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      _db = drizzle(process.env.DATABASE_URL);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
-    }
-  }
-  return _db;
+interface SupabaseUser {
+  id: string;
+  username: string;
+  email: string | null;
+  password_hash: string | null;
+  full_name: string | null;
+  full_name_ar: string | null;
+  phone: string | null;
+  role: string;
+  is_active: string | null;
 }
 
-export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
-  }
+/**
+ * Get a user by their username using Supabase REST API
+ * Maps REST API response to our User type
+ */
+export async function getUserByUsername(username: string) {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("[Database] Supabase credentials not available");
+      return undefined;
+    }
+
+    // Build the REST API URL with query parameters
+    const url = `${supabaseUrl}/rest/v1/users?username=eq.${encodeURIComponent(username)}&limit=1`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[Database] Failed to get user: ${response.status} ${response.statusText}`);
+      return undefined;
+    }
+
+    const data: SupabaseUser[] = await response.json();
+    
+    if (data.length === 0) {
+      return undefined;
+    }
+
+    // Map Supabase response to our User type (camelCase)
+    const user = data[0];
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      passwordHash: user.password_hash,
+      fullName: user.full_name,
+      fullNameAr: user.full_name_ar,
+      phone: user.phone,
+      role: user.role,
+      isActive: user.is_active,
+    };
+  } catch (error) {
+    console.error("[Database] Failed to get user by username:", error);
+    throw error;
+  }
+}
+
+/**
+ * Upsert a user into the database using Supabase REST API.
+ * For local users, use username as the unique identifier.
+ */
+export async function upsertUser(user: InsertUser): Promise<void> {
+  if (!user.username) {
+    throw new Error("Username is required for upsert");
   }
 
   try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
-    const updateSet: Record<string, unknown> = {};
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("[Database] Supabase credentials not available");
+      return;
+    }
 
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
+    // Build the insert/update payload (snake_case for database)
+    const payload: Record<string, any> = {
+      username: user.username,
     };
 
-    textFields.forEach(assignNullable);
+    if (user.email !== undefined) payload.email = user.email;
+    if (user.passwordHash !== undefined) payload.password_hash = user.passwordHash;
+    if (user.fullName !== undefined) payload.full_name = user.fullName;
+    if (user.fullNameAr !== undefined) payload.full_name_ar = user.fullNameAr;
+    if (user.phone !== undefined) payload.phone = user.phone;
+    if (user.role !== undefined) payload.role = user.role;
+    if (user.isActive !== undefined) payload.is_active = user.isActive;
 
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
-    }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
+    // Try to insert first
+    const insertUrl = new URL(`${supabaseUrl}/rest/v1/users`);
+    const insertResponse = await fetch(insertUrl.toString(), {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(payload),
     });
+
+    if (insertResponse.ok) {
+      console.log("[Database] User inserted successfully");
+      return;
+    }
+
+    // If insert fails with conflict, try update
+    if (insertResponse.status === 409) {
+      const updateUrl = new URL(`${supabaseUrl}/rest/v1/users`);
+      updateUrl.searchParams.append('username', `eq.${user.username}`);
+
+      const updateResponse = await fetch(updateUrl.toString(), {
+        method: 'PATCH',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!updateResponse.ok) {
+        console.error(`[Database] Failed to update user: ${updateResponse.status}`);
+        throw new Error(`Failed to update user: ${updateResponse.statusText}`);
+      }
+
+      console.log("[Database] User updated successfully");
+      return;
+    }
+
+    console.error(`[Database] Failed to upsert user: ${insertResponse.status}`);
+    throw new Error(`Failed to upsert user: ${insertResponse.statusText}`);
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
   }
 }
 
-export async function getUserByOpenId(openId: string) {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
-
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
-
-  return result.length > 0 ? result[0] : undefined;
-}
-
 // TODO: add feature queries here as your schema grows.
-
-export async function getUserByUsername(username: string) {
-  const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot get user: database not available");
-    return undefined;
-  }
-
-  const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
-
-  return result.length > 0 ? result[0] : undefined;
-}
