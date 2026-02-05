@@ -145,13 +145,15 @@
 
 ## المرحلة 4: إعادة توصيل الواجهات بـ Supabase (جاري التطوير)
 
-- [ ] إعادة توصيل صفحة الموظفين (Workers) بـ Supabase
-  - [ ] إنشاء دالة في server/db.ts لجلب الموظفين من جدول workers
-  - [ ] إنشاء tRPC procedure للحصول على قائمة الموظفين
-  - [ ] تحديث صفحة Workers.tsx لعرض البيانات من Supabase
+- [x] إعادة توصيل صفحة الموظفين (Workers) بـ Supabase
+  - [x] إنشاء دالة في server/db.ts لجلب الموظفين من جدول workers
+  - [x] إنشاء tRPC procedure للحصول على قائمة الموظفين
+  - [x] تحديث صفحة Workers.tsx لعرض البيانات من Supabase
+  - [x] تحديث server/db.ts لاستخدام service key لتجاوز RLS
   - [ ] إضافة خيارات CRUD (إضافة/تعديل/حذف)
+  - [ ] اختبار واجهة الموظفين
   
-- [ ] إعادة توصيل صفحة الحضور (Attendance) بـ Supabase
+- [ ] إعادة توصيل صفحة الحضور (Attendance) بـ Supabase (المرحلة التالية)
   - [ ] إنشاء دالة في server/db.ts لجلب بيانات الحضور من جدول attendance_events
   - [ ] إنشاء tRPC procedure للحصول على سجل الحضور
   - [ ] تحديث صفحة Attendance.tsx لعرض البيانات من Supabase

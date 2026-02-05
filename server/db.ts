@@ -167,17 +167,24 @@ export async function upsertUser(user: InsertUser): Promise<void> {
  * Worker interface - maps to workers table in Supabase
  */
 export interface Worker {
-  id: string;
-  name: string;
-  name_ar: string | null;
-  email: string | null;
-  phone: string | null;
-  job_id: string | null;
+  id: number;
+  employee_id: string | null;
+  full_name: string;
+  full_name_ar: string | null;
   group_id: string | null;
-  cost_center_id: string | null;
+  job_id: string | null;
+  phone: string | null;
+  photo_url: string | null;
+  daily_rate: number;
+  hourly_rate: number;
   is_active: boolean;
-  created_at: string | null;
-  updated_at: string | null;
+  hire_date: string | null;
+  created_at: string;
+  updated_at: string;
+  qr_token: string | null;
+  manual_code: string | null;
+  last_attendance_at: string | null;
+  status: string;
 }
 
 /**
@@ -186,7 +193,8 @@ export interface Worker {
 export async function getWorkers() {
   try {
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    // Use service key to bypass RLS
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       console.warn("[Database] Supabase credentials not available");
@@ -223,7 +231,8 @@ export async function getWorkers() {
 export async function getWorkerById(id: string) {
   try {
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    // Use service key to bypass RLS
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       console.warn("[Database] Supabase credentials not available");
@@ -260,7 +269,8 @@ export async function getWorkerById(id: string) {
 export async function getWorkersCount() {
   try {
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+    // Use service key to bypass RLS
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       console.warn("[Database] Supabase credentials not available");

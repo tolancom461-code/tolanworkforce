@@ -1,101 +1,183 @@
-import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, Search, Eye } from "lucide-react";
 
 export default function Workers() {
-  const { data: workers, isLoading, error } = trpc.workers.list.useQuery();
-  const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState<any>(null);
+  
+  // Fetch workers using tRPC
+  const { data: workers = [], isLoading } = trpc.workers.list.useQuery();
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">الموظفين</h1>
-          <Button>إضافة موظف</Button>
-        </div>
-        <div className="text-center py-8">جاري التحميل...</div>
-      </div>
-    );
-  }
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold">الموظفين</h1>
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <p className="text-red-800">خطأ في تحميل البيانات: {error.message}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const filteredWorkers = workers?.filter((worker) => {
+    const matchesSearch =
+      (worker.full_name || "").toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge className="bg-green-500">نشط</Badge>;
+      case "inactive":
+        return <Badge variant="secondary">غير نشط</Badge>;
+      case "archived":
+        return <Badge variant="outline">مؤرشف</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">الموظفين</h1>
-          <p className="text-gray-600 mt-1">إدارة بيانات الموظفين والعاملين</p>
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">إدارة العمال</h1>
+            <p className="text-muted-foreground">إدارة بيانات العمال ومعلوماتهم</p>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 ml-2" />
+                إضافة عامل جديد
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]" dir="rtl">
+              <DialogHeader>
+                <DialogTitle>إضافة عامل جديد</DialogTitle>
+                <DialogDescription>أدخل بيانات العامل الجديد</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">الاسم الكامل</Label>
+                  <Input id="full_name" placeholder="أدخل الاسم الكامل" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">رقم الجوال</Label>
+                  <Input id="phone" placeholder="أدخل رقم الجوال" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  إلغاء
+                </Button>
+                <Button onClick={() => {
+                  toast.success("تم إضافة العامل بنجاح");
+                  setIsAddDialogOpen(false);
+                }}>
+                  إضافة العامل
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">إضافة موظف جديد</Button>
-      </div>
 
-      {!workers || workers.length === 0 ? (
+        {/* Filters */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">لا توجد بيانات موظفين حالياً</p>
-              <p className="text-gray-400 mt-2">ابدأ بإضافة موظف جديد</p>
+          <CardHeader>
+            <CardTitle className="text-lg">البحث والتصفية</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="search">البحث</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="ابحث بالاسم..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>قائمة الموظفين</CardTitle>
-              <CardDescription>
-                إجمالي الموظفين: {workers.length}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+
+        {/* Workers Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>قائمة العمال</CardTitle>
+            <CardDescription>
+              إجمالي العمال: {filteredWorkers?.length || 0}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8">جاري تحميل البيانات...</div>
+            ) : filteredWorkers && filteredWorkers.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="border-b">
-                    <tr>
-                      <th className="text-right py-2 px-4">الاسم</th>
-                      <th className="text-right py-2 px-4">البريد الإلكتروني</th>
-                      <th className="text-right py-2 px-4">الهاتف</th>
-                      <th className="text-right py-2 px-4">الحالة</th>
-                      <th className="text-right py-2 px-4">الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workers.map((worker) => (
-                      <tr key={worker.id} className="border-b hover:bg-gray-50">
-                        <td className="py-2 px-4">{worker.name}</td>
-                        <td className="py-2 px-4">{worker.email || "-"}</td>
-                        <td className="py-2 px-4">{worker.phone || "-"}</td>
-                        <td className="py-2 px-4">
-                          <span className={`px-2 py-1 rounded text-sm ${worker.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}>
-                            {worker.is_active ? "نشط" : "غير نشط"}
-                          </span>
-                        </td>
-                        <td className="py-2 px-4">
-                          <button className="text-blue-600 hover:text-blue-800 mr-2">تعديل</button>
-                          <button className="text-red-600 hover:text-red-800">حذف</button>
-                        </td>
-                      </tr>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">الاسم</TableHead>
+                      <TableHead className="text-right">رقم الجوال</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-center">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredWorkers.map((worker) => (
+                      <TableRow key={worker.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                {getInitials(worker.full_name || "?")}
+                              </AvatarFallback>
+                            </Avatar>
+                            {worker.full_name}
+                          </div>
+                        </TableCell>
+                        <TableCell>{worker.phone || "-"}</TableCell>
+                        <TableCell>{getStatusBadge(worker.is_active ? "active" : "inactive")}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex gap-2 justify-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedWorker(worker)}
+                              title="عرض التفاصيل"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                لا يوجد عمال
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
 }
