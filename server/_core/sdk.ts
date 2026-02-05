@@ -5,7 +5,9 @@ import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
+import { users } from "../../drizzle/schema";
 import * as db from "../db";
+import { eq } from "drizzle-orm";
 import { ENV } from "./env";
 import type {
   ExchangeTokenRequest,
@@ -257,7 +259,33 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<User> {
-    // Regular authentication flow
+    // Try to get token from Authorization header first (for local auth)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const secretKey = this.getSessionSecret();
+        const { payload } = await jwtVerify(token, secretKey, {
+          algorithms: ["HS256"],
+        });
+        const { id, username } = payload as Record<string, unknown>;
+        
+        if (typeof id === 'number' && typeof username === 'string') {
+          // This is a local auth token
+          const database = await db.getDb();
+          if (database) {
+            const result = await database.select().from(users).where(eq(users.id, id)).limit(1);
+            if (result.length > 0) {
+              return result[0];
+            }
+          }
+        }
+      } catch (error) {
+        console.warn("[Auth] Bearer token verification failed", String(error));
+      }
+    }
+
+    // Fall back to OAuth flow
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);

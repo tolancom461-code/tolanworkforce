@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id, username, passwordHash, name, role FROM users LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, username, passwordHash, name, role FROM users LIMIT 5;",
+  "rows": [
+    {
+      "id": "1320001",
+      "username": "ADMIN",
+      "passwordHash": "NULL",
+      "name": "NULL",
+      "role": "admin"
+    },
+    {
+      "id": "1590007",
+      "username": "fQvX5e3Eytk42QF5qSXDcP",
+      "passwordHash": "NULL",
+      "name": "NULL",
+      "role": "admin"
+    },
+    {
+      "id": "1770005",
+      "username": "admin",
+      "passwordHash": "NULL",
+      "name": "NULL",
+      "role": "admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tpasswordHash\tname\trole\n1320001\tADMIN\tNULL\tNULL\tadmin\n1590007\tfQvX5e3Eytk42QF5qSXDcP\tNULL\tNULL\tadmin\n1770005\tadmin\tNULL\tNULL\tadmin\n",
+  "stderr": "",
+  "execution_time_ms": 1608
+}

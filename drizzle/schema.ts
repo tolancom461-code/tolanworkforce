@@ -12,7 +12,11 @@ export const users = mysqlTable("users", {
    */
   id: int("id").autoincrement().primaryKey(),
   /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  openId: varchar("openId", { length: 64 }).unique(),
+  /** Local authentication username (optional, for local login) */
+  username: varchar("username", { length: 64 }).unique(),
+  /** Local authentication password hash (optional, for local login) */
+  passwordHash: text("passwordHash"),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
