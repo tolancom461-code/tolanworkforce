@@ -161,3 +161,236 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 }
 
 // TODO: add feature queries here as your schema grows.
+
+
+/**
+ * Worker interface - maps to workers table in Supabase
+ */
+export interface Worker {
+  id: string;
+  name: string;
+  name_ar: string | null;
+  email: string | null;
+  phone: string | null;
+  job_id: string | null;
+  group_id: string | null;
+  cost_center_id: string | null;
+  is_active: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Get all workers from Supabase
+ */
+export async function getWorkers() {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("[Database] Supabase credentials not available");
+      return [];
+    }
+
+    const url = `${supabaseUrl}/rest/v1/workers?order=created_at.desc`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[Database] Failed to get workers: ${response.status}`);
+      return [];
+    }
+
+    const data: Worker[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error("[Database] Failed to get workers:", error);
+    return [];
+  }
+}
+
+/**
+ * Get a single worker by ID
+ */
+export async function getWorkerById(id: string) {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("[Database] Supabase credentials not available");
+      return undefined;
+    }
+
+    const url = `${supabaseUrl}/rest/v1/workers?id=eq.${encodeURIComponent(id)}&limit=1`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[Database] Failed to get worker: ${response.status}`);
+      return undefined;
+    }
+
+    const data: Worker[] = await response.json();
+    return data.length > 0 ? data[0] : undefined;
+  } catch (error) {
+    console.error("[Database] Failed to get worker by ID:", error);
+    return undefined;
+  }
+}
+
+/**
+ * Get count of all workers
+ */
+export async function getWorkersCount() {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("[Database] Supabase credentials not available");
+      return 0;
+    }
+
+    const url = `${supabaseUrl}/rest/v1/workers?select=count()`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'count=exact',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[Database] Failed to get workers count: ${response.status}`);
+      return 0;
+    }
+
+    const countHeader = response.headers.get('content-range');
+    if (countHeader) {
+      const match = countHeader.match(/\d+\/(\d+)/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+
+    return 0;
+  } catch (error) {
+    console.error("[Database] Failed to get workers count:", error);
+    return 0;
+  }
+}
+
+/**
+ * Attendance Event interface
+ */
+export interface AttendanceEvent {
+  id: string;
+  worker_id: string;
+  check_in_time: string | null;
+  check_out_time: string | null;
+  date: string;
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Get attendance events
+ */
+export async function getAttendanceEvents(limit = 100, offset = 0) {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("[Database] Supabase credentials not available");
+      return [];
+    }
+
+    const url = `${supabaseUrl}/rest/v1/attendance_events?order=date.desc&limit=${limit}&offset=${offset}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[Database] Failed to get attendance events: ${response.status}`);
+      return [];
+    }
+
+    const data: AttendanceEvent[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error("[Database] Failed to get attendance events:", error);
+    return [];
+  }
+}
+
+/**
+ * Get attendance count
+ */
+export async function getAttendanceCount() {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn("[Database] Supabase credentials not available");
+      return 0;
+    }
+
+    const url = `${supabaseUrl}/rest/v1/attendance_events?select=count()`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'count=exact',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[Database] Failed to get attendance count: ${response.status}`);
+      return 0;
+    }
+
+    const countHeader = response.headers.get('content-range');
+    if (countHeader) {
+      const match = countHeader.match(/\d+\/(\d+)/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+
+    return 0;
+  } catch (error) {
+    console.error("[Database] Failed to get attendance count:", error);
+    return 0;
+  }
+}

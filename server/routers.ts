@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { getUserByUsername } from "./db";
+import { getUserByUsername, getWorkers, getWorkerById, getWorkersCount, getAttendanceEvents, getAttendanceCount } from "./db";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { testSupabaseConnection, getTablesList, getAllTables } from "./supabase";
@@ -143,12 +143,71 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: Add feature routers here as your app grows
-  // Example:
-  // employees: router({
-  //   list: protectedProcedure.query(({ ctx }) => db.getEmployees()),
-  //   create: protectedProcedure.input(...).mutation(...),
-  // }),
+  // Workers (Employees) Router
+  workers: router({
+    /**
+     * Get all workers
+     */
+    list: publicProcedure.query(async () => {
+      return await getWorkers();
+    }),
+
+    /**
+     * Get single worker by ID
+     */
+    getById: publicProcedure
+      .input(z.object({ id: z.string() }))
+      .query(async ({ input }) => {
+        return await getWorkerById(input.id);
+      }),
+
+    /**
+     * Get workers count
+     */
+    count: publicProcedure.query(async () => {
+      return await getWorkersCount();
+    }),
+  }),
+
+  // Attendance Router
+  attendance: router({
+    /**
+     * Get attendance events
+     */
+    list: publicProcedure
+      .input(z.object({
+        limit: z.number().default(100),
+        offset: z.number().default(0),
+      }))
+      .query(async ({ input }) => {
+        return await getAttendanceEvents(input.limit, input.offset);
+      }),
+
+    /**
+     * Get attendance count
+     */
+    count: publicProcedure.query(async () => {
+      return await getAttendanceCount();
+    }),
+  }),
+
+  // Dashboard Router
+  dashboard: router({
+    /**
+     * Get dashboard statistics
+     */
+    stats: publicProcedure.query(async () => {
+      const workersCount = await getWorkersCount();
+      const attendanceCount = await getAttendanceCount();
+      
+      return {
+        totalWorkers: workersCount,
+        totalAttendanceRecords: attendanceCount,
+        activeWorkers: workersCount,
+        todayAttendance: 0,
+      };
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
