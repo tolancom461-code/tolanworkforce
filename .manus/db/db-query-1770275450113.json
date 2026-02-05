@@ -1,0 +1,16 @@
+{
+  "query": "SELECT COUNT(*) as total_records, \n       COUNT(DISTINCT worker_id) as unique_workers,\n       MIN(work_date) as earliest_date,\n       MAX(work_date) as latest_date\nFROM worker_daily_finance;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT COUNT(*) as total_records, \n       COUNT(DISTINCT worker_id) as unique_workers,\n       MIN(work_date) as earliest_date,\n       MAX(work_date) as latest_date\nFROM worker_daily_finance;",
+  "rows": [
+    {
+      "total_records": "20",
+      "unique_workers": "20",
+      "earliest_date": "2026-02-03",
+      "latest_date": "2026-02-03"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_records\tunique_workers\tearliest_date\tlatest_date\n20\t20\t2026-02-03\t2026-02-03\n",
+  "stderr": "",
+  "execution_time_ms": 1609
+}

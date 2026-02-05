@@ -5016,3 +5016,6 @@ export async function updateGroupSchedule(
 
   return result;
 }
+
+// Export getDb as db for backward compatibility
+export { getDb as db };
