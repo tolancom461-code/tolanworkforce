@@ -258,8 +258,23 @@ class SDKServer {
     } as GetUserInfoWithJwtResponse;
   }
 
+  /**
+   * Authenticate incoming request
+   *
+   * Supports two authentication methods:
+   * 1. Local Auth: Bearer token in Authorization header (JWT with id, username, role)
+   * 2. OAuth: Session cookie with Manus OAuth token
+   *
+   * Priority: Local Auth first, then OAuth fallback
+   *
+   * @param req Express request object
+   * @returns Authenticated user or throws ForbiddenError
+   */
   async authenticateRequest(req: Request): Promise<User> {
-    // Try to get token from Authorization header first (for local auth)
+    // ============================================
+    // METHOD 1: Local Authentication (Bearer Token)
+    // ============================================
+    // Check for Authorization header with Bearer token
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
@@ -269,9 +284,9 @@ class SDKServer {
           algorithms: ["HS256"],
         });
         const { id, username } = payload as Record<string, unknown>;
-        
+
+        // Verify this is a local auth token (has id and username)
         if (typeof id === 'number' && typeof username === 'string') {
-          // This is a local auth token
           const database = await db.getDb();
           if (database) {
             const result = await database.select().from(users).where(eq(users.id, id)).limit(1);
@@ -282,10 +297,14 @@ class SDKServer {
         }
       } catch (error) {
         console.warn("[Auth] Bearer token verification failed", String(error));
+        // Continue to OAuth fallback
       }
     }
 
-    // Fall back to OAuth flow
+    // ============================================
+    // METHOD 2: OAuth Authentication (Fallback)
+    // ============================================
+    // Parse session cookie
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);
