@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,29 @@ export default function PayrollBatchCreate() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [payrollSummary, setPayrollSummary] = useState<PayrollSummary | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [autoCalculateTriggered, setAutoCalculateTriggered] = useState(false);
+
+  // Auto-calculate when date range and cost center are selected
+  useEffect(() => {
+    if (periodStart && periodEnd && costCenterId && !autoCalculateTriggered) {
+      setAutoCalculateTriggered(true);
+      // Trigger calculation after a short delay to ensure state is updated
+      const timer = setTimeout(() => {
+        handleCalculatePayroll();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [periodStart, periodEnd, costCenterId]);
+
+  // Reset auto-calculate flag when user changes inputs
+  const handleDateChange = (date: string, isStart: boolean) => {
+    if (isStart) {
+      setPeriodStart(date);
+    } else {
+      setPeriodEnd(date);
+    }
+    setAutoCalculateTriggered(false);
+  };
 
   // Get groups filtered by cost center
   const { data: allGroups } = trpc.groups.listByCostCenter.useQuery(
@@ -323,7 +346,7 @@ export default function PayrollBatchCreate() {
                     id="period-start"
                     type="date"
                     value={periodStart}
-                    onChange={(e) => setPeriodStart(e.target.value)}
+                    onChange={(e) => handleDateChange(e.target.value, true)}
                   />
                 </div>
                 <div>
@@ -332,7 +355,7 @@ export default function PayrollBatchCreate() {
                     id="period-end"
                     type="date"
                     value={periodEnd}
-                    onChange={(e) => setPeriodEnd(e.target.value)}
+                    onChange={(e) => handleDateChange(e.target.value, false)}
                   />
                 </div>
               </div>
