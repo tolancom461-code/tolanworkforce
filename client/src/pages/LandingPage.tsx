@@ -4,13 +4,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Building2, Users, Clock, BarChart3, Shield, Zap } from 'lucide-react';
+import { Building2, Users, Clock, BarChart3, Shield, Zap, LogOut } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 
+
 export default function LandingPage() {
   const [, setLocation] = useLocation();
+  // Get user data directly from trpc
+  const { data: user } = trpc.auth.me.useQuery();
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSuccess: () => {
+      toast.success('تم تسجيل الخروج بنجاح');
+      // Reload page to clear auth state
+      window.location.href = '/';
+    },
+  });
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -91,9 +105,29 @@ export default function LandingPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400">نظام إدارة القوى العاملة</p>
             </div>
           </div>
-          <Button onClick={() => setShowLoginDialog(true)} size="lg">
-            تسجيل دخول
-          </Button>
+          {user ? (
+            <div className="flex items-center gap-3">
+              <span className="hidden md:inline text-sm text-gray-600 dark:text-gray-300">
+                {user.fullName}
+              </span>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                تسجيل الخروج
+              </Button>
+              <Button onClick={() => setLocation('/dashboard')} size="lg">
+                لوحة التحكم
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={() => setShowLoginDialog(true)} size="lg">
+              تسجيل دخول
+            </Button>
+          )}
         </div>
       </header>
 

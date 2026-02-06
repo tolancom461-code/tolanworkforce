@@ -408,7 +408,24 @@ function DashboardLayoutContent({
             <span className="hidden sm:inline text-sm">الرئيسية</span>
           </Button>
           <div className="flex-1" />
-          <ThemeToggle />
+          
+          {/* User info and logout */}
+          <div className="flex items-center gap-2">
+            <span className="hidden md:inline text-sm text-muted-foreground">
+              {user?.fullName}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => logout()}
+              className="flex items-center gap-2"
+              title="تسجيل الخروج"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">تسجيل الخروج</span>
+            </Button>
+            <ThemeToggle />
+          </div>
         </header>
         <main className="flex-1 overflow-auto">
           {children}

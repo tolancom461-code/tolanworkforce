@@ -3137,3 +3137,10 @@ Add "Approve Full Attendance" option that:
 - [x] إنشاء صفحة LocalLogin.tsx
 - [x] إضافة مستخدم admin افتراضي
 - [x] اختبار تسجيل الدخول المحلي
+
+
+## زر تسجيل الخروج (Logout Button)
+
+- [x] إضافة زر تسجيل الخروج في DashboardLayout (القائمة الجانبية)
+- [x] إضافة زر تسجيل الخروج في الصفحة الرئيسية (Header)
+- [x] اختبار وظيفة تسجيل الخروج
