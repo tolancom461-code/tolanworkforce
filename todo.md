@@ -78,3 +78,31 @@
 - [x] تحديث واجهة تفاصيل الدفعة لعرض الملاحظات
 - [x] إضافة نموذج لإضافة ملاحظة جديدة
 - [x] اختبار الميزة بالكامل
+
+
+## فحص شامل للنظام - الأخطاء المكتشفة
+
+### أخطاء Backend (server/)
+- [x] حذف بقايا دوال الورديات من server/db.ts (السطور 372-418)
+- [x] إضافة دالة getFullDayOverrideStatus المفقودة في server/db.ts
+- [x] إضافة دالة updateFullDayOverride المفقودة في server/db.ts
+- [x] حذف مراجع updateGroupSchedule من server/routers.ts
+- [x] حذف مراجع saveWeeklySchedules من server/routers.ts
+- [ ] إصلاح type لـ allBatches في server/db.ts (السطر 1939)
+- [ ] إصلاح خطأ Property 'name' في server/db.ts (السطر 5014)
+
+### أخطاء Frontend (client/)
+- [ ] إصلاح ProtectedRoute في App.tsx (السطور 193, 197)
+- [ ] إصلاح PayrollBatches.tsx - إضافة items parameter
+- [ ] إصلاح AdvancedPayrollPage.tsx - إضافة items parameter
+- [ ] إصلاح PayrollBatchCreate.tsx - إضافة items parameter
+- [ ] إصلاح PayrollBatchCreateSimple.tsx - استبدال id بـ batchId (تم)
+
+### فحص الجداول والواجهات
+- [ ] التحقق من ربط جميع الجداول بالواجهات
+- [ ] فحص العلاقات بين الجداول (Foreign Keys)
+- [ ] التأكد من عدم وجود جداول غير مستخدمة
+
+### اختبار نهائي
+- [ ] اختبار النظام بالكامل
+- [ ] حفظ checkpoint نهائي

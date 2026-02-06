@@ -368,64 +368,6 @@ export async function deleteGroup(id: number): Promise<void> {
   await db.delete(groups).where(eq(groups.id, id));
 }
 
-// Group Shifts
-export async function getGroupShifts(groupId: number): Promise<GroupShift[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-}
-
-export async function createGroupShift(shift: InsertGroupShift): Promise<number> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const shiftId = result[0].insertId;
-  
-  // إنشاء جداول ديناميكية لكل أيام الأسبوع (1-7)
-  const schedules: any[] = [];
-  for (let dayOfWeek = 1; dayOfWeek <= 7; dayOfWeek++) {
-    schedules.push({
-      groupId: shift.groupId,
-      dayOfWeek,
-      startTime: shift.startTime,
-      endTime: shift.endTime,
-      requiredHours: calculateRequiredHours(shift.startTime, shift.endTime),
-      isActive: shift.isActive ?? true,
-    });
-  }
-  
-  // إدراج الجداول الديناميكية
-  if (schedules.length > 0) {
-  }
-  
-  return shiftId;
-}
-
-// دالة مساعدة لحساب الساعات المطلوبة
-function calculateRequiredHours(startTime: string, endTime: string): number {
-  const [startHour, startMin] = startTime.split(':').map(Number);
-  const [endHour, endMin] = endTime.split(':').map(Number);
-  
-  const startTotalMin = startHour * 60 + startMin;
-  const endTotalMin = endHour * 60 + endMin;
-  
-  let diffMin = endTotalMin - startTotalMin;
-  if (diffMin < 0) diffMin += 24 * 60; // إذا كانت النهاية في اليوم التالي
-  
-  return Math.round((diffMin / 60) * 100) / 100; // تقريب لمنزلتين عشريتين
-}
-
-export async function updateGroupShift(id: number, data: Partial<InsertGroupShift>): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-}
-
-export async function deleteGroupShift(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-}
 
 // ============================================
 // Workers Functions
@@ -2714,6 +2656,38 @@ export async function setFullDayOverride(
   }
   
   return { success: true };
+}
+
+export async function getFullDayOverrideStatus(workerId: number, workDate: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const { workerDailyFinance } = await import("../drizzle/schema");
+  
+  const [record] = await db
+    .select()
+    .from(workerDailyFinance)
+    .where(and(
+      eq(workerDailyFinance.workerId, workerId),
+      eq(workerDailyFinance.workDate, sql`${workDate}`)
+    ))
+    .limit(1);
+  
+  return {
+    hasOverride: false,
+    workDate: workDate,
+    workerId: workerId
+  };
+}
+
+export async function updateFullDayOverride(
+  workerId: number,
+  workDate: string,
+  override: boolean,
+  reason?: string,
+  userId?: number
+) {
+  return await setFullDayOverride(workerId, workDate, override, reason, userId);
 }
 
 async function recalculateFinanceWithOverride(workerId: number, workDate: string) {
