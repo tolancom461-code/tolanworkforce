@@ -12,8 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer } from "lucide-react";
-import { exportToExcel, printPage } from '@/lib/exportUtils';
+import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw } from "lucide-react";
 
 export default function Workers() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -171,8 +170,7 @@ export default function Workers() {
     }
   };
 
-  const getInitials = (name?: string) => {
-    if (!name) return "--";
+  const getInitials = (name: string) => {
     return name
       .split(" ")
       .map((n) => n[0])
@@ -182,74 +180,33 @@ export default function Workers() {
   };
 
   const filteredWorkers = workers?.filter((worker) => {
-    if (!worker || !worker.full_name) return false;
-    
     const matchesSearch =
-      (worker.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (worker.code || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (worker.national_id && worker.national_id.includes(searchQuery));
+      worker.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      worker.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (worker.nationalId && worker.nationalId.includes(searchQuery));
     
-    const matchesGroup = filterGroup === "all" || (worker.group_id?.toString() === filterGroup);
+    const matchesGroup = filterGroup === "all" || worker.groupId?.toString() === filterGroup;
     const matchesStatus = filterStatus === "all" || worker.status === filterStatus;
     
     return matchesSearch && matchesGroup && matchesStatus;
-  })
-
-  // Export handlers
-  const handleExportToExcel = () => {
-    if (!filteredWorkers || filteredWorkers.length === 0) {
-      toast.error('لا توجد بيانات للتصدير');
-      return;
-    }
-
-    const exportData = filteredWorkers.map(worker => {
-      const groupName = groups?.find(g => g.id === worker.groupId)?.name || '-';
-      return {
-        'كود العامل': worker.code,
-        'الاسم الكامل': worker.fullName,
-        'رقم الهوية': worker.nationalId || '-',
-        'رقم الجوال': worker.phone || '-',
-        'المجموعة': groupName,
-        'الأجر اليومي': worker.dailyRate || '-',
-        'تاريخ التوظيف': worker.hireDate ? new Date(worker.hireDate).toLocaleDateString('ar-SA') : '-',
-        'الحالة': worker.status === 'active' ? 'نشط' : worker.status === 'inactive' ? 'غير نشط' : 'مؤرشف',
-      };
-    });
-
-    const timestamp = new Date().toISOString().split('T')[0];
-    exportToExcel(exportData, `قائمة_العمال_${timestamp}`, 'العمال');
-    toast.success('تم تصدير القائمة بنجاح');
-  };
-
-  const handlePrint = () => {
-    printPage('workers-list-content');
-  };
+  });
 
   return (
     <DashboardLayout>
-      <div className="space-y-6" id="workers-list-content">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">إدارة العمال</h1>
             <p className="text-muted-foreground">إدارة بيانات العمال ومعلوماتهم</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportToExcel}>
-              <FileSpreadsheet className="h-4 w-4 ml-2" />
-              تصدير Excel
-            </Button>
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="h-4 w-4 ml-2" />
-              طباعة
-            </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => { resetForm(); setSelectedWorker(null); }}>
-                  <Plus className="ml-2 h-4 w-4" />
-                  إضافة عامل
-                </Button>
-              </DialogTrigger>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => { resetForm(); setSelectedWorker(null); }}>
+                <Plus className="ml-2 h-4 w-4" />
+                إضافة عامل
+              </Button>
+            </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]" dir="rtl">
               <DialogHeader>
                 <DialogTitle>إضافة عامل جديد</DialogTitle>
@@ -372,8 +329,7 @@ export default function Workers() {
                 </Button>
               </DialogFooter>
             </DialogContent>
-            </Dialog>
-          </div>
+          </Dialog>
         </div>
 
         {/* Filters */}

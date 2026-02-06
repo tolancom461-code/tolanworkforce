@@ -1,110 +1,196 @@
-import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Clock, DollarSign, Settings } from "lucide-react";
+import { Loader2, Shield, Users, BarChart3, Settings, ArrowRight, CheckCircle } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Home() {
-  const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
+  const { user, loading, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground">جاري التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-card/80 backdrop-blur-xl">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <Shield className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">مرحباً، {user?.fullName}</CardTitle>
+            <CardDescription>أنت مسجل الدخول بنجاح</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <Button 
+              className="w-full h-12 text-base font-medium" 
+              onClick={() => setLocation("/dashboard")}
+            >
+              الذهاب إلى لوحة التحكم
+              <ArrowRight className="mr-2 h-5 w-5 rotate-180" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">لوحة التحكم</h1>
-        <p className="text-gray-600 mt-1">مرحباً بك في نظام إدارة القوى العاملة</p>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Workers Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الموظفين</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {isLoading ? "..." : stats?.totalWorkers || 0}
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Header */}
+      <header className="border-b bg-card/50 backdrop-blur-xl sticky top-0 z-50">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <Shield className="h-5 w-5 text-primary-foreground" />
             </div>
-            <p className="text-xs text-gray-500 mt-1">عدد الموظفين المسجلين</p>
-          </CardContent>
-        </Card>
-
-        {/* Active Workers Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الموظفين النشطين</CardTitle>
-            <Users className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {isLoading ? "..." : stats?.activeWorkers || 0}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">الموظفين النشطين حالياً</p>
-          </CardContent>
-        </Card>
-
-        {/* Today Attendance Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الحضور اليوم</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {isLoading ? "..." : stats?.todayAttendance || 0}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">عدد الموظفين الحاضرين</p>
-          </CardContent>
-        </Card>
-
-        {/* Total Attendance Records Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي السجلات</CardTitle>
-            <Clock className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {isLoading ? "..." : stats?.totalAttendanceRecords || 0}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">سجلات الحضور الكلية</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>الإجراءات السريعة</CardTitle>
-          <CardDescription>الوصول السريع للمميزات الرئيسية</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <a href="/workers" className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-              <Users className="h-6 w-6 text-blue-600 mb-2" />
-              <h3 className="font-semibold">الموظفين</h3>
-              <p className="text-sm text-gray-600">إدارة بيانات الموظفين</p>
-            </a>
-            
-            <a href="/attendance" className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-              <Clock className="h-6 w-6 text-orange-600 mb-2" />
-              <h3 className="font-semibold">الحضور</h3>
-              <p className="text-sm text-gray-600">سجل الحضور والانصراف</p>
-            </a>
-            
-            <a href="/payroll" className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-              <DollarSign className="h-6 w-6 text-green-600 mb-2" />
-              <h3 className="font-semibold">الرواتب</h3>
-              <p className="text-sm text-gray-600">إدارة الرواتب والتعويضات</p>
-            </a>
-            
-            <a href="/settings" className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-              <Settings className="h-6 w-6 text-gray-600 mb-2" />
-              <h3 className="font-semibold">الإعدادات</h3>
-              <p className="text-sm text-gray-600">إعدادات النظام</p>
-            </a>
+            <span className="font-bold text-xl">TolanWorkforce</span>
           </div>
-        </CardContent>
-      </Card>
+          <Button asChild>
+            <a href={getLoginUrl()}>تسجيل الدخول</a>
+          </Button>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="container py-24 text-center">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
+            نظام إدارة القوى العاملة
+            <span className="block text-primary mt-2">المتكامل والذكي</span>
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            حل شامل لإدارة الموظفين والحضور والرواتب والصلاحيات في مكان واحد
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <Button size="lg" className="h-12 px-8 text-base" asChild>
+              <a href={getLoginUrl()}>
+                ابدأ الآن
+                <ArrowRight className="mr-2 h-5 w-5 rotate-180" />
+              </a>
+            </Button>
+            <Button size="lg" variant="outline" className="h-12 px-8 text-base">
+              تعرف على المزيد
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="container py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold mb-4">مميزات النظام</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            كل ما تحتاجه لإدارة فريق عملك بكفاءة عالية
+          </p>
+        </div>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="border-0 shadow-lg bg-card/80 backdrop-blur hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <CardTitle className="text-lg">إدارة المستخدمين</CardTitle>
+              <CardDescription>
+                إضافة وتعديل وحذف المستخدمين مع نظام صلاحيات متقدم
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-card/80 backdrop-blur hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 rounded-xl bg-chart-2/10 flex items-center justify-center mb-4">
+                <Shield className="h-6 w-6 text-chart-2" />
+              </div>
+              <CardTitle className="text-lg">نظام الصلاحيات</CardTitle>
+              <CardDescription>
+                5 أدوار مختلفة مع صلاحيات قابلة للتخصيص لكل مستخدم
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-card/80 backdrop-blur hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 rounded-xl bg-chart-3/10 flex items-center justify-center mb-4">
+                <BarChart3 className="h-6 w-6 text-chart-3" />
+              </div>
+              <CardTitle className="text-lg">تقارير متقدمة</CardTitle>
+              <CardDescription>
+                تقارير شاملة للحضور والرواتب والمصاريف
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-0 shadow-lg bg-card/80 backdrop-blur hover:shadow-xl transition-shadow">
+            <CardHeader>
+              <div className="w-12 h-12 rounded-xl bg-chart-4/10 flex items-center justify-center mb-4">
+                <Settings className="h-6 w-6 text-chart-4" />
+              </div>
+              <CardTitle className="text-lg">إعدادات مرنة</CardTitle>
+              <CardDescription>
+                تخصيص كامل للنظام حسب احتياجات مؤسستك
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="container py-20">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <h2 className="text-3xl font-bold">لماذا TolanWorkforce؟</h2>
+            <p className="text-muted-foreground text-lg">
+              نظام متكامل يوفر لك كل الأدوات اللازمة لإدارة فريق عملك بكفاءة وسهولة
+            </p>
+            <ul className="space-y-4">
+              {[
+                "واجهة مستخدم أنيقة وسهلة الاستخدام",
+                "نظام أمان متقدم لحماية بياناتك",
+                "تقارير فورية ودقيقة",
+                "دعم فني على مدار الساعة",
+                "تحديثات مستمرة ومجانية",
+              ].map((item, index) => (
+                <li key={index} className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="relative">
+            <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent p-8">
+              <div className="w-full h-full rounded-2xl bg-card shadow-2xl flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+                    <Shield className="h-10 w-10 text-primary" />
+                  </div>
+                  <p className="text-2xl font-bold">22 جدول</p>
+                  <p className="text-muted-foreground">قاعدة بيانات متكاملة</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t bg-card/50 py-8">
+        <div className="container text-center text-muted-foreground">
+          <p>© 2026 TolanWorkforce. جميع الحقوق محفوظة.</p>
+        </div>
+      </footer>
     </div>
   );
 }

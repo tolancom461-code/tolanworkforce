@@ -21,18 +21,20 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Key, User, UsersRound, UserCircle } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/" },
-  { icon: Users, label: "الموظفين", path: "/workers" },
-  { icon: Users, label: "الحضور", path: "/attendance" },
-  { icon: Users, label: "الرواتب", path: "/payroll" },
-  { icon: Users, label: "الإعدادات", path: "/settings" },
+  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/dashboard" },
+  { icon: Users, label: "المستخدمين", path: "/users" },
+  { icon: Key, label: "الصلاحيات", path: "/permissions" },
+  { icon: UsersRound, label: "المجموعات", path: "/groups" },
+  { icon: UserCircle, label: "العمال", path: "/workers" },
+  { icon: User, label: "الملف الشخصي", path: "/profile" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -43,8 +45,8 @@ const MAX_WIDTH = 480;
 export default function DashboardLayout({
   children,
 }: {
-  children?: React.ReactNode;
-} = {}) {
+  children: React.ReactNode;
+}) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
@@ -205,6 +207,9 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3">
+            <div className="flex justify-center mb-2 group-data-[collapsible=icon]:mb-0">
+              <ThemeToggle />
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -258,6 +263,7 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            <ThemeToggle />
           </div>
         )}
         <main className="flex-1 p-4">{children}</main>

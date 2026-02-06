@@ -28,12 +28,14 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      // OAuth not yet implemented - skip upsert for now
-      // await db.upsertUser({
-      //   username: userInfo.openId,
-      //   fullName: userInfo.name || null,
-      //   email: userInfo.email ?? null,
-      // });
+      await db.upsertUser({
+        openId: userInfo.openId,
+        username: userInfo.openId,
+        fullName: userInfo.name || 'User',
+        email: userInfo.email ?? null,
+        loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+        lastSignedIn: new Date(),
+      });
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",

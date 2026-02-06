@@ -5,9 +5,7 @@ import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
-import { users } from "../../drizzle/schema";
 import * as db from "../db";
-import { eq } from "drizzle-orm";
 import { ENV } from "./env";
 import type {
   ExchangeTokenRequest,
@@ -258,53 +256,8 @@ class SDKServer {
     } as GetUserInfoWithJwtResponse;
   }
 
-  /**
-   * Authenticate incoming request
-   *
-   * Supports two authentication methods:
-   * 1. Local Auth: Bearer token in Authorization header (JWT with id, username, role)
-   * 2. OAuth: Session cookie with Manus OAuth token
-   *
-   * Priority: Local Auth first, then OAuth fallback
-   *
-   * @param req Express request object
-   * @returns Authenticated user or throws ForbiddenError
-   */
   async authenticateRequest(req: Request): Promise<User> {
-    // ============================================
-    // METHOD 1: Local Authentication (Bearer Token)
-    // ============================================
-    // Check for Authorization header with Bearer token
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      try {
-        const secretKey = this.getSessionSecret();
-        const { payload } = await jwtVerify(token, secretKey, {
-          algorithms: ["HS256"],
-        });
-        const { id, username } = payload as Record<string, unknown>;
-
-        // Verify this is a local auth token (has id and username)
-        if (typeof id === 'string' && typeof username === 'string') {
-          // For now, just return the user info from the token
-          // In a production app, you might want to verify the user still exists in the database
-          return {
-            id,
-            username,
-            role: 'user',
-          } as any;
-        }
-      } catch (error) {
-        console.warn("[Auth] Bearer token verification failed", String(error));
-        // Continue to OAuth fallback
-      }
-    }
-
-    // ============================================
-    // METHOD 2: OAuth Authentication (Fallback)
-    // ============================================
-    // Parse session cookie
+    // Regular authentication flow
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
     const session = await this.verifySession(sessionCookie);
@@ -313,10 +266,41 @@ class SDKServer {
       throw ForbiddenError("Invalid session cookie");
     }
 
-    // For now, we only support local authentication via username
-    // OAuth support would require additional setup
-    throw ForbiddenError("OAuth authentication not yet configured");
-    // TODO: Implement OAuth support when needed
+    const sessionUserId = session.openId;
+    const signedInAt = new Date();
+    let user = await db.getUserByOpenId(sessionUserId);
+
+    // If user not in DB, sync from OAuth server automatically
+    if (!user) {
+      try {
+        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+        await db.upsertUser({
+          openId: userInfo.openId,
+          username: userInfo.openId,
+          fullName: userInfo.name || 'User',
+          email: userInfo.email ?? null,
+          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
+          lastSignedIn: signedInAt,
+        });
+        user = await db.getUserByOpenId(userInfo.openId);
+      } catch (error) {
+        console.error("[Auth] Failed to sync user from OAuth:", error);
+        throw ForbiddenError("Failed to sync user info");
+      }
+    }
+
+    if (!user) {
+      throw ForbiddenError("User not found");
+    }
+
+    await db.upsertUser({
+      openId: user.openId ?? '',
+      username: user.username,
+      fullName: user.fullName,
+      lastSignedIn: signedInAt,
+    });
+
+    return user;
   }
 }
 
