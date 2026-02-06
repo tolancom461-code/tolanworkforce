@@ -1,0 +1,130 @@
+{
+  "query": "SELECT * FROM group_schedules WHERE group_id = 1 ORDER BY effective_date DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT * FROM group_schedules WHERE group_id = 1 ORDER BY effective_date DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "2",
+      "group_id": "1",
+      "day_of_week": "2",
+      "start_time": "13:10",
+      "end_time": "14:10",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:45:21",
+      "updated_at": "2026-02-06 09:45:21"
+    },
+    {
+      "id": "3",
+      "group_id": "1",
+      "day_of_week": "3",
+      "start_time": "13:10",
+      "end_time": "14:10",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:45:21",
+      "updated_at": "2026-02-06 09:45:21"
+    },
+    {
+      "id": "4",
+      "group_id": "1",
+      "day_of_week": "4",
+      "start_time": "13:10",
+      "end_time": "14:10",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:45:21",
+      "updated_at": "2026-02-06 09:45:21"
+    },
+    {
+      "id": "5",
+      "group_id": "1",
+      "day_of_week": "5",
+      "start_time": "13:10",
+      "end_time": "14:10",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:45:21",
+      "updated_at": "2026-02-06 09:45:21"
+    },
+    {
+      "id": "6",
+      "group_id": "1",
+      "day_of_week": "6",
+      "start_time": "13:10",
+      "end_time": "14:10",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:45:21",
+      "updated_at": "2026-02-06 09:45:21"
+    },
+    {
+      "id": "7",
+      "group_id": "1",
+      "day_of_week": "7",
+      "start_time": "13:10",
+      "end_time": "14:10",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:45:21",
+      "updated_at": "2026-02-06 09:45:21"
+    },
+    {
+      "id": "15",
+      "group_id": "1",
+      "day_of_week": "1",
+      "start_time": "13:05",
+      "end_time": "14:05",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:49:41",
+      "updated_at": "2026-02-06 09:49:41"
+    },
+    {
+      "id": "16",
+      "group_id": "1",
+      "day_of_week": "2",
+      "start_time": "13:05",
+      "end_time": "14:05",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:49:41",
+      "updated_at": "2026-02-06 09:49:41"
+    },
+    {
+      "id": "17",
+      "group_id": "1",
+      "day_of_week": "3",
+      "start_time": "13:05",
+      "end_time": "14:05",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:49:41",
+      "updated_at": "2026-02-06 09:49:41"
+    },
+    {
+      "id": "1",
+      "group_id": "1",
+      "day_of_week": "1",
+      "start_time": "13:10",
+      "end_time": "14:10",
+      "required_hours": "1.00",
+      "effective_date": "NULL",
+      "is_active": "1",
+      "created_at": "2026-02-06 09:45:21",
+      "updated_at": "2026-02-06 09:45:21"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tgroup_id\tday_of_week\tstart_time\tend_time\trequired_hours\teffective_date\tis_active\tcreated_at\tupdated_at\n2\t1\t2\t13:10\t14:10\t1.00\tNULL\t1\t2026-02-06 09:45:21\t2026-02-06 09:45:21\n3\t1\t3\t13:10\t14:10\t1.00\tNULL\t1\t2026-02-06 09:45:21\t2026-02-06 09:45:21\n4\t1\t4\t13:10\t14:10\t1.00\tNULL\t1\t2026-02-06 09:45:21\t2026-02-06 09:45:21\n5\t1\t5\t13:10\t14:10\t1.00\tNULL\t1\t2026-02-06 09:45:21\t2026-02-06 09:45:21\n6\t1\t6\t13:10\t14:10\t1.00\tNULL\t1\t2026-02-06 09:45:21\t2026-02-06 09:45:21\n7\t1\t7\t13:10\t14:10\t1.00\tNULL\t1\t2026-02-06 09:45:21\t2026-02-06 09:45:21\n15\t1\t1\t13:05\t14:05\t1.00\tNULL\t1\t2026-02-06 09:49:41\t2026-02-06 09:49:41\n16\t1\t2\t13:05\t14:05\t1.00\tNULL\t1\t2026-02-06 09:49:41\t2026-02-06 09:49:41\n17\t1\t3\t13:05\t14:05\t1.00\tNULL\t1\t2026-02-06 09:49:41\t2026-02-06 09:49:41\n1\t1\t1\t13:10\t14:10\t1.00\tNULL\t1\t2026-02-06 09:45:21\t2026-02-06 09:45:21\n",
+  "stderr": "",
+  "execution_time_ms": 1557
+}

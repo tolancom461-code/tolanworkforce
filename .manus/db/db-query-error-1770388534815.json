@@ -1,0 +1,8 @@
+{
+  "query": "SELECT worker_id, work_date, hours_worked, base_amount, deductions, bonuses, net_amount, is_locked FROM worker_daily_finance WHERE work_date = '2026-02-06';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT worker_id, work_date, hours_worked, base_amount, deductions, bonuses, net_amount, is_locked FROM worker_daily_finance WHERE work_date = '2026-02-06';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'hours_worked' in 'field list'"
+  ]
+}

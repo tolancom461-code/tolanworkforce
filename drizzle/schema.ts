@@ -55,28 +55,12 @@ export const groups = mysqlTable("groups", {
   workHours: decimal("work_hours", { precision: 4, scale: 2 }).default("8.00"),
   // New flexible settings (NULL by default)
   dailyWage: decimal("daily_wage", { precision: 10, scale: 2 }),
-  workMinutes: int("work_minutes"),
-  minuteCost: decimal("minute_cost", { precision: 10, scale: 4 }),
-  latePenaltyRate: decimal("late_penalty_rate", { precision: 5, scale: 2 }),
-  earlyLeavePenaltyRate: decimal("early_leave_penalty_rate", { precision: 5, scale: 2 }),
-  // Shift times for financial calculation
-  shiftStartTime: varchar("shift_start_time", { length: 10 }), // Format: HH:MM (e.g., "08:00")
-  shiftEndTime: varchar("shift_end_time", { length: 10 }), // Format: HH:MM (e.g., "17:00")
+
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export const groupShifts = mysqlTable("group_shifts", {
-  id: int("id").autoincrement().primaryKey(),
-  groupId: int("group_id").notNull(),
-  shiftName: varchar("shift_name", { length: 100 }).notNull(),
-  startTime: varchar("start_time", { length: 10 }).notNull(),
-  endTime: varchar("end_time", { length: 10 }).notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
 
 export const workers = mysqlTable("workers", {
   id: int("id").autoincrement().primaryKey(),
@@ -363,15 +347,3 @@ export type OperationalFlag = typeof operationalFlags.$inferSelect;
 export type InsertOperationalFlag = typeof operationalFlags.$inferInsert;
 
 // Group Schedules - Flexible Weekly Schedules (جداول الورديات المتغيرة)
-export const groupSchedules = mysqlTable("group_schedules", {
-  id: int("id").autoincrement().primaryKey(),
-  groupId: int("group_id").notNull(),
-  dayOfWeek: int("day_of_week").notNull(), // 0=Sunday, 1=Monday, ..., 6=Saturday
-  startTime: varchar("start_time", { length: 10 }).notNull(), // HH:MM format
-  endTime: varchar("end_time", { length: 10 }).notNull(), // HH:MM format
-  requiredHours: decimal("required_hours", { precision: 4, scale: 2 }).notNull(),
-  effectiveDate: date("effective_date"), // تاريخ بدء تطبيق الوردية (NULL = تطبيق فوري)
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});

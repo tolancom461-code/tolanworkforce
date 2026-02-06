@@ -1,11 +1,11 @@
-import { eq, desc, and, or, like, gte, lt, lte, sql, count } from "drizzle-orm";
+import { eq, desc, and, or, like, gte, lt, lte, sql, count, inArray, isNull, isNotNull, between } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   users, InsertUser, User,
   costCenters,
   groups, Group, InsertGroup,
-  groupShifts, GroupShift, InsertGroupShift,
-  groupSchedules,
+  
+  
   workers, InsertWorker,
   attendanceEvents,
   workDays,
@@ -17,7 +17,6 @@ import {
   payrollBatchCorrections,
   operationalFlags
 } from "../drizzle/schema";
-import { inArray, isNull, isNotNull, between, gte, lte, and } from "drizzle-orm";
 
 // Rename Worker type to avoid conflict with Web Worker
 import type { Worker as DbWorker } from "../drizzle/schema";
@@ -372,40 +371,7 @@ export async function deleteGroup(id: number): Promise<void> {
 }
 
 // Group Shifts
-export async function getGroupShifts(groupId: number): Promise<GroupShift[]> {
-  const db = await getDb();
-  if (!db) return [];
 
-  return await db.select().from(groupShifts).where(eq(groupShifts.groupId, groupId));
-}
-
-export async function createGroupShift(shift: InsertGroupShift): Promise<number> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const result = await db.insert(groupShifts).values(shift);
-  const shiftId = result[0].insertId;
-  
-  // إنشاء جداول ديناميكية لكل أيام الأسبوع (1-7)
-  const schedules: any[] = [];
-  for (let dayOfWeek = 1; dayOfWeek <= 7; dayOfWeek++) {
-    schedules.push({
-      groupId: shift.groupId,
-      dayOfWeek,
-      startTime: shift.startTime,
-      endTime: shift.endTime,
-      requiredHours: calculateRequiredHours(shift.startTime, shift.endTime),
-      isActive: shift.isActive ?? true,
-    });
-  }
-  
-  // إدراج الجداول الديناميكية
-  if (schedules.length > 0) {
-    await db.insert(groupSchedules).values(schedules as any);
-  }
-  
-  return shiftId;
-}
 
 // دالة مساعدة لحساب الساعات المطلوبة
 function calculateRequiredHours(startTime: string, endTime: string): number {
@@ -421,19 +387,7 @@ function calculateRequiredHours(startTime: string, endTime: string): number {
   return Math.round((diffMin / 60) * 100) / 100; // تقريب لمنزلتين عشريتين
 }
 
-export async function updateGroupShift(id: number, data: Partial<InsertGroupShift>): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
 
-  await db.update(groupShifts).set({ ...data, updatedAt: new Date() }).where(eq(groupShifts.id, id));
-}
-
-export async function deleteGroupShift(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  await db.delete(groupShifts).where(eq(groupShifts.id, id));
-}
 
 // ============================================
 // Workers Functions
@@ -1981,7 +1935,7 @@ export async function createPayrollBatch(params: {
   // Insert batch
   console.log('[createPayrollBatch] Inserting batch with code:', finalBatchCode);
   console.log('[createPayrollBatch] Batch totals:', { totalAmount, totalDeductions, totalBonuses, totalWorkers: batchItems.length });
-  const insertValues = {
+  const insertValues: any = {
     batchCode: finalBatchCode,
     periodStart: params.periodStart,
     periodEnd: params.periodEnd,
@@ -1991,7 +1945,7 @@ export async function createPayrollBatch(params: {
     totalWorkers: batchItems.length,
     totalDeductions: totalDeductions.toFixed(2),
     totalBonuses: totalBonuses.toFixed(2),
-    status: 'draft' as const,
+    status: 'draft',
     createdBy: params.createdBy,
   };
 
@@ -2756,7 +2710,23 @@ async function recalculateFinanceWithOverride(workerId: number, workDate: string
   ));
 }
 
-// getFullDayOverrideStatus function removed - feature deprecated
+// Stub for getFullDayOverrideStatus - feature deprecated but kept for compatibility
+export async function getFullDayOverrideStatus(workerId: number, workDate: string) {
+  // Returns false since override feature is deprecated
+  return { override: false, reason: null };
+}
+
+// Stub for updateFullDayOverride - feature deprecated but kept for compatibility
+export async function updateFullDayOverride(
+  workerId: number,
+  workDate: string,
+  override: boolean,
+  reason?: string,
+  userId?: number
+) {
+  // Feature deprecated - just return success
+  return { success: true };
+}
 
 // ============================================
 // Payroll Lock Functions
@@ -4776,43 +4746,7 @@ export async function getGroupsWithPagination(
 // Group Schedules Functions
 // ============================================
 
-export async function getGroupSchedules(groupId?: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
 
-  if (groupId) {
-    return await db.select().from(groupSchedules).where(eq(groupSchedules.groupId, groupId));
-  }
-
-  return await db.select().from(groupSchedules);
-}
-
-export async function updateGroupSchedule(
-  id: number,
-  startTime?: string,
-  endTime?: string,
-  requiredHours?: number,
-  effectiveDate?: string
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const updates: any = {};
-  if (startTime) updates.startTime = startTime;
-  if (endTime) updates.endTime = endTime;
-  if (requiredHours !== undefined) updates.requiredHours = requiredHours;
-  if (effectiveDate !== undefined) updates.effectiveDate = effectiveDate;
-
-  if (Object.keys(updates).length === 0) {
-    throw new Error("No fields to update");
-  }
-
-  const result = await db.update(groupSchedules)
-    .set(updates)
-    .where(eq(groupSchedules.id, id));
-
-  return result;
-}
 
 
 // ============================================
@@ -4821,7 +4755,8 @@ export async function updateGroupSchedule(
 
 /**
  * حساب وحفظ المالية اليومية تلقائياً عند check_out
- * يتم استدعاء هذه الدالة من recordAttendance
+ * نظام مبسط: الراتب = (وقت الانصراف - وقت الحضور) × سعر الدقيقة
+ * بدون ورديات أو خصومات
  */
 export async function calculateAndSaveDailyFinance(workerId: number, checkOutTime: Date) {
   const db = await getDb();
@@ -4857,17 +4792,12 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   
   const checkInTime = checkInEvents[0].eventTime;
   
-  // Get worker and group data
+  // Get worker and group data - simplified to only get minuteCost
   const [workerData] = await db
     .select({
       dailyRate: workers.dailyRate,
       groupId: workers.groupId,
-      shiftStartTime: groups.shiftStartTime,
-      shiftEndTime: groups.shiftEndTime,
-      workMinutes: groups.workMinutes,
       minuteCost: groups.minuteCost,
-      latePenaltyRate: groups.latePenaltyRate,
-      earlyLeavePenaltyRate: groups.earlyLeavePenaltyRate,
     })
     .from(workers)
     .leftJoin(groups, eq(workers.groupId, groups.id))
@@ -4878,74 +4808,14 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
     throw new Error("Worker not found");
   }
   
-  const dailyRate = Number(workerData.dailyRate) || 0;
-  const shiftStartTime = workerData.shiftStartTime;
-  const shiftEndTime = workerData.shiftEndTime;
+  // Calculate worked minutes (simple calculation: check_out - check_in)
+  const workedMinutes = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / 60000);
   const minuteCost = Number(workerData.minuteCost) || 0;
-  const latePenaltyRate = Number(workerData.latePenaltyRate) || 0;
-  const earlyLeavePenaltyRate = Number(workerData.earlyLeavePenaltyRate) || 0;
   
-  let baseSalary = dailyRate;
-  let latePenalty = 0;
-  let earlyLeavePenalty = 0;
-  let workedMinutes = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / 60000);
-  let financialMinutes = workedMinutes;
-  let lateMinutes = 0;
-  let earlyLeaveMinutes = 0;
-  
-  // If shift times are defined, calculate penalties
-  if (shiftStartTime && shiftEndTime) {
-    // Parse shift times
-    const [shiftStartHour, shiftStartMin] = shiftStartTime.split(':').map(Number);
-    const [shiftEndHour, shiftEndMin] = shiftEndTime.split(':').map(Number);
-    
-    const shiftStart = new Date(workDate);
-    shiftStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
-    
-    let shiftEnd = new Date(workDate);
-    shiftEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
-    
-    // If shift ends after midnight
-    if (shiftEnd <= shiftStart) {
-      shiftEnd.setDate(shiftEnd.getDate() + 1);
-    }
-    
-    // Calculate actual work time within shift boundaries
-    const actualStart = checkInTime > shiftStart ? checkInTime : shiftStart;
-    const actualEnd = checkOutTime < shiftEnd ? checkOutTime : shiftEnd;
-    
-    if (actualEnd > actualStart) {
-      financialMinutes = Math.floor((actualEnd.getTime() - actualStart.getTime()) / 60000);
-    } else {
-      financialMinutes = 0;
-    }
-    
-    // Calculate late minutes
-    if (checkInTime > shiftStart) {
-      lateMinutes = Math.floor((checkInTime.getTime() - shiftStart.getTime()) / 60000);
-    }
-    
-    // Calculate early leave minutes
-    if (checkOutTime < shiftEnd) {
-      earlyLeaveMinutes = Math.floor((shiftEnd.getTime() - checkOutTime.getTime()) / 60000);
-    }
-    
-    // Calculate base salary based on financial minutes
-    if (minuteCost > 0) {
-      baseSalary = financialMinutes * minuteCost;
-    }
-    
-    // Calculate penalties
-    if (latePenaltyRate > 0 && lateMinutes > 0 && minuteCost > 0) {
-      latePenalty = lateMinutes * minuteCost * latePenaltyRate;
-    }
-    
-    if (earlyLeavePenaltyRate > 0 && earlyLeaveMinutes > 0 && minuteCost > 0) {
-      earlyLeavePenalty = earlyLeaveMinutes * minuteCost * earlyLeavePenaltyRate;
-    }
-  }
-  
-  const netSalary = baseSalary - latePenalty - earlyLeavePenalty;
+  // Simple calculation: salary = worked_minutes × minute_cost
+  // No shift constraints, no penalties
+  const baseSalary = workedMinutes * minuteCost;
+  const netSalary = baseSalary;
   
   // Save to worker_daily_finance
   // Check if record exists
@@ -4967,16 +4837,16 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
       .set({
         checkOutTime,
         workedMinutes,
-        financialMinutes,
-        lateMinutes,
-        earlyLeaveMinutes,
+        financialMinutes: workedMinutes,
+        lateMinutes: 0,
+        earlyLeaveMinutes: 0,
         baseSalary: baseSalary.toString(),
-        latePenalty: latePenalty.toString(),
-        earlyLeavePenalty: earlyLeavePenalty.toString(),
+        latePenalty: '0.00',
+        earlyLeavePenalty: '0.00',
         netSalary: netSalary.toString(),
         // New columns
         baseAmount: baseSalary.toString(),
-        deductions: (latePenalty + earlyLeavePenalty).toString(),
+        deductions: '0.00',
         bonuses: '0.00',
         netAmount: netSalary.toString(),
         updatedAt: new Date(),
@@ -4990,16 +4860,16 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
       checkInTime,
       checkOutTime,
       workedMinutes,
-      financialMinutes,
-      lateMinutes,
-      earlyLeaveMinutes,
+      financialMinutes: workedMinutes,
+      lateMinutes: 0,
+      earlyLeaveMinutes: 0,
       baseSalary: baseSalary.toString(),
-      latePenalty: latePenalty.toString(),
-      earlyLeavePenalty: earlyLeavePenalty.toString(),
+      latePenalty: '0.00',
+      earlyLeavePenalty: '0.00',
       netSalary: netSalary.toString(),
       // New columns
       baseAmount: baseSalary.toString(),
-      deductions: (latePenalty + earlyLeavePenalty).toString(),
+      deductions: '0.00',
       bonuses: '0.00',
       netAmount: netSalary.toString(),
     });
@@ -5008,43 +4878,6 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   console.log(`✅ Daily finance calculated for worker ${workerId} on ${workDate.toISOString().split('T')[0]}`);
 }
 
-
-export async function saveWeeklySchedules(
-  groupId: number,
-  schedules: Array<{
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
-    requiredHours: number;
-    isActive: boolean;
-  }>,
-  effectiveDate?: string
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const { groupSchedules } = await import('../drizzle/schema');
-
-  // Delete existing schedules for this group
-  await db.delete(groupSchedules).where(eq(groupSchedules.groupId, groupId));
-
-  // Insert new schedules
-  const insertPromises = schedules.map(schedule =>
-    db.insert(groupSchedules).values({
-      groupId,
-      dayOfWeek: schedule.dayOfWeek,
-      startTime: schedule.startTime,
-      endTime: schedule.endTime,
-      requiredHours: schedule.requiredHours,
-      isActive: schedule.isActive,
-      effectiveDate: effectiveDate || null,
-    })
-  );
-
-  await Promise.all(insertPromises);
-
-  return { success: true, count: schedules.length };
-}
 
 /**
  * Aggregate payroll data for all workers in a cost center for a period
@@ -5096,4 +4929,39 @@ export async function aggregatePayrollDataByCostCenter(
 
   console.log(`[aggregatePayrollDataByCostCenter] Aggregated data for ${results.length} workers with payroll data`);
   return results;
+}
+
+
+// Get all check_out events for a specific date
+export async function getCheckOutEventsByDate(date: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const { attendanceEvents } = await import('../drizzle/schema');
+  
+  const startOfDay = new Date(`${date}T00:00:00`);
+  const endOfDay = new Date(`${date}T23:59:59`);
+  
+  return await db
+    .select()
+    .from(attendanceEvents)
+    .where(
+      and(
+        eq(attendanceEvents.eventType, 'check_out'),
+        gte(attendanceEvents.eventTime, startOfDay),
+        lte(attendanceEvents.eventTime, endOfDay)
+      )
+    );
+}
+
+// Delete all worker daily finance records for a specific date
+export async function deleteWorkerDailyFinanceByDate(date: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const { workerDailyFinance } = await import('../drizzle/schema');
+  
+  await db
+    .delete(workerDailyFinance)
+    .where(eq(workerDailyFinance.workDate, new Date(date)));
 }

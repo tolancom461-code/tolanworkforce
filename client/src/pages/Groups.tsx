@@ -23,8 +23,7 @@ export default function Groups() {
   const [pageSize] = useState(10);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isShiftsDialogOpen, setIsShiftsDialogOpen] = useState(false);
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+    const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   
   // Form state
@@ -42,12 +41,7 @@ export default function Groups() {
   });
 
   // Shift form state
-  const [shiftFormData, setShiftFormData] = useState({
-    shiftName: "",
-    startTime: "08:00",
-    endTime: "16:00",
-    isActive: true,
-  });
+  
 
   // Calculate minute_cost automatically
   const calculatedMinuteCost = useMemo(() => {
@@ -70,10 +64,7 @@ export default function Groups() {
   
   const groups = groupsData?.data || [];
   const totalPages = groupsData?.totalPages || 1;
-  const { data: shifts } = trpc.groups.getShifts.useQuery(
-    { groupId: selectedGroup?.id || 0 },
-    { enabled: !!selectedGroup }
-  );
+  
 
   const createMutation = trpc.groups.create.useMutation({
     onSuccess: () => {
@@ -115,26 +106,9 @@ export default function Groups() {
     },
   });
 
-  const createShiftMutation = trpc.groups.createShift.useMutation({
-    onSuccess: () => {
-      toast.success("تم إضافة الوردية بنجاح");
-      resetShiftForm();
-      utils.groups.getShifts.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء إضافة الوردية");
-    },
-  });
+  
 
-  const deleteShiftMutation = trpc.groups.deleteShift.useMutation({
-    onSuccess: () => {
-      toast.success("تم حذف الوردية بنجاح");
-      utils.groups.getShifts.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء حذف الوردية");
-    },
-  });
+  
 
   const exportGroupQRMutation = trpc.workers.exportGroupQRCodes.useMutation({
     onSuccess: (data) => {
@@ -176,14 +150,7 @@ export default function Groups() {
     });
   };
 
-  const resetShiftForm = () => {
-    setShiftFormData({
-      shiftName: "",
-      startTime: "08:00",
-      endTime: "16:00",
-      isActive: true,
-    });
-  };
+  
 
   const handleEdit = (group: any) => {
     setSelectedGroup(group);
@@ -229,10 +196,7 @@ export default function Groups() {
     handleViewShifts(group);
   }, []);
 
-  const handleViewShifts = (group: any) => {
-    setSelectedGroup(group);
-    setIsShiftsDialogOpen(true);
-  };
+  
 
   const handleExportGroupQR = (groupId: number) => {
     exportGroupQRMutation.mutate({ groupId });
@@ -273,13 +237,7 @@ export default function Groups() {
     setIsConfirmDialogOpen(false);
   };
 
-  const handleAddShift = () => {
-    if (!selectedGroup) return;
-    createShiftMutation.mutate({
-      groupId: selectedGroup.id,
-      ...shiftFormData,
-    });
-  };
+  
 
   const filteredGroups = groups?.filter(
     (group) => {
