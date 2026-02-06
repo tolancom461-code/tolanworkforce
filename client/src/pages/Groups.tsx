@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -12,14 +11,20 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Users, Clock, Building2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Users, Clock, Building2, Download } from "lucide-react";
+import { ExcelImportExportDialog } from "@/components/ExcelImportExportDialog";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
+import GroupRow from '@/components/GroupRow';
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
   const [costCenterFilter, setCostCenterFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isShiftsDialogOpen, setIsShiftsDialogOpen] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   
   // Form state
@@ -27,8 +32,12 @@ export default function Groups() {
     code: "",
     name: "",
     costCenterId: null as number | null,
-    dailyRate: "",
-    workHours: "8.00",
+    dailyWage: "",
+    workMinutes: "",
+    latePenaltyRate: "",
+    earlyLeavePenaltyRate: "",
+    shiftStartTime: "",
+    shiftEndTime: "",
     isActive: true,
   });
 
@@ -40,9 +49,27 @@ export default function Groups() {
     isActive: true,
   });
 
+  // Calculate minute_cost automatically
+  const calculatedMinuteCost = useMemo(() => {
+    const wage = parseFloat(formData.dailyWage);
+    const minutes = parseInt(formData.workMinutes);
+    if (wage > 0 && minutes > 0) {
+      return (wage / minutes).toFixed(2);
+    }
+    return null;
+  }, [formData.dailyWage, formData.workMinutes]);
+
   const utils = trpc.useUtils();
-  const { data: groups, isLoading } = trpc.groups.list.useQuery();
+  const costCenterId = costCenterFilter !== "all" ? parseInt(costCenterFilter) : undefined;
+  const { data: groupsData, isLoading } = trpc.groups.listWithPagination.useQuery({
+    page: currentPage,
+    limit: pageSize,
+    costCenterId,
+  });
   const { data: costCenters } = trpc.costCenters.list.useQuery();
+  
+  const groups = groupsData?.data || [];
+  const totalPages = groupsData?.totalPages || 1;
   const { data: shifts } = trpc.groups.getShifts.useQuery(
     { groupId: selectedGroup?.id || 0 },
     { enabled: !!selectedGroup }
@@ -53,6 +80,7 @@ export default function Groups() {
       toast.success("تم إنشاء المجموعة بنجاح");
       setIsAddDialogOpen(false);
       resetForm();
+      utils.groups.listWithPagination.invalidate();
       utils.groups.list.invalidate();
       utils.dashboard.stats.invalidate();
     },
@@ -67,6 +95,7 @@ export default function Groups() {
       setIsEditDialogOpen(false);
       setSelectedGroup(null);
       resetForm();
+      utils.groups.listWithPagination.invalidate();
       utils.groups.list.invalidate();
     },
     onError: (error) => {
@@ -77,6 +106,7 @@ export default function Groups() {
   const deleteMutation = trpc.groups.delete.useMutation({
     onSuccess: () => {
       toast.success("تم حذف المجموعة بنجاح");
+      utils.groups.listWithPagination.invalidate();
       utils.groups.list.invalidate();
       utils.dashboard.stats.invalidate();
     },
@@ -106,13 +136,42 @@ export default function Groups() {
     },
   });
 
+  const exportGroupQRMutation = trpc.workers.exportGroupQRCodes.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("تم تصدير QR Codes بنجاح");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء التصدير");
+    },
+  });
+
   const resetForm = () => {
     setFormData({
       code: "",
       name: "",
       costCenterId: null,
-      dailyRate: "",
-      workHours: "8.00",
+      dailyWage: "",
+      workMinutes: "",
+      latePenaltyRate: "",
+      earlyLeavePenaltyRate: "",
+      shiftStartTime: "",
+      shiftEndTime: "",
       isActive: true,
     });
   };
@@ -129,30 +188,89 @@ export default function Groups() {
   const handleEdit = (group: any) => {
     setSelectedGroup(group);
     setFormData({
-      code: group.code,
-      name: group.name,
-      costCenterId: group.costCenterId,
-      dailyRate: group.dailyRate || "",
-      workHours: group.workHours || "8.00",
-      isActive: group.isActive,
+      code: group.code || "",
+      name: group.name || "",
+      costCenterId: group.costCenterId || null,
+      dailyWage: group.dailyWage ? String(group.dailyWage) : "",
+      workMinutes: group.workMinutes ? String(group.workMinutes) : "",
+      latePenaltyRate: group.latePenaltyRate ? String(group.latePenaltyRate) : "",
+      earlyLeavePenaltyRate: group.earlyLeavePenaltyRate ? String(group.earlyLeavePenaltyRate) : "",
+      shiftStartTime: group.shiftStartTime || "",
+      shiftEndTime: group.shiftEndTime || "",
+      isActive: group.isActive !== undefined ? group.isActive : true,
     });
     setIsEditDialogOpen(true);
   };
+
+  // جلب بيانات المجموعة الحديثة من قاعدة البيانات عند فتح نموذج التعديل
+  const { data: freshGroupData } = trpc.groups.getById.useQuery(
+    { id: selectedGroup?.id || 0 },
+    { enabled: !!selectedGroup && isEditDialogOpen }
+  );
+
+  useEffect(() => {
+    if (isEditDialogOpen && freshGroupData) {
+      setFormData({
+        code: freshGroupData.code || "",
+        name: freshGroupData.name || "",
+        costCenterId: freshGroupData.costCenterId || null,
+        dailyWage: freshGroupData.dailyWage ? String(freshGroupData.dailyWage) : "",
+        workMinutes: freshGroupData.workMinutes ? String(freshGroupData.workMinutes) : "",
+        latePenaltyRate: freshGroupData.latePenaltyRate ? String(freshGroupData.latePenaltyRate) : "",
+        earlyLeavePenaltyRate: freshGroupData.earlyLeavePenaltyRate ? String(freshGroupData.earlyLeavePenaltyRate) : "",
+        shiftStartTime: freshGroupData.shiftStartTime || "",
+        shiftEndTime: freshGroupData.shiftEndTime || "",
+        isActive: freshGroupData.isActive ?? true,
+      });
+    }
+  }, [isEditDialogOpen, freshGroupData]);
+
+  const handleView = useCallback((group: any) => {
+    handleViewShifts(group);
+  }, []);
 
   const handleViewShifts = (group: any) => {
     setSelectedGroup(group);
     setIsShiftsDialogOpen(true);
   };
 
+  const handleExportGroupQR = (groupId: number) => {
+    exportGroupQRMutation.mutate({ groupId });
+  };
+
   const handleSubmit = () => {
+    // Validate shift times
+    if (!formData.shiftStartTime || !formData.shiftEndTime) {
+      toast.error("يجب تحديد أوقات الوردية (إلزامي)");
+      return;
+    }
+    
+    // If editing, show confirmation dialog
+    if (selectedGroup) {
+      setIsConfirmDialogOpen(true);
+    } else {
+      // For new groups, save directly
+      saveGroup();
+    }
+  };
+
+  const saveGroup = () => {
+    // Send data as strings (tRPC will handle conversion)
+    const payload = {
+      ...formData,
+      // Keep as strings - tRPC will convert them
+    };
+
     if (selectedGroup) {
       updateMutation.mutate({
         id: selectedGroup.id,
-        ...formData,
+        ...payload,
       });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload);
     }
+    
+    setIsConfirmDialogOpen(false);
   };
 
   const handleAddShift = () => {
@@ -189,13 +307,18 @@ export default function Groups() {
             <h1 className="text-3xl font-bold tracking-tight">إدارة المجموعات</h1>
             <p className="text-muted-foreground">إدارة مجموعات العمل والورديات</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { resetForm(); setSelectedGroup(null); }}>
-                <Plus className="ml-2 h-4 w-4" />
-                إضافة مجموعة
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <ExcelImportExportDialog type="groups" onImportSuccess={() => {
+              utils.groups.listWithPagination.invalidate();
+              utils.groups.list.invalidate();
+            }} />
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => { resetForm(); setSelectedGroup(null); }}>
+                  <Plus className="ml-2 h-4 w-4" />
+                  إضافة مجموعة
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]" dir="rtl">
               <DialogHeader>
                 <DialogTitle>إضافة مجموعة جديدة</DialogTitle>
@@ -240,29 +363,101 @@ export default function Groups() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="dailyRate">الأجر اليومي</Label>
-                    <Input
-                      id="dailyRate"
-                      type="number"
-                      value={formData.dailyRate}
-                      onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
-                      placeholder="100.00"
-                    />
+                
+                {/* Work Group Settings */}
+                <div className="border-t pt-4 mt-2">
+                  <h4 className="text-sm font-medium mb-3">إعدادات الحساب بالدقائق</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="dailyWage">أجر اليوم (ريال)</Label>
+                      <Input
+                        id="dailyWage"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.dailyWage}
+                        onChange={(e) => setFormData({ ...formData, dailyWage: e.target.value })}
+                        placeholder="150.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="workMinutes">دقائق الدوام</Label>
+                      <Input
+                        id="workMinutes"
+                        type="number"
+                        min="1"
+                        value={formData.workMinutes}
+                        onChange={(e) => setFormData({ ...formData, workMinutes: e.target.value })}
+                        placeholder="480"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="workHours">ساعات العمل</Label>
-                    <Input
-                      id="workHours"
-                      type="number"
-                      step="0.5"
-                      value={formData.workHours}
-                      onChange={(e) => setFormData({ ...formData, workHours: e.target.value })}
-                      placeholder="8.00"
-                    />
+                  {calculatedMinuteCost && (
+                    <div className="bg-muted/50 p-3 rounded-md">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">تكلفة الدقيقة (محسوبة تلقائياً):</span>
+                        <span className="text-lg font-bold text-primary">{calculatedMinuteCost} ريال</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="latePenaltyRate">نسبة غرامة التأخير (%)</Label>
+                      <Input
+                        id="latePenaltyRate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.latePenaltyRate}
+                        onChange={(e) => setFormData({ ...formData, latePenaltyRate: e.target.value })}
+                        placeholder="0.50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="earlyLeavePenaltyRate">نسبة غرامة الانصراف المبكر (%)</Label>
+                      <Input
+                        id="earlyLeavePenaltyRate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.earlyLeavePenaltyRate}
+                        onChange={(e) => setFormData({ ...formData, earlyLeavePenaltyRate: e.target.value })}
+                        placeholder="0.50"
+                      />
+                    </div>
                   </div>
                 </div>
+                
+                {/* Shift Times */}
+                <div className="border-t pt-4 mt-2">
+                  <h4 className="text-sm font-medium mb-3">أوقات الوردية (إلزامي)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="shiftStartTime">بداية الوردية *</Label>
+                      <Input
+                        id="shiftStartTime"
+                        type="time"
+                        value={formData.shiftStartTime}
+                        onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="shiftEndTime">نهاية الوردية *</Label>
+                      <Input
+                        id="shiftEndTime"
+                        type="time"
+                        value={formData.shiftEndTime}
+                        onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ⚠️ يتم احتساب الأجر مالياً فقط للوقت الواقع داخل وقت الوردية
+                  </p>
+                </div>
+                
                 <div className="flex items-center gap-2">
                   <Switch
                     id="isActive"
@@ -281,7 +476,8 @@ export default function Groups() {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         {/* Search & Filter */}
@@ -333,14 +529,13 @@ export default function Groups() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
+              <div className="rounded-md border overflow-x-auto max-h-[600px] overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">الكود</TableHead>
                     <TableHead className="text-right">الاسم</TableHead>
                     <TableHead className="text-right">مركز التكلفة</TableHead>
-                    <TableHead className="text-right">الأجر اليومي</TableHead>
-                    <TableHead className="text-right">ساعات العمل</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
@@ -351,8 +546,6 @@ export default function Groups() {
                       <TableCell className="font-mono">{group.code}</TableCell>
                       <TableCell className="font-medium">{group.name}</TableCell>
                       <TableCell>{getCostCenterName(group.costCenterId)}</TableCell>
-                      <TableCell>{group.dailyRate || "-"}</TableCell>
-                      <TableCell>{group.workHours || "8.00"} ساعة</TableCell>
                       <TableCell>
                         <Badge variant={group.isActive ? "default" : "secondary"}>
                           {group.isActive ? "نشط" : "غير نشط"}
@@ -360,6 +553,14 @@ export default function Groups() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleExportGroupQR(group.id)}
+                            title="تصدير QR Codes"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -382,7 +583,7 @@ export default function Groups() {
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent dir="rtl">
+                          <AlertDialogContent dir="rtl">
                               <AlertDialogHeader>
                                 <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
                                 <AlertDialogDescription>
@@ -413,12 +614,19 @@ export default function Groups() {
                   )}
                 </TableBody>
               </Table>
+            </div>
             )}
           </CardContent>
         </Card>
 
         {/* Edit Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setSelectedGroup(null);
+            resetForm();
+          }
+        }}>
           <DialogContent className="sm:max-w-[500px]" dir="rtl">
             <DialogHeader>
               <DialogTitle>تعديل المجموعة</DialogTitle>
@@ -461,27 +669,101 @@ export default function Groups() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-dailyRate">الأجر اليومي</Label>
-                  <Input
-                    id="edit-dailyRate"
-                    type="number"
-                    value={formData.dailyRate}
-                    onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
-                  />
+              
+              {/* Work Group Settings */}
+              <div className="border-t pt-4 mt-2">
+                <h4 className="text-sm font-medium mb-3">إعدادات الحساب بالدقائق</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-dailyWage">أجر اليوم (ريال)</Label>
+                    <Input
+                      id="edit-dailyWage"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.dailyWage}
+                      onChange={(e) => setFormData({ ...formData, dailyWage: e.target.value })}
+                      placeholder="150.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-workMinutes">دقائق الدوام</Label>
+                    <Input
+                      id="edit-workMinutes"
+                      type="number"
+                      min="1"
+                      value={formData.workMinutes}
+                      onChange={(e) => setFormData({ ...formData, workMinutes: e.target.value })}
+                      placeholder="480"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-workHours">ساعات العمل</Label>
-                  <Input
-                    id="edit-workHours"
-                    type="number"
-                    step="0.5"
-                    value={formData.workHours}
-                    onChange={(e) => setFormData({ ...formData, workHours: e.target.value })}
-                  />
+                {calculatedMinuteCost && (
+                  <div className="bg-muted/50 p-3 rounded-md">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">تكلفة الدقيقة (محسوبة تلقائياً):</span>
+                      <span className="text-lg font-bold text-primary">{calculatedMinuteCost} ريال</span>
+                    </div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-latePenaltyRate">نسبة غرامة التأخير (%)</Label>
+                    <Input
+                      id="edit-latePenaltyRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.latePenaltyRate}
+                      onChange={(e) => setFormData({ ...formData, latePenaltyRate: e.target.value })}
+                      placeholder="0.50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-earlyLeavePenaltyRate">نسبة غرامة الانصراف المبكر (%)</Label>
+                    <Input
+                      id="edit-earlyLeavePenaltyRate"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.earlyLeavePenaltyRate}
+                      onChange={(e) => setFormData({ ...formData, earlyLeavePenaltyRate: e.target.value })}
+                      placeholder="0.50"
+                    />
+                  </div>
                 </div>
               </div>
+              
+              {/* Shift Times */}
+              <div className="border-t pt-4 mt-2">
+                <h4 className="text-sm font-medium mb-3">أوقات الوردية (إلزامي)</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-shiftStartTime">بداية الوردية *</Label>
+                    <Input
+                      id="edit-shiftStartTime"
+                      type="time"
+                      value={formData.shiftStartTime}
+                      onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-shiftEndTime">نهاية الوردية *</Label>
+                    <Input
+                      id="edit-shiftEndTime"
+                      type="time"
+                      value={formData.shiftEndTime}
+                      onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  ⚠️ يتم احتساب الأجر مالياً فقط للوقت الواقع داخل وقت الوردية
+                </p>
+              </div>
+              
               <div className="flex items-center gap-2">
                 <Switch
                   id="edit-isActive"
@@ -592,6 +874,58 @@ export default function Groups() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Confirmation Dialog for Edit */}
+        <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+          <AlertDialogContent dir="rtl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>تأكيد حفظ التعديلات</AlertDialogTitle>
+              <AlertDialogDescription>
+                هل أنت متأكد من حفظ التعديلات على المجموعة "{selectedGroup?.name}"?
+                <br />
+                <span className="text-xs text-muted-foreground mt-2 block">
+                  سيتم تحديث جميع بيانات المجموعة وقد يؤثر ذلك على حسابات الرواتب المستقبلية.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={saveGroup}
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending ? "جاري الحفظ..." : "نعم، حفظ التعديلات"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 p-4 bg-muted rounded-lg">
+            <div className="text-sm text-muted-foreground">
+              الصفحة {currentPage} من {totalPages}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                السابقة
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                التالية
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

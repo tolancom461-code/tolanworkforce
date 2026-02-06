@@ -1,0 +1,13 @@
+{
+  "query": "SELECT \n  w.id as worker_id,\n  w.name,\n  g.daily_rate,\n  gs.start_time,\n  gs.end_time,\n  gs.required_hours,\n  COUNT(CASE WHEN ae.event_type = 'check_in' THEN 1 END) as check_ins,\n  COUNT(CASE WHEN ae.event_type = 'check_out' THEN 1 END) as check_outs,\n  ROUND((COUNT(CASE WHEN ae.event_type = 'check_in' THEN 1 END) / 5) * g.daily_rate, 2) as estimated_pay\nFROM workers w\nJOIN groups g ON w.group_id = g.id\nLEFT JOIN group_schedules gs ON g.id = gs.group_id AND gs.day_of_week = 0\nLEFT JOIN attendance_events ae ON w.id = ae.worker_id AND DATE(ae.event_time) >= DATE_SUB(CURDATE(), INTERVAL 5 DAY)\nWHERE w.group_id = 1\nGROUP BY w.id, w.name, g.daily_rate, gs.start_time, gs.end_time, gs.required_hours\nLIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  w.id as worker_id,\n  w.name,\n  g.daily_rate,\n  gs.start_time,\n  gs.end_time,\n  gs.required_hours,\n  COUNT(CASE WHEN ae.event_type = 'check_in' THEN 1 END) as check_ins,\n  COUNT(CASE WHEN ae.event_type = 'check_out' THEN 1 END) as check_outs,\n  ROUND((COUNT(CASE WHEN ae.event_type = 'check_in' THEN 1 END) / 5) * g.daily_rate, 2) as estimated_pay\nFROM workers w\nJOIN groups g ON w.group_id = g.id\nLEFT JOIN group_schedules gs ON g.id = gs.group_id AND gs.day_of_week = 0\nLEFT JOIN attendance_events ae ON w.id = ae.worker_id AND DATE(ae.event_time) >= DATE_SUB(CURDATE(), INTERVAL 5 DAY)\nWHERE w.group_id = 1\nGROUP BY w.id, w.name, g.daily_rate, gs.start_time, gs.end_time, gs.required_hours\nLIMIT 5;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 12 column 12 near \"groups g ON w.group_id = g.id",
+    "LEFT JOIN group_schedules gs ON g.id = gs.group_id AND gs.day_of_week = 0",
+    "LEFT JOIN attendance_events ae ON w.id = ae.worker_id AND DATE(ae.event_time) >= DATE_SUB(CURDATE(), INTERVAL 5 DAY)",
+    "WHERE w.group_id = 1",
+    "GROUP BY w.id, w.name, g.daily_rate, gs.start_time, gs.end_time, gs.required_hours",
+    "LIMIT 5\""
+  ]
+}

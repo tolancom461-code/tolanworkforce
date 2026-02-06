@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -18,26 +19,123 @@ import {
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Key, User, UsersRound, UserCircle } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  LogOut, 
+  PanelLeft, 
+  Users, 
+  Key, 
+  User, 
+  UsersRound, 
+  UserCircle, 
+  QrCode, 
+  ClipboardList, 
+  Wallet, 
+  Building2, 
+  Shield, 
+  FileText,
+  TrendingUp,
+  PlusCircle,
+  DollarSign,
+  CheckCircle,
+  FileCheck,
+  ChevronDown,
+  Flag,
+  Clock,
+  Settings,
+  Briefcase,
+  Home as HomeIcon,
+  Banknote,
+  Calendar,
+  ClipboardCheck,
+  AlertCircle
+} from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "لوحة التحكم", path: "/dashboard" },
-  { icon: Users, label: "المستخدمين", path: "/users" },
-  { icon: Key, label: "الصلاحيات", path: "/permissions" },
-  { icon: UsersRound, label: "المجموعات", path: "/groups" },
-  { icon: UserCircle, label: "العمال", path: "/workers" },
-  { icon: User, label: "الملف الشخصي", path: "/profile" },
+// تصنيف القوائم حسب الأدوار والوظائف
+const menuSections = [
+  {
+    label: "📊 لوحات التحكم",
+    items: [
+      { icon: LayoutDashboard, label: "الرئيسية", path: "/dashboard" },
+      { icon: TrendingUp, label: "لوحة المدير", path: "/executive" },
+    ]
+  },
+  {
+    label: "👥 إدارة الموارد البشرية",
+    items: [
+      { icon: Users, label: "المستخدمين", path: "/users" },
+      { icon: UsersRound, label: "العمال", path: "/workers" },
+      { icon: Briefcase, label: "المجموعات", path: "/groups" },
+    ]
+  },
+  {
+    label: "⏰ إدارة الحضور والانصراف",
+    items: [
+      { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },
+      { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log" },
+      { icon: FileText, label: "تقارير الحضور", path: "/attendance/reports" },
+      { icon: Clock, label: "أيام العمل", path: "/work-days" },
+    ]
+  },
+  {
+    label: "💰 إدارة الرواتب والمالية",
+    items: [
+      { icon: Banknote, label: "لوحة تحكم الرواتب", path: "/payroll/dashboard", color: "text-green-600" },
+      { icon: DollarSign, label: "دفعات الرواتب", path: "/payroll/batches" },
+      { icon: PlusCircle, label: "إنشاء دفعة رواتب", path: "/payroll/batches/create" },
+      { icon: FileText, label: "سجل دفعات الرواتب", path: "/finance/payroll/history" },
+      { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
+      { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
+      { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },
+    ]
+  },
+  {
+    label: "⏳ إدارة الورديات والجداول",
+    items: [
+      { icon: Calendar, label: "الورديات الديناميكية", path: "/schedules/dynamic", color: "text-blue-600" },
+    ]
+  },
+  {
+    label: "✓ مراجعة البصمات",
+    items: [
+      { icon: ClipboardCheck, label: "مركز مراجعة البصمات", path: "/punches/review", color: "text-orange-600" },
+    ]
+  },
+  {
+    label: "📋 البيانات المرجعية",
+    items: [
+      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
+      // { icon: Flag, label: "الأعلام التشغيلية", path: "/operational-flags" },
+      // { icon: CheckCircle, label: "الأعلام المعلقة", path: "/pending-flags" },
+    ]
+  },
+  {
+    label: "⚙️ إعدادات النظام",
+    items: [
+      { icon: Settings, label: "الملف الشخصي", path: "/profile" },
+    ]
+  },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
+const SIDEBAR_COLLAPSED_SECTIONS_KEY = "sidebar-collapsed-sections";
 const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
@@ -67,10 +165,10 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
+              تسجيل الدخول مطلوب
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              يتطلب الوصول إلى هذه اللوحة المصادقة. انقر للمتابعة إلى صفحة تسجيل الدخول.
             </p>
           </div>
           <Button
@@ -80,7 +178,7 @@ export default function DashboardLayout({
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            Sign in
+            الذهاب إلى لوحة التحكم
           </Button>
         </div>
       </div>
@@ -102,6 +200,19 @@ export default function DashboardLayout({
   );
 }
 
+type MenuItem = {
+  icon: any;
+  label: string;
+  path: string;
+  color?: string;
+  badge?: number | null;
+};
+
+type MenuSection = {
+  label: string;
+  items: MenuItem[];
+};
+
 type DashboardLayoutContentProps = {
   children: React.ReactNode;
   setSidebarWidth: (width: number) => void;
@@ -117,21 +228,51 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
-  const isMobile = useIsMobile();
+  
+  // جلب عدد البصمات المعلقة
+  const { data: pendingPunchesCount = 0 } = trpc.attendance.getPendingCount.useQuery();
+  
+  // حفظ حالة الطي/الفتح لكل قسم
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_SECTIONS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  });
 
   useEffect(() => {
-    if (isCollapsed) {
-      setIsResizing(false);
-    }
-  }, [isCollapsed]);
+    localStorage.setItem(SIDEBAR_COLLAPSED_SECTIONS_KEY, JSON.stringify(collapsedSections));
+  }, [collapsedSections]);
+
+  const toggleSection = (label: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [label]: !prev[label]
+    }));
+  };
+  
+  // جميع المستخدمين لديهم وصول كامل - لا توجد فحوصات صلاحيات
+  const filteredMenuSections = menuSections.map(section => ({
+    ...section,
+    items: section.items.map(item => {
+      // إضافة Badge للبصمات المعلقة
+      if (item.path === "/punches/review") {
+        return { ...item, badge: pendingPunchesCount };
+      }
+      return item;
+    })
+  }));
+
+  const isMobile = useIsMobile();
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    e.preventDefault();
+  };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
 
-      const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
-      const newWidth = e.clientX - sidebarLeft;
+      const newWidth = e.clientX;
       if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
         setSidebarWidth(newWidth);
       }
@@ -144,129 +285,134 @@ function DashboardLayoutContent({
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
     }
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
     };
   }, [isResizing, setSidebarWidth]);
 
   return (
     <>
-      <div className="relative" ref={sidebarRef}>
-        <Sidebar
-          collapsible="icon"
-          className="border-r-0"
-          disableTransition={isResizing}
-        >
-          <SidebarHeader className="h-16 justify-center">
-            <div className="flex items-center gap-3 px-2 transition-all w-full">
-              <button
-                onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-                aria-label="Toggle navigation"
+      <Sidebar ref={sidebarRef} collapsible="icon" className="border-l">
+        <SidebarHeader className="border-b px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Users className="h-4 w-4" />
+            </div>
+            <div className="flex flex-col gap-0.5 leading-none">
+              <span className="font-semibold">TolanWorkforce</span>
+              <span className="text-xs text-muted-foreground">نظام إدارة القوى العاملة</span>
+            </div>
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent>
+          <SidebarMenu>
+            {filteredMenuSections.map((section) => (
+              <Collapsible
+                key={section.label}
+                open={!collapsedSections[section.label]}
+                onOpenChange={() => toggleSection(section.label)}
+                className="group/collapsible"
               >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
-              </button>
-              {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate">
-                    Navigation
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          </SidebarHeader>
+                <SidebarGroup>
+                  <CollapsibleTrigger asChild>
+                    <SidebarGroupLabel className="cursor-pointer hover:text-foreground transition-colors">
+                      {section.label}
+                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-0 group-data-[state=closed]/collapsible:-rotate-90" />
+                    </SidebarGroupLabel>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {section.items.map((item) => (
+                          <SidebarMenuItem key={item.path}>
+                            <SidebarMenuButton
+                              asChild
+                              isActive={location === item.path}
+                              onClick={() => setLocation(item.path)}
+                            >
+                              <a href={item.path} className="flex items-center gap-2 justify-between w-full">
+                                <div className="flex items-center gap-2">
+                                  <item.icon className={`h-4 w-4 ${(item as any).color || ''}`} />
+                                  <span>{item.label}</span>
+                                </div>
+                                {(item as any).badge !== undefined && (item as any).badge !== null && (item as any).badge > 0 && (
+                                  <Badge variant="destructive" className="ml-auto text-xs h-5 flex items-center justify-center">
+                                    {(item as any).badge}
+                                  </Badge>
+                                )}
+                              </a>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
 
-          <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
-                const isActive = location === item.path;
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarContent>
-
-          <SidebarFooter className="p-3">
-            <div className="flex justify-center mb-2 group-data-[collapsible=icon]:mb-0">
+        <SidebarFooter className="border-t">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-xs">
+                        {user?.fullName?.split(" ").map(n => n[0]).join("") || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate">{user?.fullName}</span>
+                    <ChevronDown className="ml-auto h-4 w-4" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                    {user?.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>الملف الشخصي</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => logout()}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>تسجيل الخروج</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
               <ThemeToggle />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
-                      {user?.fullName?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
-                      {user?.fullName || "-"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
-                    </p>
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarFooter>
-        </Sidebar>
-        <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
-          onMouseDown={() => {
-            if (isCollapsed) return;
-            setIsResizing(true);
-          }}
-          style={{ zIndex: 50 }}
-        />
-      </div>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
 
       <SidebarInset>
-        {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <ThemeToggle />
-          </div>
-        )}
-        <main className="flex-1 p-4">{children}</main>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation('/home', { replace: true })}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            title="العودة للرئيسية"
+          >
+            <HomeIcon className="h-4 w-4" />
+            <span className="hidden sm:inline text-sm">الرئيسية</span>
+          </Button>
+          <div className="flex-1" />
+          <ThemeToggle />
+        </header>
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
       </SidebarInset>
     </>
   );

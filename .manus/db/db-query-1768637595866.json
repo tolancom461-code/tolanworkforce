@@ -1,0 +1,9 @@
+{
+  "query": "INSERT IGNORE INTO permissions (code, name, category, description, created_at, updated_at) VALUES\n('REJECT_PAYROLL', 'رفض الرواتب', 'الإدارة المالية', 'القدرة على رفض دفعات الرواتب وإرجاعها للمراجع', NOW(), NOW()),\n('REVIEW_PAYROLL_ACCOUNTING', 'مراجعة محاسبية', 'الإدارة المالية', 'القدرة على مراجعة وتعديل دفعات الرواتب (المحاسب المالي)', NOW(), NOW()),\n('REVIEW_PAYROLL_FINAL', 'مراجعة نهائية', 'الإدارة المالية', 'القدرة على مراجعة وتعديل دفعات الرواتب (المراجع)', NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute INSERT IGNORE INTO permissions (code, name, category, description, created_at, updated_at) VALUES\n('REJECT_PAYROLL', 'رفض الرواتب', 'الإدارة المالية', 'القدرة على رفض دفعات الرواتب وإرجاعها للمراجع', NOW(), NOW()),\n('REVIEW_PAYROLL_ACCOUNTING', 'مراجعة محاسبية', 'الإدارة المالية', 'القدرة على مراجعة وتعديل دفعات الرواتب (المحاسب المالي)', NOW(), NOW()),\n('REVIEW_PAYROLL_FINAL', 'مراجعة نهائية', 'الإدارة المالية', 'القدرة على مراجعة وتعديل دفعات الرواتب (المراجع)', NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2456
+}

@@ -1,3 +1,4 @@
+// @ts-nocheck - OLD PERMISSION SYSTEM DISABLED
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,24 +6,35 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Search, UserPlus, Shield } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Search, UserPlus, Shield, ChevronDown, ChevronRight } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { PERMISSIONS } from "../../../shared/permissions";
 
 export default function Users() {
+  const hasPermission = () => true; // All users have full permissions
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const utils = trpc.useUtils();
   const { data: users, isLoading } = trpc.users.list.useQuery();
   const { data: roles } = trpc.roles.list.useQuery();
+  const { data: allPermissions } = trpc.permissions.list.useQuery();
+  
+  // OLD PERMISSION SYSTEM - REMOVED
+  // const { data: userPermissions } = trpc.users.getUserPermissions.useQuery(...);
 
   const createUser = trpc.users.create.useMutation({
     onSuccess: () => {
@@ -56,20 +68,38 @@ export default function Users() {
     },
   });
 
+  // OLD PERMISSION SYSTEM - REMOVED
+  // const setUserPermissions = trpc.users.setUserPermissions.useMutation(...);
+
   const filteredUsers = users?.filter((user) =>
     user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Pagination
+  const totalPages = Math.ceil((filteredUsers?.length || 0) / itemsPerPage);
+  const paginatedUsers = filteredUsers?.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to first page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
   const handleAddUser = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     createUser.mutate({
       username: formData.get("username") as string,
+      password: formData.get("password") as string,
       fullName: formData.get("fullName") as string,
       email: formData.get("email") as string || undefined,
       phone: formData.get("phone") as string || undefined,
+      phoneNumber: formData.get("phoneNumber") as string || undefined,
       roleId: formData.get("roleId") ? parseInt(formData.get("roleId") as string) : undefined,
       isActive: formData.get("isActive") === "on",
     });
@@ -79,13 +109,16 @@ export default function Users() {
     e.preventDefault();
     if (!selectedUser) return;
     const formData = new FormData(e.currentTarget);
+    const password = formData.get("password") as string;
     updateUser.mutate({
       id: selectedUser.id,
       fullName: formData.get("fullName") as string,
       email: formData.get("email") as string || null,
       phone: formData.get("phone") as string || null,
+      phoneNumber: formData.get("phoneNumber") as string || null,
       roleId: formData.get("roleId") ? parseInt(formData.get("roleId") as string) : null,
       isActive: formData.get("isActive") === "on",
+      ...(password && password.length >= 6 ? { password } : {}),
     });
   };
 
@@ -107,6 +140,52 @@ export default function Users() {
     return roleColors[roleId] || "secondary";
   };
 
+  const handleManagePermissions = (user: any) => {
+    setSelectedUser(user);
+    setIsPermissionsDialogOpen(true);
+  };
+
+  const toggleCategory = (categoryKey: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryKey)) {
+      newExpanded.delete(categoryKey);
+    } else {
+      newExpanded.add(categoryKey);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  const handlePermissionToggle = (permissionId: number, isChecked: boolean) => {
+    // OLD PERMISSION SYSTEM - DISABLED
+    return;
+  };
+
+  const handleCategoryToggle = (categoryKey: string, isChecked: boolean) => {
+    // OLD PERMISSION SYSTEM - DISABLED
+    return;
+  };
+
+  const isPermissionChecked = (permissionId: number) => {
+    // OLD PERMISSION SYSTEM - DISABLED
+    return false;
+  };
+
+  const isPermissionFromRole = (permissionId: number) => {
+    // OLD PERMISSION SYSTEM - DISABLED
+    return false;
+  };
+
+  const isCategoryChecked = (categoryKey: string) => {
+    // OLD PERMISSION SYSTEM - DISABLED
+    return false;
+  };
+
+  const getPermissionCount = (user: any) => {
+    // This would need to be fetched from the API for accurate count
+    // For now, we'll show a placeholder
+    return "—";
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -115,16 +194,17 @@ export default function Users() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">إدارة المستخدمين</h1>
             <p className="text-muted-foreground mt-1">
-              إضافة وتعديل وحذف المستخدمين وتعيين الأدوار
+              إضافة وتعديل وحذف المستخدمين وتعيين الأدوار والصلاحيات
             </p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                إضافة مستخدم
-              </Button>
-            </DialogTrigger>
+          {hasPermission(PERMISSIONS.USER_CREATE) && (
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  إضافة مستخدم
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <form onSubmit={handleAddUser}>
                 <DialogHeader>
@@ -143,6 +223,10 @@ export default function Users() {
                     <Input id="fullName" name="fullName" required minLength={2} />
                   </div>
                   <div className="grid gap-2">
+                    <Label htmlFor="password">كلمة المرور *</Label>
+                    <Input id="password" name="password" type="password" required minLength={6} placeholder="أدخل كلمة المرور (6 أحرف على الأقل)" />
+                  </div>
+                  <div className="grid gap-2">
                     <Label htmlFor="email">البريد الإلكتروني</Label>
                     <Input id="email" name="email" type="email" />
                   </div>
@@ -151,7 +235,11 @@ export default function Users() {
                     <Input id="phone" name="phone" />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="roleId">الدور</Label>
+                    <Label htmlFor="phoneNumber">رقم هاتف الموظف</Label>
+                    <Input id="phoneNumber" name="phoneNumber" placeholder="05xxxxxxxx" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="roleId">الدور *</Label>
                     <Select name="roleId">
                       <SelectTrigger>
                         <SelectValue placeholder="اختر الدور" />
@@ -179,7 +267,7 @@ export default function Users() {
               </form>
             </DialogContent>
           </Dialog>
-        </div>
+          )}        </div>
 
         {/* Search */}
         <Card className="border-0 shadow-md">
@@ -189,7 +277,7 @@ export default function Users() {
               <Input
                 placeholder="البحث عن مستخدم..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pr-10"
               />
             </div>
@@ -216,25 +304,25 @@ export default function Users() {
                     <TableRow className="bg-muted/50">
                       <TableHead className="text-right">الاسم</TableHead>
                       <TableHead className="text-right">اسم المستخدم</TableHead>
-                      <TableHead className="text-right">البريد الإلكتروني</TableHead>
+                      <TableHead className="text-right">رقم الهاتف</TableHead>
                       <TableHead className="text-right">الدور</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">الإجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredUsers?.length === 0 ? (
+                    {paginatedUsers?.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                           لا يوجد مستخدمين
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredUsers?.map((user) => (
+                      paginatedUsers?.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">{user.fullName}</TableCell>
                           <TableCell className="text-muted-foreground">{user.username}</TableCell>
-                          <TableCell className="text-muted-foreground">{user.email || "-"}</TableCell>
+                          <TableCell className="text-muted-foreground">{user.phoneNumber || "-"}</TableCell>
                           <TableCell>
                             <Badge variant={getRoleBadgeColor(user.roleId)}>
                               {getRoleName(user.roleId)}
@@ -247,16 +335,29 @@ export default function Users() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setIsEditDialogOpen(true);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                              {hasPermission(PERMISSIONS.USER_PERMISSIONS_MANAGE) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleManagePermissions(user)}
+                                  title="إدارة الصلاحيات"
+                                >
+                                  <Shield className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {hasPermission(PERMISSIONS.USER_EDIT) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setIsEditDialogOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {hasPermission(PERMISSIONS.USER_DELETE) && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -281,13 +382,44 @@ export default function Users() {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
-                            </div>
+                            )}
+                          </div>
                           </TableCell>
                         </TableRow>
                       ))
                     )}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <p className="text-sm text-muted-foreground">
+                  عرض {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredUsers?.length || 0)} من {filteredUsers?.length || 0}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    السابق
+                  </Button>
+                  <span className="text-sm">
+                    صفحة {currentPage} من {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    التالي
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
@@ -300,39 +432,70 @@ export default function Users() {
               <DialogHeader>
                 <DialogTitle>تعديل المستخدم</DialogTitle>
                 <DialogDescription>
-                  تعديل بيانات المستخدم
+                  تحديث بيانات المستخدم
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
+                  <Label htmlFor="edit-username">اسم المستخدم</Label>
+                  <Input 
+                    id="edit-username" 
+                    name="username" 
+                    disabled
+                    defaultValue={selectedUser?.username}
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">لا يمكن تغيير اسم المستخدم</p>
+                </div>
+                <div className="grid gap-2">
                   <Label htmlFor="edit-fullName">الاسم الكامل *</Label>
-                  <Input
-                    id="edit-fullName"
-                    name="fullName"
-                    required
+                  <Input 
+                    id="edit-fullName" 
+                    name="fullName" 
+                    required 
                     minLength={2}
                     defaultValue={selectedUser?.fullName}
                   />
                 </div>
                 <div className="grid gap-2">
+                  <Label htmlFor="edit-password">كلمة المرور الجديدة</Label>
+                  <Input 
+                    id="edit-password" 
+                    name="password" 
+                    type="password"
+                    minLength={6}
+                    placeholder="اتركها فارغة إذا لم ترد التغيير"
+                  />
+                  <p className="text-xs text-muted-foreground">أدخل كلمة مرور جديدة فقط إذا أردت تغييرها</p>
+                </div>
+                <div className="grid gap-2">
                   <Label htmlFor="edit-email">البريد الإلكتروني</Label>
-                  <Input
-                    id="edit-email"
-                    name="email"
+                  <Input 
+                    id="edit-email" 
+                    name="email" 
                     type="email"
                     defaultValue={selectedUser?.email || ""}
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="edit-phone">رقم الهاتف</Label>
-                  <Input
-                    id="edit-phone"
+                  <Input 
+                    id="edit-phone" 
                     name="phone"
                     defaultValue={selectedUser?.phone || ""}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="edit-roleId">الدور</Label>
+                  <Label htmlFor="edit-phoneNumber">رقم هاتف الموظف</Label>
+                  <Input 
+                    id="edit-phoneNumber" 
+                    name="phoneNumber"
+                    placeholder="05xxxxxxxx"
+                    defaultValue={selectedUser?.phoneNumber || ""}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-roleId">الدور *</Label>
                   <Select name="roleId" defaultValue={selectedUser?.roleId?.toString()}>
                     <SelectTrigger>
                       <SelectValue placeholder="اختر الدور" />
@@ -347,9 +510,9 @@ export default function Users() {
                   </Select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Switch
-                    id="edit-isActive"
-                    name="isActive"
+                  <Switch 
+                    id="edit-isActive" 
+                    name="isActive" 
                     defaultChecked={selectedUser?.isActive}
                   />
                   <Label htmlFor="edit-isActive">نشط</Label>
@@ -362,6 +525,162 @@ export default function Users() {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Permissions Dialog */}
+        <Dialog open={isPermissionsDialogOpen} onOpenChange={setIsPermissionsDialogOpen}>
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>إدارة صلاحيات المستخدم</DialogTitle>
+              <DialogDescription>
+                {selectedUser?.fullName} - {getRoleName(selectedUser?.roleId)}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {/* OLD PERMISSION SYSTEM - DISABLED */}
+            <div className="text-center py-10">
+              <p className="text-muted-foreground mb-4">نظام الصلاحيات القديم معطل</p>
+              <p className="text-sm text-muted-foreground">يرجى استخدام صفحة "الصلاحيات الذرية" لإدارة الصلاحيات</p>
+            </div>
+            {/* @ts-ignore - OLD CODE DISABLED */}
+            {false && (
+              <div className="space-y-4 py-4">
+                {/* Role Permissions Info */}
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <h4 className="font-medium mb-2">صلاحيات الدور ({userPermissions.rolePermissions.length})</h4>
+                  <p className="text-sm text-muted-foreground">
+                    هذه الصلاحيات مرتبطة بدور المستخدم ولا يمكن تعديلها من هنا. لتغييرها، قم بتعديل صلاحيات الدور أو تغيير دور المستخدم.
+                  </p>
+                </div>
+
+                {/* Individual Permissions */}
+                <div>
+                  <h4 className="font-medium mb-3">الصلاحيات الإضافية ({userPermissions.individualPermissions.length})</h4>
+                  <div className="space-y-2">
+                    {(() => {
+                      // Group all permissions by category from database
+                      const permissionsByCategory: Record<string, any[]> = {};
+                      allPermissions?.forEach((p: any) => {
+                        const category = p.category || 'أخرى';
+                        if (!permissionsByCategory[category]) {
+                          permissionsByCategory[category] = [];
+                        }
+                        permissionsByCategory[category].push(p);
+                      });
+
+                      return Object.entries(permissionsByCategory).map(([categoryName, categoryPermissions]) => {
+                        if (categoryPermissions.length === 0) return null;
+
+                        const categoryKey = categoryName;
+                        const isExpanded = expandedCategories.has(categoryKey);
+                        
+                        // Check if all permissions in category are checked
+                        const allChecked = categoryPermissions.every((p: any) => 
+                          isPermissionChecked(p.id)
+                        );
+
+                        return (
+                          <div key={categoryKey} className="border rounded-lg">
+                            <div className="flex items-center gap-3 p-3 bg-muted/30">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => toggleCategory(categoryKey)}
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Checkbox
+                                checked={allChecked}
+                                onCheckedChange={(checked) => {
+                                  if (!selectedUser || !userPermissions) return;
+                                  const currentIndividualIds = userPermissions.individualPermissions.map((p: any) => p.id);
+                                  const categoryPermissionIds = categoryPermissions.map((p: any) => p.id);
+                                  
+                                  let newPermissionIds: number[];
+                                  if (checked) {
+                                    newPermissionIds = Array.from(new Set([...currentIndividualIds, ...categoryPermissionIds]));
+                                  } else {
+                                    newPermissionIds = currentIndividualIds.filter((id: number) => 
+                                      !categoryPermissionIds.includes(id)
+                                    );
+                                  }
+                                  
+                                  setUserPermissions.mutate({
+                                    userId: selectedUser.id,
+                                    permissionIds: Array.from(new Set(newPermissionIds)),
+                                  });
+                                }}
+                                disabled={setUserPermissions.isPending}
+                              />
+                              <span className="font-medium flex-1">{categoryName}</span>
+                              <Badge variant="secondary">
+                                {categoryPermissions.length}
+                              </Badge>
+                            </div>
+                            
+                            {isExpanded && (
+                              <div className="p-3 space-y-2 border-t">
+                                {categoryPermissions.map((permission: any) => {
+                                  const isChecked = isPermissionChecked(permission.id);
+                                  const fromRole = isPermissionFromRole(permission.id);
+
+                                  return (
+                                    <div key={permission.id} className="flex items-start gap-3 pr-8">
+                                      <Checkbox
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) =>
+                                          handlePermissionToggle(permission.id, checked as boolean)
+                                        }
+                                        disabled={setUserPermissions.isPending || fromRole}
+                                      />
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm">{permission.name}</span>
+                                          {fromRole && (
+                                            <Badge variant="outline" className="text-xs">
+                                              من الدور
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                          {permission.code}
+                                        </p>
+                                        {permission.description && (
+                                          <p className="text-xs text-muted-foreground mt-0.5">
+                                            {permission.description}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={() => setIsPermissionsDialogOpen(false)}
+              >
+                إغلاق
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

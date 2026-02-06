@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, date } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, date, json, index } from "drizzle-orm/mysql-core";
 
 // ============================================
 // Reference Tables (المراجع)
@@ -14,55 +14,13 @@ export const costCenters = mysqlTable("cost_centers", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export const jobs = mysqlTable("jobs", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
 
-export const settings = mysqlTable("settings", {
-  id: int("id").autoincrement().primaryKey(),
-  key: varchar("key", { length: 100 }).notNull().unique(),
-  value: text("value"),
-  description: text("description"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
 
 // ============================================
 // Users & Permissions (المستخدمين والصلاحيات)
 // ============================================
-
-export const roles = mysqlTable("roles", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  name: varchar("name", { length: 100 }).notNull(),
-  description: text("description"),
-  level: int("level").default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export const permissions = mysqlTable("permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 100 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  category: varchar("category", { length: 100 }),
-  description: text("description"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export const rolePermissions = mysqlTable("role_permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  roleId: int("role_id").notNull(),
-  permissionId: int("permission_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+// NOTE: Roles and Permissions system has been removed.
+// All users are now Admin with full access.
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -72,7 +30,6 @@ export const users = mysqlTable("users", {
   fullName: varchar("full_name", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }),
   phone: varchar("phone", { length: 20 }),
-  roleId: int("role_id"),
   isActive: boolean("is_active").default(true),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
@@ -81,20 +38,8 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
-export const userRoles = mysqlTable("user_roles", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  roleId: int("role_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const userPermissions = mysqlTable("user_permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  permissionId: int("permission_id").notNull(),
-  granted: boolean("granted").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+// NOTE: userRoles and userPermissions tables have been removed.
+// All users are now Admin with full access.
 
 // ============================================
 // Groups & Workers (المجموعات والعمال)
@@ -108,6 +53,15 @@ export const groups = mysqlTable("groups", {
   supervisorId: int("supervisor_id"),
   dailyRate: decimal("daily_rate", { precision: 10, scale: 2 }),
   workHours: decimal("work_hours", { precision: 4, scale: 2 }).default("8.00"),
+  // New flexible settings (NULL by default)
+  dailyWage: decimal("daily_wage", { precision: 10, scale: 2 }),
+  workMinutes: int("work_minutes"),
+  minuteCost: decimal("minute_cost", { precision: 10, scale: 4 }),
+  latePenaltyRate: decimal("late_penalty_rate", { precision: 5, scale: 2 }),
+  earlyLeavePenaltyRate: decimal("early_leave_penalty_rate", { precision: 5, scale: 2 }),
+  // Shift times for financial calculation
+  shiftStartTime: varchar("shift_start_time", { length: 10 }), // Format: HH:MM (e.g., "08:00")
+  shiftEndTime: varchar("shift_end_time", { length: 10 }), // Format: HH:MM (e.g., "17:00")
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
@@ -141,7 +95,11 @@ export const workers = mysqlTable("workers", {
   hireDate: date("hire_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  groupIdIdx: index("idx_workers_group_id").on(table.groupId),
+  statusIdx: index("idx_workers_status").on(table.status),
+  codeIdx: index("idx_workers_code").on(table.code),
+}));
 
 export const workerArchive = mysqlTable("worker_archive", {
   id: int("id").autoincrement().primaryKey(),
@@ -173,18 +131,13 @@ export const attendanceEvents = mysqlTable("attendance_events", {
   method: varchar("method", { length: 50 }),
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  workerIdIdx: index("idx_attendance_worker_id").on(table.workerId),
+  eventTimeIdx: index("idx_attendance_event_time").on(table.eventTime),
+  workerEventIdx: index("idx_attendance_worker_event").on(table.workerId, table.eventTime),
+}));
 
-export const devices = mysqlTable("devices", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  location: varchar("location", { length: 255 }),
-  isActive: boolean("is_active").default(true),
-  lastSeen: timestamp("last_seen"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+
 
 // ============================================
 // Deductions & Overrides (الخصومات والاستثناءات)
@@ -217,7 +170,11 @@ export const payOverrides = mysqlTable("pay_overrides", {
   createdBy: int("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  workerIdIdx: index("idx_pay_overrides_worker_id").on(table.workerId),
+  overrideDateIdx: index("idx_pay_overrides_override_date").on(table.overrideDate),
+  statusIdx: index("idx_pay_overrides_status").on(table.status),
+}));
 
 // ============================================
 // Finance & Payroll (المالية والرواتب)
@@ -233,10 +190,21 @@ export const workerDailyFinance = mysqlTable("worker_daily_finance", {
   netAmount: decimal("net_amount", { precision: 10, scale: 2 }).default("0.00"),
   lateMinutes: int("late_minutes").default(0),
   earlyLeaveMinutes: int("early_leave_minutes").default(0),
+  fullDayOverride: boolean("full_day_override").default(false),
+  overrideReason: text("override_reason"),
+  overrideBy: int("override_by"),
+  overrideAt: timestamp("override_at"),
   notes: text("notes"),
+  // Double payment protection: links day to approved batch
+  lockedBatchId: int("locked_batch_id"), // NULL = unlocked, set when batch is approved
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  workerIdIdx: index("idx_daily_finance_worker_id").on(table.workerId),
+  workDateIdx: index("idx_daily_finance_work_date").on(table.workDate),
+  lockedBatchIdx: index("idx_daily_finance_locked_batch").on(table.lockedBatchId),
+  workerDateIdx: index("idx_daily_finance_worker_date").on(table.workerId, table.workDate),
+}));
 
 export const payrollBatches = mysqlTable("payroll_batches", {
   id: int("id").autoincrement().primaryKey(),
@@ -246,13 +214,38 @@ export const payrollBatches = mysqlTable("payroll_batches", {
   groupId: int("group_id"),
   costCenterId: int("cost_center_id"),
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).default("0.00"),
-  status: mysqlEnum("status", ["draft", "pending", "approved", "paid"]).default("draft"),
+  totalWorkers: int("total_workers").default(0),
+  totalDeductions: decimal("total_deductions", { precision: 12, scale: 2 }).default("0.00"),
+  totalBonuses: decimal("total_bonuses", { precision: 12, scale: 2 }).default("0.00"),
+  status: mysqlEnum("status", [
+    "draft",
+    "under_accountant_review",
+    "returned_from_accountant",
+    "under_financial_review",
+    "returned_from_financial_review",
+    "under_accounts_manager_review",
+    "approved",
+    "rejected_final",
+    "paid"
+  ]).default("draft"),
+  rejectionCount: int("rejection_count").default(0),
+  notes: text("notes"),
   approvedBy: int("approved_by"),
   approvedAt: timestamp("approved_at"),
   createdBy: int("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+  // Force unlock fields
+  isUnlocked: boolean("is_unlocked").default(false),
+  unlockReason: text("unlock_reason"),
+  unlockedBy: int("unlocked_by"),
+  unlockedAt: timestamp("unlocked_at"),
+}, (table) => ({
+  statusIdx: index("idx_payroll_batches_status").on(table.status),
+  periodStartIdx: index("idx_payroll_batches_period_start").on(table.periodStart),
+  periodEndIdx: index("idx_payroll_batches_period_end").on(table.periodEnd),
+  groupIdIdx: index("idx_payroll_batches_group_id").on(table.groupId),
+}));
 
 export const payrollBatchItems = mysqlTable("payroll_batch_items", {
   id: int("id").autoincrement().primaryKey(),
@@ -263,6 +256,38 @@ export const payrollBatchItems = mysqlTable("payroll_batch_items", {
   totalDeductions: decimal("total_deductions", { precision: 10, scale: 2 }).default("0.00"),
   totalBonuses: decimal("total_bonuses", { precision: 10, scale: 2 }).default("0.00"),
   netAmount: decimal("net_amount", { precision: 10, scale: 2 }).default("0.00"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  batchIdIdx: index("idx_payroll_items_batch_id").on(table.batchId),
+  workerIdIdx: index("idx_payroll_items_worker_id").on(table.workerId),
+  batchWorkerIdx: index("idx_payroll_items_batch_worker").on(table.batchId, table.workerId),
+}));
+
+// Payroll Batch Notes (ملاحظات المراجعة)
+export const payrollBatchNotes = mysqlTable("payroll_batch_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: int("batch_id").notNull(),
+  reviewerId: int("reviewer_id").notNull(),
+  reviewerRole: varchar("reviewer_role", { length: 50 }).notNull(),
+  noteType: mysqlEnum("note_type", ["critical", "warning", "info"]).default("info"),
+  errorLocation: varchar("error_location", { length: 255 }),
+  workerId: int("worker_id"),
+  fieldName: varchar("field_name", { length: 100 }),
+  note: text("note").notNull(),
+  attachmentUrl: varchar("attachment_url", { length: 500 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Payroll Batch Corrections (سجل التصحيحات)
+export const payrollBatchCorrections = mysqlTable("payroll_batch_corrections", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: int("batch_id").notNull(),
+  correctorId: int("corrector_id").notNull(),
+  correctionNote: text("correction_note"),
+  previousStatus: varchar("previous_status", { length: 50 }),
+  newStatus: varchar("new_status", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -289,8 +314,10 @@ export const auditLog = mysqlTable("audit_log", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
-export type Role = typeof roles.$inferSelect;
-export type Permission = typeof permissions.$inferSelect;
+// Role and Permission types removed - tables no longer exist
+export type Role = any;
+export type Permission = any;
+
 export type CostCenter = typeof costCenters.$inferSelect;
 export type Group = typeof groups.$inferSelect;
 export type Worker = typeof workers.$inferSelect;
@@ -301,5 +328,44 @@ export type InsertGroup = typeof groups.$inferInsert;
 export type GroupShift = typeof groupShifts.$inferSelect;
 export type InsertGroupShift = typeof groupShifts.$inferInsert;
 export type InsertWorker = typeof workers.$inferInsert;
-export type Job = typeof jobs.$inferSelect;
-export type InsertJob = typeof jobs.$inferInsert;
+
+
+
+// ============================================
+// Operational Flags (البلاغات التشغيلية)
+// ============================================
+
+export const operationalFlags = mysqlTable("operational_flags", {
+  id: int("id").autoincrement().primaryKey(),
+  workerId: int("worker_id").notNull(),
+  groupId: int("group_id"),
+  flagDate: date("flag_date").notNull(), // تاريخ البلاغ
+  description: text("description").notNull(), // وصف الاستثناء/التعديل
+  status: mysqlEnum("status", [
+    "pending",   // بانتظار الموافقة
+    "approved",  // تم الاعتماد
+    "rejected"   // تم الرفض
+  ]).default("pending").notNull(),
+  approvedBy: int("approved_by"), // من اعتمد البلاغ
+  approvedAt: timestamp("approved_at"), // متى تم الاعتماد
+  approvalNotes: text("approval_notes"), // ملاحظات الاعتماد/الرفض
+  createdBy: int("created_by").notNull(), // من أنشأ البلاغ
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OperationalFlag = typeof operationalFlags.$inferSelect;
+export type InsertOperationalFlag = typeof operationalFlags.$inferInsert;
+
+// Group Schedules - Flexible Weekly Schedules (جداول الورديات المتغيرة)
+export const groupSchedules = mysqlTable("group_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  dayOfWeek: int("day_of_week").notNull(), // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime: varchar("start_time", { length: 10 }).notNull(), // HH:MM format
+  endTime: varchar("end_time", { length: 10 }).notNull(), // HH:MM format
+  requiredHours: decimal("required_hours", { precision: 4, scale: 2 }).notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});

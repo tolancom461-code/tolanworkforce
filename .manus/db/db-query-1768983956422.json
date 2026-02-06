@@ -1,0 +1,34 @@
+{
+  "query": "SELECT r.name as role_name, COUNT(rp.permission_id) as permission_count\nFROM roles r\nLEFT JOIN role_permissions rp ON r.id = rp.role_id\nWHERE r.code IN ('super_admin', 'hr_manager', 'accountant', 'financial_manager', 'attendance_officer', 'viewer')\nGROUP BY r.id, r.name\nORDER BY permission_count DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT r.name as role_name, COUNT(rp.permission_id) as permission_count\nFROM roles r\nLEFT JOIN role_permissions rp ON r.id = rp.role_id\nWHERE r.code IN ('super_admin', 'hr_manager', 'accountant', 'financial_manager', 'attendance_officer', 'viewer')\nGROUP BY r.id, r.name\nORDER BY permission_count DESC;",
+  "rows": [
+    {
+      "role_name": "مسؤول أعلى (Super Admin)",
+      "permission_count": "38"
+    },
+    {
+      "role_name": "مدير موارد بشرية (HR Manager)",
+      "permission_count": "16"
+    },
+    {
+      "role_name": "مدير مالي (Financial Manager)",
+      "permission_count": "13"
+    },
+    {
+      "role_name": "محاسب (Accountant)",
+      "permission_count": "10"
+    },
+    {
+      "role_name": "مشاهد (Viewer)",
+      "permission_count": "6"
+    },
+    {
+      "role_name": "موظف حضور (Attendance Officer)",
+      "permission_count": "4"
+    }
+  ],
+  "messages": [],
+  "stdout": "role_name\tpermission_count\nمسؤول أعلى (Super Admin)\t38\nمدير موارد بشرية (HR Manager)\t16\nمدير مالي (Financial Manager)\t13\nمحاسب (Accountant)\t10\nمشاهد (Viewer)\t6\nموظف حضور (Attendance Officer)\t4\n",
+  "stderr": "",
+  "execution_time_ms": 1516
+}

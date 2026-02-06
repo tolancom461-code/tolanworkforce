@@ -1,0 +1,9 @@
+{
+  "query": "\nSET FOREIGN_KEY_CHECKS = 0;\n\nDELETE FROM attendance_events;\nDELETE FROM work_days;\nDELETE FROM worker_daily_finance;\nDELETE FROM pay_overrides;\nDELETE FROM payroll_batch_items;\nDELETE FROM payroll_batch_notes;\nDELETE FROM payroll_batch_corrections;\nDELETE FROM payroll_batches;\nDELETE FROM workers;\nDELETE FROM worker_archive;\nDELETE FROM group_shifts;\nDELETE FROM `groups`;\nDELETE FROM cost_centers;\nDELETE FROM deduction_rules;\nDELETE FROM operational_flags;\nDELETE FROM users WHERE role != 'admin';\n\nSET FOREIGN_KEY_CHECKS = 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \nSET FOREIGN_KEY_CHECKS = 0;\n\nDELETE FROM attendance_events;\nDELETE FROM work_days;\nDELETE FROM worker_daily_finance;\nDELETE FROM pay_overrides;\nDELETE FROM payroll_batch_items;\nDELETE FROM payroll_batch_notes;\nDELETE FROM payroll_batch_corrections;\nDELETE FROM payroll_batches;\nDELETE FROM workers;\nDELETE FROM worker_archive;\nDELETE FROM group_shifts;\nDELETE FROM `groups`;\nDELETE FROM cost_centers;\nDELETE FROM deduction_rules;\nDELETE FROM operational_flags;\nDELETE FROM users WHERE role != 'admin';\n\nSET FOREIGN_KEY_CHECKS = 1;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 5411
+}

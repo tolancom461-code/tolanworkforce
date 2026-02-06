@@ -1,0 +1,45 @@
+{
+  "query": "-- Create users for different roles\n-- Password: password123 (in production, use proper hashing)\n\n-- 1. Accountant (محاسب)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('accountant', 'محمد المحاسب', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'محمد المحاسب';\n\nSET @accountant_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@accountant_id, 'payroll_batch_accountant_review', 'global', '*'),\n  (@accountant_id, 'view', 'payroll_batch', '*'),\n  (@accountant_id, 'create', 'payroll_batch', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- 2. Financial Reviewer (مراجع مالي)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('financial_reviewer', 'أحمد المراجع المالي', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'أحمد المراجع المالي';\n\nSET @reviewer_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@reviewer_id, 'payroll_batch_financial_review', 'global', '*'),\n  (@reviewer_id, 'view', 'payroll_batch', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- 3. Accounts Manager (مدير الحسابات)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('accounts_manager', 'خالد مدير الحسابات', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'خالد مدير الحسابات';\n\nSET @manager_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@manager_id, 'payroll_batch_manager_review', 'global', '*'),\n  (@manager_id, 'view', 'payroll_batch', '*'),\n  (@manager_id, 'export', 'payroll_batch', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- 4. HR Manager (مدير الموارد البشرية)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('hr_manager', 'فاطمة مديرة الموارد البشرية', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'فاطمة مديرة الموارد البشرية';\n\nSET @hr_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@hr_id, 'view', 'worker', '*'),\n  (@hr_id, 'create', 'worker', '*'),\n  (@hr_id, 'update', 'worker', '*'),\n  (@hr_id, 'view', 'attendance', '*'),\n  (@hr_id, 'export', 'attendance', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- 5. Security Guard (حارس الأمن)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('security_guard', 'عبدالله الحارس', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'عبدالله الحارس';\n\nSET @guard_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@guard_id, 'create', 'attendance', '*'),\n  (@guard_id, 'view', 'attendance', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- Show created users\nSELECT \n  u.id,\n  u.username,\n  u.full_name,\n  u.role,\n  GROUP_CONCAT(up.permission) as permissions\nFROM users u\nLEFT JOIN user_permissions up ON u.id = up.user_id\nWHERE u.username IN ('accountant', 'financial_reviewer', 'accounts_manager', 'hr_manager', 'security_guard')\nGROUP BY u.id\nORDER BY u.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute -- Create users for different roles\n-- Password: password123 (in production, use proper hashing)\n\n-- 1. Accountant (محاسب)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('accountant', 'محمد المحاسب', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'محمد المحاسب';\n\nSET @accountant_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@accountant_id, 'payroll_batch_accountant_review', 'global', '*'),\n  (@accountant_id, 'view', 'payroll_batch', '*'),\n  (@accountant_id, 'create', 'payroll_batch', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- 2. Financial Reviewer (مراجع مالي)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('financial_reviewer', 'أحمد المراجع المالي', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'أحمد المراجع المالي';\n\nSET @reviewer_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@reviewer_id, 'payroll_batch_financial_review', 'global', '*'),\n  (@reviewer_id, 'view', 'payroll_batch', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- 3. Accounts Manager (مدير الحسابات)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('accounts_manager', 'خالد مدير الحسابات', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'خالد مدير الحسابات';\n\nSET @manager_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@manager_id, 'payroll_batch_manager_review', 'global', '*'),\n  (@manager_id, 'view', 'payroll_batch', '*'),\n  (@manager_id, 'export', 'payroll_batch', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- 4. HR Manager (مدير الموارد البشرية)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('hr_manager', 'فاطمة مديرة الموارد البشرية', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'فاطمة مديرة الموارد البشرية';\n\nSET @hr_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@hr_id, 'view', 'worker', '*'),\n  (@hr_id, 'create', 'worker', '*'),\n  (@hr_id, 'update', 'worker', '*'),\n  (@hr_id, 'view', 'attendance', '*'),\n  (@hr_id, 'export', 'attendance', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- 5. Security Guard (حارس الأمن)\nINSERT INTO users (username, full_name, role, password_hash, is_active)\nVALUES ('security_guard', 'عبدالله الحارس', 'user', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true)\nON DUPLICATE KEY UPDATE full_name = 'عبدالله الحارس';\n\nSET @guard_id = LAST_INSERT_ID();\n\nINSERT INTO user_permissions (user_id, permission, scope_type, scope_id)\nVALUES \n  (@guard_id, 'create', 'attendance', '*'),\n  (@guard_id, 'view', 'attendance', '*')\nON DUPLICATE KEY UPDATE permission = permission;\n\n-- Show created users\nSELECT \n  u.id,\n  u.username,\n  u.full_name,\n  u.role,\n  GROUP_CONCAT(up.permission) as permissions\nFROM users u\nLEFT JOIN user_permissions up ON u.id = up.user_id\nWHERE u.username IN ('accountant', 'financial_reviewer', 'accounts_manager', 'hr_manager', 'security_guard')\nGROUP BY u.id\nORDER BY u.id;",
+  "rows": [
+    {
+      "id": "1170002",
+      "username": "accountant",
+      "full_name": "محمد المحاسب",
+      "role": "user",
+      "permissions": "payroll_batch_accountant_review,view,create"
+    },
+    {
+      "id": "1170003",
+      "username": "financial_reviewer",
+      "full_name": "أحمد المراجع المالي",
+      "role": "user",
+      "permissions": "payroll_batch_financial_review,view"
+    },
+    {
+      "id": "1170004",
+      "username": "accounts_manager",
+      "full_name": "خالد مدير الحسابات",
+      "role": "user",
+      "permissions": "payroll_batch_manager_review,view,export"
+    },
+    {
+      "id": "1170005",
+      "username": "hr_manager",
+      "full_name": "فاطمة مديرة الموارد البشرية",
+      "role": "user",
+      "permissions": "view,create,update,view,export"
+    },
+    {
+      "id": "1170006",
+      "username": "security_guard",
+      "full_name": "عبدالله الحارس",
+      "role": "user",
+      "permissions": "create,view"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tfull_name\trole\tpermissions\n1170002\taccountant\tمحمد المحاسب\tuser\tpayroll_batch_accountant_review,view,create\n1170003\tfinancial_reviewer\tأحمد المراجع المالي\tuser\tpayroll_batch_financial_review,view\n1170004\taccounts_manager\tخالد مدير الحسابات\tuser\tpayroll_batch_manager_review,view,export\n1170005\thr_manager\tفاطمة مديرة الموارد البشرية\tuser\tview,create,update,view,export\n1170006\tsecurity_guard\tعبدالله الحارس\tuser\tcreate,view\n",
+  "stderr": "",
+  "execution_time_ms": 4903
+}

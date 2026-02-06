@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
+import { PERMISSIONS } from "../../../shared/permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,12 +13,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer, Download } from "lucide-react";
+import { ExcelImportExportDialog } from "@/components/ExcelImportExportDialog";
+import { exportToExcel, printPage } from '@/lib/exportUtils';
+import { memo, useCallback, useMemo } from 'react';
+import WorkerRow from '@/components/WorkerRow';
 
 export default function Workers() {
+  const hasPermission = () => true; // All users have full permissions
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -32,21 +40,30 @@ export default function Workers() {
     phone: "",
     groupId: null as number | null,
     jobId: null as number | null,
-    dailyRate: "",
     photoUrl: "",
     hireDate: "",
     status: "active" as "active" | "inactive" | "archived",
   });
 
   const utils = trpc.useUtils();
-  const { data: workers, isLoading } = trpc.workers.list.useQuery();
+  const groupId = filterGroup !== "all" ? parseInt(filterGroup) : undefined;
+  const { data: workersData, isLoading } = trpc.workers.listWithPagination.useQuery({
+    page: currentPage,
+    limit: pageSize,
+    groupId,
+  });
+  // Get all groups (Workers page doesn't filter by cost center)
   const { data: groups } = trpc.groups.list.useQuery();
+  
+  const workers = workersData?.data || [];
+  const totalPages = workersData?.totalPages || 1;
 
   const createMutation = trpc.workers.create.useMutation({
     onSuccess: (data) => {
       toast.success("تم إضافة العامل بنجاح");
       setIsAddDialogOpen(false);
       resetForm();
+      utils.workers.listWithPagination.invalidate();
       utils.workers.list.invalidate();
       utils.dashboard.stats.invalidate();
     },
@@ -61,6 +78,7 @@ export default function Workers() {
       setIsEditDialogOpen(false);
       setSelectedWorker(null);
       resetForm();
+      utils.workers.listWithPagination.invalidate();
       utils.workers.list.invalidate();
     },
     onError: (error) => {
@@ -71,6 +89,7 @@ export default function Workers() {
   const deleteMutation = trpc.workers.delete.useMutation({
     onSuccess: () => {
       toast.success("تم حذف العامل بنجاح");
+      utils.workers.listWithPagination.invalidate();
       utils.workers.list.invalidate();
       utils.dashboard.stats.invalidate();
     },
@@ -85,10 +104,36 @@ export default function Workers() {
       if (selectedWorker) {
         setSelectedWorker({ ...selectedWorker, qrToken: data.qrToken });
       }
+      utils.workers.listWithPagination.invalidate();
       utils.workers.list.invalidate();
     },
     onError: (error) => {
       toast.error(error.message || "حدث خطأ أثناء تجديد رمز QR");
+    },
+  });
+
+  const exportWorkerQRMutation = trpc.workers.exportWorkerQRCode.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = data.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("تم تصدير QR Code بنجاح");
+    },
+    onError: (error) => {
+      toast.error(error.message || "حدث خطأ أثناء التصدير");
     },
   });
 
@@ -100,7 +145,6 @@ export default function Workers() {
       phone: "",
       groupId: null,
       jobId: null,
-      dailyRate: "",
       photoUrl: "",
       hireDate: "",
       status: "active",
@@ -116,7 +160,6 @@ export default function Workers() {
       phone: worker.phone || "",
       groupId: worker.groupId,
       jobId: worker.jobId,
-      dailyRate: worker.dailyRate || "",
       photoUrl: worker.photoUrl || "",
       hireDate: worker.hireDate ? new Date(worker.hireDate).toISOString().split('T')[0] : "",
       status: worker.status || "active",
@@ -132,6 +175,10 @@ export default function Workers() {
   const handleShowQR = (worker: any) => {
     setSelectedWorker(worker);
     setIsQRDialogOpen(true);
+  };
+
+  const handleExportWorkerQR = (workerId: number) => {
+    exportWorkerQRMutation.mutate({ workerId });
   };
 
   const handleSubmit = () => {
@@ -191,22 +238,67 @@ export default function Workers() {
     return matchesSearch && matchesGroup && matchesStatus;
   });
 
+  // Export handlers
+  const handleExportToExcel = () => {
+    if (!filteredWorkers || filteredWorkers.length === 0) {
+      toast.error('لا توجد بيانات للتصدير');
+      return;
+    }
+
+    const exportData = filteredWorkers.map(worker => {
+      const groupName = groups?.find(g => g.id === worker.groupId)?.name || '-';
+      return {
+        'كود العامل': worker.code,
+        'الاسم الكامل': worker.fullName,
+        'رقم الهوية': worker.nationalId || '-',
+        'رقم الجوال': worker.phone || '-',
+        'المجموعة': groupName,
+        'تاريخ التوظيف': worker.hireDate ? new Date(worker.hireDate).toLocaleDateString('ar-SA') : '-',
+        'الحالة': worker.status === 'active' ? 'نشط' : worker.status === 'inactive' ? 'غير نشط' : 'مؤرشف',
+      };
+    });
+
+    const timestamp = new Date().toISOString().split('T')[0];
+    exportToExcel(exportData, `قائمة_العمال_${timestamp}`, 'العمال');
+    toast.success('تم تصدير القائمة بنجاح');
+  };
+
+  const handlePrint = () => {
+    printPage('workers-list-content');
+  };
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6" id="workers-list-content">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">إدارة العمال</h1>
             <p className="text-muted-foreground">إدارة بيانات العمال ومعلوماتهم</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { resetForm(); setSelectedWorker(null); }}>
-                <Plus className="ml-2 h-4 w-4" />
-                إضافة عامل
+          <div className="flex gap-2">
+            {hasPermission() && (
+              <Button variant="outline" size="sm" onClick={handleExportToExcel}>
+                <FileSpreadsheet className="h-4 w-4 ml-2" />
+                تصدير Excel
               </Button>
-            </DialogTrigger>
+            )}
+            <Button variant="outline" size="sm" onClick={handlePrint}>
+              <Printer className="h-4 w-4 ml-2" />
+              طباعة
+            </Button>
+            <ExcelImportExportDialog type="workers" onImportSuccess={() => {
+              utils.workers.listWithPagination.invalidate();
+              utils.workers.list.invalidate();
+            }} />
+            {hasPermission() && (
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => { resetForm(); setSelectedWorker(null); }}>
+                    <Plus className="ml-2 h-4 w-4" />
+                    إضافة عامل
+                  </Button>
+                </DialogTrigger>
             <DialogContent className="sm:max-w-[600px]" dir="rtl">
               <DialogHeader>
                 <DialogTitle>إضافة عامل جديد</DialogTitle>
@@ -272,16 +364,6 @@ export default function Workers() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dailyRate">الأجر اليومي</Label>
-                    <Input
-                      id="dailyRate"
-                      type="number"
-                      value={formData.dailyRate}
-                      onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
-                      placeholder="100.00"
-                    />
-                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -329,7 +411,9 @@ export default function Workers() {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
@@ -400,86 +484,24 @@ export default function Workers() {
                     <TableHead className="text-right">الكود</TableHead>
                     <TableHead className="text-right">رقم الهوية</TableHead>
                     <TableHead className="text-right">المجموعة</TableHead>
-                    <TableHead className="text-right">الأجر اليومي</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredWorkers?.map((worker) => (
-                    <TableRow key={worker.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={worker.photoUrl || undefined} />
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {getInitials(worker.fullName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{worker.fullName}</div>
-                            <div className="text-sm text-muted-foreground">{worker.phone || "-"}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono">{worker.code}</TableCell>
-                      <TableCell>{worker.nationalId || "-"}</TableCell>
-                      <TableCell>{getGroupName(worker.groupId)}</TableCell>
-                      <TableCell>{worker.dailyRate || "-"}</TableCell>
-                      <TableCell>{getStatusBadge(worker.status || "active")}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleView(worker)}
-                            title="عرض التفاصيل"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleShowQR(worker)}
-                            title="رمز QR"
-                          >
-                            <QrCode className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(worker)}
-                            title="تعديل"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" title="حذف">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent dir="rtl">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  هل أنت متأكد من حذف العامل "{worker.fullName}"؟
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate({ id: worker.id })}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  حذف
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <WorkerRow
+                      key={worker.id}
+                      worker={worker}
+                      onView={handleView}
+                      onShowQR={handleShowQR}
+                      onExportQR={handleExportWorkerQR}
+                      onEdit={handleEdit}
+                      hasPermission={hasPermission()}
+                      getInitials={getInitials}
+                      getGroupName={getGroupName}
+                      getStatusBadge={getStatusBadge}
+                    />
                   ))}
                   {filteredWorkers?.length === 0 && (
                     <TableRow>
@@ -557,15 +579,6 @@ export default function Workers() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-dailyRate">الأجر اليومي</Label>
-                  <Input
-                    id="edit-dailyRate"
-                    type="number"
-                    value={formData.dailyRate}
-                    onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })}
-                  />
-                </div>
               </div>
               <div className="space-y-2">
                 <Label>الحالة</Label>
@@ -628,10 +641,6 @@ export default function Workers() {
                   <div>
                     <p className="text-sm text-muted-foreground">المجموعة</p>
                     <p className="font-medium">{getGroupName(selectedWorker.groupId)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">الأجر اليومي</p>
-                    <p className="font-medium">{selectedWorker.dailyRate || "-"}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">تاريخ التعيين</p>
@@ -707,6 +716,33 @@ export default function Workers() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 p-4 bg-muted rounded-lg">
+            <div className="text-sm text-muted-foreground">
+              الصفحة {currentPage} من {totalPages}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                السابقة
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                التالية
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

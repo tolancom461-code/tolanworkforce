@@ -14,21 +14,7 @@ export default function Dashboard() {
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
-    {
-      title: "الأدوار",
-      value: stats?.roles || 0,
-      icon: Shield,
-      color: "text-chart-2",
-      bgColor: "bg-chart-2/10",
-    },
-    {
-      title: "الصلاحيات",
-      value: stats?.permissions || 0,
-      icon: Key,
-      color: "text-chart-3",
-      bgColor: "bg-chart-3/10",
-    },
-    {
+{
       title: "المجموعات",
       value: stats?.groups || 0,
       icon: Briefcase,
@@ -88,65 +74,38 @@ export default function Dashboard() {
         )}
 
         {/* Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="border-0 shadow-md">
-            <CardHeader>
-              <CardTitle>إجراءات سريعة</CardTitle>
-              <CardDescription>الوصول السريع للمهام الشائعة</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <a
-                href="/users"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
-              >
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium">إدارة المستخدمين</p>
-                  <p className="text-sm text-muted-foreground">إضافة وتعديل المستخدمين</p>
-                </div>
-              </a>
-              <a
-                href="/permissions"
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
-              >
-                <div className="p-2 rounded-lg bg-chart-2/10">
-                  <Key className="h-5 w-5 text-chart-2" />
-                </div>
-                <div>
-                  <p className="font-medium">إدارة الصلاحيات</p>
-                  <p className="text-sm text-muted-foreground">تعيين صلاحيات المستخدمين</p>
-                </div>
-              </a>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 shadow-md">
-            <CardHeader>
-              <CardTitle>معلومات النظام</CardTitle>
-              <CardDescription>تفاصيل عن قاعدة البيانات</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-muted-foreground">عدد الجداول</span>
-                <span className="font-medium">22 جدول</span>
+        <Card className="border-0 shadow-md">
+          <CardHeader>
+            <CardTitle>إجراءات سريعة</CardTitle>
+            <CardDescription>الوصول السريع للمهام الشائعة</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            <a
+              href="/users"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+            >
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
               </div>
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-muted-foreground">نظام الأدوار</span>
-                <span className="font-medium">5 أدوار</span>
+              <div>
+                <p className="font-medium">إدارة المستخدمين</p>
+                <p className="text-sm text-muted-foreground">إضافة وتعديل المستخدمين</p>
               </div>
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-muted-foreground">حالة قاعدة البيانات</span>
-                <span className="font-medium text-success">متصل</span>
+            </a>
+            <a
+              href="/permissions"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+            >
+              <div className="p-2 rounded-lg bg-chart-2/10">
+                <Key className="h-5 w-5 text-chart-2" />
               </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-muted-foreground">الإصدار</span>
-                <span className="font-medium">1.0.0</span>
+              <div>
+                <p className="font-medium">إدارة الصلاحيات</p>
+                <p className="text-sm text-muted-foreground">تعيين صلاحيات المستخدمين</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </a>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

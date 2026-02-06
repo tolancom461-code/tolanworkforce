@@ -1,0 +1,364 @@
+{
+  "query": "SELECT id, code, name, category FROM permissions ORDER BY category, code",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, name, category FROM permissions ORDER BY category, code",
+  "rows": [
+    {
+      "id": "11",
+      "code": "adjust_attendance",
+      "name": "تعديل الحضور",
+      "category": "attendance"
+    },
+    {
+      "id": "60005",
+      "code": "attendance_export",
+      "name": "ATTENDANCE EXPORT",
+      "category": "attendance"
+    },
+    {
+      "id": "60004",
+      "code": "attendance_manage",
+      "name": "ATTENDANCE MANAGE",
+      "category": "attendance"
+    },
+    {
+      "id": "60002",
+      "code": "attendance_record",
+      "name": "ATTENDANCE RECORD",
+      "category": "attendance"
+    },
+    {
+      "id": "60003",
+      "code": "attendance_view",
+      "name": "ATTENDANCE VIEW",
+      "category": "attendance"
+    },
+    {
+      "id": "13",
+      "code": "manage_work_days",
+      "name": "إدارة أيام العمل",
+      "category": "attendance"
+    },
+    {
+      "id": "9",
+      "code": "scan_attendance",
+      "name": "تسجيل الحضور",
+      "category": "attendance"
+    },
+    {
+      "id": "10",
+      "code": "view_attendance_log",
+      "name": "عرض سجل الحضور",
+      "category": "attendance"
+    },
+    {
+      "id": "12",
+      "code": "view_attendance_reports",
+      "name": "عرض تقارير الحضور",
+      "category": "attendance"
+    },
+    {
+      "id": "60034",
+      "code": "cost_center_manage",
+      "name": "COST CENTER MANAGE",
+      "category": "cost"
+    },
+    {
+      "id": "60033",
+      "code": "cost_center_view",
+      "name": "COST CENTER VIEW",
+      "category": "cost"
+    },
+    {
+      "id": "60001",
+      "code": "dashboard_view",
+      "name": "DASHBOARD VIEW",
+      "category": "dashboard"
+    },
+    {
+      "id": "1",
+      "code": "view_dashboard",
+      "name": "عرض لوحة التحكم الرئيسية",
+      "category": "dashboard"
+    },
+    {
+      "id": "2",
+      "code": "view_executive_dashboard",
+      "name": "عرض لوحة التحكم التنفيذية",
+      "category": "dashboard"
+    },
+    {
+      "id": "14",
+      "code": "manage_finance_entries",
+      "name": "إدارة الخصومات والإضافات",
+      "category": "finance"
+    },
+    {
+      "id": "15",
+      "code": "manage_finance_overrides",
+      "name": "إدارة الاستثناءات المالية",
+      "category": "finance"
+    },
+    {
+      "id": "17",
+      "code": "manage_payroll_batches",
+      "name": "إدارة دفعات الرواتب",
+      "category": "finance"
+    },
+    {
+      "id": "18",
+      "code": "view_finance_reports",
+      "name": "عرض التقارير المالية",
+      "category": "finance"
+    },
+    {
+      "id": "16",
+      "code": "view_payroll_batches",
+      "name": "عرض دفعات الرواتب",
+      "category": "finance"
+    },
+    {
+      "id": "60023",
+      "code": "financial_reports_export",
+      "name": "FINANCIAL REPORTS EXPORT",
+      "category": "financial"
+    },
+    {
+      "id": "60022",
+      "code": "financial_reports_view",
+      "name": "FINANCIAL REPORTS VIEW",
+      "category": "financial"
+    },
+    {
+      "id": "60012",
+      "code": "group_manage",
+      "name": "GROUP MANAGE",
+      "category": "group"
+    },
+    {
+      "id": "60011",
+      "code": "group_view",
+      "name": "GROUP VIEW",
+      "category": "group"
+    },
+    {
+      "id": "8",
+      "code": "manage_cost_centers",
+      "name": "إدارة مراكز التكلفة",
+      "category": "hr"
+    },
+    {
+      "id": "6",
+      "code": "manage_groups",
+      "name": "إدارة المجموعات",
+      "category": "hr"
+    },
+    {
+      "id": "4",
+      "code": "manage_workers",
+      "name": "إدارة العمال",
+      "category": "hr"
+    },
+    {
+      "id": "7",
+      "code": "view_cost_centers",
+      "name": "عرض مراكز التكلفة",
+      "category": "hr"
+    },
+    {
+      "id": "5",
+      "code": "view_groups",
+      "name": "عرض المجموعات",
+      "category": "hr"
+    },
+    {
+      "id": "3",
+      "code": "view_workers",
+      "name": "عرض العمال",
+      "category": "hr"
+    },
+    {
+      "id": "60032",
+      "code": "operational_flags_manage",
+      "name": "OPERATIONAL FLAGS MANAGE",
+      "category": "operational"
+    },
+    {
+      "id": "60031",
+      "code": "operational_flags_view",
+      "name": "OPERATIONAL FLAGS VIEW",
+      "category": "operational"
+    },
+    {
+      "id": "60017",
+      "code": "payroll_batch_accountant_review",
+      "name": "PAYROLL BATCH ACCOUNTANT REVIEW",
+      "category": "payroll"
+    },
+    {
+      "id": "60020",
+      "code": "payroll_batch_final_approve",
+      "name": "PAYROLL BATCH FINAL APPROVE",
+      "category": "payroll"
+    },
+    {
+      "id": "60018",
+      "code": "payroll_batch_financial_review",
+      "name": "PAYROLL BATCH FINANCIAL REVIEW",
+      "category": "payroll"
+    },
+    {
+      "id": "60019",
+      "code": "payroll_batch_manager_review",
+      "name": "PAYROLL BATCH MANAGER REVIEW",
+      "category": "payroll"
+    },
+    {
+      "id": "60014",
+      "code": "payroll_create",
+      "name": "PAYROLL CREATE",
+      "category": "payroll"
+    },
+    {
+      "id": "60016",
+      "code": "payroll_delete",
+      "name": "PAYROLL DELETE",
+      "category": "payroll"
+    },
+    {
+      "id": "60015",
+      "code": "payroll_edit",
+      "name": "PAYROLL EDIT",
+      "category": "payroll"
+    },
+    {
+      "id": "60021",
+      "code": "payroll_export",
+      "name": "PAYROLL EXPORT",
+      "category": "payroll"
+    },
+    {
+      "id": "60013",
+      "code": "payroll_view",
+      "name": "PAYROLL VIEW",
+      "category": "payroll"
+    },
+    {
+      "id": "60025",
+      "code": "reports_export",
+      "name": "REPORTS EXPORT",
+      "category": "reports"
+    },
+    {
+      "id": "60024",
+      "code": "reports_view",
+      "name": "REPORTS VIEW",
+      "category": "reports"
+    },
+    {
+      "id": "60036",
+      "code": "role_manage",
+      "name": "ROLE MANAGE",
+      "category": "role"
+    },
+    {
+      "id": "60035",
+      "code": "role_view",
+      "name": "ROLE VIEW",
+      "category": "role"
+    },
+    {
+      "id": "21",
+      "code": "manage_permissions",
+      "name": "إدارة الصلاحيات",
+      "category": "system"
+    },
+    {
+      "id": "20",
+      "code": "manage_roles",
+      "name": "إدارة الأدوار",
+      "category": "system"
+    },
+    {
+      "id": "19",
+      "code": "manage_users",
+      "name": "إدارة المستخدمين",
+      "category": "system"
+    },
+    {
+      "id": "60038",
+      "code": "system_settings_manage",
+      "name": "SYSTEM SETTINGS MANAGE",
+      "category": "system"
+    },
+    {
+      "id": "60037",
+      "code": "system_settings_view",
+      "name": "SYSTEM SETTINGS VIEW",
+      "category": "system"
+    },
+    {
+      "id": "60027",
+      "code": "user_create",
+      "name": "USER CREATE",
+      "category": "user"
+    },
+    {
+      "id": "60029",
+      "code": "user_delete",
+      "name": "USER DELETE",
+      "category": "user"
+    },
+    {
+      "id": "60028",
+      "code": "user_edit",
+      "name": "USER EDIT",
+      "category": "user"
+    },
+    {
+      "id": "60030",
+      "code": "user_permissions_manage",
+      "name": "USER PERMISSIONS MANAGE",
+      "category": "user"
+    },
+    {
+      "id": "60026",
+      "code": "user_view",
+      "name": "USER VIEW",
+      "category": "user"
+    },
+    {
+      "id": "60007",
+      "code": "worker_create",
+      "name": "WORKER CREATE",
+      "category": "worker"
+    },
+    {
+      "id": "60009",
+      "code": "worker_delete",
+      "name": "WORKER DELETE",
+      "category": "worker"
+    },
+    {
+      "id": "60008",
+      "code": "worker_edit",
+      "name": "WORKER EDIT",
+      "category": "worker"
+    },
+    {
+      "id": "60010",
+      "code": "worker_export",
+      "name": "WORKER EXPORT",
+      "category": "worker"
+    },
+    {
+      "id": "60006",
+      "code": "worker_view",
+      "name": "WORKER VIEW",
+      "category": "worker"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tname\tcategory\n11\tadjust_attendance\tتعديل الحضور\tattendance\n60005\tattendance_export\tATTENDANCE EXPORT\tattendance\n60004\tattendance_manage\tATTENDANCE MANAGE\tattendance\n60002\tattendance_record\tATTENDANCE RECORD\tattendance\n60003\tattendance_view\tATTENDANCE VIEW\tattendance\n13\tmanage_work_days\tإدارة أيام العمل\tattendance\n9\tscan_attendance\tتسجيل الحضور\tattendance\n10\tview_attendance_log\tعرض سجل الحضور\tattendance\n12\tview_attendance_reports\tعرض تقارير الحضور\tattendance\n60034\tcost_center_manage\tCOST CENTER MANAGE\tcost\n60033\tcost_center_view\tCOST CENTER VIEW\tcost\n60001\tdashboard_view\tDASHBOARD VIEW\tdashboard\n1\tview_dashboard\tعرض لوحة التحكم الرئيسية\tdashboard\n2\tview_executive_dashboard\tعرض لوحة التحكم التنفيذية\tdashboard\n14\tmanage_finance_entries\tإدارة الخصومات والإضافات\tfinance\n15\tmanage_finance_overrides\tإدارة الاستثناءات المالية\tfinance\n17\tmanage_payroll_batches\tإدارة دفعات الرواتب\tfinance\n18\tview_finance_reports\tعرض التقارير المالية\tfinance\n16\tview_payroll_batches\tعرض دفعات الرواتب\tfinance\n60023\tfinancial_reports_export\tFINANCIAL REPORTS EXPORT\tfinancial\n60022\tfinancial_reports_view\tFINANCIAL REPORTS VIEW\tfinancial\n60012\tgroup_manage\tGROUP MANAGE\tgroup\n60011\tgroup_view\tGROUP VIEW\tgroup\n8\tmanage_cost_centers\tإدارة مراكز التكلفة\thr\n6\tmanage_groups\tإدارة المجموعات\thr\n4\tmanage_workers\tإدارة العمال\thr\n7\tview_cost_centers\tعرض مراكز التكلفة\thr\n5\tview_groups\tعرض المجموعات\thr\n3\tview_workers\tعرض العمال\thr\n60032\toperational_flags_manage\tOPERATIONAL FLAGS MANAGE\toperational\n60031\toperational_flags_view\tOPERATIONAL FLAGS VIEW\toperational\n60017\tpayroll_batch_accountant_review\tPAYROLL BATCH ACCOUNTANT REVIEW\tpayroll\n60020\tpayroll_batch_final_approve\tPAYROLL BATCH FINAL APPROVE\tpayroll\n60018\tpayroll_batch_financial_review\tPAYROLL BATCH FINANCIAL REVIEW\tpayroll\n60019\tpayroll_batch_manager_review\tPAYROLL BATCH MANAGER REVIEW\tpayroll\n60014\tpayroll_create\tPAYROLL CREATE\tpayroll\n60016\tpayroll_delete\tPAYROLL DELETE\tpayroll\n60015\tpayroll_edit\tPAYROLL EDIT\tpayroll\n60021\tpayroll_export\tPAYROLL EXPORT\tpayroll\n60013\tpayroll_view\tPAYROLL VIEW\tpayroll\n60025\treports_export\tREPORTS EXPORT\treports\n60024\treports_view\tREPORTS VIEW\treports\n60036\trole_manage\tROLE MANAGE\trole\n60035\trole_view\tROLE VIEW\trole\n21\tmanage_permissions\tإدارة الصلاحيات\tsystem\n20\tmanage_roles\tإدارة الأدوار\tsystem\n19\tmanage_users\tإدارة المستخدمين\tsystem\n60038\tsystem_settings_manage\tSYSTEM SETTINGS MANAGE\tsystem\n60037\tsystem_settings_view\tSYSTEM SETTINGS VIEW\tsystem\n60027\tuser_create\tUSER CREATE\tuser\n60029\tuser_delete\tUSER DELETE\tuser\n60028\tuser_edit\tUSER EDIT\tuser\n60030\tuser_permissions_manage\tUSER PERMISSIONS MANAGE\tuser\n60026\tuser_view\tUSER VIEW\tuser\n60007\tworker_create\tWORKER CREATE\tworker\n60009\tworker_delete\tWORKER DELETE\tworker\n60008\tworker_edit\tWORKER EDIT\tworker\n60010\tworker_export\tWORKER EXPORT\tworker\n60006\tworker_view\tWORKER VIEW\tworker\n",
+  "stderr": "",
+  "execution_time_ms": 1614
+}
