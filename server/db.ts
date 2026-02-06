@@ -698,11 +698,13 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
   const [worker] = await db.select().from(workers).where(eq(workers.id, workerId)).limit(1);
   if (!worker) throw new Error("العامل غير موجود");
   
+  const eventTime = new Date();
+  
   // Insert attendance event
   const result = await db.insert(attendanceEvents).values({
     workerId,
     eventType,
-    eventTime: new Date(),
+    eventTime,
     method,
     deviceId: deviceId || null,
     verifiedBy: verifiedBy || null,
@@ -711,9 +713,19 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
   const eventId = result[0].insertId;
   
   // Update worker's last attendance
-  await db.update(workers).set({ lastAttendanceAt: new Date() }).where(eq(workers.id, workerId));
+  await db.update(workers).set({ lastAttendanceAt: eventTime }).where(eq(workers.id, workerId));
   
-  return { success: true, eventType, workerId, eventId, timestamp: new Date() };
+  // 🔥 AUTO-CALCULATE FINANCE ON CHECK_OUT
+  if (eventType === 'check_out') {
+    try {
+      await calculateAndSaveDailyFinance(workerId, eventTime);
+    } catch (error) {
+      console.error('Error calculating daily finance:', error);
+      // Don't throw - we still want to record the attendance even if finance calculation fails
+    }
+  }
+  
+  return { success: true, eventType, workerId, eventId, timestamp: eventTime };
 }
 
 export async function getWorkerByQRToken(qrToken: string) {
@@ -4902,4 +4914,184 @@ export async function updateGroupSchedule(
     .where(eq(groupSchedules.id, id));
 
   return result;
+}
+
+
+// ============================================
+// Auto Finance Calculation
+// ============================================
+
+/**
+ * حساب وحفظ المالية اليومية تلقائياً عند check_out
+ * يتم استدعاء هذه الدالة من recordAttendance
+ */
+export async function calculateAndSaveDailyFinance(workerId: number, checkOutTime: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { workers, groups, attendanceEvents, workerDailyFinance } = await import('../drizzle/schema');
+  
+  const workDate = new Date(checkOutTime);
+  workDate.setHours(0, 0, 0, 0); // Start of day
+  
+  // Get check_in time for the same day
+  const checkInEvents = await db
+    .select()
+    .from(attendanceEvents)
+    .where(
+      and(
+        eq(attendanceEvents.workerId, workerId),
+        eq(attendanceEvents.eventType, 'check_in'),
+        gte(attendanceEvents.eventTime, workDate)
+      )
+    )
+    .orderBy(desc(attendanceEvents.eventTime))
+    .limit(1);
+  
+  if (checkInEvents.length === 0) {
+    console.log('No check_in found for this check_out');
+    return;
+  }
+  
+  const checkInTime = checkInEvents[0].eventTime;
+  
+  // Get worker and group data
+  const [workerData] = await db
+    .select({
+      dailyRate: workers.dailyRate,
+      groupId: workers.groupId,
+      shiftStartTime: groups.shiftStartTime,
+      shiftEndTime: groups.shiftEndTime,
+      workMinutes: groups.workMinutes,
+      minuteCost: groups.minuteCost,
+      latePenaltyRate: groups.latePenaltyRate,
+      earlyLeavePenaltyRate: groups.earlyLeavePenaltyRate,
+    })
+    .from(workers)
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .where(eq(workers.id, workerId))
+    .limit(1);
+  
+  if (!workerData) {
+    throw new Error("Worker not found");
+  }
+  
+  const dailyRate = Number(workerData.dailyRate) || 0;
+  const shiftStartTime = workerData.shiftStartTime;
+  const shiftEndTime = workerData.shiftEndTime;
+  const minuteCost = Number(workerData.minuteCost) || 0;
+  const latePenaltyRate = Number(workerData.latePenaltyRate) || 0;
+  const earlyLeavePenaltyRate = Number(workerData.earlyLeavePenaltyRate) || 0;
+  
+  let baseSalary = dailyRate;
+  let latePenalty = 0;
+  let earlyLeavePenalty = 0;
+  let workedMinutes = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / 60000);
+  let financialMinutes = workedMinutes;
+  let lateMinutes = 0;
+  let earlyLeaveMinutes = 0;
+  
+  // If shift times are defined, calculate penalties
+  if (shiftStartTime && shiftEndTime) {
+    // Parse shift times
+    const [shiftStartHour, shiftStartMin] = shiftStartTime.split(':').map(Number);
+    const [shiftEndHour, shiftEndMin] = shiftEndTime.split(':').map(Number);
+    
+    const shiftStart = new Date(workDate);
+    shiftStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
+    
+    let shiftEnd = new Date(workDate);
+    shiftEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
+    
+    // If shift ends after midnight
+    if (shiftEnd <= shiftStart) {
+      shiftEnd.setDate(shiftEnd.getDate() + 1);
+    }
+    
+    // Calculate actual work time within shift boundaries
+    const actualStart = checkInTime > shiftStart ? checkInTime : shiftStart;
+    const actualEnd = checkOutTime < shiftEnd ? checkOutTime : shiftEnd;
+    
+    if (actualEnd > actualStart) {
+      financialMinutes = Math.floor((actualEnd.getTime() - actualStart.getTime()) / 60000);
+    } else {
+      financialMinutes = 0;
+    }
+    
+    // Calculate late minutes
+    if (checkInTime > shiftStart) {
+      lateMinutes = Math.floor((checkInTime.getTime() - shiftStart.getTime()) / 60000);
+    }
+    
+    // Calculate early leave minutes
+    if (checkOutTime < shiftEnd) {
+      earlyLeaveMinutes = Math.floor((shiftEnd.getTime() - checkOutTime.getTime()) / 60000);
+    }
+    
+    // Calculate base salary based on financial minutes
+    if (minuteCost > 0) {
+      baseSalary = financialMinutes * minuteCost;
+    }
+    
+    // Calculate penalties
+    if (latePenaltyRate > 0 && lateMinutes > 0 && minuteCost > 0) {
+      latePenalty = lateMinutes * minuteCost * latePenaltyRate;
+    }
+    
+    if (earlyLeavePenaltyRate > 0 && earlyLeaveMinutes > 0 && minuteCost > 0) {
+      earlyLeavePenalty = earlyLeaveMinutes * minuteCost * earlyLeavePenaltyRate;
+    }
+  }
+  
+  const netSalary = baseSalary - latePenalty - earlyLeavePenalty;
+  
+  // Save to worker_daily_finance
+  // Check if record exists
+  const existing = await db
+    .select()
+    .from(workerDailyFinance)
+    .where(
+      and(
+        eq(workerDailyFinance.workerId, workerId),
+        eq(workerDailyFinance.workDate, workDate)
+      )
+    )
+    .limit(1);
+  
+  if (existing.length > 0) {
+    // Update existing record
+    await db
+      .update(workerDailyFinance)
+      .set({
+        checkOutTime,
+        workedMinutes,
+        financialMinutes,
+        lateMinutes,
+        earlyLeaveMinutes,
+        baseSalary: baseSalary.toString(),
+        latePenalty: latePenalty.toString(),
+        earlyLeavePenalty: earlyLeavePenalty.toString(),
+        netSalary: netSalary.toString(),
+        updatedAt: new Date(),
+      })
+      .where(eq(workerDailyFinance.id, existing[0].id));
+  } else {
+    // Insert new record
+    await db.insert(workerDailyFinance).values({
+      workerId,
+      workDate,
+      checkInTime,
+      checkOutTime,
+      workedMinutes,
+      financialMinutes,
+      lateMinutes,
+      earlyLeaveMinutes,
+      baseSalary: baseSalary.toString(),
+      latePenalty: latePenalty.toString(),
+      earlyLeavePenalty: earlyLeavePenalty.toString(),
+      netSalary: netSalary.toString(),
+    });
+  }
+  
+  console.log(`✅ Daily finance calculated for worker ${workerId} on ${workDate.toISOString().split('T')[0]}`);
 }
