@@ -1,0 +1,25 @@
+{
+  "query": "SELECT id, code, name FROM cost_centers ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, name FROM cost_centers ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "code": "CC001",
+      "name": "مركز تكلفة الإنتاج"
+    },
+    {
+      "id": "2",
+      "code": "CC002",
+      "name": "مركز تكلفة الصيانة"
+    },
+    {
+      "id": "3",
+      "code": "CC003",
+      "name": "مركز تكلفة الإدارة"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tname\n1\tCC001\tمركز تكلفة الإنتاج\n2\tCC002\tمركز تكلفة الصيانة\n3\tCC003\tمركز تكلفة الإدارة\n",
+  "stderr": "",
+  "execution_time_ms": 1553
+}

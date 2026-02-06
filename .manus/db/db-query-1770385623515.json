@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE payroll_batches ADD COLUMN IF NOT EXISTS total_workers INT DEFAULT 0 AFTER total_amount;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute ALTER TABLE payroll_batches ADD COLUMN IF NOT EXISTS total_workers INT DEFAULT 0 AFTER total_amount;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2613
+}

@@ -1,0 +1,82 @@
+{
+  "query": "SELECT id, batch_code, status, period_start, period_end, total_amount FROM payroll_batches ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, batch_code, status, period_start, period_end, total_amount FROM payroll_batches ORDER BY id;",
+  "rows": [
+    {
+      "id": "60005",
+      "batch_code": "PAY-202601-001",
+      "status": "draft",
+      "period_start": "2026-01-01",
+      "period_end": "2026-01-07",
+      "total_amount": "7669.00"
+    },
+    {
+      "id": "60006",
+      "batch_code": "PAY-202601-002",
+      "status": "under_accountant_review",
+      "period_start": "2026-01-08",
+      "period_end": "2026-01-14",
+      "total_amount": "7123.00"
+    },
+    {
+      "id": "60007",
+      "batch_code": "PAY-202601-003",
+      "status": "returned_from_accountant",
+      "period_start": "2026-01-15",
+      "period_end": "2026-01-21",
+      "total_amount": "7126.00"
+    },
+    {
+      "id": "60008",
+      "batch_code": "PAY-202601-004",
+      "status": "under_financial_review",
+      "period_start": "2025-12-22",
+      "period_end": "2025-12-28",
+      "total_amount": "7819.00"
+    },
+    {
+      "id": "60009",
+      "batch_code": "PAY-202601-005",
+      "status": "under_accounts_manager_review",
+      "period_start": "2025-12-15",
+      "period_end": "2025-12-21",
+      "total_amount": "7506.00"
+    },
+    {
+      "id": "60010",
+      "batch_code": "PAY-202601-006",
+      "status": "approved",
+      "period_start": "2025-12-01",
+      "period_end": "2025-12-07",
+      "total_amount": "7512.00"
+    },
+    {
+      "id": "60011",
+      "batch_code": "PAY-202601-007",
+      "status": "rejected_final",
+      "period_start": "2025-11-01",
+      "period_end": "2025-11-07",
+      "total_amount": "7495.00"
+    },
+    {
+      "id": "60012",
+      "batch_code": "PB-1768570278519",
+      "status": "under_accountant_review",
+      "period_start": "2026-01-10",
+      "period_end": "2026-01-12",
+      "total_amount": "12470.18"
+    },
+    {
+      "id": "60013",
+      "batch_code": "PB-1768570438238",
+      "status": "draft",
+      "period_start": "2026-01-10",
+      "period_end": "2026-01-13",
+      "total_amount": "9457.18"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatch_code\tstatus\tperiod_start\tperiod_end\ttotal_amount\n60005\tPAY-202601-001\tdraft\t2026-01-01\t2026-01-07\t7669.00\n60006\tPAY-202601-002\tunder_accountant_review\t2026-01-08\t2026-01-14\t7123.00\n60007\tPAY-202601-003\treturned_from_accountant\t2026-01-15\t2026-01-21\t7126.00\n60008\tPAY-202601-004\tunder_financial_review\t2025-12-22\t2025-12-28\t7819.00\n60009\tPAY-202601-005\tunder_accounts_manager_review\t2025-12-15\t2025-12-21\t7506.00\n60010\tPAY-202601-006\tapproved\t2025-12-01\t2025-12-07\t7512.00\n60011\tPAY-202601-007\trejected_final\t2025-11-01\t2025-11-07\t7495.00\n60012\tPB-1768570278519\tunder_accountant_review\t2026-01-10\t2026-01-12\t12470.18\n60013\tPB-1768570438238\tdraft\t2026-01-10\t2026-01-13\t9457.18\n",
+  "stderr": "",
+  "execution_time_ms": 1514
+}

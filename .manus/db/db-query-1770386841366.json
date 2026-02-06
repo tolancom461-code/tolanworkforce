@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, batch_code, period_start, period_end, cost_center_id, total_amount, total_workers, status FROM payroll_batches ORDER BY id DESC LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, batch_code, period_start, period_end, cost_center_id, total_amount, total_workers, status FROM payroll_batches ORDER BY id DESC LIMIT 1;",
+  "rows": [
+    {
+      "id": "3",
+      "batch_code": "Batch-2026-02-001",
+      "period_start": "2026-02-06",
+      "period_end": "2026-02-06",
+      "cost_center_id": "1",
+      "total_amount": "0.00",
+      "total_workers": "1",
+      "status": "draft"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatch_code\tperiod_start\tperiod_end\tcost_center_id\ttotal_amount\ttotal_workers\tstatus\n3\tBatch-2026-02-001\t2026-02-06\t2026-02-06\t1\t0.00\t1\tdraft\n",
+  "stderr": "",
+  "execution_time_ms": 1695
+}

@@ -1,0 +1,12 @@
+{
+  "query": "INSERT IGNORE INTO groups (id, name, code, daily_rate, status) VALUES\n(1, 'الفنيين', 'TECH', 300, 'active'),\n(2, 'الإداريين', 'ADMIN', 250, 'active'),\n(3, 'الأمن', 'SEC', 200, 'active'),\n(4, 'الصيانة', 'MAINT', 220, 'active');\n\nINSERT IGNORE INTO workers (id, name, code, group_id, status) VALUES\n(1, 'أحمد محمد', 'W001', 1, 'active'),\n(2, 'علي حسن', 'W002', 1, 'active'),\n(3, 'محمود عبدالله', 'W003', 1, 'active'),\n(4, 'فاطمة علي', 'W004', 1, 'active'),\n(5, 'سارة محمد', 'W005', 1, 'active'),\n(6, 'خديجة أحمد', 'W006', 2, 'active'),\n(7, 'نور محمد', 'W007', 2, 'active'),\n(8, 'ليلى حسن', 'W008', 2, 'active'),\n(9, 'عمر علي', 'W009', 3, 'active'),\n(10, 'حسن محمود', 'W010', 3, 'active'),\n(11, 'إبراهيم أحمد', 'W011', 4, 'active'),\n(12, 'يوسف محمد', 'W012', 4, 'active');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute INSERT IGNORE INTO groups (id, name, code, daily_rate, status) VALUES\n(1, 'الفنيين', 'TECH', 300, 'active'),\n(2, 'الإداريين', 'ADMIN', 250, 'active'),\n(3, 'الأمن', 'SEC', 200, 'active'),\n(4, 'الصيانة', 'MAINT', 220, 'active');\n\nINSERT IGNORE INTO workers (id, name, code, group_id, status) VALUES\n(1, 'أحمد محمد', 'W001', 1, 'active'),\n(2, 'علي حسن', 'W002', 1, 'active'),\n(3, 'محمود عبدالله', 'W003', 1, 'active'),\n(4, 'فاطمة علي', 'W004', 1, 'active'),\n(5, 'سارة محمد', 'W005', 1, 'active'),\n(6, 'خديجة أحمد', 'W006', 2, 'active'),\n(7, 'نور محمد', 'W007', 2, 'active'),\n(8, 'ليلى حسن', 'W008', 2, 'active'),\n(9, 'عمر علي', 'W009', 3, 'active'),\n(10, 'حسن محمود', 'W010', 3, 'active'),\n(11, 'إبراهيم أحمد', 'W011', 4, 'active'),\n(12, 'يوسف محمد', 'W012', 4, 'active');",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 25 near \"groups (id, name, code, daily_rate, status) VALUES",
+    "(1, 'الفنيين', 'TECH', 300, 'active'),",
+    "(2, 'الإداريين', 'ADMIN', 250, 'active'),",
+    "(3, 'الأمن', 'SEC', 200, 'active'),",
+    "(4, 'الصيانة', 'MAINT', 220, 'active')\""
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "query": "\nINSERT INTO cost_centers (code, name, description, is_active) \nVALUES \n  ('CC001', 'مركز تكلفة الإنتاج', 'قسم الإنتاج الرئيسي', true),\n  ('CC002', 'مركز تكلفة الصيانة', 'قسم الصيانة والدعم الفني', true),\n  ('CC003', 'مركز تكلفة الإدارة', 'الإدارة والموارد البشرية', true)\nON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name\nRETURNING id, code, name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \nINSERT INTO cost_centers (code, name, description, is_active) \nVALUES \n  ('CC001', 'مركز تكلفة الإنتاج', 'قسم الإنتاج الرئيسي', true),\n  ('CC002', 'مركز تكلفة الصيانة', 'قسم الصيانة والدعم الفني', true),\n  ('CC003', 'مركز تكلفة الإدارة', 'الإدارة والموارد البشرية', true)\nON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name\nRETURNING id, code, name;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 2: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 6 column 12 near \"CONFLICT (code) DO UPDATE SET name = EXCLUDED.name",
+    "RETURNING id, code, name\""
+  ]
+}

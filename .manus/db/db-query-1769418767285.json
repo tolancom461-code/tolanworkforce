@@ -1,0 +1,73 @@
+{
+  "query": "\n-- جلب جميع المستخدمين مع أدوارهم\nSELECT \n  u.id,\n  u.username,\n  u.email,\n  u.role,\n  r.name as role_name,\n  r.level,\n  u.is_active\nFROM users u\nLEFT JOIN roles r ON u.role = r.code\nORDER BY u.id ASC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- جلب جميع المستخدمين مع أدوارهم\nSELECT \n  u.id,\n  u.username,\n  u.email,\n  u.role,\n  r.name as role_name,\n  r.level,\n  u.is_active\nFROM users u\nLEFT JOIN roles r ON u.role = r.code\nORDER BY u.id ASC;\n",
+  "rows": [
+    {
+      "id": "1",
+      "username": "RADMAN",
+      "email": "anem2031@gmail.com",
+      "role": "admin",
+      "role_name": "NULL",
+      "level": "NULL",
+      "is_active": "1"
+    },
+    {
+      "id": "1050032",
+      "username": "admin",
+      "email": "admin@tolanworkforce.com",
+      "role": "admin",
+      "role_name": "NULL",
+      "level": "NULL",
+      "is_active": "1"
+    },
+    {
+      "id": "1170002",
+      "username": "accountant",
+      "email": "NULL",
+      "role": "user",
+      "role_name": "NULL",
+      "level": "NULL",
+      "is_active": "1"
+    },
+    {
+      "id": "1170003",
+      "username": "financial_reviewer",
+      "email": "NULL",
+      "role": "user",
+      "role_name": "NULL",
+      "level": "NULL",
+      "is_active": "1"
+    },
+    {
+      "id": "1170004",
+      "username": "accounts_manager",
+      "email": "NULL",
+      "role": "user",
+      "role_name": "NULL",
+      "level": "NULL",
+      "is_active": "1"
+    },
+    {
+      "id": "1170005",
+      "username": "hr_manager",
+      "email": "NULL",
+      "role": "user",
+      "role_name": "NULL",
+      "level": "NULL",
+      "is_active": "1"
+    },
+    {
+      "id": "1170006",
+      "username": "security_guard",
+      "email": "NULL",
+      "role": "user",
+      "role_name": "NULL",
+      "level": "NULL",
+      "is_active": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\temail\trole\trole_name\tlevel\tis_active\n1\tRADMAN\tanem2031@gmail.com\tadmin\tNULL\tNULL\t1\n1050032\tadmin\tadmin@tolanworkforce.com\tadmin\tNULL\tNULL\t1\n1170002\taccountant\tNULL\tuser\tNULL\tNULL\t1\n1170003\tfinancial_reviewer\tNULL\tuser\tNULL\tNULL\t1\n1170004\taccounts_manager\tNULL\tuser\tNULL\tNULL\t1\n1170005\thr_manager\tNULL\tuser\tNULL\tNULL\t1\n1170006\tsecurity_guard\tNULL\tuser\tNULL\tNULL\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1562
+}

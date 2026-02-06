@@ -1,0 +1,31 @@
+{
+  "query": "SELECT COUNT(*) as total_schedules FROM group_schedules; SELECT * FROM group_schedules LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT COUNT(*) as total_schedules FROM group_schedules; SELECT * FROM group_schedules LIMIT 5;",
+  "rows": [
+    {
+      "total_schedules": "20"
+    },
+    {
+      "total_schedules": "id\tgroup_id\tday_of_week\tstart_time\tend_time\trequired_hours\tis_active\tcreated_at\tupdated_at"
+    },
+    {
+      "total_schedules": "1\t1\t0\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04"
+    },
+    {
+      "total_schedules": "2\t1\t1\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04"
+    },
+    {
+      "total_schedules": "3\t1\t2\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04"
+    },
+    {
+      "total_schedules": "4\t1\t3\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04"
+    },
+    {
+      "total_schedules": "5\t1\t4\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_schedules\n20\nid\tgroup_id\tday_of_week\tstart_time\tend_time\trequired_hours\tis_active\tcreated_at\tupdated_at\n1\t1\t0\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04\n2\t1\t1\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04\n3\t1\t2\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04\n4\t1\t3\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04\n5\t1\t4\t08:00:00\t16:00:00\t8.00\t1\t2026-02-02 07:33:04\t2026-02-02 07:33:04\n",
+  "stderr": "",
+  "execution_time_ms": 1835
+}

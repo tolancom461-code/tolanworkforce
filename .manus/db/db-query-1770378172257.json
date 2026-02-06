@@ -1,0 +1,30 @@
+{
+  "query": "SELECT \n  id,\n  worker_id,\n  work_date,\n  check_in_time,\n  check_out_time,\n  base_salary,\n  net_salary,\n  created_at\nFROM worker_daily_finance \nORDER BY work_date DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  id,\n  worker_id,\n  work_date,\n  check_in_time,\n  check_out_time,\n  base_salary,\n  net_salary,\n  created_at\nFROM worker_daily_finance \nORDER BY work_date DESC;",
+  "rows": [
+    {
+      "id": "1",
+      "worker_id": "1",
+      "work_date": "2026-02-06",
+      "check_in_time": "2026-02-06 09:46:58",
+      "check_out_time": "2026-02-06 10:46:16",
+      "base_salary": "0.00",
+      "net_salary": "-4930000.00",
+      "created_at": "2026-02-06 11:38:25"
+    },
+    {
+      "id": "2",
+      "worker_id": "2",
+      "work_date": "2026-02-06",
+      "check_in_time": "2026-02-06 10:09:11",
+      "check_out_time": "2026-02-06 11:14:16",
+      "base_salary": "0.00",
+      "net_salary": "0.00",
+      "created_at": "2026-02-06 11:38:26"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\twork_date\tcheck_in_time\tcheck_out_time\tbase_salary\tnet_salary\tcreated_at\n1\t1\t2026-02-06\t2026-02-06 09:46:58\t2026-02-06 10:46:16\t0.00\t-4930000.00\t2026-02-06 11:38:25\n2\t2\t2026-02-06\t2026-02-06 10:09:11\t2026-02-06 11:14:16\t0.00\t0.00\t2026-02-06 11:38:26\n",
+  "stderr": "",
+  "execution_time_ms": 1601
+}

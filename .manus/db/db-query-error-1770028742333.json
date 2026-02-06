@@ -1,0 +1,10 @@
+{
+  "query": "SELECT \n  g.id,\n  g.code,\n  g.name,\n  g.cost_center_id,\n  cc.name as cost_center_name\nFROM groups g\nLEFT JOIN cost_centers cc ON g.cost_center_id = cc.id\nORDER BY cc.id, g.name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  g.id,\n  g.code,\n  g.name,\n  g.cost_center_id,\n  cc.name as cost_center_name\nFROM groups g\nLEFT JOIN cost_centers cc ON g.cost_center_id = cc.id\nORDER BY cc.id, g.name;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 7 column 12 near \"groups g",
+    "LEFT JOIN cost_centers cc ON g.cost_center_id = cc.id",
+    "ORDER BY cc.id, g.name\""
+  ]
+}
