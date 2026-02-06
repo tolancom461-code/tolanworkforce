@@ -1,9 +1,7 @@
 # قائمة المهام - TolanWorkforce
 
-## إصلاح واجهات دفعات الرواتب وحذف الورديات
-- [ ] حذف المراجع المتبقية للورديات من Groups.tsx (getShifts, createShift, deleteShift)
-- [x] إصلاح PayrollBatches.tsx - تمرير items بشكل صحيح
-- [x] إصلاح PayrollBatchCreate.tsx - تمرير items بشكل صحيح
-- [x] إصلاح AdvancedPayrollPage.tsx - تمرير items بشكل صحيح
-- [ ] فحص شامل للنظام
+## إصلاح الأخطاء المتبقية
+- [x] حذف جميع المراجع للورديات من Groups.tsx (8 أخطاء)
+- [x] إصلاح أخطاء App.tsx ProtectedRoute (2 أخطاء)
+- [x] فحص شامل للنظام - 0 أخطاء TypeScript
 - [ ] حفظ checkpoint نهائي

@@ -189,14 +189,6 @@ function Router() {
           <PayrollDashboard />
         </ProtectedRoute>
       </Route>
-      <Route path="/schedules/dynamic">
-        <ProtectedRoute>
-        </ProtectedRoute>
-      </Route>
-      <Route path="/schedules/weekly">
-        <ProtectedRoute>
-        </ProtectedRoute>
-      </Route>
       <Route path="/backfill">
         <ProtectedRoute>
           <Backfill />
