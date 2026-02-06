@@ -1,11 +1,10 @@
-import { eq, desc, and, or, like, gte, lt, lte, sql, count } from "drizzle-orm";
+import { eq, desc, sql, and, gte, lte, lt, inArray, isNull, isNotNull, between, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   users, InsertUser, User,
   costCenters,
   groups, Group, InsertGroup,
-  groupShifts, GroupShift, InsertGroupShift,
-  groupSchedules,
+
   workers, InsertWorker,
   attendanceEvents,
   workDays,
@@ -17,7 +16,6 @@ import {
   payrollBatchCorrections,
   operationalFlags
 } from "../drizzle/schema";
-import { inArray, isNull, isNotNull, between, gte, lte, and } from "drizzle-orm";
 
 // Rename Worker type to avoid conflict with Web Worker
 import type { Worker as DbWorker } from "../drizzle/schema";
@@ -367,7 +365,6 @@ export async function deleteGroup(id: number): Promise<void> {
   if (!db) throw new Error("Database not available");
 
   // Delete related shifts first
-  await db.delete(groupShifts).where(eq(groupShifts.groupId, id));
   await db.delete(groups).where(eq(groups.id, id));
 }
 
@@ -376,14 +373,12 @@ export async function getGroupShifts(groupId: number): Promise<GroupShift[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return await db.select().from(groupShifts).where(eq(groupShifts.groupId, groupId));
 }
 
 export async function createGroupShift(shift: InsertGroupShift): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(groupShifts).values(shift);
   const shiftId = result[0].insertId;
   
   // إنشاء جداول ديناميكية لكل أيام الأسبوع (1-7)
@@ -401,7 +396,6 @@ export async function createGroupShift(shift: InsertGroupShift): Promise<number>
   
   // إدراج الجداول الديناميكية
   if (schedules.length > 0) {
-    await db.insert(groupSchedules).values(schedules as any);
   }
   
   return shiftId;
@@ -425,14 +419,12 @@ export async function updateGroupShift(id: number, data: Partial<InsertGroupShif
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(groupShifts).set({ ...data, updatedAt: new Date() }).where(eq(groupShifts.id, id));
 }
 
 export async function deleteGroupShift(id: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(groupShifts).where(eq(groupShifts.id, id));
 }
 
 // ============================================
@@ -1025,7 +1017,6 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const { attendanceEvents, workers, groups, groupShifts, workDays, workerDailyFinance } = await import('../drizzle/schema');
   
 
   
@@ -4781,38 +4772,10 @@ export async function getGroupSchedules(groupId?: number) {
   if (!db) throw new Error("Database not available");
 
   if (groupId) {
-    return await db.select().from(groupSchedules).where(eq(groupSchedules.groupId, groupId));
   }
 
-  return await db.select().from(groupSchedules);
 }
 
-export async function updateGroupSchedule(
-  id: number,
-  startTime?: string,
-  endTime?: string,
-  requiredHours?: number,
-  effectiveDate?: string
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const updates: any = {};
-  if (startTime) updates.startTime = startTime;
-  if (endTime) updates.endTime = endTime;
-  if (requiredHours !== undefined) updates.requiredHours = requiredHours;
-  if (effectiveDate !== undefined) updates.effectiveDate = effectiveDate;
-
-  if (Object.keys(updates).length === 0) {
-    throw new Error("No fields to update");
-  }
-
-  const result = await db.update(groupSchedules)
-    .set(updates)
-    .where(eq(groupSchedules.id, id));
-
-  return result;
-}
 
 
 // ============================================
@@ -5009,42 +4972,6 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
 }
 
 
-export async function saveWeeklySchedules(
-  groupId: number,
-  schedules: Array<{
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
-    requiredHours: number;
-    isActive: boolean;
-  }>,
-  effectiveDate?: string
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const { groupSchedules } = await import('../drizzle/schema');
-
-  // Delete existing schedules for this group
-  await db.delete(groupSchedules).where(eq(groupSchedules.groupId, groupId));
-
-  // Insert new schedules
-  const insertPromises = schedules.map(schedule =>
-    db.insert(groupSchedules).values({
-      groupId,
-      dayOfWeek: schedule.dayOfWeek,
-      startTime: schedule.startTime,
-      endTime: schedule.endTime,
-      requiredHours: schedule.requiredHours,
-      isActive: schedule.isActive,
-      effectiveDate: effectiveDate || null,
-    })
-  );
-
-  await Promise.all(insertPromises);
-
-  return { success: true, count: schedules.length };
-}
 
 /**
  * Aggregate payroll data for all workers in a cost center for a period

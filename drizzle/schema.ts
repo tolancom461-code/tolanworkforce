@@ -67,16 +67,6 @@ export const groups = mysqlTable("groups", {
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export const groupShifts = mysqlTable("group_shifts", {
-  id: int("id").autoincrement().primaryKey(),
-  groupId: int("group_id").notNull(),
-  shiftName: varchar("shift_name", { length: 100 }).notNull(),
-  startTime: varchar("start_time", { length: 10 }).notNull(),
-  endTime: varchar("end_time", { length: 10 }).notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
 
 export const workers = mysqlTable("workers", {
   id: int("id").autoincrement().primaryKey(),
@@ -330,8 +320,6 @@ export type AttendanceEvent = typeof attendanceEvents.$inferSelect;
 export type PayrollBatch = typeof payrollBatches.$inferSelect;
 
 export type InsertGroup = typeof groups.$inferInsert;
-export type GroupShift = typeof groupShifts.$inferSelect;
-export type InsertGroupShift = typeof groupShifts.$inferInsert;
 export type InsertWorker = typeof workers.$inferInsert;
 
 
