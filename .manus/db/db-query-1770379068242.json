@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, code, full_name, group_id FROM workers LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, group_id FROM workers LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "code": "W1",
+      "full_name": "علي صالح",
+      "group_id": "1"
+    },
+    {
+      "id": "2",
+      "code": "W2",
+      "full_name": "وثار",
+      "group_id": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tgroup_id\n1\tW1\tعلي صالح\t1\n2\tW2\tوثار\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1600
+}

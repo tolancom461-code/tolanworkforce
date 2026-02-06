@@ -17,7 +17,7 @@ import {
   payrollBatchCorrections,
   operationalFlags
 } from "../drizzle/schema";
-import { inArray, isNull, isNotNull } from "drizzle-orm";
+import { inArray, isNull, isNotNull, between, gte, lte, and } from "drizzle-orm";
 
 // Rename Worker type to avoid conflict with Web Worker
 import type { Worker as DbWorker } from "../drizzle/schema";
@@ -1027,37 +1027,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
 
   const { attendanceEvents, workers, groups, groupShifts, workDays, workerDailyFinance } = await import('../drizzle/schema');
   
-  // Check if there's a full day override for this date
-  const [existingFinance] = await db
-    .select()
-    .from(workerDailyFinance)
-    .where(and(
-      eq(workerDailyFinance.workerId, workerId),
-      eq(workerDailyFinance.workDate, sql`${workDate}`)
-    ))
-    .limit(1);
-  
-  // If full day override is active, return full day wage with no deductions
-  if (existingFinance && existingFinance.fullDayOverride) {
-    // Get worker's group to get daily wage
-    const [worker] = await db.select().from(workers).where(eq(workers.id, workerId)).limit(1);
-    let dailyWage = 0;
-    
-    if (worker && worker.groupId) {
-      const [group] = await db.select().from(groups).where(eq(groups.id, worker.groupId)).limit(1);
-      if (group && group.dailyWage) {
-        dailyWage = safeParseDecimal(group.dailyWage);
-      }
-    }
-    
-    return {
-      baseAmount: dailyWage,
-      deductions: 0,
-      bonuses: 0,
-      lateMinutes: 0,
-      earlyLeaveMinutes: 0,
-    };
-  }
+
   
   // Get worker with group info
   const [worker] = await db.select().from(workers).where(eq(workers.id, workerId)).limit(1);
@@ -1945,9 +1915,23 @@ export async function createPayrollBatch(params: {
   groupId?: number | null;
   costCenterId?: number | null;
   createdBy: number;
+  items: Array<{
+    workerId: number;
+    baseAmount: string;
+    deductions: string;
+    bonuses: string;
+    netAmount: string;
+  }>;
 }) {
+  console.log('[createPayrollBatch] ========== START ==========');
+  console.log('[createPayrollBatch] Params:', JSON.stringify(params, null, 2));
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+
+  // ✅ 1. توحيد التواريخ - تحويل إلى YYYY-MM-DD فقط
+  const periodStartDate = params.periodStart.split('T')[0];
+  const periodEndDate = params.periodEnd.split('T')[0];
+  console.log('[createPayrollBatch] Period:', periodStartDate, 'to', periodEndDate);
 
   // Generate batch code with format: Batch-YYYY-MM-SEQ
   // Example: Batch-2026-01-001, Batch-2026-01-002, etc.
@@ -1958,65 +1942,36 @@ export async function createPayrollBatch(params: {
   
   // Get sequence number for this month
   const monthStart = new Date(year, now.getMonth(), 1);
-  const monthEnd = new Date(year, now.getMonth() + 1, 0);
-  const batchesThisMonth = await db.select().from(payrollBatches).where(and(gte(payrollBatches.createdAt, monthStart), lte(payrollBatches.createdAt, monthEnd)));
+  const monthEnd = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
+  
+  // Fetch all batches and filter in JavaScript (Drizzle has issues with Date objects in WHERE clauses)
+  let allBatches = [];
+  try {
+    console.log('[createPayrollBatch] Fetching all batches...');
+    allBatches = await db.select().from(payrollBatches);
+    console.log('[createPayrollBatch] Found', allBatches.length, 'batches');
+  } catch (error) {
+    console.error('[createPayrollBatch] Error fetching batches:', error);
+    // If error, assume no batches exist
+    allBatches = [];
+  }
+  const batchesThisMonth = allBatches.filter(batch => {
+    const createdAt = new Date(batch.createdAt);
+    return createdAt >= monthStart && createdAt <= monthEnd;
+  });
   const sequence = String(batchesThisMonth.length + 1).padStart(3, '0');
   const finalBatchCode = `${batchCode}-${sequence}`;
 
-  // Get workers based on filters
-  let workersQuery = db.select().from(workers).where(eq(workers.status, 'active'));
-  
-  const allWorkers = await workersQuery;
-  
-  // Filter by groupId if specified
-  let filteredWorkers = allWorkers;
-  if (params.groupId) {
-    filteredWorkers = allWorkers.filter(w => w.groupId === params.groupId);
-  }
-
-  // Filter by cost center if specified
-  if (params.costCenterId) {
-    const groupsInCostCenter = await db
-      .select()
-      .from(groups)
-      .where(eq(groups.costCenterId, params.costCenterId));
-    
-    const groupIds = groupsInCostCenter.map(g => g.id);
-    filteredWorkers = allWorkers.filter(w => w.groupId && groupIds.includes(w.groupId));
-  }
-
-  // Calculate totals for each worker
-  const batchItems = await Promise.all(
-    filteredWorkers.map(async (worker) => {
-      // Get daily finance records for the period
-      const dailyRecords = await db
-        .select()
-        .from(workerDailyFinance)
-        .where(
-          and(
-            eq(workerDailyFinance.workerId, worker.id),
-            sql`${workerDailyFinance.workDate} >= ${params.periodStart}`,
-            sql`${workerDailyFinance.workDate} <= ${params.periodEnd}`
-          )
-        );
-
-      // Calculate totals
-      const daysWorked = dailyRecords.length;
-      const baseAmount = dailyRecords.reduce((sum, r) => sum + parseFloat(r.baseAmount || '0'), 0);
-      const totalDeductions = dailyRecords.reduce((sum, r) => sum + parseFloat(r.deductions || '0'), 0);
-      const totalBonuses = dailyRecords.reduce((sum, r) => sum + parseFloat(r.bonuses || '0'), 0);
-      const netAmount = baseAmount - totalDeductions + totalBonuses;
-
-      return {
-        workerId: worker.id,
-        daysWorked,
-        baseAmount: baseAmount.toFixed(2),
-        totalDeductions: totalDeductions.toFixed(2),
-        totalBonuses: totalBonuses.toFixed(2),
-        netAmount: netAmount.toFixed(2),
-      };
-    })
-  );
+  // Use items from parameters instead of calculating from workerDailyFinance
+  console.log('[createPayrollBatch] Using items from parameters:', params.items.length, 'items');
+  const batchItems = params.items.map(item => ({
+    workerId: item.workerId,
+    daysWorked: 0, // Not provided in items
+    baseAmount: item.baseAmount,
+    totalDeductions: item.deductions,
+    totalBonuses: item.bonuses,
+    netAmount: item.netAmount,
+  }));
 
   // Calculate batch totals
   const totalAmount = batchItems.reduce((sum, item) => sum + parseFloat(item.netAmount), 0);
@@ -2024,44 +1979,44 @@ export async function createPayrollBatch(params: {
   const totalBonuses = batchItems.reduce((sum, item) => sum + parseFloat(item.totalBonuses), 0);
 
   // Insert batch
-  await db.insert(payrollBatches).values({
+  console.log('[createPayrollBatch] Inserting batch with code:', finalBatchCode);
+  console.log('[createPayrollBatch] Batch totals:', { totalAmount, totalDeductions, totalBonuses, totalWorkers: batchItems.length });
+  const insertValues = {
     batchCode: finalBatchCode,
     periodStart: params.periodStart,
     periodEnd: params.periodEnd,
     groupId: params.groupId ?? null,
     costCenterId: params.costCenterId ?? null,
     totalAmount: totalAmount.toFixed(2),
-    totalWorkers: filteredWorkers.length,
+    totalWorkers: batchItems.length,
     totalDeductions: totalDeductions.toFixed(2),
     totalBonuses: totalBonuses.toFixed(2),
     status: 'draft' as const,
     createdBy: params.createdBy,
-  } as any);
+  };
 
-  // Get the created batch by batch code
-  const createdBatch = await db
-    .select()
-    .from(payrollBatches)
-    .where(eq(payrollBatches.batchCode, finalBatchCode))
-    .limit(1);
+  const insertResult = await db.insert(payrollBatches).values(insertValues as any);
 
-  if (!createdBatch || createdBatch.length === 0) {
-    throw new Error('Failed to create payroll batch');
-  }
-
-  const batchId = createdBatch[0].id;
+  // Get batch ID from insert result
+  const batchId = insertResult[0].insertId;
   if (!batchId) {
     throw new Error('Failed to get batch ID after insert');
   }
 
   for (const item of batchItems) {
-    await db.insert(payrollBatchItems).values({
+    const itemToInsert = {
       batchId,
-      ...item,
-    });
+      workerId: item.workerId,
+      daysWorked: item.daysWorked,
+      baseAmount: item.baseAmount,
+      totalDeductions: item.totalDeductions,
+      totalBonuses: item.totalBonuses,
+      netAmount: item.netAmount,
+    };
+      await db.insert(payrollBatchItems).values(itemToInsert as any);
   }
 
-  return { batchId, batchCode };
+  return { batchId, batchCode: finalBatchCode };
 }
 
 /**
@@ -2751,12 +2706,8 @@ export async function setFullDayOverride(
     await processAttendanceToFinance(workerId, workDate);
   }
   
-  // Update override fields
+  // Update override fields removed - feature deprecated
   await db.update(workerDailyFinance).set({
-    fullDayOverride: override,
-    overrideReason: reason || null,
-    overrideBy: userId || null,
-    overrideAt: override ? new Date() : null,
     updatedAt: new Date(),
   }).where(and(
     eq(workerDailyFinance.workerId, workerId),
@@ -2805,30 +2756,7 @@ async function recalculateFinanceWithOverride(workerId: number, workDate: string
   ));
 }
 
-export async function getFullDayOverrideStatus(workerId: number, workDate: string) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const { workerDailyFinance } = await import('../drizzle/schema');
-  
-  const [record] = await db
-    .select()
-    .from(workerDailyFinance)
-    .where(and(
-      eq(workerDailyFinance.workerId, workerId),
-      eq(workerDailyFinance.workDate, sql`${workDate}`)
-    ))
-    .limit(1);
-  
-  if (!record) return null;
-  
-  return {
-    override: record.fullDayOverride,
-    reason: record.overrideReason,
-    overrideBy: record.overrideBy,
-    overrideAt: record.overrideAt,
-  };
-}
+// getFullDayOverrideStatus function removed - feature deprecated
 
 // ============================================
 // Payroll Lock Functions
@@ -3331,8 +3259,7 @@ export async function getPayrollReportByWorker(
       baseAmount: workerDailyFinance.baseAmount,
       deductions: workerDailyFinance.deductions,
       bonuses: workerDailyFinance.bonuses,
-      fullDayOverride: workerDailyFinance.fullDayOverride,
-      overrideReason: workerDailyFinance.overrideReason,
+
       workDate: workerDailyFinance.workDate,
     })
     .from(workerDailyFinance)
@@ -3361,9 +3288,7 @@ export async function getPayrollReportByWorker(
     const netAmount = baseAmount - deductions + bonuses;
 
     // Collect override notes
-    const overrideNote = row.fullDayOverride && row.overrideReason
-      ? `${new Date(row.workDate).toLocaleDateString('ar-SA')}: ${row.overrideReason}`
-      : null;
+    const overrideNote = null;
 
     if (existing) {
       existing.totalSalary += baseAmount;
@@ -3452,39 +3377,7 @@ export async function getDailyFinanceForWorker(
   return records;
 }
 
-export async function updateFullDayOverride(
-  workerId: number,
-  workDate: string,
-  fullDayOverride: boolean,
-  overrideReason?: string,
-  overrideBy?: number
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const { workerDailyFinance } = await import('../drizzle/schema');
-  
-  // Update the record
-  const updateData: any = {
-    fullDayOverride,
-    overrideReason: fullDayOverride ? overrideReason : null,
-    overrideBy: fullDayOverride ? overrideBy : null,
-    overrideAt: fullDayOverride ? new Date() : null,
-  };
-  
-  await db
-    .update(workerDailyFinance)
-    .set(updateData)
-    .where(and(
-      eq(workerDailyFinance.workerId, workerId),
-      eq(workerDailyFinance.workDate, sql`${workDate}`)
-    ));
-  
-  // Recalculate the finance for this day
-  await processAttendanceToFinance(workerId, workDate);
-  
-  return { success: true };
-}
+// updateFullDayOverride function removed - feature deprecated
 
 
 // ============================================
@@ -4708,6 +4601,7 @@ export async function aggregatePayrollData(
   const { workerDailyFinance, payOverrides } = await import('../drizzle/schema');
 
   // Get daily finances (unlocked only)
+  console.log(`[aggregatePayrollData] Querying for worker ${workerId}, period ${periodStart} to ${periodEnd}`);
   const dailyFinances = await db
     .select()
     .from(workerDailyFinance)
@@ -4719,6 +4613,10 @@ export async function aggregatePayrollData(
         isNull(workerDailyFinance.lockedBatchId)
       )
     );
+  console.log(`[aggregatePayrollData] Found ${dailyFinances.length} daily finance records`);
+  if (dailyFinances.length > 0) {
+    console.log(`[aggregatePayrollData] First record:`, dailyFinances[0]);
+  }
 
   // Get pay overrides (approved only)
   const overrides = await db
@@ -4934,7 +4832,10 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   const workDate = new Date(checkOutTime);
   workDate.setHours(0, 0, 0, 0); // Start of day
   
-  // Get check_in time for the same day
+  // Get check_in time - look back up to 48 hours to support night shifts
+  const lookbackTime = new Date(checkOutTime);
+  lookbackTime.setHours(lookbackTime.getHours() - 48);
+  
   const checkInEvents = await db
     .select()
     .from(attendanceEvents)
@@ -4942,7 +4843,8 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
       and(
         eq(attendanceEvents.workerId, workerId),
         eq(attendanceEvents.eventType, 'check_in'),
-        gte(attendanceEvents.eventTime, workDate)
+        gte(attendanceEvents.eventTime, lookbackTime),
+        lte(attendanceEvents.eventTime, checkOutTime)
       )
     )
     .orderBy(desc(attendanceEvents.eventTime))
@@ -5072,6 +4974,11 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
         latePenalty: latePenalty.toString(),
         earlyLeavePenalty: earlyLeavePenalty.toString(),
         netSalary: netSalary.toString(),
+        // New columns
+        baseAmount: baseSalary.toString(),
+        deductions: (latePenalty + earlyLeavePenalty).toString(),
+        bonuses: '0.00',
+        netAmount: netSalary.toString(),
         updatedAt: new Date(),
       })
       .where(eq(workerDailyFinance.id, existing[0].id));
@@ -5090,6 +4997,11 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
       latePenalty: latePenalty.toString(),
       earlyLeavePenalty: earlyLeavePenalty.toString(),
       netSalary: netSalary.toString(),
+      // New columns
+      baseAmount: baseSalary.toString(),
+      deductions: (latePenalty + earlyLeavePenalty).toString(),
+      bonuses: '0.00',
+      netAmount: netSalary.toString(),
     });
   }
   
@@ -5132,4 +5044,56 @@ export async function saveWeeklySchedules(
   await Promise.all(insertPromises);
 
   return { success: true, count: schedules.length };
+}
+
+/**
+ * Aggregate payroll data for all workers in a cost center for a period
+ */
+export async function aggregatePayrollDataByCostCenter(
+  costCenterId: number,
+  periodStart: string,
+  periodEnd: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { workers, groups } = await import('../drizzle/schema');
+
+  // First, get all groups in this cost center
+  const groupsInCostCenter = await db
+    .select()
+    .from(groups)
+    .where(eq(groups.costCenterId, costCenterId));
+
+  console.log(`[aggregatePayrollDataByCostCenter] Found ${groupsInCostCenter.length} groups in cost center ${costCenterId}`);
+
+  // Then, get all workers in these groups
+  const groupIds = groupsInCostCenter.map(g => g.id);
+  const workersInCostCenter = groupIds.length > 0
+    ? await db.select().from(workers).where(inArray(workers.groupId, groupIds))
+    : [];
+
+  console.log(`[aggregatePayrollDataByCostCenter] Found ${workersInCostCenter.length} workers in cost center ${costCenterId}`);
+
+  // Aggregate data for each worker
+  const results = [];
+  for (const worker of workersInCostCenter) {
+    const workerData = await aggregatePayrollData(worker.id, periodStart, periodEnd);
+    
+    // Only include workers with data
+    if (workerData.daysWorked > 0) {
+      results.push({
+        workerId: worker.id,
+        workerName: worker.name,
+        baseAmount: workerData.baseAmount,
+        deductions: workerData.deductionsTotal,
+        bonuses: workerData.bonuses,
+        netAmount: workerData.netAmount,
+        daysWorked: workerData.daysWorked,
+      });
+    }
+  }
+
+  console.log(`[aggregatePayrollDataByCostCenter] Aggregated data for ${results.length} workers with payroll data`);
+  return results;
 }

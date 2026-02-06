@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,6 +59,15 @@ interface PayrollSummary {
 
 export default function PayrollBatchCreate() {
   const [, setLocation] = useLocation();
+  const { user, isLoading: authLoading } = useAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast.error("يرجى تسجيل الدخول أولاً");
+      setLocation("/local-login");
+    }
+  }, [user, authLoading, setLocation]);
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [costCenterId, setCostCenterId] = useState<number | undefined>();
@@ -301,6 +311,20 @@ export default function PayrollBatchCreate() {
     }
     setExpandedRows(newExpanded);
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">

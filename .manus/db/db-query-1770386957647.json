@@ -1,0 +1,23 @@
+{
+  "query": "SELECT * FROM payroll_batch_items WHERE batch_id = 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT * FROM payroll_batch_items WHERE batch_id = 3;",
+  "rows": [
+    {
+      "id": "1",
+      "batch_id": "3",
+      "worker_id": "1",
+      "days_worked": "0",
+      "base_amount": "0.00",
+      "total_deductions": "0.00",
+      "total_bonuses": "0.00",
+      "net_amount": "0.00",
+      "notes": "NULL",
+      "created_at": "2026-02-06 14:05:54",
+      "updated_at": "2026-02-06 14:05:54"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatch_id\tworker_id\tdays_worked\tbase_amount\ttotal_deductions\ttotal_bonuses\tnet_amount\tnotes\tcreated_at\tupdated_at\n1\t3\t1\t0\t0.00\t0.00\t0.00\t0.00\tNULL\t2026-02-06 14:05:54\t2026-02-06 14:05:54\n",
+  "stderr": "",
+  "execution_time_ms": 1665
+}

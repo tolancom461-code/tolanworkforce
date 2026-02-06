@@ -27,7 +27,7 @@ import FinanceEntry from "./pages/FinanceEntry";
 import PayrollManagement from "./pages/PayrollManagement";
 import PayrollBatches from "./pages/PayrollBatches";
 import PayrollBatchList from "./pages/payroll/PayrollBatchList";
-import PayrollBatchCreate from "./pages/payroll/PayrollBatchCreate";
+import PayrollBatchCreateSimple from "./pages/payroll/PayrollBatchCreateSimple";
 import PayrollBatchDetails from "./pages/payroll/PayrollBatchDetails";
 import PayrollBatchHistory from "./pages/PayrollBatchHistory";
 import AccountantReview from "./pages/payroll/AccountantReview";
@@ -44,6 +44,8 @@ import { PayrollDashboard } from "./pages/PayrollDashboard";
 import { DynamicSchedules } from "./pages/DynamicSchedules";
 import WeeklyShifts from "./pages/WeeklyShifts";
 import { PunchesReviewCenter } from "./pages/PunchesReviewCenter";
+import Backfill from "./pages/Backfill";
+import TestButton from "./pages/TestButton";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { lazy } from "react";
@@ -56,7 +58,7 @@ const LazyPayrollBatches = lazy(() => import("./pages/PayrollBatches"));
 const LazyUsers = lazy(() => import("./pages/Users"));
 const LazyDashboard = lazy(() => import("./pages/Dashboard"));
 const LazyPayrollBatchList = lazy(() => import("./pages/payroll/PayrollBatchList"));
-const LazyPayrollBatchCreate = lazy(() => import("./pages/payroll/PayrollBatchCreate"));
+const LazyPayrollBatchCreateSimple = lazy(() => import("./pages/payroll/PayrollBatchCreateSimple"));
 const LazyPayrollBatchDetails = lazy(() => import("./pages/payroll/PayrollBatchDetails"));
 
 function Router() {
@@ -164,7 +166,7 @@ function Router() {
       <Route path="/payroll/batches/create">
         <ProtectedRoute>
           <LazyPage>
-            <LazyPayrollBatchCreate />
+            <LazyPayrollBatchCreateSimple />
           </LazyPage>
         </ProtectedRoute>
       </Route>
@@ -199,6 +201,12 @@ function Router() {
           <WeeklyShifts />
         </ProtectedRoute>
       </Route>
+      <Route path="/backfill">
+        <ProtectedRoute>
+          <Backfill />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/test-button" component={TestButton} />
       <Route path="/punches/review">
         <ProtectedRoute>
           <PunchesReviewCenter />

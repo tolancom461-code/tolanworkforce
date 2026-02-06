@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE payroll_batches \nADD COLUMN IF NOT EXISTS total_deductions DECIMAL(12,2) DEFAULT 0.00 AFTER total_workers,\nADD COLUMN IF NOT EXISTS total_bonuses DECIMAL(12,2) DEFAULT 0.00 AFTER total_deductions;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute ALTER TABLE payroll_batches \nADD COLUMN IF NOT EXISTS total_deductions DECIMAL(12,2) DEFAULT 0.00 AFTER total_workers,\nADD COLUMN IF NOT EXISTS total_bonuses DECIMAL(12,2) DEFAULT 0.00 AFTER total_deductions;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'total_deductions' in 'payroll_batches'"
+  ]
+}

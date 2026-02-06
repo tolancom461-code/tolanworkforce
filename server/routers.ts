@@ -1599,6 +1599,13 @@ export const appRouter = router({
         periodEnd: z.string(),
         groupId: z.number().optional(),
         costCenterId: z.number().optional(),
+        items: z.array(z.object({
+          workerId: z.number(),
+          baseAmount: z.string(),
+          deductions: z.string(),
+          bonuses: z.string(),
+          netAmount: z.string(),
+        })),
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
@@ -2129,6 +2136,20 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.checkLockedDaysInPeriod(
           input.workerId,
+          input.periodStart,
+          input.periodEnd
+        );
+      }),
+    
+    aggregatePayrollDataByCostCenter: protectedProcedure
+      .input(z.object({
+        costCenterId: z.number(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.aggregatePayrollDataByCostCenter(
+          input.costCenterId,
           input.periodStart,
           input.periodEnd
         );

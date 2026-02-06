@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1768474726241,
-      "tag": "0000_melodic_amazoness",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1768475064355,
-      "tag": "0001_brainy_exodus",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1770356457704,
-      "tag": "0002_fat_human_robot",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1770358394784,
-      "tag": "0003_flippant_captain_flint",
+      "when": 1770385602248,
+      "tag": "0000_past_quicksilver",
       "breakpoints": true
     }
   ]
