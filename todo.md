@@ -3127,3 +3127,13 @@ Add "Approve Full Attendance" option that:
 - إجمالي الملفات: 519 ملف
 - سطور الكود: 27,772 سطر
 - نسبة الاكتمال: 100%
+
+
+## نظام تسجيل الدخول المحلي (Local Authentication System)
+
+- [x] تحديث schema لإضافة حقول username و password_hash
+- [x] تثبيت مكتبة bcryptjs للتشفير
+- [x] إضافة دالة localLogin في server/routers.ts
+- [x] إنشاء صفحة LocalLogin.tsx
+- [x] إضافة مستخدم admin افتراضي
+- [x] اختبار تسجيل الدخول المحلي

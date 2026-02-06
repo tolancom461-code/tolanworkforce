@@ -2917,22 +2917,20 @@ import crypto from 'crypto';
 
 /**
  * Simple password hashing (for development/testing only)
- * NOTE: This is simplified encryption. For production, use bcrypt or Argon2.
+ * NOTE: This is simplified encryption. For/**
+ * Hash a password for storage
  */
 export async function hashPassword(password: string): Promise<string> {
-  // Simple hash: base64 encode the password
-  // In production, use bcrypt: return bcrypt.hash(password, 10);
-  return Buffer.from(password).toString('base64');
+  const bcrypt = await import('bcryptjs');
+  return bcrypt.default.hash(password, 10);
 }
 
 /**
  * Verify a password against a hash
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  // Simple comparison: decode and compare
-  // In production, use bcrypt: return bcrypt.compare(password, hash);
-  const hashedPassword = Buffer.from(password).toString('base64');
-  return hashedPassword === hash;
+  const bcrypt = await import('bcryptjs');
+  return bcrypt.default.compare(password, hash);
 }
 
 /**
@@ -2945,6 +2943,7 @@ export async function createLocalUser(data: {
   email?: string;
   phone?: string;
   isActive?: boolean;
+  role?: 'admin' | 'user';
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -2959,10 +2958,10 @@ export async function createLocalUser(data: {
     phone: data.phone,
     isActive: data.isActive ?? true,
     loginMethod: 'local',
-    role: 'user',
+    role: data.role ?? 'user',
   }]);
   
-  return result.insertId;
+  return { userId: result.insertId };
 }
 
 /**
