@@ -679,6 +679,162 @@ export default function PayrollBatchDetails() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Batch Notes Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>الملاحظات</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BatchNotesSection batchId={batchId} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Batch Notes Component
+function BatchNotesSection({ batchId }: { batchId: number }) {
+  const [noteText, setNoteText] = useState("");
+  const [noteType, setNoteType] = useState<"info" | "warning" | "critical">("info");
+  const utils = trpc.useUtils();
+
+  const { data: notes, isLoading } = trpc.payroll.getBatchNotes.useQuery({ batchId });
+
+  const addNoteMutation = trpc.payroll.addBatchNote.useMutation({
+    onSuccess: () => {
+      toast.success("تم إضافة الملاحظة بنجاح");
+      setNoteText("");
+      setNoteType("info");
+      utils.payroll.getBatchNotes.invalidate({ batchId });
+    },
+    onError: (error) => {
+      toast.error(`خطأ: ${error.message}`);
+    },
+  });
+
+  const handleAddNote = () => {
+    if (!noteText.trim()) {
+      toast.error("الرجاء كتابة ملاحظة");
+      return;
+    }
+
+    addNoteMutation.mutate({
+      batchId,
+      noteType,
+      note: noteText,
+    });
+  };
+
+  const getNoteTypeColor = (type: string) => {
+    switch (type) {
+      case "critical":
+        return "bg-red-100 text-red-800 border-red-300";
+      case "warning":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "info":
+      default:
+        return "bg-blue-100 text-blue-800 border-blue-300";
+    }
+  };
+
+  const getNoteTypeLabel = (type: string) => {
+    switch (type) {
+      case "critical":
+        return "هام";
+      case "warning":
+        return "تحذير";
+      case "info":
+      default:
+        return "معلومة";
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Add Note Form */}
+      <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+        <div className="flex gap-2">
+          <Button
+            variant={noteType === "info" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setNoteType("info")}
+          >
+            معلومة
+          </Button>
+          <Button
+            variant={noteType === "warning" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setNoteType("warning")}
+          >
+            تحذير
+          </Button>
+          <Button
+            variant={noteType === "critical" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setNoteType("critical")}
+          >
+            هام
+          </Button>
+        </div>
+        <Textarea
+          value={noteText}
+          onChange={(e) => setNoteText(e.target.value)}
+          placeholder="اكتب ملاحظتك هنا..."
+          rows={3}
+          className="resize-none"
+        />
+        <Button
+          onClick={handleAddNote}
+          disabled={addNoteMutation.isPending || !noteText.trim()}
+        >
+          {addNoteMutation.isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+              جاري الإضافة...
+            </>
+          ) : (
+            "إضافة ملاحظة"
+          )}
+        </Button>
+      </div>
+
+      {/* Notes List */}
+      <div className="space-y-3">
+        {notes && notes.length > 0 ? (
+          notes.map((note: any) => (
+            <div
+              key={note.id}
+              className={`border rounded-lg p-4 ${getNoteTypeColor(note.noteType)}`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-xs font-medium px-2 py-1 rounded bg-white/50">
+                  {getNoteTypeLabel(note.noteType)}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(note.createdAt).toLocaleString("ar-SA")}
+                </span>
+              </div>
+              <p className="text-sm whitespace-pre-wrap">{note.note}</p>
+              <div className="mt-2 text-xs text-muted-foreground">
+                بواسطة: {note.reviewerRole}
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-center text-muted-foreground py-8">
+            لا توجد ملاحظات حتى الآن
+          </p>
+        )}
+      </div>
     </div>
   );
 }

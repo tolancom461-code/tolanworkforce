@@ -2154,6 +2154,35 @@ export const appRouter = router({
           input.periodEnd
         );
       }),
+    
+    // Add note to batch
+    addBatchNote: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        noteType: z.enum(['critical', 'warning', 'info']),
+        note: z.string(),
+        errorLocation: z.string().optional(),
+        workerId: z.number().optional(),
+        fieldName: z.string().optional(),
+        attachmentUrl: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const { addBatchNote } = await import('./db_batch_notes');
+        return await addBatchNote({
+          ...input,
+          userId: ctx.user.id,
+          userRole: ctx.user.role || 'user',
+        });
+      }),
+    
+    // Get notes for a batch
+    getBatchNotes: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .query(async ({ input }) => {
+        const { getBatchNotes } = await import('./db_batch_notes');
+        return await getBatchNotes(input.batchId);
+      }),
   }),
 
   // Operational Flags (البلاغات التشغيلية)
