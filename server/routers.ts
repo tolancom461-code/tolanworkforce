@@ -1565,7 +1565,7 @@ export const appRouter = router({
           deductions: z.string(),
           bonuses: z.string(),
           netAmount: z.string(),
-        })),
+        })).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");

@@ -299,6 +299,7 @@ export default function PayrollBatchCreate() {
       periodEnd,
       groupId: selectedGroupIds.size > 0 ? Array.from(selectedGroupIds)[0] : undefined,
       costCenterId,
+      items: [], // TODO: جلب البيانات من previewData
     });
   };
 
