@@ -1,1 +1,0 @@
-ALTER TABLE `group_schedules` ADD `effective_date` date;

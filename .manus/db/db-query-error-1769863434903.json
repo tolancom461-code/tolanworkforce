@@ -1,8 +1,0 @@
-{
-  "query": "\n-- تعطيل التحقق من المفاتيح الأجنبية مؤقتاً\nSET FOREIGN_KEY_CHECKS = 0;\n\n-- حذف البيانات من جميع الجداول\nTRUNCATE TABLE payroll_batch_items;\nTRUNCATE TABLE payroll_batches;\nTRUNCATE TABLE worker_daily_finance;\nTRUNCATE TABLE attendance_events;\nTRUNCATE TABLE pay_overrides;\nTRUNCATE TABLE worker_permissions;\nTRUNCATE TABLE workers;\nTRUNCATE TABLE group_permissions;\nTRUNCATE TABLE groups;\nTRUNCATE TABLE cost_centers;\nTRUNCATE TABLE permissions;\nTRUNCATE TABLE users;\n\n-- إعادة تفعيل التحقق من المفاتيح الأجنبية\nSET FOREIGN_KEY_CHECKS = 1;\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- تعطيل التحقق من المفاتيح الأجنبية مؤقتاً\nSET FOREIGN_KEY_CHECKS = 0;\n\n-- حذف البيانات من جميع الجداول\nTRUNCATE TABLE payroll_batch_items;\nTRUNCATE TABLE payroll_batches;\nTRUNCATE TABLE worker_daily_finance;\nTRUNCATE TABLE attendance_events;\nTRUNCATE TABLE pay_overrides;\nTRUNCATE TABLE worker_permissions;\nTRUNCATE TABLE workers;\nTRUNCATE TABLE group_permissions;\nTRUNCATE TABLE groups;\nTRUNCATE TABLE cost_centers;\nTRUNCATE TABLE permissions;\nTRUNCATE TABLE users;\n\n-- إعادة تفعيل التحقق من المفاتيح الأجنبية\nSET FOREIGN_KEY_CHECKS = 1;\n",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1146 (42S02) at line 11: Table 'bmzbeddpnyvc6c68xyfpny.worker_permissions' doesn't exist"
-  ]
-}

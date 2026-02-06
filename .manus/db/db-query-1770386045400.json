@@ -1,9 +1,0 @@
-{
-  "query": "ALTER TABLE payroll_batches ADD COLUMN unlock_reason TEXT AFTER is_unlocked;\nALTER TABLE payroll_batches ADD COLUMN unlocked_by INT AFTER unlock_reason;\nALTER TABLE payroll_batches ADD COLUMN unlocked_at TIMESTAMP NULL AFTER unlocked_by;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute ALTER TABLE payroll_batches ADD COLUMN unlock_reason TEXT AFTER is_unlocked;\nALTER TABLE payroll_batches ADD COLUMN unlocked_by INT AFTER unlock_reason;\nALTER TABLE payroll_batches ADD COLUMN unlocked_at TIMESTAMP NULL AFTER unlocked_by;",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 3101
-}

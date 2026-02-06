@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS payroll_batch_corrections (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  batch_id INT NOT NULL,\n  corrector_id INT NOT NULL,\n  correction_note TEXT,\n  previous_status VARCHAR(50),\n  new_status VARCHAR(50),\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX idx_batch_corrections_batch_id (batch_id)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute CREATE TABLE IF NOT EXISTS payroll_batch_corrections (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  batch_id INT NOT NULL,\n  corrector_id INT NOT NULL,\n  correction_note TEXT,\n  previous_status VARCHAR(50),\n  new_status VARCHAR(50),\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX idx_batch_corrections_batch_id (batch_id)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1848
-}

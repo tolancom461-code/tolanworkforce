@@ -1,9 +1,0 @@
-{
-  "query": "INSERT INTO cost_centers (code, name, description, is_active) VALUES ('CC002', 'مركز تكلفة الصيانة', 'قسم الصيانة والدعم الفني', 1), ('CC003', 'مركز تكلفة الإدارة', 'الإدارة والموارد البشرية', 1);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute INSERT INTO cost_centers (code, name, description, is_active) VALUES ('CC002', 'مركز تكلفة الصيانة', 'قسم الصيانة والدعم الفني', 1), ('CC003', 'مركز تكلفة الإدارة', 'الإدارة والموارد البشرية', 1);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1519
-}

@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS payroll_batch_notes (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  batch_id INT NOT NULL,\n  reviewer_id INT NOT NULL,\n  reviewer_role VARCHAR(50) NOT NULL,\n  note_type ENUM('critical', 'warning', 'info') DEFAULT 'info',\n  error_location VARCHAR(255),\n  worker_id INT,\n  field_name VARCHAR(100),\n  note TEXT NOT NULL,\n  attachment_url VARCHAR(500),\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX idx_batch_notes_batch_id (batch_id)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute CREATE TABLE IF NOT EXISTS payroll_batch_notes (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  batch_id INT NOT NULL,\n  reviewer_id INT NOT NULL,\n  reviewer_role VARCHAR(50) NOT NULL,\n  note_type ENUM('critical', 'warning', 'info') DEFAULT 'info',\n  error_location VARCHAR(255),\n  worker_id INT,\n  field_name VARCHAR(100),\n  note TEXT NOT NULL,\n  attachment_url VARCHAR(500),\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX idx_batch_notes_batch_id (batch_id)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1797
-}

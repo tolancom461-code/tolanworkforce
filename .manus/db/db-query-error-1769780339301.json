@@ -1,9 +1,0 @@
-{
-  "query": "\nSELECT id, code, name, dailyWage, workMinutes, latePenaltyRate, earlyLeavePenaltyRate, shiftStartTime, shiftEndTime, isActive, createdAt, updatedAt \nFROM groups \nLIMIT 10;\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \nSELECT id, code, name, dailyWage, workMinutes, latePenaltyRate, earlyLeavePenaltyRate, shiftStartTime, shiftEndTime, isActive, createdAt, updatedAt \nFROM groups \nLIMIT 10;\n",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1064 (42000) at line 2: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 2 column 12 near \"groups ",
-    "LIMIT 10\""
-  ]
-}

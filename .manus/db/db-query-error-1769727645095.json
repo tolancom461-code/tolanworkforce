@@ -1,8 +1,0 @@
-{
-  "query": "\n-- Delete all test data\nDELETE FROM payroll_batch_items WHERE batch_id IN (SELECT id FROM payroll_batches WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY));\nDELETE FROM payroll_batches WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY);\nDELETE FROM attendance_events WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY);\nDELETE FROM workers WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY);\nDELETE FROM groups WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY);\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- Delete all test data\nDELETE FROM payroll_batch_items WHERE batch_id IN (SELECT id FROM payroll_batches WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY));\nDELETE FROM payroll_batches WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY);\nDELETE FROM attendance_events WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY);\nDELETE FROM workers WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY);\nDELETE FROM groups WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY);\n",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1064 (42000) at line 7: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 18 near \"groups WHERE created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)\""
-  ]
-}

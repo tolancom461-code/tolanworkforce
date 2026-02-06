@@ -1,8 +1,0 @@
-{
-  "query": "\nSELECT \n  u.id,\n  u.username,\n  u.fullName,\n  u.role,\n  u.isActive,\n  GROUP_CONCAT(DISTINCT up.permission) as permissions,\n  GROUP_CONCAT(DISTINCT rp.permissionId) as rolePermissions\nFROM users u\nLEFT JOIN user_permissions up ON u.id = up.userId\nLEFT JOIN user_roles ur ON u.id = ur.userId\nLEFT JOIN role_permissions rp ON ur.roleId = rp.roleId\nWHERE u.username = 'RADMAN'\nGROUP BY u.id, u.username, u.fullName, u.role, u.isActive;\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \nSELECT \n  u.id,\n  u.username,\n  u.fullName,\n  u.role,\n  u.isActive,\n  GROUP_CONCAT(DISTINCT up.permission) as permissions,\n  GROUP_CONCAT(DISTINCT rp.permissionId) as rolePermissions\nFROM users u\nLEFT JOIN user_permissions up ON u.id = up.userId\nLEFT JOIN user_roles ur ON u.id = ur.userId\nLEFT JOIN role_permissions rp ON ur.roleId = rp.roleId\nWHERE u.username = 'RADMAN'\nGROUP BY u.id, u.username, u.fullName, u.role, u.isActive;\n",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 2: Unknown column 'up.userid' in 'on clause'"
-  ]
-}

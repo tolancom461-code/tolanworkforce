@@ -1,8 +1,0 @@
-{
-  "query": "ALTER TABLE payroll_batches \nADD COLUMN notes TEXT AFTER rejection_count,\nADD COLUMN approved_by INT AFTER notes,\nADD COLUMN approved_at TIMESTAMP NULL AFTER approved_by;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute ALTER TABLE payroll_batches \nADD COLUMN notes TEXT AFTER rejection_count,\nADD COLUMN approved_by INT AFTER notes,\nADD COLUMN approved_at TIMESTAMP NULL AFTER approved_by;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1060 (42S21) at line 1: Duplicate column name 'approved_by'"
-  ]
-}

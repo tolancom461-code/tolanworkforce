@@ -1,9 +1,0 @@
-{
-  "query": "\n-- الحصول على معرف المستخدم أولاً\nSET @user_id = (SELECT id FROM users WHERE email = 'anem2031@gmail.com' LIMIT 1);\n\n-- إضافة جميع الصلاحيات للمستخدم\nINSERT INTO user_permissions (user_id, permission_id)\nSELECT @user_id, id FROM permissions\nON DUPLICATE KEY UPDATE user_id = user_id;\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- الحصول على معرف المستخدم أولاً\nSET @user_id = (SELECT id FROM users WHERE email = 'anem2031@gmail.com' LIMIT 1);\n\n-- إضافة جميع الصلاحيات للمستخدم\nINSERT INTO user_permissions (user_id, permission_id)\nSELECT @user_id, id FROM permissions\nON DUPLICATE KEY UPDATE user_id = user_id;\n",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1740
-}

@@ -1,8 +1,0 @@
-{
-  "query": "INSERT INTO group_schedules (group_id, day_of_week, shift_start, shift_end, effective_date, created_at, updated_at) VALUES (1, 4, '08:00:00', '17:00:00', '2026-01-01', NOW(), NOW());",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute INSERT INTO group_schedules (group_id, day_of_week, shift_start, shift_end, effective_date, created_at, updated_at) VALUES (1, 4, '08:00:00', '17:00:00', '2026-01-01', NOW(), NOW());",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'shift_start' in 'field list'"
-  ]
-}

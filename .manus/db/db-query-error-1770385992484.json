@@ -1,8 +1,0 @@
-{
-  "query": "ALTER TABLE payroll_batches \nADD COLUMN rejection_count INT DEFAULT 0 AFTER status,\nADD COLUMN notes TEXT AFTER rejection_count,\nADD COLUMN approved_by INT AFTER notes,\nADD COLUMN approved_at TIMESTAMP NULL AFTER approved_by,\nADD COLUMN is_unlocked BOOLEAN DEFAULT FALSE AFTER updated_at,\nADD COLUMN unlock_reason TEXT AFTER is_unlocked,\nADD COLUMN unlocked_by INT AFTER unlock_reason,\nADD COLUMN unlocked_at TIMESTAMP NULL AFTER unlocked_by;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute ALTER TABLE payroll_batches \nADD COLUMN rejection_count INT DEFAULT 0 AFTER status,\nADD COLUMN notes TEXT AFTER rejection_count,\nADD COLUMN approved_by INT AFTER notes,\nADD COLUMN approved_at TIMESTAMP NULL AFTER approved_by,\nADD COLUMN is_unlocked BOOLEAN DEFAULT FALSE AFTER updated_at,\nADD COLUMN unlock_reason TEXT AFTER is_unlocked,\nADD COLUMN unlocked_by INT AFTER unlock_reason,\nADD COLUMN unlocked_at TIMESTAMP NULL AFTER unlocked_by;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'rejection_count' in 'payroll_batches'"
-  ]
-}
