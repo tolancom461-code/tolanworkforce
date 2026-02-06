@@ -19,6 +19,7 @@ interface ScheduleRow {
   startTime: string;
   endTime: string;
   requiredHours: number;
+  effectiveDate: string | null;
   isActive: boolean;
   isModified: boolean;
 }
@@ -69,6 +70,7 @@ export function DynamicSchedules() {
           startTime: schedule.startTime,
           endTime: schedule.endTime,
           requiredHours: schedule.requiredHours,
+          effectiveDate: schedule.effectiveDate || null,
           isActive: schedule.isActive,
           isModified: modifiedSchedules.has(schedule.id),
         });
@@ -98,7 +100,20 @@ export function DynamicSchedules() {
     
     modified.set(scheduleId, {
       ...existing,
-      requiredHours: parseFloat(value) || 0,
+      requiredHours: parseFloat(value),
+    });
+    
+    setModifiedSchedules(modified);
+  };
+
+  // Handle effective date change
+  const handleEffectiveDateChange = (scheduleId: number, value: string) => {
+    const modified = new Map(modifiedSchedules);
+    const existing = modified.get(scheduleId) || {};
+    
+    modified.set(scheduleId, {
+      ...existing,
+      effectiveDate: value || null,
     });
     
     setModifiedSchedules(modified);
@@ -129,7 +144,8 @@ export function DynamicSchedules() {
           startTime: changes.startTime || schedule.startTime,
           endTime: changes.endTime || schedule.endTime,
           requiredHours: changes.requiredHours !== undefined ? changes.requiredHours : schedule.requiredHours,
-        });
+          effectiveDate: changes.effectiveDate !== undefined ? changes.effectiveDate : schedule.effectiveDate,
+        } as any);
       }
 
       toast.success(`تم حفظ ${modifiedSchedules.size} تغيير بنجاح`);
@@ -255,6 +271,7 @@ export function DynamicSchedules() {
                         <TableHead className="text-right">وقت البداية</TableHead>
                         <TableHead className="text-right">وقت النهاية</TableHead>
                         <TableHead className="text-right">الساعات المطلوبة</TableHead>
+                        <TableHead className="text-right">تاريخ التطبيق</TableHead>
                         <TableHead className="text-right">الحالة</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -308,6 +325,21 @@ export function DynamicSchedules() {
                                 handleHoursChange(schedule.id, e.target.value)
                               }
                               className="w-24"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input
+                              type="date"
+                              value={
+                                modifiedSchedules.get(schedule.id)?.effectiveDate !== undefined
+                                  ? modifiedSchedules.get(schedule.id).effectiveDate || ''
+                                  : schedule.effectiveDate || ''
+                              }
+                              onChange={(e) => 
+                                handleEffectiveDateChange(schedule.id, e.target.value)
+                              }
+                              className="w-40"
+                              placeholder="فوري"
                             />
                           </TableCell>
                           <TableCell className="text-right">

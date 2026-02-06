@@ -3144,3 +3144,12 @@ Add "Approve Full Attendance" option that:
 - [x] إضافة زر تسجيل الخروج في DashboardLayout (القائمة الجانبية)
 - [x] إضافة زر تسجيل الخروج في الصفحة الرئيسية (Header)
 - [x] اختبار وظيفة تسجيل الخروج
+
+
+## إضافة effectiveDate للورديات الديناميكية
+
+- [x] إضافة حقل effectiveDate إلى schema في جدول groupSchedules
+- [x] تطبيق migration على قاعدة البيانات
+- [x] تحديث دوال getGroupSchedules و updateGroupSchedule لدعم effectiveDate
+- [x] تحديث واجهة DynamicSchedules لعرض وتعديل effectiveDate
+- [x] اختبار الميزة
