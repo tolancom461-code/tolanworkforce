@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `groups` \nADD COLUMN IF NOT EXISTS `daily_wage` DECIMAL(10,2),\nADD COLUMN IF NOT EXISTS `work_minutes` INT,\nADD COLUMN IF NOT EXISTS `minute_cost` DECIMAL(10,4),\nADD COLUMN IF NOT EXISTS `late_penalty_rate` DECIMAL(5,2),\nADD COLUMN IF NOT EXISTS `early_leave_penalty_rate` DECIMAL(5,2),\nADD COLUMN IF NOT EXISTS `shift_start_time` VARCHAR(10),\nADD COLUMN IF NOT EXISTS `shift_end_time` VARCHAR(10);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute ALTER TABLE `groups` \nADD COLUMN IF NOT EXISTS `daily_wage` DECIMAL(10,2),\nADD COLUMN IF NOT EXISTS `work_minutes` INT,\nADD COLUMN IF NOT EXISTS `minute_cost` DECIMAL(10,4),\nADD COLUMN IF NOT EXISTS `late_penalty_rate` DECIMAL(5,2),\nADD COLUMN IF NOT EXISTS `early_leave_penalty_rate` DECIMAL(5,2),\nADD COLUMN IF NOT EXISTS `shift_start_time` VARCHAR(10),\nADD COLUMN IF NOT EXISTS `shift_end_time` VARCHAR(10);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3775
+}
