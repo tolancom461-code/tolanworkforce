@@ -130,6 +130,7 @@ export const attendanceEvents = mysqlTable("attendance_events", {
   verifiedBy: int("verified_by"),
   method: varchar("method", { length: 50 }),
   note: text("note"),
+  isAutomatic: boolean("is_automatic").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   workerIdIdx: index("idx_attendance_worker_id").on(table.workerId),

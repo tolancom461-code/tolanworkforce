@@ -788,7 +788,7 @@ export const appRouter = router({
           // استخدم Drizzle ORM للعد
           const result = await database.select()
             .from(attendanceEvents)
-            .where(sql`is_automatic = 1 OR needs_review = true`);
+            .where(sql`is_automatic = 1`);
           
           return result.length || 0;
         } catch (error) {
