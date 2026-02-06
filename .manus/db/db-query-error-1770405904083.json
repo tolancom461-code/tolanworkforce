@@ -1,0 +1,8 @@
+{
+  "query": "SELECT COUNT(*) as groups_count FROM groups;\nSELECT COUNT(*) as workers_count FROM workers;\nSELECT COUNT(*) as attendance_events_count FROM attendance_events;\nSELECT COUNT(*) as payroll_batches_count FROM payroll_batches;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT COUNT(*) as groups_count FROM groups;\nSELECT COUNT(*) as workers_count FROM workers;\nSELECT COUNT(*) as attendance_events_count FROM attendance_events;\nSELECT COUNT(*) as payroll_batches_count FROM payroll_batches;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 43 near \"groups\""
+  ]
+}

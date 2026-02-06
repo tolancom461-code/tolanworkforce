@@ -1,0 +1,55 @@
+{
+  "query": "SELECT id, code, full_name FROM workers WHERE code IN ('W001', 'W002', 'W003', 'W004', 'W005', 'W006', 'W007', 'W008', 'W009') ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name FROM workers WHERE code IN ('W001', 'W002', 'W003', 'W004', 'W005', 'W006', 'W007', 'W008', 'W009') ORDER BY id;",
+  "rows": [
+    {
+      "id": "30001",
+      "code": "W001",
+      "full_name": "أحمد محمد علي"
+    },
+    {
+      "id": "30002",
+      "code": "W002",
+      "full_name": "محمد أحمد سعيد"
+    },
+    {
+      "id": "30003",
+      "code": "W003",
+      "full_name": "علي محمد حسن"
+    },
+    {
+      "id": "30004",
+      "code": "W004",
+      "full_name": "خالد عبدالله محمد"
+    },
+    {
+      "id": "30005",
+      "code": "W005",
+      "full_name": "عبدالله خالد أحمد"
+    },
+    {
+      "id": "30006",
+      "code": "W006",
+      "full_name": "سعيد محمد علي"
+    },
+    {
+      "id": "30007",
+      "code": "W007",
+      "full_name": "حسن علي محمد"
+    },
+    {
+      "id": "30008",
+      "code": "W008",
+      "full_name": "ياسر أحمد خالد"
+    },
+    {
+      "id": "30009",
+      "code": "W009",
+      "full_name": "فهد محمد سعيد"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\n30001\tW001\tأحمد محمد علي\n30002\tW002\tمحمد أحمد سعيد\n30003\tW003\tعلي محمد حسن\n30004\tW004\tخالد عبدالله محمد\n30005\tW005\tعبدالله خالد أحمد\n30006\tW006\tسعيد محمد علي\n30007\tW007\tحسن علي محمد\n30008\tW008\tياسر أحمد خالد\n30009\tW009\tفهد محمد سعيد\n",
+  "stderr": "",
+  "execution_time_ms": 1569
+}

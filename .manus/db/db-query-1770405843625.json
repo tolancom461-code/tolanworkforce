@@ -1,0 +1,21 @@
+{
+  "query": "SELECT \n  pbi.id, pbi.worker_id, w.full_name, w.code as worker_code,\n  pbi.days_worked, pbi.base_amount, pbi.total_deductions, \n  pbi.total_bonuses, pbi.net_amount\nFROM payroll_batch_items pbi\nJOIN workers w ON pbi.worker_id = w.id\nWHERE pbi.batch_id = (SELECT id FROM payroll_batches WHERE batch_code = 'Batch-2026-02-001')\nORDER BY pbi.worker_id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  pbi.id, pbi.worker_id, w.full_name, w.code as worker_code,\n  pbi.days_worked, pbi.base_amount, pbi.total_deductions, \n  pbi.total_bonuses, pbi.net_amount\nFROM payroll_batch_items pbi\nJOIN workers w ON pbi.worker_id = w.id\nWHERE pbi.batch_id = (SELECT id FROM payroll_batches WHERE batch_code = 'Batch-2026-02-001')\nORDER BY pbi.worker_id;",
+  "rows": [
+    {
+      "id": "3",
+      "worker_id": "1",
+      "full_name": "علي صالح",
+      "worker_code": "W1",
+      "days_worked": "0",
+      "base_amount": "0.00",
+      "total_deductions": "0.00",
+      "total_bonuses": "0.00",
+      "net_amount": "0.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tfull_name\tworker_code\tdays_worked\tbase_amount\ttotal_deductions\ttotal_bonuses\tnet_amount\n3\t1\tعلي صالح\tW1\t0\t0.00\t0.00\t0.00\t0.00\n",
+  "stderr": "",
+  "execution_time_ms": 1583
+}
