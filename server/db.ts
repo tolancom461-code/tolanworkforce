@@ -5095,3 +5095,41 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   
   console.log(`✅ Daily finance calculated for worker ${workerId} on ${workDate.toISOString().split('T')[0]}`);
 }
+
+
+export async function saveWeeklySchedules(
+  groupId: number,
+  schedules: Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    requiredHours: number;
+    isActive: boolean;
+  }>,
+  effectiveDate?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { groupSchedules } = await import('../drizzle/schema');
+
+  // Delete existing schedules for this group
+  await db.delete(groupSchedules).where(eq(groupSchedules.groupId, groupId));
+
+  // Insert new schedules
+  const insertPromises = schedules.map(schedule =>
+    db.insert(groupSchedules).values({
+      groupId,
+      dayOfWeek: schedule.dayOfWeek,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      requiredHours: schedule.requiredHours,
+      isActive: schedule.isActive,
+      effectiveDate: effectiveDate || null,
+    })
+  );
+
+  await Promise.all(insertPromises);
+
+  return { success: true, count: schedules.length };
+}

@@ -2438,6 +2438,35 @@ export const appRouter = router({
           });
         }
       }),
+
+    saveWeeklySchedules: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        schedules: z.array(z.object({
+          dayOfWeek: z.number().min(0).max(6),
+          startTime: z.string(),
+          endTime: z.string(),
+          requiredHours: z.number(),
+          isActive: z.boolean(),
+        })),
+        effectiveDate: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = await db.saveWeeklySchedules(
+            input.groupId,
+            input.schedules,
+            input.effectiveDate
+          );
+          return result;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to save weekly schedules',
+            cause: error,
+          });
+        }
+      }),
   }),
 
   // Excel Import/Export Router
