@@ -1878,7 +1878,7 @@ export async function createPayrollBatch(params: {
   const monthEnd = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
   
   // Fetch all batches and filter in JavaScript (Drizzle has issues with Date objects in WHERE clauses)
-  let allBatches = [];
+  let allBatches: any[] = [];
   try {
     console.log('[createPayrollBatch] Fetching all batches...');
     allBatches = await db.select().from(payrollBatches);
@@ -4985,7 +4985,7 @@ export async function aggregatePayrollDataByCostCenter(
     if (workerData.daysWorked > 0) {
       results.push({
         workerId: worker.id,
-        workerName: worker.name,
+        workerName: worker.fullName,
         baseAmount: workerData.baseAmount,
         deductions: workerData.deductionsTotal,
         bonuses: workerData.bonuses,

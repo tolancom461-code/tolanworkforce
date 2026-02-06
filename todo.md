@@ -106,3 +106,18 @@
 ### اختبار نهائي
 - [ ] اختبار النظام بالكامل
 - [ ] حفظ checkpoint نهائي
+
+
+## حذف الورديات وإصلاح دفعات الرواتب
+- [ ] البحث عن جميع المراجع للورديات في الواجهات
+- [ ] حذف جميع المراجع للورديات من Groups.tsx
+- [ ] حذف جميع المراجع للورديات من App.tsx
+- [ ] إصلاح PayrollBatches.tsx - تمرير items بشكل صحيح
+- [ ] إصلاح PayrollBatchCreate.tsx - تمرير items بشكل صحيح
+- [ ] إصلاح AdvancedPayrollPage.tsx - تمرير items بشكل صحيح
+- [ ] إصلاح PayrollBatchCreateSimple.tsx - استبدال id بـ batchId
+- [ ] إصلاح ProtectedRoute في App.tsx
+- [ ] إصلاح type لـ allBatches في server/db.ts
+- [ ] إصلاح خطأ Property 'name' في server/db.ts
+- [ ] فحص شامل للنظام
+- [ ] حفظ checkpoint نهائي
