@@ -1,0 +1,19 @@
+{
+  "query": "SELECT \n  (SELECT COUNT(*) FROM workers) as workers_count,\n  (SELECT COUNT(*) FROM `groups`) as groups_count,\n  (SELECT COUNT(*) FROM cost_centers) as cost_centers_count,\n  (SELECT COUNT(*) FROM attendance_events) as attendance_count,\n  (SELECT COUNT(*) FROM payroll_batches) as payroll_batches_count,\n  (SELECT COUNT(*) FROM payroll_batch_items) as payroll_items_count,\n  (SELECT COUNT(*) FROM worker_daily_finance) as daily_finance_count;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  (SELECT COUNT(*) FROM workers) as workers_count,\n  (SELECT COUNT(*) FROM `groups`) as groups_count,\n  (SELECT COUNT(*) FROM cost_centers) as cost_centers_count,\n  (SELECT COUNT(*) FROM attendance_events) as attendance_count,\n  (SELECT COUNT(*) FROM payroll_batches) as payroll_batches_count,\n  (SELECT COUNT(*) FROM payroll_batch_items) as payroll_items_count,\n  (SELECT COUNT(*) FROM worker_daily_finance) as daily_finance_count;",
+  "rows": [
+    {
+      "workers_count": "0",
+      "groups_count": "0",
+      "cost_centers_count": "0",
+      "attendance_count": "0",
+      "payroll_batches_count": "0",
+      "payroll_items_count": "0",
+      "daily_finance_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "workers_count\tgroups_count\tcost_centers_count\tattendance_count\tpayroll_batches_count\tpayroll_items_count\tdaily_finance_count\n0\t0\t0\t0\t0\t0\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1615
+}
