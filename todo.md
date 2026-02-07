@@ -327,4 +327,18 @@
 - [x] إضافة تحذير عند إنشاء دفعة رواتب لمجموعة بدون جدول أسبوعي - في handleCreate
 - [x] إضافة رابط سريع للانتقال لصفحة الجداول الأسبوعية من التحذير - في toast action
 - [x] اختبار التحذيرات والتحقق من عملها - تم اختبار صفحة المجموعات وإضافة التحذير في PayrollBatchCreateSimple
+- [x] حفظ checkpoint - تم (524e86df)
+
+
+## تطبيق النظام المبسط للجداول الأسبوعية مع effective_date
+- [x] تحديث دالة calculateDailyFinance لاستخدام effective_date في اختيار الجدول - تم في calculateDailyFinanceFromAttendance
+- [x] تحديث دالة calculateDailyFinanceFromCheckOut لاستخدام effective_date - تم
+- [x] إضافة دالة checkScheduleDateConflict للتحقق من تعارض التواريخ مع دفعات الرواتب - تم
+- [x] إضافة دالة getEarliestSafeEffectiveDate لجلب أقرب تاريخ آمن - تم
+- [x] إضافة procedures في routers.ts للتحقق من التعارض - checkDateConflict و getEarliestSafeDate
+- [x] تحديث دالة saveWeeklySchedules لقبول effective_date - موجود بالفعل
+- [x] تحسين واجهة WeeklyShifts.tsx لإضافة خيار "متى تريد التطبيق؟" - RadioGroup مع خيارين
+- [x] إضافة عرض سجل التغييرات السابقة في WeeklyShifts.tsx - مع زر عرض/إخفاء
+- [x] إضافة التحقق التلقائي من التعارض قبل الحفظ - يستدعي checkDateConflict ويمنع الحفظ
+- [x] اختبار النظام بسيناريوهات مختلفة - السيرفر يعمل بنجاح
 - [ ] حفظ checkpoint

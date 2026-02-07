@@ -1030,8 +1030,10 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       groupLatePenaltyRate = group.latePenaltyRate ? safeParseDecimal(group.latePenaltyRate) : null;
       groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? safeParseDecimal(group.earlyLeavePenaltyRate) : null;
       
-      // Get shift times from weekly schedule based on day of week
+      // Get shift times from weekly schedule based on day of week and effective date
       const dayOfWeek = workDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+      const workDateStr = typeof workDate === 'string' ? workDate : workDate.toISOString().split('T')[0];
+      
       const [schedule] = await db
         .select()
         .from(groupSchedules)
@@ -1039,9 +1041,14 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
           and(
             eq(groupSchedules.groupId, worker.groupId),
             eq(groupSchedules.dayOfWeek, dayOfWeek),
-            eq(groupSchedules.isActive, true)
+            eq(groupSchedules.isActive, true),
+            or(
+              isNull(groupSchedules.effectiveDate),
+              lte(groupSchedules.effectiveDate, workDateStr)
+            )
           )
         )
+        .orderBy(desc(groupSchedules.effectiveDate))
         .limit(1);
       
       if (schedule) {
@@ -4890,6 +4897,8 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   
   if (workerData.groupId) {
     const dayOfWeek = workDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    const workDateStr = typeof workDate === 'string' ? workDate : workDate.toISOString().split('T')[0];
+    
     const [schedule] = await db
       .select()
       .from(groupSchedules)
@@ -4897,9 +4906,14 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
         and(
           eq(groupSchedules.groupId, workerData.groupId),
           eq(groupSchedules.dayOfWeek, dayOfWeek),
-          eq(groupSchedules.isActive, true)
+          eq(groupSchedules.isActive, true),
+          or(
+            isNull(groupSchedules.effectiveDate),
+            lte(groupSchedules.effectiveDate, workDateStr)
+          )
         )
       )
+      .orderBy(desc(groupSchedules.effectiveDate))
       .limit(1);
     
     if (schedule) {
@@ -5277,4 +5291,110 @@ export async function getGroupsWithoutSchedules() {
   }
   
   return groupsWithoutSchedules;
+}
+
+
+/**
+ * Check if a schedule effective date conflicts with existing payroll batches
+ * Returns the conflicting batch if found, null otherwise
+ */
+export async function checkScheduleDateConflict(
+  groupId: number,
+  effectiveDate: string
+): Promise<{ batchCode: string; periodStart: string; periodEnd: string; status: string } | null> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { payrollBatches, payrollBatchItems, workers } = await import('../drizzle/schema');
+  
+  // Get all workers in this group
+  const groupWorkers = await db
+    .select({ id: workers.id })
+    .from(workers)
+    .where(eq(workers.groupId, groupId));
+  
+  if (groupWorkers.length === 0) {
+    return null; // No workers in group, no conflict
+  }
+  
+  const workerIds = groupWorkers.map(w => w.id);
+  
+  // Find payroll batches that:
+  // 1. Include workers from this group
+  // 2. Have a period that includes or overlaps with the effective date
+  const batches = await db
+    .select({
+      batchCode: payrollBatches.batchCode,
+      periodStart: payrollBatches.periodStart,
+      periodEnd: payrollBatches.periodEnd,
+      status: payrollBatches.status,
+    })
+    .from(payrollBatches)
+    .innerJoin(
+      payrollBatchItems,
+      eq(payrollBatches.id, payrollBatchItems.batchId)
+    )
+    .where(
+      and(
+        sql`${payrollBatchItems.workerId} IN (${sql.join(workerIds.map(id => sql`${id}`), sql`, `)})`,
+        lte(payrollBatches.periodStart, effectiveDate),
+        gte(payrollBatches.periodEnd, effectiveDate)
+      )
+    )
+    .limit(1);
+  
+  if (batches.length > 0) {
+    return batches[0];
+  }
+  
+  return null;
+}
+
+/**
+ * Get the earliest safe effective date for a group (after all existing payroll batches)
+ */
+export async function getEarliestSafeEffectiveDate(groupId: number): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { payrollBatches, payrollBatchItems, workers } = await import('../drizzle/schema');
+  
+  // Get all workers in this group
+  const groupWorkers = await db
+    .select({ id: workers.id })
+    .from(workers)
+    .where(eq(workers.groupId, groupId));
+  
+  if (groupWorkers.length === 0) {
+    // No workers, today is safe
+    return new Date().toISOString().split('T')[0];
+  }
+  
+  const workerIds = groupWorkers.map(w => w.id);
+  
+  // Find the latest payroll batch end date for this group's workers
+  const [latestBatch] = await db
+    .select({
+      periodEnd: payrollBatches.periodEnd,
+    })
+    .from(payrollBatches)
+    .innerJoin(
+      payrollBatchItems,
+      eq(payrollBatches.id, payrollBatchItems.batchId)
+    )
+    .where(
+      sql`${payrollBatchItems.workerId} IN (${sql.join(workerIds.map(id => sql`${id}`), sql`, `)})`
+    )
+    .orderBy(desc(payrollBatches.periodEnd))
+    .limit(1);
+  
+  if (!latestBatch) {
+    // No batches found, today is safe
+    return new Date().toISOString().split('T')[0];
+  }
+  
+  // Return the day after the latest batch end date
+  const safeDate = new Date(latestBatch.periodEnd);
+  safeDate.setDate(safeDate.getDate() + 1);
+  return safeDate.toISOString().split('T')[0];
 }

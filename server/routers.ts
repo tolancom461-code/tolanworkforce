@@ -2576,6 +2576,44 @@ export const appRouter = router({
           });
         }
       }),
+
+    checkDateConflict: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        effectiveDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const conflict = await db.checkScheduleDateConflict(
+            input.groupId,
+            input.effectiveDate
+          );
+          return conflict;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to check date conflict',
+            cause: error,
+          });
+        }
+      }),
+
+    getEarliestSafeDate: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const safeDate = await db.getEarliestSafeEffectiveDate(input.groupId);
+          return { safeDate };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to get earliest safe date',
+            cause: error,
+          });
+        }
+      }),
   }),
 
   // Excel Import/Export Router
