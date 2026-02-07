@@ -53,6 +53,8 @@ export default function PayrollBatches() {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [workflowReason, setWorkflowReason] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [batchToDelete, setBatchToDelete] = useState<number | null>(null);
   
   const exportExcelMutation = trpc.export.payrollReport.useMutation({
     onSuccess: (data) => {
@@ -273,6 +275,29 @@ export default function PayrollBatches() {
     setShowDetailsDialog(true);
   };
 
+  const handleDeleteBatch = (batchId: number) => {
+    setBatchToDelete(batchId);
+    setShowDeleteDialog(true);
+  };
+
+  const deleteBatchMutation = trpc.payroll.deleteBatch.useMutation({
+    onSuccess: () => {
+      toast.success('تم حذف الدفعة بنجاح');
+      setShowDeleteDialog(false);
+      setBatchToDelete(null);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(`فشل حذف الدفعة: ${error.message}`);
+    },
+  });
+
+  const confirmDelete = () => {
+    if (batchToDelete) {
+      deleteBatchMutation.mutate({ batchId: batchToDelete });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusInfo = STATUS_LABELS[status] || { label: status, color: 'bg-gray-100 text-gray-800' };
     return <Badge className={statusInfo.color}>{statusInfo.label}</Badge>;
@@ -413,14 +438,27 @@ export default function PayrollBatches() {
                         {new Date(batch.createdAt).toLocaleDateString('ar-SA')}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetails(batch.id)}
-                        >
-                          <Eye className="h-4 w-4 ml-1" />
-                          التفاصيل
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewDetails(batch.id)}
+                          >
+                            <Eye className="h-4 w-4 ml-1" />
+                            التفاصيل
+                          </Button>
+                          {batch.status === 'draft' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteBatch(batch.id)}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4 ml-1" />
+                              حذف
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -984,6 +1022,47 @@ export default function PayrollBatches() {
                 <RefreshCw className="h-4 w-4 animate-spin ml-2" />
               ) : null}
               رفض
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تأكيد حذف الدفعة</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              هل أنت متأكد من حذف هذه الدفعة؟ لن يمكن التراجع عن هذا الإجراء.
+            </p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800">
+                <strong>ملاحظة:</strong> سيتم حذف الدفعة وجميع البيانات المرتبطة بها بشكل نهائي.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setBatchToDelete(null);
+              }}
+              disabled={deleteBatchMutation.isPending}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              onClick={confirmDelete}
+              disabled={deleteBatchMutation.isPending}
+              variant="destructive"
+            >
+              {deleteBatchMutation.isPending ? (
+                <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              حذف نهائياً
             </Button>
           </DialogFooter>
         </DialogContent>

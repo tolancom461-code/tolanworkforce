@@ -205,4 +205,14 @@
 - [x] ربط الواجهة بال backend - تم ربط updateAttendanceMutation
 - [x] إضافة validation للتأكد من صحة الأوقات - موجود في updateEvent
 - [x] اختبار الميزة - جاهزة للاستخدام
+- [x] حفظ التغييرات - Checkpoint e48deaac
+
+
+## إضافة زر حذف لدفعات الرواتب (مسودة فقط)
+- [x] إضافة دالة deleteBatch في server/db.ts - موجود مسبقاً
+- [x] إضافة procedure deleteBatch في server/routers.ts - موجود مسبقاً
+- [x] إضافة زر حذف في صفحة PayrollBatches.tsx
+- [x] إضافة نافذة تأكيد قبل الحذف
+- [x] إظهار الزر فقط للدفعات في حالة "draft"
+- [ ] اختبار الحذف
 - [ ] حفظ التغييرات
