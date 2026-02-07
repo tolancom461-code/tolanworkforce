@@ -12,7 +12,9 @@ import {
   RefreshCw,
   Users,
   Calendar,
-  Edit
+  Edit,
+  Lock,
+  AlertCircle
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -28,6 +30,12 @@ export default function AttendanceLog() {
   const [editNote, setEditNote] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
+  // Check if selected date is locked
+  const { data: dateLockStatus } = trpc.attendance.checkDateLocked.useQuery(
+    { date: selectedDate },
+    { enabled: !!selectedDate }
+  );
+
   const { data: allGroups } = trpc.groups.list.useQuery();
   
   const groups = allGroups;
@@ -159,6 +167,12 @@ export default function AttendanceLog() {
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-48"
             />
+            {dateLockStatus?.isLocked && (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                مغلق
+              </Badge>
+            )}
           </div>
           <Select value={selectedGroup} onValueChange={setSelectedGroup}>
             <SelectTrigger className="w-48">
@@ -180,17 +194,32 @@ export default function AttendanceLog() {
       </div>
 
       {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-        <div className="p-2 bg-blue-100 rounded-lg">
-          <Calendar className="h-5 w-5 text-blue-600" />
+      {dateLockStatus?.isLocked ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <div className="p-2 bg-red-100 rounded-lg">
+            <Lock className="h-5 w-5 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-900">التاريخ مغلق للتعديل</p>
+            <p className="text-sm text-red-700 mt-1">
+              لا يمكن تعديل سجلات الحضور لهذا التاريخ لأنه يتضمن دفعة راتب معتمدة ({dateLockStatus.batch?.batchCode}). 
+              يجب حذف المسودة أولاً للتمكن من التعديل.
+            </p>
+          </div>
         </div>
-        <div className="flex-1">
-          <p className="text-sm font-medium text-blue-900">ملاحظة هامة</p>
-          <p className="text-sm text-blue-700 mt-1">
-            يمكنك تعديل سجلات الحضور لأي يوم طالما لم يتم إنشاء دفعة راتب له. إذا كان هناك دفعة راتب معتمدة، يجب حذف المسودة أولاً.
-          </p>
+      ) : (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Calendar className="h-5 w-5 text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-900">ملاحظة هامة</p>
+            <p className="text-sm text-blue-700 mt-1">
+              يمكنك تعديل سجلات الحضور لأي يوم طالما لم يتم إنشاء دفعة راتب له. إذا كان هناك دفعة راتب معتمدة، يجب حذف المسودة أولاً.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -319,8 +348,14 @@ export default function AttendanceLog() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditClick(record)}
+                          disabled={dateLockStatus?.isLocked}
+                          title={dateLockStatus?.isLocked ? `التاريخ مغلق - دفعة ${dateLockStatus.batch?.batchCode}` : 'تعديل سجل الحضور'}
                         >
-                          <Edit className="h-4 w-4" />
+                          {dateLockStatus?.isLocked ? (
+                            <Lock className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Edit className="h-4 w-4" />
+                          )}
                         </Button>
                       </TableCell>
                     </TableRow>

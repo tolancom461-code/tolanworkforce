@@ -901,6 +901,21 @@ export const appRouter = router({
         return await db.getTodayAttendance(input.groupId, input.date);
       }),
     
+    // Check if date has approved payroll batch
+    checkDateLocked: protectedProcedure
+      .input(z.object({ date: z.string() })) // Format: YYYY-MM-DD
+      .query(async ({ input }) => {
+        const batch = await db.checkPayrollBatchForDate(input.date);
+        return {
+          isLocked: !!batch,
+          batch: batch ? {
+            id: batch.id,
+            batchCode: batch.batchCode,
+            status: batch.status
+          } : null
+        };
+      }),
+    
     // Get worker's last event today
     workerLastEvent: protectedProcedure
       .input(z.object({ workerId: z.number() }))

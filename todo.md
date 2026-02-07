@@ -228,5 +228,14 @@
 - [x] إضافة API endpoint لفلترة الحضور حسب التاريخ - تعديل getTodayAttendance
 - [x] إضافة validation لمنع التعديل على أيام لها دفعة راتب - موجود في updateEvent + إضافة تحذير
 - [x] ربط الفلترة بالواجهة
-- [ ] اختبار الفلترة والتعديل
-- [ ] حفظ التغييرات
+- [x] اختبار الفلترة والتعديل - جاهز للاستخدام
+- [x] حفظ التغييرات - Checkpoint 1f181814
+
+
+## Add visual indicator for dates with approved payroll batches
+- [x] Add API endpoint to check if a date has an approved payroll batch - checkDateLocked
+- [x] Add visual indicator (badge/icon) next to the date picker - Lock badge
+- [x] Disable edit buttons for records on dates with approved batches - Button disabled + icon changed
+- [x] Add tooltip explaining why editing is disabled - Title attribute with batch code
+- [ ] Test the feature
+- [ ] Save changes
