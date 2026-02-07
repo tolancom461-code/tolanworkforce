@@ -2614,6 +2614,23 @@ export const appRouter = router({
           });
         }
       }),
+
+    getRecentChanges: protectedProcedure
+      .input(z.object({
+        hoursThreshold: z.number().optional().default(24),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const changes = await db.getRecentScheduleChanges(input.hoursThreshold);
+          return changes;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to get recent schedule changes',
+            cause: error,
+          });
+        }
+      }),
   }),
 
   // Excel Import/Export Router

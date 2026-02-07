@@ -12,6 +12,7 @@ export default function PayrollBatchCreateSimple() {
   const [success, setSuccess] = useState("");
 
   const { data: costCenters } = trpc.costCenters.list.useQuery();
+  const { data: recentChanges } = trpc.groupSchedules.getRecentChanges.useQuery({ hoursThreshold: 24 });
   const aggregateMutation = trpc.payroll.aggregatePayrollDataByCostCenter.useMutation();
   const createBatchMutation = trpc.payroll.createBatch.useMutation();
 
@@ -44,6 +45,23 @@ export default function PayrollBatchCreateSimple() {
       }
     } catch (err) {
       console.error("Error checking schedules:", err);
+    }
+    
+    // Check for recent schedule changes
+    if (recentChanges && recentChanges.length > 0) {
+      const recentGroupNames = recentChanges.map((c: any) => {
+        const hoursAgo = Math.round((Date.now() - new Date(c.lastModified).getTime()) / (1000 * 60 * 60));
+        return `${c.groupName} (تم التعديل منذ ${hoursAgo} ساعة)`;
+      }).join('، ');
+      
+      const confirmed = window.confirm(
+        `⚠️ تنبيه: تم تعديل الجداول الأسبوعية للمجموعات التالية خلال آخر 24 ساعة:\n\n${recentGroupNames}\n\nهل أنت متأكد من أن البيانات صحيحة وتريد المتابعة؟`
+      );
+      
+      if (!confirmed) {
+        setLoading(false);
+        return;
+      }
     }
 
     setLoading(true);

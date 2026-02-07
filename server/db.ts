@@ -5398,3 +5398,46 @@ export async function getEarliestSafeEffectiveDate(groupId: number): Promise<str
   safeDate.setDate(safeDate.getDate() + 1);
   return safeDate.toISOString().split('T')[0];
 }
+
+
+/**
+ * Get groups with recent schedule changes (within last 24 hours)
+ * Returns groups that had schedule modifications and might affect payroll calculation
+ */
+export async function getRecentScheduleChanges(hoursThreshold: number = 24): Promise<Array<{
+  groupId: number;
+  groupName: string;
+  lastModified: Date;
+  modifiedSchedules: number;
+}>> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { groupSchedules, groups } = await import('../drizzle/schema');
+  
+  // Calculate the threshold timestamp
+  const thresholdDate = new Date();
+  thresholdDate.setHours(thresholdDate.getHours() - hoursThreshold);
+  
+  // Get all schedules modified after threshold, grouped by group
+  const recentChanges = await db
+    .select({
+      groupId: groupSchedules.groupId,
+      groupName: groups.name,
+      lastModified: sql<Date>`MAX(${groupSchedules.updatedAt})`,
+      modifiedSchedules: sql<number>`COUNT(DISTINCT ${groupSchedules.id})`,
+    })
+    .from(groupSchedules)
+    .innerJoin(groups, eq(groupSchedules.groupId, groups.id))
+    .where(
+      sql`${groupSchedules.updatedAt} >= ${thresholdDate.toISOString().slice(0, 19).replace('T', ' ')}`
+    )
+    .groupBy(groupSchedules.groupId, groups.name);
+  
+  return recentChanges.map(change => ({
+    groupId: change.groupId,
+    groupName: change.groupName,
+    lastModified: new Date(change.lastModified),
+    modifiedSchedules: Number(change.modifiedSchedules),
+  }));
+}

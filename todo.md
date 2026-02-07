@@ -349,4 +349,15 @@
 - [x] تحديث واجهة WeeklyShifts.tsx لإزالة min date من حقل التاريخ - تم
 - [x] تحديث رسائل التحذير لتوضيح أن القيد الوحيد هو دفعات الرواتب - تم
 - [x] اختبار النظام المحدث - السيرفر يعمل بنجاح
+- [x] حفظ checkpoint - تم (929cc41b)
+
+
+## تنبيه عند إنشاء دفعة رواتب للتعديلات الحديثة على الجداول
+- [x] إضافة عمود `updated_at` (timestamp) لجدول `group_schedules` في schema - موجود بالفعل مع onUpdateNow()
+- [x] تحديث دالة `saveWeeklySchedules` لتحديث `updated_at` تلقائياً - يتم تلقائياً بفضل onUpdateNow()
+- [x] إضافة دالة `getRecentScheduleChanges` للتحقق من التعديلات خلال 24 ساعة - تم
+- [x] إضافة procedure في routers.ts لجلب التعديلات الحديثة - groupSchedules.getRecentChanges
+- [x] تحديث صفحة PayrollBatchCreateSimple لعرض تحذير التعديلات الحديثة - تم إضافة confirm dialog
+- [x] تشغيل `pnpm db:push` لتطبيق التغييرات على قاعدة البيانات - لا حاجة، updated_at موجود
+- [x] اختبار الميزة - السيرفر يعمل بنجاح
 - [ ] حفظ checkpoint
