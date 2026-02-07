@@ -3066,13 +3066,19 @@ export async function rejectBatch(batchId: number, userId: number, reason: strin
   
   const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
   if (!batch) throw new Error('Batch not found');
-  if (batch.status !== 'under_accounts_manager_review') throw new Error('Only pending batches can be rejected');
+  
+  // Allow rejection from any review stage
+  const reviewStatuses = ['under_accountant_review', 'under_financial_review', 'under_accounts_manager_review'];
+  if (!batch.status || !reviewStatuses.includes(batch.status)) {
+    throw new Error('يمكن رفض الدفعة فقط من مراحل المراجعة');
+  }
   
   const rejectionCount = (batch.rejectionCount || 0) + 1;
   
+  // Return batch to draft status for editing/deletion
   await db.update(payrollBatches)
     .set({
-      status: 'under_financial_review', // Return to final reviewer
+      status: 'draft', // Return to draft for editing
       notes: reason,
       rejectionCount,
       updatedAt: new Date(),

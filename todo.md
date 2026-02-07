@@ -239,3 +239,12 @@
 - [x] Add tooltip explaining why editing is disabled - Title attribute with batch code
 - [ ] Test the feature
 - [ ] Save changes
+
+
+## تعديل وظيفة زر "رفض" في مراحل المراجعة
+- [x] تحديد جميع مراحل المراجعة - 3 مراحل
+- [x] تحديد procedures الخاصة بالرفض - rejectBatchFinal
+- [x] تعديل procedures لتغيير الحالة إلى draft بدلاً من rejected
+- [ ] اختبار الرفض من كل مرحلة
+- [ ] التأكد من إمكانية الحذف والتعديل بعد الرفض
+- [ ] حفظ التغييرات
