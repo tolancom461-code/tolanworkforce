@@ -121,6 +121,7 @@ export default function AdvancedPayrollPage() {
       periodStart,
       periodEnd,
       groupId: selectedGroupId,
+      items: [], // Empty items - will be populated later
     });
   };
 

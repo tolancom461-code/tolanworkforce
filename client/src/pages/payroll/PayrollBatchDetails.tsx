@@ -315,7 +315,7 @@ export default function PayrollBatchDetails() {
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
-                onClick={() => exportMutation.mutate({ batchId })} 
+                onClick={() => exportMutation.mutate()} 
                 disabled={exportMutation.isPending}
               >
                 {exportMutation.isPending ? (
@@ -692,8 +692,8 @@ export default function PayrollBatchDetails() {
                   if (selectedWorker) {
                     const data = await trpc.payroll.getAttendanceForWorkerPeriod.query({
                       workerId: selectedWorker.workerId,
-                      startDate: batch?.startDate || '',
-                      endDate: batch?.endDate || '',
+                      periodStart: batch?.batch?.periodStart?.toISOString().split('T')[0] || '',
+                      periodEnd: batch?.batch?.periodEnd?.toISOString().split('T')[0] || '',
                     });
                     setDailyData(data);
                   }

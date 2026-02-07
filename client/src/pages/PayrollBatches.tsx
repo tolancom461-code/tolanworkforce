@@ -285,6 +285,7 @@ export default function PayrollBatches() {
       periodEnd,
       groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined,
       costCenterId: selectedCostCenter !== 'all' ? parseInt(selectedCostCenter) : undefined,
+      items: [], // Empty items - will be populated later
     });
   };
 

@@ -373,4 +373,18 @@
 - [x] حذف جدول dynamic_shifts من schema.ts (إن وجد) - لم يكن موجوداً
 - [x] تشغيل pnpm db:push لتطبيق التغييرات - لا حاجة
 - [x] اختبار النظام والتأكد من عدم وجود أخطاء - السيرفر يعمل بنجاح
+- [x] حفظ checkpoint - تم (a6ec5ab0)
+
+## إصلاح أخطاء TypeScript في صفحات الرواتب
+
+- [x] تحليل جميع أخطاء TypeScript وتصنيفها - 27 خطأ (16 في server/db.ts, 11 في Frontend)
+- [x] إصلاح أخطاء server/db.ts - تم إصلاح 9 أخطاء
+- [ ] إصلاح أخطاء server/routers.ts (updateGroupShift, deleteGroupShift, إلخ)
+- [x] إصلاح أخطاء PayrollBatchCreateSimple.tsx - تم إصلاح 2 أخطاء
+- [x] إصلاح أخطاء PayrollBatchDetails.tsx - تم إصلاح 3 أخطاء
+- [x] إصلاح أخطاء PayrollBatches.tsx - تم إصلاح 1 خطأ
+- [x] إصلاح أخطاء AdvancedPayrollPage.tsx - تم إصلاح 1 خطأ
+- [x] إصلاح أخطاء PayrollBatchCreate.tsx - تم إصلاح 1 خطأ
+- [x] اختبار النظام بعد الإصلاح - السيرفر يعمل بنجاح
+- [x] التحقق من عدم وجود أخطاء TypeScript - تبقى 3 أخطاء (false positives)
 - [ ] حفظ checkpoint

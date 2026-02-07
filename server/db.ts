@@ -16,7 +16,7 @@ import {
   payrollBatchCorrections,
   operationalFlags
 } from "../drizzle/schema";
-import { inArray, isNull, isNotNull, between, gte, lte, and } from "drizzle-orm";
+import { inArray, isNull, isNotNull, between } from "drizzle-orm";
 
 // Rename Worker type to avoid conflict with Web Worker
 import type { Worker as DbWorker } from "../drizzle/schema";
@@ -1031,8 +1031,9 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? safeParseDecimal(group.earlyLeavePenaltyRate) : null;
       
       // Get shift times from weekly schedule based on day of week and effective date
-      const dayOfWeek = workDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-      const workDateStr = typeof workDate === 'string' ? workDate : workDate.toISOString().split('T')[0];
+      const workDateObj = typeof workDate === 'string' ? new Date(workDate) : workDate;
+      const dayOfWeek = workDateObj.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+      const workDateStr = typeof workDate === 'string' ? workDate : workDateObj.toISOString().split('T')[0];
       
       const [schedule] = await db
         .select()
@@ -1044,7 +1045,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
             eq(groupSchedules.isActive, true),
             or(
               isNull(groupSchedules.effectiveDate),
-              lte(groupSchedules.effectiveDate, workDateStr)
+              sql`${groupSchedules.effectiveDate} <= ${workDateStr}`
             )
           )
         )
@@ -1940,7 +1941,7 @@ export async function createPayrollBatch(params: {
   const monthEnd = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
   
   // Fetch all batches and filter in JavaScript (Drizzle has issues with Date objects in WHERE clauses)
-  let allBatches = [];
+  let allBatches: any[] = [];
   try {
     console.log('[createPayrollBatch] Fetching all batches...');
     allBatches = await db.select().from(payrollBatches);
@@ -4909,7 +4910,7 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
           eq(groupSchedules.isActive, true),
           or(
             isNull(groupSchedules.effectiveDate),
-            lte(groupSchedules.effectiveDate, workDateStr)
+            sql`${groupSchedules.effectiveDate} <= ${workDateStr}`
           )
         )
       )
@@ -5066,19 +5067,17 @@ export async function saveWeeklySchedules(
   await db.delete(groupSchedules).where(eq(groupSchedules.groupId, groupId));
 
   // Insert new schedules
-  const insertPromises = schedules.map(schedule =>
-    db.insert(groupSchedules).values({
+  for (const schedule of schedules) {
+    await db.insert(groupSchedules).values({
       groupId,
       dayOfWeek: schedule.dayOfWeek,
       startTime: schedule.startTime,
       endTime: schedule.endTime,
-      requiredHours: schedule.requiredHours,
+      requiredHours: schedule.requiredHours.toString(),
       isActive: schedule.isActive,
-      effectiveDate: effectiveDate || null,
-    })
-  );
-
-  await Promise.all(insertPromises);
+      effectiveDate: effectiveDate ? new Date(effectiveDate) : null,
+    });
+  }
 
   return { success: true, count: schedules.length };
 }
@@ -5121,7 +5120,7 @@ export async function aggregatePayrollDataByCostCenter(
     if (workerData.daysWorked > 0) {
       results.push({
         workerId: worker.id,
-        workerName: worker.name,
+        workerName: worker.fullName,
         baseAmount: workerData.baseAmount,
         deductions: workerData.deductionsTotal,
         bonuses: workerData.bonuses,
@@ -5337,14 +5336,20 @@ export async function checkScheduleDateConflict(
     .where(
       and(
         sql`${payrollBatchItems.workerId} IN (${sql.join(workerIds.map(id => sql`${id}`), sql`, `)})`,
-        lte(payrollBatches.periodStart, effectiveDate),
-        gte(payrollBatches.periodEnd, effectiveDate)
+        sql`${payrollBatches.periodStart} <= ${effectiveDate}`,
+        sql`${payrollBatches.periodEnd} >= ${effectiveDate}`
       )
     )
     .limit(1);
   
   if (batches.length > 0) {
-    return batches[0];
+    const batch = batches[0];
+    return {
+      batchCode: batch.batchCode,
+      periodStart: batch.periodStart instanceof Date ? batch.periodStart.toISOString().split('T')[0] : batch.periodStart,
+      periodEnd: batch.periodEnd instanceof Date ? batch.periodEnd.toISOString().split('T')[0] : batch.periodEnd,
+      status: batch.status || 'draft'
+    };
   }
   
   return null;
