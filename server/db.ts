@@ -769,7 +769,8 @@ export async function getTodayAttendance(groupId?: number) {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
-  let query = db
+  // Get all events for today
+  const events = await db
     .select({
       id: attendanceEvents.id,
       workerId: attendanceEvents.workerId,
@@ -786,12 +787,43 @@ export async function getTodayAttendance(groupId?: number) {
       gte(attendanceEvents.eventTime, today),
       lt(attendanceEvents.eventTime, tomorrow)
     ))
-    .orderBy(desc(attendanceEvents.eventTime));
+    .orderBy(attendanceEvents.workerId, attendanceEvents.eventTime);
   
-  const results = await query;
+  // Group by worker and merge check_in/check_out
+  const workerMap = new Map();
+  
+  for (const event of events) {
+    if (!workerMap.has(event.workerId)) {
+      workerMap.set(event.workerId, {
+        workerId: event.workerId,
+        workerName: event.workerName,
+        workerCode: event.workerCode,
+        groupId: event.groupId,
+        checkInId: null,
+        checkInTime: null,
+        checkInMethod: null,
+        checkOutId: null,
+        checkOutTime: null,
+        checkOutMethod: null,
+      });
+    }
+    
+    const record = workerMap.get(event.workerId);
+    if (event.eventType === 'check_in') {
+      record.checkInId = event.id;
+      record.checkInTime = event.eventTime;
+      record.checkInMethod = event.method;
+    } else if (event.eventType === 'check_out') {
+      record.checkOutId = event.id;
+      record.checkOutTime = event.eventTime;
+      record.checkOutMethod = event.method;
+    }
+  }
+  
+  let results = Array.from(workerMap.values());
   
   if (groupId) {
-    return results.filter(r => r.groupId === groupId);
+    results = results.filter(r => r.groupId === groupId);
   }
   
   return results;

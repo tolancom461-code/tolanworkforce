@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,21 +14,21 @@ import {
   Calendar,
   Edit
 } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function AttendanceLog() {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
-  const [editingEvent, setEditingEvent] = useState<any>(null);
-  const [editTime, setEditTime] = useState('');
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [editCheckInTime, setEditCheckInTime] = useState('');
+  const [editCheckOutTime, setEditCheckOutTime] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   const { data: allGroups } = trpc.groups.list.useQuery();
   
-  // All users have access to all groups
   const groups = allGroups;
   const { data: todayLog, isLoading, refetch } = trpc.attendance.todayLog.useQuery({
     groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
@@ -49,56 +49,75 @@ export default function AttendanceLog() {
   });
 
   const handleEditClick = (record: any) => {
-    setEditingEvent(record);
-    // Format time as HH:MM for input
-    const eventDate = new Date(record.eventTime);
-    const hours = String(eventDate.getHours()).padStart(2, '0');
-    const minutes = String(eventDate.getMinutes()).padStart(2, '0');
-    setEditTime(`${hours}:${minutes}`);
-    setEditNote(record.note || '');
+    setEditingRecord(record);
+    
+    // Format check-in time
+    if (record.checkInTime) {
+      const checkInDate = new Date(record.checkInTime);
+      const hours = String(checkInDate.getHours()).padStart(2, '0');
+      const minutes = String(checkInDate.getMinutes()).padStart(2, '0');
+      setEditCheckInTime(`${hours}:${minutes}`);
+    } else {
+      setEditCheckInTime('');
+    }
+    
+    // Format check-out time
+    if (record.checkOutTime) {
+      const checkOutDate = new Date(record.checkOutTime);
+      const hours = String(checkOutDate.getHours()).padStart(2, '0');
+      const minutes = String(checkOutDate.getMinutes()).padStart(2, '0');
+      setEditCheckOutTime(`${hours}:${minutes}`);
+    } else {
+      setEditCheckOutTime('');
+    }
+    
+    setEditNote('');
     setIsEditDialogOpen(true);
   };
 
   const handleSaveEdit = () => {
-    if (!editingEvent || !editTime) return;
+    if (!editingRecord) return;
 
-    // Combine date from original event with new time
-    const eventDate = new Date(editingEvent.eventTime);
-    const [hours, minutes] = editTime.split(':');
-    eventDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    updateEventMutation.mutate({
-      eventId: editingEvent.id,
-      newTime: eventDate.toISOString(),
-      internalNote: editNote
-    });
+    // Update check-in if changed
+    if (editCheckInTime && editingRecord.checkInId) {
+      const [hours, minutes] = editCheckInTime.split(':');
+      const newCheckInTime = new Date(today);
+      newCheckInTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      updateEventMutation.mutate({
+        eventId: editingRecord.checkInId,
+        newTime: newCheckInTime.toISOString(),
+        internalNote: editNote
+      });
+    }
+
+    // Update check-out if changed
+    if (editCheckOutTime && editingRecord.checkOutId) {
+      const [hours, minutes] = editCheckOutTime.split(':');
+      const newCheckOutTime = new Date(today);
+      newCheckOutTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      updateEventMutation.mutate({
+        eventId: editingRecord.checkOutId,
+        newTime: newCheckOutTime.toISOString(),
+        internalNote: editNote
+      });
+    }
   };
 
-  const formatTime = (date: Date | string) => {
+  const formatTime = (date: Date | string | null) => {
+    if (!date) return '-';
     return new Date(date).toLocaleTimeString('ar-SA', {
       hour: '2-digit',
       minute: '2-digit'
     });
   };
 
-  const getEventBadge = (eventType: string) => {
-    if (eventType === 'check_in') {
-      return (
-        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-          <ArrowRightCircle className="h-3 w-3 ml-1" />
-          حضور
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-        <ArrowLeftCircle className="h-3 w-3 ml-1" />
-        انصراف
-      </Badge>
-    );
-  };
-
-  const getMethodBadge = (method: string) => {
+  const getMethodBadge = (method: string | null) => {
+    if (!method) return null;
     switch (method) {
       case 'qr':
         return <Badge variant="outline">QR</Badge>;
@@ -198,7 +217,7 @@ export default function AttendanceLog() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{todayLog?.length || 0}</p>
-                <p className="text-sm text-muted-foreground">إجمالي التسجيلات</p>
+                <p className="text-sm text-muted-foreground">عدد العمال</p>
               </div>
             </div>
           </CardContent>
@@ -227,31 +246,49 @@ export default function AttendanceLog() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-right">الوقت</TableHead>
                     <TableHead className="text-right">اسم العامل</TableHead>
                     <TableHead className="text-right">الرمز</TableHead>
-                    <TableHead className="text-right">النوع</TableHead>
-                    <TableHead className="text-right">الطريقة</TableHead>
+                    <TableHead className="text-right">وقت الحضور</TableHead>
+                    <TableHead className="text-right">طريقة الحضور</TableHead>
+                    <TableHead className="text-right">وقت الانصراف</TableHead>
+                    <TableHead className="text-right">طريقة الانصراف</TableHead>
                     <TableHead className="text-right">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {todayLog.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-mono">
-                        {formatTime(record.eventTime)}
-                      </TableCell>
+                    <TableRow key={record.workerId}>
                       <TableCell className="font-medium">
                         {record.workerName}
                       </TableCell>
                       <TableCell className="font-mono text-muted-foreground">
                         {record.workerCode}
                       </TableCell>
-                      <TableCell>
-                        {getEventBadge(record.eventType)}
+                      <TableCell className="font-mono">
+                        {record.checkInTime ? (
+                          <div className="flex items-center gap-2">
+                            <ArrowRightCircle className="h-4 w-4 text-green-600" />
+                            {formatTime(record.checkInTime)}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        {getMethodBadge(record.method || 'manual')}
+                        {getMethodBadge(record.checkInMethod)}
+                      </TableCell>
+                      <TableCell className="font-mono">
+                        {record.checkOutTime ? (
+                          <div className="flex items-center gap-2">
+                            <ArrowLeftCircle className="h-4 w-4 text-orange-600" />
+                            {formatTime(record.checkOutTime)}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {getMethodBadge(record.checkOutMethod)}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -277,45 +314,52 @@ export default function AttendanceLog() {
           <DialogHeader>
             <DialogTitle>تعديل سجل الحضور</DialogTitle>
             <DialogDescription>
-              {editingEvent && (
-                <span>
-                  تعديل {editingEvent.eventType === 'check_in' ? 'حضور' : 'انصراف'} للعامل: {editingEvent.workerName}
-                </span>
-              )}
+              تعديل أوقات الحضور والانصراف للعامل: {editingRecord?.workerName}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-time">الوقت</Label>
+              <Label htmlFor="checkInTime">وقت الحضور</Label>
               <Input
-                id="edit-time"
+                id="checkInTime"
                 type="time"
-                value={editTime}
-                onChange={(e) => setEditTime(e.target.value)}
+                value={editCheckInTime}
+                onChange={(e) => setEditCheckInTime(e.target.value)}
+                disabled={!editingRecord?.checkInId}
               />
+              {!editingRecord?.checkInId && (
+                <p className="text-sm text-muted-foreground">لم يتم تسجيل حضور بعد</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-note">ملاحظة (اختياري)</Label>
+              <Label htmlFor="checkOutTime">وقت الانصراف</Label>
               <Input
-                id="edit-note"
+                id="checkOutTime"
+                type="time"
+                value={editCheckOutTime}
+                onChange={(e) => setEditCheckOutTime(e.target.value)}
+                disabled={!editingRecord?.checkOutId}
+              />
+              {!editingRecord?.checkOutId && (
+                <p className="text-sm text-muted-foreground">لم يتم تسجيل انصراف بعد</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="note">ملاحظة (اختياري)</Label>
+              <Input
+                id="note"
                 value={editNote}
                 onChange={(e) => setEditNote(e.target.value)}
-                placeholder="مثال: تعديل بسبب خطأ في التسجيل"
+                placeholder="سبب التعديل..."
               />
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               إلغاء
             </Button>
-            <Button
-              onClick={handleSaveEdit}
-              disabled={updateEventMutation.isPending || !editTime}
-            >
-              {updateEventMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديل'}
+            <Button onClick={handleSaveEdit} disabled={updateEventMutation.isPending}>
+              {updateEventMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
             </Button>
           </DialogFooter>
         </DialogContent>
