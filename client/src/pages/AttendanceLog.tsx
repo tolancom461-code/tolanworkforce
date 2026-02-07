@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 
 export default function AttendanceLog() {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [editCheckInTime, setEditCheckInTime] = useState('');
   const [editCheckOutTime, setEditCheckOutTime] = useState('');
@@ -31,7 +32,8 @@ export default function AttendanceLog() {
   
   const groups = allGroups;
   const { data: todayLog, isLoading, refetch } = trpc.attendance.todayLog.useQuery({
-    groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+    groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined,
+    date: selectedDate
   });
   const { data: stats } = trpc.attendance.stats.useQuery({
     groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
@@ -140,7 +142,7 @@ export default function AttendanceLog() {
             سجل الحضور اليومي
           </h1>
           <p className="text-muted-foreground">
-            {new Date().toLocaleDateString('ar-SA', { 
+            {new Date(selectedDate).toLocaleDateString('ar-SA', { 
               weekday: 'long', 
               year: 'numeric', 
               month: 'long', 
@@ -148,7 +150,16 @@ export default function AttendanceLog() {
             })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-48"
+            />
+          </div>
           <Select value={selectedGroup} onValueChange={setSelectedGroup}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="جميع المجموعات" />
@@ -165,6 +176,19 @@ export default function AttendanceLog() {
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
+        </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+        <div className="p-2 bg-blue-100 rounded-lg">
+          <Calendar className="h-5 w-5 text-blue-600" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-blue-900">ملاحظة هامة</p>
+          <p className="text-sm text-blue-700 mt-1">
+            يمكنك تعديل سجلات الحضور لأي يوم طالما لم يتم إنشاء دفعة راتب له. إذا كان هناك دفعة راتب معتمدة، يجب حذف المسودة أولاً.
+          </p>
         </div>
       </div>
 

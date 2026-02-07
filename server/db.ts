@@ -758,13 +758,14 @@ export async function getWorkerByManualCode(code: string) {
   return worker || null;
 }
 
-export async function getTodayAttendance(groupId?: number) {
+export async function getTodayAttendance(groupId?: number, dateStr?: string) {
   const db = await getDb();
   if (!db) return [];
 
   const { attendanceEvents, workers } = await import('../drizzle/schema');
   
-  const today = new Date();
+  // Use provided date or default to today
+  const today = dateStr ? new Date(dateStr) : new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);

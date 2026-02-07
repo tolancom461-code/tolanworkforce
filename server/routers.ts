@@ -893,9 +893,12 @@ export const appRouter = router({
     
     // Get today's attendance log
     todayLog: protectedProcedure
-      .input(z.object({ groupId: z.number().optional() }))
+      .input(z.object({ 
+        groupId: z.number().optional(),
+        date: z.string().optional() // Format: YYYY-MM-DD
+      }))
       .query(async ({ input }) => {
-        return await db.getTodayAttendance(input.groupId);
+        return await db.getTodayAttendance(input.groupId, input.date);
       }),
     
     // Get worker's last event today
