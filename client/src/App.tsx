@@ -41,6 +41,8 @@ import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
 import OperationalFlagsSimple from "./pages/OperationalFlagsSimple";
 import { PayrollDashboard } from "./pages/PayrollDashboard";
+import { DynamicSchedules } from "./pages/DynamicSchedules";
+import WeeklyShifts from "./pages/WeeklyShifts";
 import { PunchesReviewCenter } from "./pages/PunchesReviewCenter";
 import Backfill from "./pages/Backfill";
 import TestButton from "./pages/TestButton";
@@ -187,6 +189,16 @@ function Router() {
       <Route path="/payroll/dashboard">
         <ProtectedRoute>
           <PayrollDashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/schedules/dynamic">
+        <ProtectedRoute>
+          <DynamicSchedules />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/schedules/weekly">
+        <ProtectedRoute>
+          <WeeklyShifts />
         </ProtectedRoute>
       </Route>
       <Route path="/backfill">

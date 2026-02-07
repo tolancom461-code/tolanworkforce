@@ -356,6 +356,46 @@ export const appRouter = router({
         return { success: true };
       }),
     
+    // Shifts
+    getShifts: protectedProcedure
+      .input(z.object({ groupId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getGroupShifts(input.groupId);
+      }),
+    
+    createShift: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        shiftName: z.string().min(1),
+        startTime: z.string(),
+        endTime: z.string(),
+        isActive: z.boolean().default(true),
+      }))
+      .mutation(async ({ input }) => {
+        const id = await db.createGroupShift(input);
+        return { id, success: true };
+      }),
+    
+    updateShift: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        shiftName: z.string().min(1).optional(),
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateGroupShift(id, data);
+        return { success: true };
+      }),
+    
+    deleteShift: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteGroupShift(input.id);
+        return { success: true };
+      }),
   }),
 
   // Workers Management
@@ -944,6 +984,36 @@ export const appRouter = router({
           input.notes,
           ctx.user.id
         );
+      }),
+
+    // Recalculate daily finance for a specific date
+    recalculateDailyFinance: protectedProcedure
+      .input(z.object({
+        date: z.string(), // Format: YYYY-MM-DD
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const targetDate = input.date;
+        const results = [];
+        
+        // Get all check_out events for the target date
+        const checkOutEvents = await db.getCheckOutEventsByDate(targetDate);
+        
+        // Delete existing finance records for this date
+        await db.deleteWorkerDailyFinanceByDate(targetDate);
+        
+        // Recalculate for each worker
+        for (const checkOut of checkOutEvents) {
+          try {
+            await db.calculateAndSaveDailyFinance(checkOut.workerId, new Date(checkOut.eventTime));
+            results.push({ workerId: checkOut.workerId, success: true });
+          } catch (error) {
+            results.push({ workerId: checkOut.workerId, success: false, error: String(error) });
+          }
+        }
+        
+        return { success: true, results };
       }),
   }),
 
@@ -2422,6 +2492,61 @@ export const appRouter = router({
         }
       }),
 
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        requiredHours: z.number().optional(),
+        effectiveDate: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const updated = await db.updateGroupSchedule(
+            input.id,
+            input.startTime,
+            input.endTime,
+            input.requiredHours,
+            input.effectiveDate
+          );
+          return updated;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to update group schedule',
+            cause: error,
+          });
+        }
+      }),
+
+    saveWeeklySchedules: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        schedules: z.array(z.object({
+          dayOfWeek: z.number().min(0).max(6),
+          startTime: z.string(),
+          endTime: z.string(),
+          requiredHours: z.number(),
+          isActive: z.boolean(),
+        })),
+        effectiveDate: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = await db.saveWeeklySchedules(
+            input.groupId,
+            input.schedules,
+            input.effectiveDate
+          );
+          return result;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to save weekly schedules',
+            cause: error,
+          });
+        }
+      }),
   }),
 
   // Excel Import/Export Router

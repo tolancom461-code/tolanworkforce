@@ -121,7 +121,6 @@ export default function AdvancedPayrollPage() {
       periodStart,
       periodEnd,
       groupId: selectedGroupId,
-      items: [], // TODO: جلب البيانات من previewData
     });
   };
 

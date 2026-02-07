@@ -1,8 +1,0 @@
-{
-  "query": "INSERT INTO `groups` (name, cost_center_id, minute_cost, is_active, created_at, updated_at) VALUES \n('مجموعة الإنتاج', 1, '0.50', 1, NOW(), NOW()),\n('مجموعة الصيانة', 2, '0.75', 1, NOW(), NOW()),\n('مجموعة الخدمات', 1, '0.60', 1, NOW(), NOW());",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute INSERT INTO `groups` (name, cost_center_id, minute_cost, is_active, created_at, updated_at) VALUES \n('مجموعة الإنتاج', 1, '0.50', 1, NOW(), NOW()),\n('مجموعة الصيانة', 2, '0.75', 1, NOW(), NOW()),\n('مجموعة الخدمات', 1, '0.60', 1, NOW(), NOW());",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1364 (HY000) at line 1: Field 'code' doesn't have a default value"
-  ]
-}

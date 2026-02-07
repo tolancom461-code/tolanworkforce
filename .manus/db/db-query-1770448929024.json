@@ -1,0 +1,9 @@
+{
+  "query": "-- حذف دفعات الرواتب أولاً (foreign key)\nDELETE FROM payroll_batch_items;\nDELETE FROM payroll_batches;\n\n-- حذف البيانات المالية اليومية\nDELETE FROM worker_daily_finance;\n\n-- حذف أحداث الحضور\nDELETE FROM attendance_events;\n\n-- حذف العمال\nDELETE FROM workers;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute -- حذف دفعات الرواتب أولاً (foreign key)\nDELETE FROM payroll_batch_items;\nDELETE FROM payroll_batches;\n\n-- حذف البيانات المالية اليومية\nDELETE FROM worker_daily_finance;\n\n-- حذف أحداث الحضور\nDELETE FROM attendance_events;\n\n-- حذف العمال\nDELETE FROM workers;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2581
+}

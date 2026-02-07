@@ -1,9 +1,0 @@
-{
-  "query": "UPDATE workers SET status = 'active' WHERE code IN ('W001', 'W002', 'W003', 'W004', 'W005', 'W006', 'W007', 'W008', 'W009');",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute UPDATE workers SET status = 'active' WHERE code IN ('W001', 'W002', 'W003', 'W004', 'W005', 'W006', 'W007', 'W008', 'W009');",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1598
-}

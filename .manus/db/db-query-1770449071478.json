@@ -1,0 +1,25 @@
+{
+  "query": "SELECT COUNT(*) as workers_count FROM workers;\nSELECT COUNT(*) as attendance_count FROM attendance_events;\nSELECT batch_code, total_amount, total_workers FROM payroll_batches;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT COUNT(*) as workers_count FROM workers;\nSELECT COUNT(*) as attendance_count FROM attendance_events;\nSELECT batch_code, total_amount, total_workers FROM payroll_batches;",
+  "rows": [
+    {
+      "workers_count": "12"
+    },
+    {
+      "workers_count": "attendance_count"
+    },
+    {
+      "workers_count": "72"
+    },
+    {
+      "workers_count": "batch_code\ttotal_amount\ttotal_workers"
+    },
+    {
+      "workers_count": "Batch-2026-02-002\t7200.00\t8"
+    }
+  ],
+  "messages": [],
+  "stdout": "workers_count\n12\nattendance_count\n72\nbatch_code\ttotal_amount\ttotal_workers\nBatch-2026-02-002\t7200.00\t8\n",
+  "stderr": "",
+  "execution_time_ms": 2006
+}

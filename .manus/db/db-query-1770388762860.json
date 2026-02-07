@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO group_schedules (group_id, day_of_week, start_time, end_time, required_hours, effective_date, created_at, updated_at) VALUES (1, 4, '08:00:00', '17:00:00', 8.0, '2026-01-01', NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute INSERT INTO group_schedules (group_id, day_of_week, start_time, end_time, required_hours, effective_date, created_at, updated_at) VALUES (1, 4, '08:00:00', '17:00:00', 8.0, '2026-01-01', NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1631
+}

@@ -1,10 +1,11 @@
-import { eq, desc, sql, and, gte, lte, lt, inArray, isNull, isNotNull, between, count } from "drizzle-orm";
+import { eq, desc, and, or, like, gte, lt, lte, sql, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   users, InsertUser, User,
   costCenters,
   groups, Group, InsertGroup,
-
+  groupShifts, GroupShift, InsertGroupShift,
+  groupSchedules,
   workers, InsertWorker,
   attendanceEvents,
   workDays,
@@ -16,6 +17,7 @@ import {
   payrollBatchCorrections,
   operationalFlags
 } from "../drizzle/schema";
+import { inArray, isNull, isNotNull, between, gte, lte, and } from "drizzle-orm";
 
 // Rename Worker type to avoid conflict with Web Worker
 import type { Worker as DbWorker } from "../drizzle/schema";
@@ -365,9 +367,73 @@ export async function deleteGroup(id: number): Promise<void> {
   if (!db) throw new Error("Database not available");
 
   // Delete related shifts first
+  await db.delete(groupShifts).where(eq(groupShifts.groupId, id));
   await db.delete(groups).where(eq(groups.id, id));
 }
 
+// Group Shifts
+export async function getGroupShifts(groupId: number): Promise<GroupShift[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(groupShifts).where(eq(groupShifts.groupId, groupId));
+}
+
+export async function createGroupShift(shift: InsertGroupShift): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(groupShifts).values(shift);
+  const shiftId = result[0].insertId;
+  
+  // إنشاء جداول ديناميكية لكل أيام الأسبوع (1-7)
+  const schedules: any[] = [];
+  for (let dayOfWeek = 1; dayOfWeek <= 7; dayOfWeek++) {
+    schedules.push({
+      groupId: shift.groupId,
+      dayOfWeek,
+      startTime: shift.startTime,
+      endTime: shift.endTime,
+      requiredHours: calculateRequiredHours(shift.startTime, shift.endTime),
+      isActive: shift.isActive ?? true,
+    });
+  }
+  
+  // إدراج الجداول الديناميكية
+  if (schedules.length > 0) {
+    await db.insert(groupSchedules).values(schedules as any);
+  }
+  
+  return shiftId;
+}
+
+// دالة مساعدة لحساب الساعات المطلوبة
+function calculateRequiredHours(startTime: string, endTime: string): number {
+  const [startHour, startMin] = startTime.split(':').map(Number);
+  const [endHour, endMin] = endTime.split(':').map(Number);
+  
+  const startTotalMin = startHour * 60 + startMin;
+  const endTotalMin = endHour * 60 + endMin;
+  
+  let diffMin = endTotalMin - startTotalMin;
+  if (diffMin < 0) diffMin += 24 * 60; // إذا كانت النهاية في اليوم التالي
+  
+  return Math.round((diffMin / 60) * 100) / 100; // تقريب لمنزلتين عشريتين
+}
+
+export async function updateGroupShift(id: number, data: Partial<InsertGroupShift>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(groupShifts).set({ ...data, updatedAt: new Date() }).where(eq(groupShifts.id, id));
+}
+
+export async function deleteGroupShift(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(groupShifts).where(eq(groupShifts.id, id));
+}
 
 // ============================================
 // Workers Functions
@@ -959,6 +1025,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const { attendanceEvents, workers, groups, groupShifts, workDays, workerDailyFinance } = await import('../drizzle/schema');
   
 
   
@@ -1878,7 +1945,7 @@ export async function createPayrollBatch(params: {
   const monthEnd = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
   
   // Fetch all batches and filter in JavaScript (Drizzle has issues with Date objects in WHERE clauses)
-  let allBatches: any[] = [];
+  let allBatches = [];
   try {
     console.log('[createPayrollBatch] Fetching all batches...');
     allBatches = await db.select().from(payrollBatches);
@@ -2656,38 +2723,6 @@ export async function setFullDayOverride(
   }
   
   return { success: true };
-}
-
-export async function getFullDayOverrideStatus(workerId: number, workDate: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  const { workerDailyFinance } = await import("../drizzle/schema");
-  
-  const [record] = await db
-    .select()
-    .from(workerDailyFinance)
-    .where(and(
-      eq(workerDailyFinance.workerId, workerId),
-      eq(workerDailyFinance.workDate, sql`${workDate}`)
-    ))
-    .limit(1);
-  
-  return {
-    hasOverride: false,
-    workDate: workDate,
-    workerId: workerId
-  };
-}
-
-export async function updateFullDayOverride(
-  workerId: number,
-  workDate: string,
-  override: boolean,
-  reason?: string,
-  userId?: number
-) {
-  return await setFullDayOverride(workerId, workDate, override, reason, userId);
 }
 
 async function recalculateFinanceWithOverride(workerId: number, workDate: string) {
@@ -4746,10 +4781,38 @@ export async function getGroupSchedules(groupId?: number) {
   if (!db) throw new Error("Database not available");
 
   if (groupId) {
+    return await db.select().from(groupSchedules).where(eq(groupSchedules.groupId, groupId));
   }
 
+  return await db.select().from(groupSchedules);
 }
 
+export async function updateGroupSchedule(
+  id: number,
+  startTime?: string,
+  endTime?: string,
+  requiredHours?: number,
+  effectiveDate?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const updates: any = {};
+  if (startTime) updates.startTime = startTime;
+  if (endTime) updates.endTime = endTime;
+  if (requiredHours !== undefined) updates.requiredHours = requiredHours;
+  if (effectiveDate !== undefined) updates.effectiveDate = effectiveDate;
+
+  if (Object.keys(updates).length === 0) {
+    throw new Error("No fields to update");
+  }
+
+  const result = await db.update(groupSchedules)
+    .set(updates)
+    .where(eq(groupSchedules.id, id));
+
+  return result;
+}
 
 
 // ============================================
@@ -4946,6 +5009,42 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
 }
 
 
+export async function saveWeeklySchedules(
+  groupId: number,
+  schedules: Array<{
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    requiredHours: number;
+    isActive: boolean;
+  }>,
+  effectiveDate?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { groupSchedules } = await import('../drizzle/schema');
+
+  // Delete existing schedules for this group
+  await db.delete(groupSchedules).where(eq(groupSchedules.groupId, groupId));
+
+  // Insert new schedules
+  const insertPromises = schedules.map(schedule =>
+    db.insert(groupSchedules).values({
+      groupId,
+      dayOfWeek: schedule.dayOfWeek,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      requiredHours: schedule.requiredHours,
+      isActive: schedule.isActive,
+      effectiveDate: effectiveDate || null,
+    })
+  );
+
+  await Promise.all(insertPromises);
+
+  return { success: true, count: schedules.length };
+}
 
 /**
  * Aggregate payroll data for all workers in a cost center for a period
@@ -4985,7 +5084,7 @@ export async function aggregatePayrollDataByCostCenter(
     if (workerData.daysWorked > 0) {
       results.push({
         workerId: worker.id,
-        workerName: worker.fullName,
+        workerName: worker.name,
         baseAmount: workerData.baseAmount,
         deductions: workerData.deductionsTotal,
         bonuses: workerData.bonuses,
@@ -4997,4 +5096,39 @@ export async function aggregatePayrollDataByCostCenter(
 
   console.log(`[aggregatePayrollDataByCostCenter] Aggregated data for ${results.length} workers with payroll data`);
   return results;
+}
+
+
+// Get all check_out events for a specific date
+export async function getCheckOutEventsByDate(date: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const { attendanceEvents } = await import('../drizzle/schema');
+  
+  const startOfDay = new Date(`${date}T00:00:00`);
+  const endOfDay = new Date(`${date}T23:59:59`);
+  
+  return await db
+    .select()
+    .from(attendanceEvents)
+    .where(
+      and(
+        eq(attendanceEvents.eventType, 'check_out'),
+        gte(attendanceEvents.eventTime, startOfDay),
+        lte(attendanceEvents.eventTime, endOfDay)
+      )
+    );
+}
+
+// Delete all worker daily finance records for a specific date
+export async function deleteWorkerDailyFinanceByDate(date: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const { workerDailyFinance } = await import('../drizzle/schema');
+  
+  await db
+    .delete(workerDailyFinance)
+    .where(eq(workerDailyFinance.workDate, new Date(date)));
 }

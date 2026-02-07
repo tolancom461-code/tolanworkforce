@@ -63,10 +63,10 @@ export default function PayrollBatchCreateSimple() {
       });
 
       console.log("=== Batch created ===", batch);
-      setSuccess(`تم إنشاء دفعة رواتب بنجاح! رقم الدفعة: ${batch.batchId}`);
+      setSuccess(`تم إنشاء دفعة رواتب بنجاح! رقم الدفعة: ${batch.id}`);
       
       setTimeout(() => {
-        setLocation(`/payroll/batches/${batch.batchId}`);
+        setLocation(`/payroll/batches/${batch.id}`);
       }, 2000);
     } catch (err: any) {
       console.error("=== Error ===", err);
