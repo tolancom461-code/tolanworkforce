@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, code, full_name, group_id, status FROM workers WHERE code = 'WRK-008';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, group_id, status FROM workers WHERE code = 'WRK-008';",
+  "rows": [
+    {
+      "id": "90008",
+      "code": "WRK-008",
+      "full_name": "راشد محمود سعيد",
+      "group_id": "2",
+      "status": "active"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tgroup_id\tstatus\n90008\tWRK-008\tراشد محمود سعيد\t2\tactive\n",
+  "stderr": "",
+  "execution_time_ms": 1583
+}

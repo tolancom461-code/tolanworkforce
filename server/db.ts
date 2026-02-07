@@ -744,11 +744,17 @@ export async function getWorkerByManualCode(code: string) {
 
   const { workers } = await import('../drizzle/schema');
   
-  // Try manual code first, then worker code
-  let [worker] = await db.select().from(workers).where(eq(workers.manualCode, code)).limit(1);
-  if (!worker) {
-    [worker] = await db.select().from(workers).where(eq(workers.code, code)).limit(1);
-  }
+  // Search in both manual_code and code fields using OR condition
+  const [worker] = await db.select()
+    .from(workers)
+    .where(
+      or(
+        eq(workers.manualCode, code),
+        eq(workers.code, code)
+      )
+    )
+    .limit(1);
+  
   return worker || null;
 }
 

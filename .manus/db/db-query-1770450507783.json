@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, code, manual_code, full_name, qr_token FROM workers WHERE code = 'WRK-008';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, manual_code, full_name, qr_token FROM workers WHERE code = 'WRK-008';",
+  "rows": [
+    {
+      "id": "90008",
+      "code": "WRK-008",
+      "manual_code": "NULL",
+      "full_name": "راشد محمود سعيد",
+      "qr_token": "WRK-WRK-008-1770450425007"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tmanual_code\tfull_name\tqr_token\n90008\tWRK-008\tNULL\tراشد محمود سعيد\tWRK-WRK-008-1770450425007\n",
+  "stderr": "",
+  "execution_time_ms": 1612
+}
