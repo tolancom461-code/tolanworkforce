@@ -1,0 +1,9 @@
+{
+  "query": "\n-- تحديث ENUM status لجدول payroll_batches\nALTER TABLE payroll_batches \nMODIFY COLUMN status ENUM(\n  'draft',\n  'under_accountant_review',\n  'returned_from_accountant',\n  'under_financial_review',\n  'returned_from_financial_review',\n  'under_accounts_manager_review',\n  'approved',\n  'rejected_final',\n  'paid'\n) DEFAULT 'draft';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- تحديث ENUM status لجدول payroll_batches\nALTER TABLE payroll_batches \nMODIFY COLUMN status ENUM(\n  'draft',\n  'under_accountant_review',\n  'returned_from_accountant',\n  'under_financial_review',\n  'returned_from_financial_review',\n  'under_accounts_manager_review',\n  'approved',\n  'rejected_final',\n  'paid'\n) DEFAULT 'draft';\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2047
+}

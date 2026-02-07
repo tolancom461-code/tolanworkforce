@@ -1,0 +1,9 @@
+{
+  "query": "\n-- فحص سجلات workerDailyFinance للفترة 2026-02-01 إلى 2026-02-02\nSELECT \n  wdf.id,\n  wdf.worker_id,\n  w.full_name,\n  w.code,\n  wdf.work_date,\n  wdf.base_amount,\n  wdf.deductions,\n  wdf.bonuses,\n  wdf.net_amount,\n  wdf.locked_batch_id,\n  wdf.created_at\nFROM worker_daily_finance wdf\nJOIN workers w ON wdf.worker_id = w.id\nWHERE wdf.work_date BETWEEN '2026-02-01' AND '2026-02-02'\nORDER BY wdf.worker_id, wdf.work_date;\n\n-- فحص التجاوزات المالية للفترة\nSELECT \n  po.id,\n  po.worker_id,\n  w.full_name,\n  po.override_date,\n  po.override_type,\n  po.amount,\n  po.status,\n  po.reason\nFROM pay_overrides po\nJOIN workers w ON po.worker_id = w.id\nWHERE po.override_date BETWEEN '2026-02-01' AND '2026-02-02'\nORDER BY po.worker_id, po.override_date;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- فحص سجلات workerDailyFinance للفترة 2026-02-01 إلى 2026-02-02\nSELECT \n  wdf.id,\n  wdf.worker_id,\n  w.full_name,\n  w.code,\n  wdf.work_date,\n  wdf.base_amount,\n  wdf.deductions,\n  wdf.bonuses,\n  wdf.net_amount,\n  wdf.locked_batch_id,\n  wdf.created_at\nFROM worker_daily_finance wdf\nJOIN workers w ON wdf.worker_id = w.id\nWHERE wdf.work_date BETWEEN '2026-02-01' AND '2026-02-02'\nORDER BY wdf.worker_id, wdf.work_date;\n\n-- فحص التجاوزات المالية للفترة\nSELECT \n  po.id,\n  po.worker_id,\n  w.full_name,\n  po.override_date,\n  po.override_type,\n  po.amount,\n  po.status,\n  po.reason\nFROM pay_overrides po\nJOIN workers w ON po.worker_id = w.id\nWHERE po.override_date BETWEEN '2026-02-01' AND '2026-02-02'\nORDER BY po.worker_id, po.override_date;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1829
+}

@@ -3415,6 +3415,56 @@ export async function getDailyFinanceForWorker(
   return records;
 }
 
+/**
+ * Get attendance events for a worker in a period
+ * Groups check_in and check_out by date
+ */
+export async function getAttendanceForWorkerPeriod(
+  workerId: number,
+  periodStart: string,
+  periodEnd: string
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents } = await import('../drizzle/schema');
+  
+  const startDate = new Date(`${periodStart}T00:00:00`);
+  const endDate = new Date(`${periodEnd}T23:59:59`);
+  
+  const events = await db
+    .select()
+    .from(attendanceEvents)
+    .where(and(
+      eq(attendanceEvents.workerId, workerId),
+      gte(attendanceEvents.eventTime, startDate),
+      lte(attendanceEvents.eventTime, endDate)
+    ))
+    .orderBy(attendanceEvents.eventTime);
+  
+  // Group events by date
+  const groupedByDate: { [date: string]: { checkIn?: any; checkOut?: any } } = {};
+  
+  events.forEach(event => {
+    const dateStr = event.eventTime.toISOString().split('T')[0];
+    if (!groupedByDate[dateStr]) {
+      groupedByDate[dateStr] = {};
+    }
+    if (event.eventType === 'check_in') {
+      groupedByDate[dateStr].checkIn = event;
+    } else if (event.eventType === 'check_out') {
+      groupedByDate[dateStr].checkOut = event;
+    }
+  });
+  
+  // Convert to array
+  return Object.entries(groupedByDate).map(([date, data]) => ({
+    date,
+    checkIn: data.checkIn || null,
+    checkOut: data.checkOut || null,
+  })).sort((a, b) => a.date.localeCompare(b.date));
+}
+
 // updateFullDayOverride function removed - feature deprecated
 
 

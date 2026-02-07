@@ -1,0 +1,20 @@
+{
+  "query": "\n-- فحص بيانات الحضور للعمال في الدفعة\nSELECT \n  ae.worker_id,\n  w.full_name,\n  w.code,\n  DATE(ae.event_time) AS event_date,\n  ae.event_type,\n  TIME(ae.event_time) AS event_time,\n  ae.method\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nWHERE ae.worker_id IN (90013, 90014, 90015)\n  AND DATE(ae.event_time) BETWEEN '2026-02-01' AND '2026-02-02'\nORDER BY ae.worker_id, ae.event_time;\n\n-- فحص تفاصيل الدفعة الكاملة\nSELECT \n  pb.id,\n  pb.batch_code,\n  pb.period_start,\n  pb.period_end,\n  pb.total_amount,\n  pb.total_workers,\n  pb.status,\n  pb.created_at\nFROM payroll_batches pb\nWHERE pb.batch_code = 'Batch-2026-02-001';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- فحص بيانات الحضور للعمال في الدفعة\nSELECT \n  ae.worker_id,\n  w.full_name,\n  w.code,\n  DATE(ae.event_time) AS event_date,\n  ae.event_type,\n  TIME(ae.event_time) AS event_time,\n  ae.method\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nWHERE ae.worker_id IN (90013, 90014, 90015)\n  AND DATE(ae.event_time) BETWEEN '2026-02-01' AND '2026-02-02'\nORDER BY ae.worker_id, ae.event_time;\n\n-- فحص تفاصيل الدفعة الكاملة\nSELECT \n  pb.id,\n  pb.batch_code,\n  pb.period_start,\n  pb.period_end,\n  pb.total_amount,\n  pb.total_workers,\n  pb.status,\n  pb.created_at\nFROM payroll_batches pb\nWHERE pb.batch_code = 'Batch-2026-02-001';\n",
+  "rows": [
+    {
+      "id": "90001",
+      "batch_code": "Batch-2026-02-001",
+      "period_start": "2026-02-01",
+      "period_end": "2026-02-07",
+      "total_amount": "-353333.33",
+      "total_workers": "3",
+      "status": "draft",
+      "created_at": "2026-02-07 09:50:47"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatch_code\tperiod_start\tperiod_end\ttotal_amount\ttotal_workers\tstatus\tcreated_at\n90001\tBatch-2026-02-001\t2026-02-01\t2026-02-07\t-353333.33\t3\tdraft\t2026-02-07 09:50:47\n",
+  "stderr": "",
+  "execution_time_ms": 1865
+}

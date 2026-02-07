@@ -1,0 +1,8 @@
+{
+  "query": "\n-- فحص تفاصيل الدفعة\nSELECT * FROM payroll_batches WHERE code = 'Batch-2026-02-001';\n\n-- فحص عناصر الدفعة مع أسماء العمال\nSELECT \n  pbi.id,\n  pbi.worker_id,\n  w.full_name AS worker_name,\n  w.code AS worker_code,\n  pbi.minutes_worked,\n  pbi.rate_per_minute,\n  pbi.base_amount,\n  pbi.total_amount,\n  g.name AS group_name,\n  g.rate_per_minute AS group_rate\nFROM payroll_batch_items pbi\nJOIN payroll_batches pb ON pbi.batch_id = pb.id\nJOIN workers w ON pbi.worker_id = w.id\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE pb.code = 'Batch-2026-02-001'\nORDER BY pbi.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- فحص تفاصيل الدفعة\nSELECT * FROM payroll_batches WHERE code = 'Batch-2026-02-001';\n\n-- فحص عناصر الدفعة مع أسماء العمال\nSELECT \n  pbi.id,\n  pbi.worker_id,\n  w.full_name AS worker_name,\n  w.code AS worker_code,\n  pbi.minutes_worked,\n  pbi.rate_per_minute,\n  pbi.base_amount,\n  pbi.total_amount,\n  g.name AS group_name,\n  g.rate_per_minute AS group_rate\nFROM payroll_batch_items pbi\nJOIN payroll_batches pb ON pbi.batch_id = pb.id\nJOIN workers w ON pbi.worker_id = w.id\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE pb.code = 'Batch-2026-02-001'\nORDER BY pbi.id;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 3: Unknown column 'code' in 'where clause'"
+  ]
+}

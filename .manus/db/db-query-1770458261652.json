@@ -1,0 +1,39 @@
+{
+  "query": "\n-- فحص تفاصيل الدفعة\nSELECT * FROM payroll_batches WHERE batch_code = 'Batch-2026-02-001';\n\n-- فحص عناصر الدفعة مع أسماء العمال\nSELECT \n  pbi.id,\n  pbi.worker_id,\n  w.full_name AS worker_name,\n  w.code AS worker_code,\n  pbi.days_worked,\n  pbi.base_amount,\n  pbi.total_deductions,\n  pbi.total_bonuses,\n  pbi.net_amount,\n  g.name AS group_name,\n  g.minute_cost AS group_minute_cost,\n  g.daily_wage AS group_daily_wage,\n  g.work_minutes AS group_work_minutes\nFROM payroll_batch_items pbi\nJOIN payroll_batches pb ON pbi.batch_id = pb.id\nJOIN workers w ON pbi.worker_id = w.id\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE pb.batch_code = 'Batch-2026-02-001'\nORDER BY pbi.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \n-- فحص تفاصيل الدفعة\nSELECT * FROM payroll_batches WHERE batch_code = 'Batch-2026-02-001';\n\n-- فحص عناصر الدفعة مع أسماء العمال\nSELECT \n  pbi.id,\n  pbi.worker_id,\n  w.full_name AS worker_name,\n  w.code AS worker_code,\n  pbi.days_worked,\n  pbi.base_amount,\n  pbi.total_deductions,\n  pbi.total_bonuses,\n  pbi.net_amount,\n  g.name AS group_name,\n  g.minute_cost AS group_minute_cost,\n  g.daily_wage AS group_daily_wage,\n  g.work_minutes AS group_work_minutes\nFROM payroll_batch_items pbi\nJOIN payroll_batches pb ON pbi.batch_id = pb.id\nJOIN workers w ON pbi.worker_id = w.id\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE pb.batch_code = 'Batch-2026-02-001'\nORDER BY pbi.id;\n",
+  "rows": [
+    {
+      "id": "90001",
+      "batch_code": "Batch-2026-02-001",
+      "period_start": "2026-02-01",
+      "period_end": "2026-02-07",
+      "group_id": "NULL",
+      "cost_center_id": "30001",
+      "total_amount": "-353333.33",
+      "total_workers": "3",
+      "total_deductions": "353333.33",
+      "total_bonuses": "0.00",
+      "status": "draft",
+      "rejection_count": "0",
+      "notes": "NULL",
+      "approved_by": "NULL",
+      "approved_at": "NULL",
+      "created_by": "30004",
+      "created_at": "2026-02-07 09:50:47",
+      "updated_at": "2026-02-07 09:50:47",
+      "is_unlocked": "0",
+      "unlock_reason": "NULL",
+      "unlocked_by": "NULL",
+      "unlocked_at": "NULL"
+    }
+  ],
+  "messages": [
+    "id\tworker_id\tworker_name\tworker_code\tdays_worked\tbase_amount\ttotal_deductions\ttotal_bonuses\tnet_amount\tgroup_name\tgroup_minute_cost\tgroup_daily_wage\tgroup_work_minutes",
+    "60001\t90013\tعلي صالح\tR01\t0\t0.00\t353333.33\t0.00\t-353333.33\tمجموعة النظافة\tNULL\t2000.00\t60",
+    "60002\t90014\tكمال خالد\tR02\t0\t0.00\t0.00\t0.00\t0.00\tمجموعة النظافة\tNULL\t2000.00\t60",
+    "60003\t90015\tفرحان مصطفى\tR03\t0\t0.00\t0.00\t0.00\t0.00\tمجموعة النظافة\tNULL\t2000.00\t60"
+  ],
+  "stdout": "id\tbatch_code\tperiod_start\tperiod_end\tgroup_id\tcost_center_id\ttotal_amount\ttotal_workers\ttotal_deductions\ttotal_bonuses\tstatus\trejection_count\tnotes\tapproved_by\tapproved_at\tcreated_by\tcreated_at\tupdated_at\tis_unlocked\tunlock_reason\tunlocked_by\tunlocked_at\n90001\tBatch-2026-02-001\t2026-02-01\t2026-02-07\tNULL\t30001\t-353333.33\t3\t353333.33\t0.00\tdraft\t0\tNULL\tNULL\tNULL\t30004\t2026-02-07 09:50:47\t2026-02-07 09:50:47\t0\tNULL\tNULL\tNULL\nid\tworker_id\tworker_name\tworker_code\tdays_worked\tbase_amount\ttotal_deductions\ttotal_bonuses\tnet_amount\tgroup_name\tgroup_minute_cost\tgroup_daily_wage\tgroup_work_minutes\n60001\t90013\tعلي صالح\tR01\t0\t0.00\t353333.33\t0.00\t-353333.33\tمجموعة النظافة\tNULL\t2000.00\t60\n60002\t90014\tكمال خالد\tR02\t0\t0.00\t0.00\t0.00\t0.00\tمجموعة النظافة\tNULL\t2000.00\t60\n60003\t90015\tفرحان مصطفى\tR03\t0\t0.00\t0.00\t0.00\t0.00\tمجموعة النظافة\tNULL\t2000.00\t60\n",
+  "stderr": "",
+  "execution_time_ms": 1930
+}

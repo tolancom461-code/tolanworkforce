@@ -2125,6 +2125,17 @@ export const appRouter = router({
         return await db.getDailyFinanceForWorker(input.workerId, input.periodStart, input.periodEnd);
       }),
     
+    // Get attendance events for a worker in a period
+    getAttendanceForWorkerPeriod: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getAttendanceForWorkerPeriod(input.workerId, input.periodStart, input.periodEnd);
+      }),
+    
     // Update full day override for a specific day
     updateFullDayOverride: protectedProcedure
       .input(z.object({

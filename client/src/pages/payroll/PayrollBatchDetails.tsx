@@ -143,7 +143,7 @@ export default function PayrollBatchDetails() {
     setSelectedWorker(worker);
     setDailyDetailsOpen(true);
     
-    // Fetch daily finance data
+    // Fetch attendance data (check_in and check_out)
     try {
       // Convert dates safely - handle both Date objects and strings
       const periodStart = batch!.batch.periodStart instanceof Date 
@@ -153,7 +153,7 @@ export default function PayrollBatchDetails() {
         ? batch!.batch.periodEnd.toISOString().split('T')[0]
         : new Date(batch!.batch.periodEnd).toISOString().split('T')[0];
       
-      const data = await utils.client.payroll.getDailyFinanceForWorker.query({
+      const data = await utils.client.payroll.getAttendanceForWorkerPeriod.query({
         workerId: worker.workerId,
         periodStart,
         periodEnd,
@@ -163,9 +163,9 @@ export default function PayrollBatchDetails() {
       // Initialize override form
       const initialForm: any = {};
       data.forEach((day: any) => {
-        initialForm[day.workDate] = {
-          enabled: day.fullDayOverride || false,
-          reason: day.overrideReason || "",
+        initialForm[day.date] = {
+          enabled: false,
+          reason: "",
         };
       });
       setOverrideForm(initialForm);
@@ -551,18 +551,25 @@ export default function PayrollBatchDetails() {
             ) : (
               <div className="space-y-3">
                 {dailyData.map((day: any) => {
-                  const form = overrideForm[day.workDate] || { enabled: false, reason: "" };
-                  const isOverridden = form.enabled;
+                  const form = overrideForm[day.date] || { enabled: false, reason: "" };
+                  
+                  // Format times
+                  const checkInTime = day.checkIn 
+                    ? new Date(day.checkIn.eventTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+                    : "-";
+                  const checkOutTime = day.checkOut
+                    ? new Date(day.checkOut.eventTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+                    : "-";
                   
                   return (
-                    <Card key={day.workDate} className={isOverridden ? "border-green-500 bg-green-50" : ""}>
+                    <Card key={day.date}>
                       <CardContent className="p-4">
                         <div className="space-y-3">
                           {/* التاريخ والمعلومات الأساسية */}
                           <div className="flex items-start justify-between">
                             <div className="space-y-1">
                               <h4 className="font-semibold text-lg">
-                                {new Date(day.workDate).toLocaleDateString('ar-SA', {
+                                {new Date(day.date).toLocaleDateString('ar-SA', {
                                   weekday: 'long',
                                   year: 'numeric',
                                   month: 'long',
@@ -572,98 +579,40 @@ export default function PayrollBatchDetails() {
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                 <div>
                                   <span className="text-muted-foreground">الحضور:</span>{" "}
-                                  <span className="font-medium">{day.checkInTime || "-"}</span>
+                                  <span className="font-medium">{checkInTime}</span>
                                 </div>
                                 <div>
                                   <span className="text-muted-foreground">الانصراف:</span>{" "}
-                                  <span className="font-medium">{day.checkOutTime || "-"}</span>
+                                  <span className="font-medium">{checkOutTime}</span>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">دقائق التأخير:</span>{" "}
-                                  <span className="font-medium text-red-600">{day.lateMinutes || 0}</span>
+                                  <span className="text-muted-foreground">الحالة:</span>{" "}
+                                  <span className="font-medium">
+                                    {day.checkIn && day.checkOut ? "مكتمل" : day.checkIn ? "حضور فقط" : "لا يوجد"}
+                                  </span>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">دقائق الانصراف المبكر:</span>{" "}
-                                  <span className="font-medium text-red-600">{day.earlyLeaveMinutes || 0}</span>
+                                  <span className="text-muted-foreground">الطريقة:</span>{" "}
+                                  <span className="font-medium">{day.checkIn?.method || "-"}</span>
                                 </div>
                               </div>
                             </div>
                             <div className="text-left space-y-1">
-                              <div className="text-sm">
-                                <span className="text-muted-foreground">الخصم:</span>{" "}
-                                <span className="font-bold text-red-600">
-                                  {Number(day.totalDeduction || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 })} ر.س
-                                </span>
-                              </div>
-                              <div className="text-sm">
-                                <span className="text-muted-foreground">الصافي:</span>{" "}
-                                <span className="font-bold text-green-600">
-                                  {Number(day.netAmount || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 })} ر.س
-                                </span>
-                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  // TODO: Open edit dialog
+                                  toast.info("ميزة التعديل قيد التطوير");
+                                }}
+                              >
+                                <Edit className="h-3 w-3 ml-1" />
+                                تعديل الأوقات
+                              </Button>
                             </div>
                           </div>
 
-                          {/* قسم التصحيح */}
-                          <div className="border-t pt-3 space-y-3">
-                            <div className="flex items-center gap-2">
-                              <Checkbox
-                                id={`override-${day.workDate}`}
-                                checked={form.enabled}
-                                onCheckedChange={(checked) => handleOverrideChange(day.workDate, checked as boolean)}
-                              />
-                              <Label htmlFor={`override-${day.workDate}`} className="font-medium cursor-pointer">
-                                اعتماد يوم كامل (تصحيح إداري)
-                              </Label>
-                            </div>
-                            
-                            {form.enabled && (
-                              <div className="space-y-2">
-                                <Label htmlFor={`reason-${day.workDate}`}>
-                                  سبب التصحيح <span className="text-red-500">*</span>
-                                </Label>
-                                <Textarea
-                                  id={`reason-${day.workDate}`}
-                                  value={form.reason}
-                                  onChange={(e) => handleReasonChange(day.workDate, e.target.value)}
-                                  placeholder="مثال: عذر طارئ معتمد من الإدارة"
-                                  rows={2}
-                                  className="resize-none"
-                                />
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleSaveOverride(day.workDate)}
-                                  disabled={updateOverrideMutation.isPending}
-                                >
-                                  {updateOverrideMutation.isPending ? (
-                                    <>
-                                      <Loader2 className="h-3 w-3 ml-2 animate-spin" />
-                                      جاري الحفظ...
-                                    </>
-                                  ) : (
-                                    "حفظ التصحيح"
-                                  )}
-                                </Button>
-                              </div>
-                            )}
 
-                            {/* عرض سبب التصحيح إذا كان محفوظاً */}
-                            {day.fullDayOverride && day.overrideReason && (
-                              <div className="bg-green-100 border border-green-300 rounded p-3">
-                                <p className="text-sm font-medium text-green-800">
-                                  ✓ تم اعتماد هذا اليوم كاملاً
-                                </p>
-                                <p className="text-sm text-green-700 mt-1">
-                                  <span className="font-medium">السبب:</span> {day.overrideReason}
-                                </p>
-                                {day.overrideBy && (
-                                  <p className="text-xs text-green-600 mt-1">
-                                    بواسطة: {day.overrideBy} في {new Date(day.overrideAt).toLocaleString('ar-SA')}
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
                         </div>
                       </CardContent>
                     </Card>

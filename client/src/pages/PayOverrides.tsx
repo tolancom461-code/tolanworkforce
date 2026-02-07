@@ -32,6 +32,7 @@ export default function PayOverrides() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [formData, setFormData] = useState({
+    groupId: '', // إضافة حقل المجموعة
     workerId: '',
     overrideDate: new Date().toISOString().split('T')[0],
     overrideType: 'bonus' as 'bonus' | 'deduction' | 'advance' | 'emergency_call',
@@ -52,6 +53,7 @@ export default function PayOverrides() {
       refetch();
       setShowCreateDialog(false);
       setFormData({
+        groupId: '',
         workerId: '',
         overrideDate: new Date().toISOString().split('T')[0],
         overrideType: 'bonus',
@@ -259,23 +261,54 @@ export default function PayOverrides() {
             <DialogTitle>إضافة استثناء جديد</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* حقل اختيار المجموعة أولاً */}
+            <div className="space-y-2">
+              <Label>المجموعة *</Label>
+              <Select 
+                value={formData.groupId} 
+                onValueChange={(v) => setFormData(prev => ({ ...prev, groupId: v, workerId: '' }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر المجموعة أولاً" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups?.map((group) => (
+                    <SelectItem key={group.id} value={group.id.toString()}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* حقل اختيار العامل (مفلتر حسب المجموعة) */}
             <div className="space-y-2">
               <Label>العامل *</Label>
               <Select 
                 value={formData.workerId} 
                 onValueChange={(v) => setFormData(prev => ({ ...prev, workerId: v }))}
+                disabled={!formData.groupId}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر العامل" />
+                  <SelectValue placeholder={
+                    formData.groupId 
+                      ? "اختر العامل" 
+                      : "اختر المجموعة أولاً"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {workers?.map((worker) => (
-                    <SelectItem key={worker.id} value={worker.id.toString()}>
-                      {worker.fullName} ({worker.code})
-                    </SelectItem>
-                  ))}
+                  {workers
+                    ?.filter(worker => worker.groupId === parseInt(formData.groupId))
+                    .map((worker) => (
+                      <SelectItem key={worker.id} value={worker.id.toString()}>
+                        {worker.fullName} ({worker.code})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
+              {formData.groupId && workers?.filter(w => w.groupId === parseInt(formData.groupId)).length === 0 && (
+                <p className="text-sm text-muted-foreground">لا يوجد عمال في هذه المجموعة</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>التاريخ *</Label>
