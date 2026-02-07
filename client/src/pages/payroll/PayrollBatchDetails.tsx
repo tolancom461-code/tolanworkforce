@@ -364,7 +364,7 @@ export default function PayrollBatchDetails() {
                 )}
               </Button>
               {canSubmit && (
-                <Button onClick={handleSubmitForReview} disabled={submitMutation.isPending}>
+                <Button onClick={handleSubmitForReview} disabled={submitMutation.isPending} className="text-black">
                   {submitMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 ml-2 animate-spin" />
