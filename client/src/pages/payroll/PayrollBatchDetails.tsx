@@ -46,6 +46,14 @@ export default function PayrollBatchDetails() {
   const [overrideForm, setOverrideForm] = useState<{
     [key: string]: { enabled: boolean; reason: string };
   }>({});
+  
+  // Edit Time Dialog State
+  const [editTimeDialogOpen, setEditTimeDialogOpen] = useState(false);
+  const [editingDay, setEditingDay] = useState<any>(null);
+  const [editTimeForm, setEditTimeForm] = useState({
+    checkInTime: "",
+    checkOutTime: "",
+  });
 
   const utils = trpc.useUtils();
   const { data: batch, isLoading } = trpc.payroll.getDetails.useQuery({ batchId });
@@ -88,7 +96,7 @@ export default function PayrollBatchDetails() {
     },
   });
 
-  const exportMutation = trpc.payroll.exportToExcel.useMutation({
+  const exportMutation = trpc.payroll.exportBatch.useMutation({
     onSuccess: (data) => {
       // Convert base64 to blob and download
       const byteCharacters = atob(data.data);
@@ -114,6 +122,7 @@ export default function PayrollBatchDetails() {
       toast.error(`خطأ في التصدير: ${error.message}`);
     },
   });
+  const updateAttendanceMutation = trpc.attendance.updateEvent.useMutation();
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -602,8 +611,16 @@ export default function PayrollBatchDetails() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => {
-                                  // TODO: Open edit dialog
-                                  toast.info("ميزة التعديل قيد التطوير");
+                                  setEditingDay(day);
+                                  setEditTimeForm({
+                                    checkInTime: day.checkIn 
+                                      ? new Date(day.checkIn.eventTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                                      : "",
+                                    checkOutTime: day.checkOut
+                                      ? new Date(day.checkOut.eventTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                                      : "",
+                                  });
+                                  setEditTimeDialogOpen(true);
                                 }}
                               >
                                 <Edit className="h-3 w-3 ml-1" />
@@ -624,6 +641,118 @@ export default function PayrollBatchDetails() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDailyDetailsOpen(false)}>
               إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Time Dialog */}
+      <Dialog open={editTimeDialogOpen} onOpenChange={setEditTimeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              تعديل أوقات الحضور والانصراف
+            </DialogTitle>
+          </DialogHeader>
+          {editingDay && (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                {new Date(editingDay.date).toLocaleDateString('ar-SA', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </div>
+              
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="checkInTime">وقت الحضور</Label>
+                  <Input
+                    id="checkInTime"
+                    type="time"
+                    value={editTimeForm.checkInTime}
+                    onChange={(e) => setEditTimeForm(prev => ({ ...prev, checkInTime: e.target.value }))}
+                    placeholder="HH:MM"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="checkOutTime">وقت الانصراف</Label>
+                  <Input
+                    id="checkOutTime"
+                    type="time"
+                    value={editTimeForm.checkOutTime}
+                    onChange={(e) => setEditTimeForm(prev => ({ ...prev, checkOutTime: e.target.value }))}
+                    placeholder="HH:MM"
+                  />
+                </div>
+              </div>
+              
+              <div className="text-xs text-muted-foreground bg-muted p-3 rounded">
+                <strong>ملاحظة:</strong> سيتم تحديث سجلات الحضور وإعادة حساب الدقائق والرواتب تلقائياً بعد الحفظ.
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTimeDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!editingDay) return;
+                
+                try {
+                  // Update check-in if changed
+                  if (editTimeForm.checkInTime && editingDay.checkIn) {
+                    const date = new Date(editingDay.date).toISOString().split('T')[0];
+                    const newCheckInTime = `${date}T${editTimeForm.checkInTime}:00`;
+                    
+                    await updateAttendanceMutation.mutateAsync({
+                      eventId: editingDay.checkIn.id,
+                      newTime: newCheckInTime,
+                      internalNote: "تم التعديل من تفاصيل دفعة الراتب",
+                    });
+                  }
+                  
+                  // Update check-out if changed
+                  if (editTimeForm.checkOutTime && editingDay.checkOut) {
+                    const date = new Date(editingDay.date).toISOString().split('T')[0];
+                    const newCheckOutTime = `${date}T${editTimeForm.checkOutTime}:00`;
+                    
+                    await updateAttendanceMutation.mutateAsync({
+                      eventId: editingDay.checkOut.id,
+                      newTime: newCheckOutTime,
+                      internalNote: "تم التعديل من تفاصيل دفعة الراتب",
+                    });
+                  }
+                  
+                  toast.success("تم حفظ التعديلات بنجاح");
+                  setEditTimeDialogOpen(false);
+                  
+                  // Refresh data
+                  if (selectedWorker) {
+                    const data = await trpc.payroll.getAttendanceForWorkerPeriod.query({
+                      workerId: selectedWorker.workerId,
+                      startDate: batch?.startDate || '',
+                      endDate: batch?.endDate || '',
+                    });
+                    setDailyData(data);
+                  }
+                } catch (error: any) {
+                  toast.error(error.message || "حدث خطأ أثناء حفظ التعديلات");
+                }
+              }}
+              disabled={updateAttendanceMutation.isPending}
+            >
+              {updateAttendanceMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  جاري الحفظ...
+                </>
+              ) : (
+                "حفظ التعديلات"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -785,5 +914,6 @@ function BatchNotesSection({ batchId }: { batchId: number }) {
         )}
       </div>
     </div>
+
   );
 }
