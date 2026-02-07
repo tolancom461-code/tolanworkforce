@@ -23,7 +23,6 @@ export default function Groups() {
   const [pageSize] = useState(10);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isShiftsDialogOpen, setIsShiftsDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   
@@ -36,18 +35,10 @@ export default function Groups() {
     workMinutes: "",
     latePenaltyRate: "",
     earlyLeavePenaltyRate: "",
-    shiftStartTime: "",
-    shiftEndTime: "",
     isActive: true,
   });
 
-  // Shift form state
-  const [shiftFormData, setShiftFormData] = useState({
-    shiftName: "",
-    startTime: "08:00",
-    endTime: "16:00",
-    isActive: true,
-  });
+
 
   // Calculate minute_cost automatically
   const calculatedMinuteCost = useMemo(() => {
@@ -70,10 +61,6 @@ export default function Groups() {
   
   const groups = groupsData?.data || [];
   const totalPages = groupsData?.totalPages || 1;
-  const { data: shifts } = trpc.groups.getShifts.useQuery(
-    { groupId: selectedGroup?.id || 0 },
-    { enabled: !!selectedGroup }
-  );
 
   const createMutation = trpc.groups.create.useMutation({
     onSuccess: () => {
@@ -115,26 +102,7 @@ export default function Groups() {
     },
   });
 
-  const createShiftMutation = trpc.groups.createShift.useMutation({
-    onSuccess: () => {
-      toast.success("تم إضافة الوردية بنجاح");
-      resetShiftForm();
-      utils.groups.getShifts.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء إضافة الوردية");
-    },
-  });
 
-  const deleteShiftMutation = trpc.groups.deleteShift.useMutation({
-    onSuccess: () => {
-      toast.success("تم حذف الوردية بنجاح");
-      utils.groups.getShifts.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || "حدث خطأ أثناء حذف الوردية");
-    },
-  });
 
   const exportGroupQRMutation = trpc.workers.exportGroupQRCodes.useMutation({
     onSuccess: (data) => {
@@ -170,20 +138,11 @@ export default function Groups() {
       workMinutes: "",
       latePenaltyRate: "",
       earlyLeavePenaltyRate: "",
-      shiftStartTime: "",
-      shiftEndTime: "",
       isActive: true,
     });
   };
 
-  const resetShiftForm = () => {
-    setShiftFormData({
-      shiftName: "",
-      startTime: "08:00",
-      endTime: "16:00",
-      isActive: true,
-    });
-  };
+
 
   const handleEdit = (group: any) => {
     setSelectedGroup(group);
@@ -195,8 +154,6 @@ export default function Groups() {
       workMinutes: group.workMinutes ? String(group.workMinutes) : "",
       latePenaltyRate: group.latePenaltyRate ? String(group.latePenaltyRate) : "",
       earlyLeavePenaltyRate: group.earlyLeavePenaltyRate ? String(group.earlyLeavePenaltyRate) : "",
-      shiftStartTime: group.shiftStartTime || "",
-      shiftEndTime: group.shiftEndTime || "",
       isActive: group.isActive !== undefined ? group.isActive : true,
     });
     setIsEditDialogOpen(true);
@@ -218,32 +175,20 @@ export default function Groups() {
         workMinutes: freshGroupData.workMinutes ? String(freshGroupData.workMinutes) : "",
         latePenaltyRate: freshGroupData.latePenaltyRate ? String(freshGroupData.latePenaltyRate) : "",
         earlyLeavePenaltyRate: freshGroupData.earlyLeavePenaltyRate ? String(freshGroupData.earlyLeavePenaltyRate) : "",
-        shiftStartTime: freshGroupData.shiftStartTime || "",
-        shiftEndTime: freshGroupData.shiftEndTime || "",
         isActive: freshGroupData.isActive ?? true,
       });
     }
   }, [isEditDialogOpen, freshGroupData]);
 
   const handleView = useCallback((group: any) => {
-    handleViewShifts(group);
+    // View function removed - shifts dialog removed
   }, []);
-
-  const handleViewShifts = (group: any) => {
-    setSelectedGroup(group);
-    setIsShiftsDialogOpen(true);
-  };
 
   const handleExportGroupQR = (groupId: number) => {
     exportGroupQRMutation.mutate({ groupId });
   };
 
   const handleSubmit = () => {
-    // Validate shift times
-    if (!formData.shiftStartTime || !formData.shiftEndTime) {
-      toast.error("يجب تحديد أوقات الوردية (إلزامي)");
-      return;
-    }
     
     // If editing, show confirmation dialog
     if (selectedGroup) {
@@ -273,13 +218,7 @@ export default function Groups() {
     setIsConfirmDialogOpen(false);
   };
 
-  const handleAddShift = () => {
-    if (!selectedGroup) return;
-    createShiftMutation.mutate({
-      groupId: selectedGroup.id,
-      ...shiftFormData,
-    });
-  };
+
 
   const filteredGroups = groups?.filter(
     (group) => {
@@ -427,36 +366,7 @@ export default function Groups() {
                     </div>
                   </div>
                 </div>
-                
-                {/* Shift Times */}
-                <div className="border-t pt-4 mt-2">
-                  <h4 className="text-sm font-medium mb-3">أوقات الوردية (إلزامي)</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="shiftStartTime">بداية الوردية *</Label>
-                      <Input
-                        id="shiftStartTime"
-                        type="time"
-                        value={formData.shiftStartTime}
-                        onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="shiftEndTime">نهاية الوردية *</Label>
-                      <Input
-                        id="shiftEndTime"
-                        type="time"
-                        value={formData.shiftEndTime}
-                        onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    ⚠️ يتم احتساب الأجر مالياً فقط للوقت الواقع داخل وقت الوردية
-                  </p>
-                </div>
+
                 
                 <div className="flex items-center gap-2">
                   <Switch
@@ -561,14 +471,7 @@ export default function Groups() {
                           >
                             <Download className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleViewShifts(group)}
-                            title="الورديات"
-                          >
-                            <Clock className="h-4 w-4" />
-                          </Button>
+
                           <Button
                             variant="ghost"
                             size="icon"
@@ -733,36 +636,7 @@ export default function Groups() {
                   </div>
                 </div>
               </div>
-              
-              {/* Shift Times */}
-              <div className="border-t pt-4 mt-2">
-                <h4 className="text-sm font-medium mb-3">أوقات الوردية (إلزامي)</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-shiftStartTime">بداية الوردية *</Label>
-                    <Input
-                      id="edit-shiftStartTime"
-                      type="time"
-                      value={formData.shiftStartTime}
-                      onChange={(e) => setFormData({ ...formData, shiftStartTime: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-shiftEndTime">نهاية الوردية *</Label>
-                    <Input
-                      id="edit-shiftEndTime"
-                      type="time"
-                      value={formData.shiftEndTime}
-                      onChange={(e) => setFormData({ ...formData, shiftEndTime: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  ⚠️ يتم احتساب الأجر مالياً فقط للوقت الواقع داخل وقت الوردية
-                </p>
-              </div>
+
               
               <div className="flex items-center gap-2">
                 <Switch
@@ -784,96 +658,7 @@ export default function Groups() {
           </DialogContent>
         </Dialog>
 
-        {/* Shifts Dialog */}
-        <Dialog open={isShiftsDialogOpen} onOpenChange={setIsShiftsDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]" dir="rtl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                ورديات المجموعة: {selectedGroup?.name}
-              </DialogTitle>
-              <DialogDescription>إدارة ورديات العمل للمجموعة</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Add Shift Form */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm">إضافة وردية جديدة</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-4 gap-2">
-                    <Input
-                      placeholder="اسم الوردية"
-                      value={shiftFormData.shiftName}
-                      onChange={(e) => setShiftFormData({ ...shiftFormData, shiftName: e.target.value })}
-                    />
-                    <Input
-                      type="time"
-                      value={shiftFormData.startTime}
-                      onChange={(e) => setShiftFormData({ ...shiftFormData, startTime: e.target.value })}
-                    />
-                    <Input
-                      type="time"
-                      value={shiftFormData.endTime}
-                      onChange={(e) => setShiftFormData({ ...shiftFormData, endTime: e.target.value })}
-                    />
-                    <Button onClick={handleAddShift} disabled={createShiftMutation.isPending}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
 
-              {/* Shifts List */}
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">اسم الوردية</TableHead>
-                    <TableHead className="text-right">وقت البداية</TableHead>
-                    <TableHead className="text-right">وقت النهاية</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shifts?.map((shift) => (
-                    <TableRow key={shift.id}>
-                      <TableCell>{shift.shiftName}</TableCell>
-                      <TableCell>{shift.startTime}</TableCell>
-                      <TableCell>{shift.endTime}</TableCell>
-                      <TableCell>
-                        <Badge variant={shift.isActive ? "default" : "secondary"}>
-                          {shift.isActive ? "نشط" : "غير نشط"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteShiftMutation.mutate({ id: shift.id })}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {shifts?.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                        لا توجد ورديات
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsShiftsDialogOpen(false)}>
-                إغلاق
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* Confirmation Dialog for Edit */}
         <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>

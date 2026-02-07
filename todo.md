@@ -301,3 +301,20 @@
 - [x] إصلاح accountsManagerRejectBatch - تحول إلى draft
 - [x] اختبار الإصلاح بدفعة جديدة - جاهز للاختبار من قبل المستخدم
 - [x] حفظ checkpoint - جاري الحفظ
+
+
+## تبسيط نظام الورديات - المرحلة 1: التنظيف
+- [x] حذف جدول group_shifts من Schema
+- [x] حذف أعمدة shift_start_time و shift_end_time من جدول groups
+- [x] حذف دوال Group Shifts من server/db.ts
+- [x] حذف procedures المتعلقة بـ Group Shifts من server/routers.ts
+- [x] حذف زر "الورديات" وdialog الورديات من صفحة Groups.tsx
+- [x] تشغيل pnpm db:push لتطبيق التغييرات على قاعدة البيانات
+
+## تبسيط نظام الورديات - المرحلة 2: البناء
+- [x] التأكد من وجود جدول group_schedules في Schema - موجود
+- [x] إضافة/تحديث دوال Group Schedules في server/db.ts - موجودة
+- [x] إضافة/تحديث procedures في server/routers.ts - موجودة
+- [x] تحديث محرك الحساب المالي ليستخدم الجدول الأسبوعي - تم في calculateDailyFinance و calculateDailyFinanceFromCheckOut
+- [x] اختبار صفحة "الورديات الأسبوعية" الموجودة - تعمل بشكل ممتاز
+- [x] تشغيل pnpm db:push لإنشاء الجدول - تم

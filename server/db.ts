@@ -4,7 +4,6 @@ import {
   users, InsertUser, User,
   costCenters,
   groups, Group, InsertGroup,
-  groupShifts, GroupShift, InsertGroupShift,
   groupSchedules,
   workers, InsertWorker,
   attendanceEvents,
@@ -282,8 +281,6 @@ function transformGroup(group: any): any {
     minuteCost: group.minuteCost,
     latePenaltyRate: group.latePenaltyRate,
     earlyLeavePenaltyRate: group.earlyLeavePenaltyRate,
-    shiftStartTime: group.shiftStartTime,
-    shiftEndTime: group.shiftEndTime,
     isActive: group.isActive,
     createdAt: group.createdAt,
     updatedAt: group.updatedAt,
@@ -366,74 +363,10 @@ export async function deleteGroup(id: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Delete related shifts first
-  await db.delete(groupShifts).where(eq(groupShifts.groupId, id));
   await db.delete(groups).where(eq(groups.id, id));
 }
 
-// Group Shifts
-export async function getGroupShifts(groupId: number): Promise<GroupShift[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db.select().from(groupShifts).where(eq(groupShifts.groupId, groupId));
-}
-
-export async function createGroupShift(shift: InsertGroupShift): Promise<number> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  const result = await db.insert(groupShifts).values(shift);
-  const shiftId = result[0].insertId;
-  
-  // إنشاء جداول ديناميكية لكل أيام الأسبوع (1-7)
-  const schedules: any[] = [];
-  for (let dayOfWeek = 1; dayOfWeek <= 7; dayOfWeek++) {
-    schedules.push({
-      groupId: shift.groupId,
-      dayOfWeek,
-      startTime: shift.startTime,
-      endTime: shift.endTime,
-      requiredHours: calculateRequiredHours(shift.startTime, shift.endTime),
-      isActive: shift.isActive ?? true,
-    });
-  }
-  
-  // إدراج الجداول الديناميكية
-  if (schedules.length > 0) {
-    await db.insert(groupSchedules).values(schedules as any);
-  }
-  
-  return shiftId;
-}
-
-// دالة مساعدة لحساب الساعات المطلوبة
-function calculateRequiredHours(startTime: string, endTime: string): number {
-  const [startHour, startMin] = startTime.split(':').map(Number);
-  const [endHour, endMin] = endTime.split(':').map(Number);
-  
-  const startTotalMin = startHour * 60 + startMin;
-  const endTotalMin = endHour * 60 + endMin;
-  
-  let diffMin = endTotalMin - startTotalMin;
-  if (diffMin < 0) diffMin += 24 * 60; // إذا كانت النهاية في اليوم التالي
-  
-  return Math.round((diffMin / 60) * 100) / 100; // تقريب لمنزلتين عشريتين
-}
-
-export async function updateGroupShift(id: number, data: Partial<InsertGroupShift>): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  await db.update(groupShifts).set({ ...data, updatedAt: new Date() }).where(eq(groupShifts.id, id));
-}
-
-export async function deleteGroupShift(id: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  await db.delete(groupShifts).where(eq(groupShifts.id, id));
-}
+// Group Shifts functions removed - using Weekly Schedules instead
 
 // ============================================
 // Workers Functions
@@ -1064,7 +997,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const { attendanceEvents, workers, groups, groupShifts, workDays, workerDailyFinance } = await import('../drizzle/schema');
+  const { attendanceEvents, workers, groups, workDays, workerDailyFinance } = await import('../drizzle/schema');
   
 
   
@@ -1096,13 +1029,29 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       groupWorkMinutes = safeParseInt(group.workMinutes);
       groupLatePenaltyRate = group.latePenaltyRate ? safeParseDecimal(group.latePenaltyRate) : null;
       groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? safeParseDecimal(group.earlyLeavePenaltyRate) : null;
-      // Load shift times for financial calculation
-      shiftStartTime = group.shiftStartTime;
-      shiftEndTime = group.shiftEndTime;
       
-      // If shift times are defined, use them as expected times
-      if (shiftStartTime) expectedStartTime = shiftStartTime;
-      if (shiftEndTime) expectedEndTime = shiftEndTime;
+      // Get shift times from weekly schedule based on day of week
+      const dayOfWeek = workDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+      const [schedule] = await db
+        .select()
+        .from(groupSchedules)
+        .where(
+          and(
+            eq(groupSchedules.groupId, worker.groupId),
+            eq(groupSchedules.dayOfWeek, dayOfWeek),
+            eq(groupSchedules.isActive, true)
+          )
+        )
+        .limit(1);
+      
+      if (schedule) {
+        shiftStartTime = schedule.startTime;
+        shiftEndTime = schedule.endTime;
+        
+        // If shift times are defined, use them as expected times
+        expectedStartTime = shiftStartTime;
+        expectedEndTime = shiftEndTime;
+      }
     }
   }
   
@@ -4077,40 +4026,7 @@ export async function listAllOperationalFlags(): Promise<any[]> {
 // Helper Functions for Testing
 // ============================================
 
-/**
- * Create a test group with custom parameters
- */
-export async function createTestGroup(data: {
-  code: string;
-  name: string;
-  dailyWage: number;
-  workMinutes: number;
-  latePenaltyRate: number;
-  earlyLeavePenaltyRate: number;
-  shiftStartTime: string;
-  shiftEndTime: string;
-  isActive: boolean;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not available');
-
-  const result = await db.insert(groups).values({
-    code: data.code,
-    name: data.name,
-    dailyWage: data.dailyWage?.toString(),
-    workMinutes: data.workMinutes,
-    latePenaltyRate: data.latePenaltyRate?.toString(),
-    earlyLeavePenaltyRate: data.earlyLeavePenaltyRate?.toString(),
-    shiftStartTime: data.shiftStartTime,
-    shiftEndTime: data.shiftEndTime,
-    isActive: data.isActive,
-  });
-
-  return {
-    id: result[0].insertId as number,
-    ...data,
-  };
-}
+// createTestGroup removed - use createGroup with saveWeeklySchedules instead
 
 /**
  * Create a test worker with custom parameters
@@ -4949,8 +4865,6 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
     .select({
       dailyRate: workers.dailyRate,
       groupId: workers.groupId,
-      shiftStartTime: groups.shiftStartTime,
-      shiftEndTime: groups.shiftEndTime,
       workMinutes: groups.workMinutes,
       minuteCost: groups.minuteCost,
       latePenaltyRate: groups.latePenaltyRate,
@@ -4966,11 +4880,33 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   }
   
   const dailyRate = Number(workerData.dailyRate) || 0;
-  const shiftStartTime = workerData.shiftStartTime;
-  const shiftEndTime = workerData.shiftEndTime;
   const minuteCost = Number(workerData.minuteCost) || 0;
   const latePenaltyRate = Number(workerData.latePenaltyRate) || 0;
   const earlyLeavePenaltyRate = Number(workerData.earlyLeavePenaltyRate) || 0;
+  
+  // Get shift times from weekly schedule based on day of week
+  let shiftStartTime: string | null = null;
+  let shiftEndTime: string | null = null;
+  
+  if (workerData.groupId) {
+    const dayOfWeek = workDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    const [schedule] = await db
+      .select()
+      .from(groupSchedules)
+      .where(
+        and(
+          eq(groupSchedules.groupId, workerData.groupId),
+          eq(groupSchedules.dayOfWeek, dayOfWeek),
+          eq(groupSchedules.isActive, true)
+        )
+      )
+      .limit(1);
+    
+    if (schedule) {
+      shiftStartTime = schedule.startTime;
+      shiftEndTime = schedule.endTime;
+    }
+  }
   
   let baseSalary = dailyRate;
   let latePenalty = 0;
