@@ -27,6 +27,24 @@ export default function PayrollBatchCreateSimple() {
       setError("يرجى ملء جميع الحقول");
       return;
     }
+    
+    // Check if groups in this cost center have schedules
+    try {
+      const groupsWithoutSchedules = await trpc.groups.listWithoutSchedules.query();
+      const selectedCostCenterGroups = groupsWithoutSchedules.filter(
+        (g: any) => g.costCenterId === parseInt(costCenterId)
+      );
+      
+      if (selectedCostCenterGroups.length > 0) {
+        const groupNames = selectedCostCenterGroups.map((g: any) => g.name).join('، ');
+        setError(
+          `المجموعات التالية لا تحتوي على جدول أسبوعي: ${groupNames}. يرجى إضافة جداول أولاً من صفحة الورديات الأسبوعية.`
+        );
+        return;
+      }
+    } catch (err) {
+      console.error("Error checking schedules:", err);
+    }
 
     setLoading(true);
     setError("");

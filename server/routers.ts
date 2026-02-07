@@ -357,6 +357,16 @@ export const appRouter = router({
       }),
     
     // Shifts procedures removed - using Weekly Schedules instead
+    
+    listWithoutSchedules: protectedProcedure.query(async () => {
+      return await db.getGroupsWithoutSchedules();
+    }),
+    
+    checkHasSchedules: protectedProcedure
+      .input(z.object({ groupId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.checkGroupHasSchedules(input.groupId);
+      }),
   }),
 
   // Workers Management

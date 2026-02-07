@@ -257,11 +257,29 @@ export default function PayrollBatches() {
     setSelectedCostCenter('all');
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!periodStart || !periodEnd) {
       toast.error('يرجى تحديد فترة الرواتب');
       return;
     }
+    
+    // Check if selected group has schedules
+    if (selectedGroup !== 'all') {
+      const groupId = parseInt(selectedGroup);
+      const hasSchedules = await trpc.groups.checkHasSchedules.query({ groupId });
+      
+      if (!hasSchedules) {
+        toast.error('المجموعة المختارة لا تحتوي على جدول أسبوعي. يرجى إضافة جدول أولاً.', {
+          action: {
+            label: 'إضافة جدول',
+            onClick: () => window.location.href = '/schedules/weekly'
+          },
+          duration: 5000,
+        });
+        return;
+      }
+    }
+    
     createMutation.mutate({
       periodStart,
       periodEnd,

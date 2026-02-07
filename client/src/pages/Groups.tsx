@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, Search, Users, Clock, Building2, Download } from 
 import { ExcelImportExportDialog } from "@/components/ExcelImportExportDialog";
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import GroupRow from '@/components/GroupRow';
+import { GroupScheduleStatus } from '@/components/GroupScheduleStatus';
 
 export default function Groups() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -447,6 +448,7 @@ export default function Groups() {
                     <TableHead className="text-right">الاسم</TableHead>
                     <TableHead className="text-right">مركز التكلفة</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">الجدول الأسبوعي</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -460,6 +462,9 @@ export default function Groups() {
                         <Badge variant={group.isActive ? "default" : "secondary"}>
                           {group.isActive ? "نشط" : "غير نشط"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <GroupScheduleStatus groupId={group.id} />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

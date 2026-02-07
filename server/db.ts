@@ -5232,3 +5232,49 @@ export async function getAuditLog(filters?: {
     newValues: row.newValues ? JSON.parse(row.newValues) : null,
   }));
 }
+
+/**
+ * Check if a group has any active weekly schedules
+ */
+export async function checkGroupHasSchedules(groupId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const schedules = await db
+    .select()
+    .from(groupSchedules)
+    .where(
+      and(
+        eq(groupSchedules.groupId, groupId),
+        eq(groupSchedules.isActive, true)
+      )
+    )
+    .limit(1);
+  
+  return schedules.length > 0;
+}
+
+/**
+ * Get all groups without active weekly schedules
+ */
+export async function getGroupsWithoutSchedules() {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  // Get all active groups
+  const allGroups = await db
+    .select()
+    .from(groups)
+    .where(eq(groups.isActive, true));
+  
+  // Check each group for schedules
+  const groupsWithoutSchedules = [];
+  for (const group of allGroups) {
+    const hasSchedules = await checkGroupHasSchedules(group.id);
+    if (!hasSchedules) {
+      groupsWithoutSchedules.push(transformGroup(group));
+    }
+  }
+  
+  return groupsWithoutSchedules;
+}
