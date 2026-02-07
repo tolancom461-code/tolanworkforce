@@ -99,7 +99,7 @@ const menuSections = [
     items: [
       { icon: Banknote, label: "لوحة تحكم الرواتب", path: "/payroll/dashboard", color: "text-green-600" },
       { icon: DollarSign, label: "دفعات الرواتب", path: "/payroll/batches" },
-      { icon: PlusCircle, label: "إنشاء دفعة رواتب", path: "/payroll/batches/create" },
+      // { icon: PlusCircle, label: "إنشاء دفعة رواتب", path: "/payroll/batches/create" }, // مخفي
       { icon: FileText, label: "سجل دفعات الرواتب", path: "/finance/payroll/history" },
       { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
       { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
