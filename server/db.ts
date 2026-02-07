@@ -5138,3 +5138,80 @@ export async function deleteWorkerDailyFinanceByDate(date: string) {
     .delete(workerDailyFinance)
     .where(eq(workerDailyFinance.workDate, new Date(date)));
 }
+
+// Get audit log entries for attendance events
+export async function getAuditLog(filters?: {
+  workerId?: number;
+  startDate?: string;
+  endDate?: string;
+  action?: string;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const { auditLog, users, workers, attendanceEvents } = await import('../drizzle/schema');
+  
+  let query = db
+    .select({
+      id: auditLog.id,
+      userId: auditLog.userId,
+      userName: users.fullName,
+      action: auditLog.action,
+      tableName: auditLog.tableName,
+      recordId: auditLog.recordId,
+      oldValues: auditLog.oldValues,
+      newValues: auditLog.newValues,
+      createdAt: auditLog.createdAt,
+      workerName: workers.fullName,
+    })
+    .from(auditLog)
+    .leftJoin(users, eq(auditLog.userId, users.id))
+    .leftJoin(attendanceEvents, eq(auditLog.recordId, attendanceEvents.id))
+    .leftJoin(workers, eq(attendanceEvents.workerId, workers.id))
+    .where(eq(auditLog.tableName, 'attendance_events'))
+    .$dynamic();
+  
+  // Apply filters
+  const conditions = [eq(auditLog.tableName, 'attendance_events')];
+  
+  if (filters?.workerId) {
+    conditions.push(eq(attendanceEvents.workerId, filters.workerId));
+  }
+  
+  if (filters?.startDate) {
+    const startDate = new Date(filters.startDate);
+    conditions.push(gte(auditLog.createdAt, startDate));
+  }
+  
+  if (filters?.endDate) {
+    const endDate = new Date(filters.endDate);
+    endDate.setHours(23, 59, 59, 999);
+    conditions.push(lte(auditLog.createdAt, endDate));
+  }
+  
+  if (filters?.action) {
+    conditions.push(eq(auditLog.action, filters.action));
+  }
+  
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions));
+  }
+  
+  // Order by most recent first
+  query = query.orderBy(desc(auditLog.createdAt));
+  
+  // Apply limit
+  if (filters?.limit) {
+    query = query.limit(filters.limit);
+  }
+  
+  const results = await query;
+  
+  // Parse JSON strings
+  return results.map(row => ({
+    ...row,
+    oldValues: row.oldValues ? JSON.parse(row.oldValues) : null,
+    newValues: row.newValues ? JSON.parse(row.newValues) : null,
+  }));
+}

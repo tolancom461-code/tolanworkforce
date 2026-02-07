@@ -2741,6 +2741,22 @@ export const appRouter = router({
         }
       }),
   }),
+
+  // Audit Log (سجل التدقيق)
+  audit: router({
+    // Get audit log entries
+    getLog: protectedProcedure
+      .input(z.object({
+        workerId: z.number().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        action: z.string().optional(),
+        limit: z.number().optional().default(100),
+      }))
+      .query(async ({ input }) => {
+        return await db.getAuditLog(input);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

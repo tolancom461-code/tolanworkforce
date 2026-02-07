@@ -16,6 +16,7 @@ import WorkerCard from "./pages/WorkerCard";
 import WorkerDetails from "./pages/WorkerDetails";
 import AttendanceScanner from "./pages/AttendanceScanner";
 import AttendanceLog from "./pages/AttendanceLog";
+import AuditLog from "./pages/AuditLog";
 import AttendanceReports from "./pages/AttendanceReports";
 import { AttendanceExport } from "./pages/AttendanceExport";
 import DailyManagement from "./pages/DailyManagement";
@@ -115,6 +116,11 @@ function Router() {
       <Route path="/attendance/log">
         <ProtectedRoute>
           <AttendanceLog />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/audit-log">
+        <ProtectedRoute>
+          <AuditLog />
         </ProtectedRoute>
       </Route>
       <Route path="/attendance/reports" component={AttendanceReports} />

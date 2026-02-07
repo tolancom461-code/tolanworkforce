@@ -128,4 +128,16 @@
 - [x] التحقق من تعريف procedure في server/routers.ts
 - [x] إصلاح المسار أو التعريف - أضفت updateEvent procedure
 - [x] اختبار التعديل من الواجهة - السيرفر يعمل
+- [x] حفظ checkpoint
+
+
+## إضافة نظام سجل التدقيق (Audit Log)
+- [x] إنشاء جدول attendance_audit_log في schema.ts - جدول audit_log موجود بالفعل
+- [x] تشغيل db:push لإضافة الجدول - غير مطلوب
+- [x] تعديل updateAttendanceEvent لتسجيل التعديلات - موجود بالفعل
+- [x] إضافة دالة getAuditLog في db.ts
+- [x] إضافة procedure getAuditLog في routers.ts
+- [x] إنشاء صفحة AuditLog.tsx
+- [x] إضافة رابط لسجل التدقيق في App.tsx
+- [x] اختبار النظام - السيرفر يعمل والصفحة موجودة
 - [ ] حفظ checkpoint
