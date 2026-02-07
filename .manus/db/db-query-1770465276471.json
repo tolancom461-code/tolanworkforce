@@ -1,0 +1,82 @@
+{
+  "query": "SELECT id, worker_id, event_type, event_time FROM attendance_events WHERE DATE(event_time) = '2026-02-07' ORDER BY worker_id, event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, worker_id, event_type, event_time FROM attendance_events WHERE DATE(event_time) = '2026-02-07' ORDER BY worker_id, event_time;",
+  "rows": [
+    {
+      "id": "90075",
+      "worker_id": "90013",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:36"
+    },
+    {
+      "id": "90081",
+      "worker_id": "90013",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 08:58:00"
+    },
+    {
+      "id": "90076",
+      "worker_id": "90014",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:44"
+    },
+    {
+      "id": "120001",
+      "worker_id": "90014",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 09:49:56"
+    },
+    {
+      "id": "90077",
+      "worker_id": "90015",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:51"
+    },
+    {
+      "id": "120002",
+      "worker_id": "90015",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 09:50:03"
+    },
+    {
+      "id": "90078",
+      "worker_id": "90016",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:56"
+    },
+    {
+      "id": "150001",
+      "worker_id": "90016",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:52:07"
+    },
+    {
+      "id": "90079",
+      "worker_id": "90017",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:19:02"
+    },
+    {
+      "id": "150002",
+      "worker_id": "90017",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:52:13"
+    },
+    {
+      "id": "90080",
+      "worker_id": "90018",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:20:17"
+    },
+    {
+      "id": "150003",
+      "worker_id": "90018",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:52:19"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tevent_type\tevent_time\n90075\t90013\tcheck_in\t2026-02-07 08:18:36\n90081\t90013\tcheck_out\t2026-02-07 08:58:00\n90076\t90014\tcheck_in\t2026-02-07 08:18:44\n120001\t90014\tcheck_out\t2026-02-07 09:49:56\n90077\t90015\tcheck_in\t2026-02-07 08:18:51\n120002\t90015\tcheck_out\t2026-02-07 09:50:03\n90078\t90016\tcheck_in\t2026-02-07 08:18:56\n150001\t90016\tcheck_out\t2026-02-07 11:52:07\n90079\t90017\tcheck_in\t2026-02-07 08:19:02\n150002\t90017\tcheck_out\t2026-02-07 11:52:13\n90080\t90018\tcheck_in\t2026-02-07 08:20:17\n150003\t90018\tcheck_out\t2026-02-07 11:52:19\n",
+  "stderr": "",
+  "execution_time_ms": 1574
+}

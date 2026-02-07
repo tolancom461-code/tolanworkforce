@@ -1,0 +1,17 @@
+{
+  "query": "-- رفض الدفعة وإعادتها إلى draft\nUPDATE payroll_batches \nSET \n  status = 'draft',\n  notes = 'اختبار الرفض - تم الرفض من المحاسب',\n  rejection_count = COALESCE(rejection_count, 0) + 1,\n  updated_at = NOW()\nWHERE batch_code = 'TEST-REJECT-001';\n\n-- التحقق من النتيجة\nSELECT id, batch_code, status, rejection_count, notes FROM payroll_batches WHERE batch_code = 'TEST-REJECT-001';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute -- رفض الدفعة وإعادتها إلى draft\nUPDATE payroll_batches \nSET \n  status = 'draft',\n  notes = 'اختبار الرفض - تم الرفض من المحاسب',\n  rejection_count = COALESCE(rejection_count, 0) + 1,\n  updated_at = NOW()\nWHERE batch_code = 'TEST-REJECT-001';\n\n-- التحقق من النتيجة\nSELECT id, batch_code, status, rejection_count, notes FROM payroll_batches WHERE batch_code = 'TEST-REJECT-001';",
+  "rows": [
+    {
+      "id": "120004",
+      "batch_code": "TEST-REJECT-001",
+      "status": "draft",
+      "rejection_count": "1",
+      "notes": "اختبار الرفض - تم الرفض من المحاسب"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatch_code\tstatus\trejection_count\tnotes\n120004\tTEST-REJECT-001\tdraft\t1\tاختبار الرفض - تم الرفض من المحاسب\n",
+  "stderr": "",
+  "execution_time_ms": 1811
+}

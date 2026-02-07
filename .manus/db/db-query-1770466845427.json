@@ -1,0 +1,15 @@
+{
+  "query": "-- إنشاء دفعة اختبار\nINSERT INTO payroll_batches (batch_code, period_start, period_end, status, total_amount, total_workers, created_by)\nVALUES ('TEST-FINANCIAL-REJECT', '2026-02-01', '2026-02-07', 'under_financial_review', 1000.00, 1, 1);\n\n-- التحقق من الإنشاء\nSELECT id, batch_code, status FROM payroll_batches WHERE batch_code = 'TEST-FINANCIAL-REJECT';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute -- إنشاء دفعة اختبار\nINSERT INTO payroll_batches (batch_code, period_start, period_end, status, total_amount, total_workers, created_by)\nVALUES ('TEST-FINANCIAL-REJECT', '2026-02-01', '2026-02-07', 'under_financial_review', 1000.00, 1, 1);\n\n-- التحقق من الإنشاء\nSELECT id, batch_code, status FROM payroll_batches WHERE batch_code = 'TEST-FINANCIAL-REJECT';",
+  "rows": [
+    {
+      "id": "120005",
+      "batch_code": "TEST-FINANCIAL-REJECT",
+      "status": "under_financial_review"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatch_code\tstatus\n120005\tTEST-FINANCIAL-REJECT\tunder_financial_review\n",
+  "stderr": "",
+  "execution_time_ms": 1717
+}

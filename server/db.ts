@@ -2410,27 +2410,15 @@ export async function accountantRejectBatch(params: {
     throw new Error("Batch is not under accountant review");
   }
 
-  // Check rejection count
+  // Return to draft for editing/deletion
   const newRejectionCount = (batch.rejectionCount || 0) + 1;
-  if (newRejectionCount >= 3) {
-    // Final rejection
-    await db
-      .update(payrollBatches)
-      .set({
-        status: 'rejected_final',
-        rejectionCount: newRejectionCount,
-      })
-      .where(eq(payrollBatches.id, params.batchId));
-  } else {
-    // Return for correction
-    await db
-      .update(payrollBatches)
-      .set({
-        status: 'returned_from_accountant',
-        rejectionCount: newRejectionCount,
-      })
-      .where(eq(payrollBatches.id, params.batchId));
-  }
+  await db
+    .update(payrollBatches)
+    .set({
+      status: 'draft',
+      rejectionCount: newRejectionCount,
+    })
+    .where(eq(payrollBatches.id, params.batchId));
 
   // Add note
   await db.insert(payrollBatchNotes).values({
@@ -2505,10 +2493,12 @@ export async function financialReviewerRejectBatch(params: {
     throw new Error("Batch is not under financial review");
   }
 
+  const newRejectionCount = (batch.rejectionCount || 0) + 1;
   await db
     .update(payrollBatches)
     .set({
-      status: 'returned_from_financial_review',
+      status: 'draft',
+      rejectionCount: newRejectionCount,
     })
     .where(eq(payrollBatches.id, params.batchId));
 
@@ -2583,10 +2573,12 @@ export async function accountsManagerRejectBatch(params: {
     throw new Error("Batch is not under accounts manager review");
   }
 
+  const newRejectionCount = (batch.rejectionCount || 0) + 1;
   await db
     .update(payrollBatches)
     .set({
-      status: 'rejected_final',
+      status: 'draft',
+      rejectionCount: newRejectionCount,
     })
     .where(eq(payrollBatches.id, params.batchId));
 

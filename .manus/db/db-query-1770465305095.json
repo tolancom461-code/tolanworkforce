@@ -1,0 +1,64 @@
+{
+  "query": "SELECT id, worker_id, work_date, worked_minutes, financial_minutes, base_salary, net_salary FROM worker_daily_finance WHERE work_date = '2026-02-07' ORDER BY worker_id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, worker_id, work_date, worked_minutes, financial_minutes, base_salary, net_salary FROM worker_daily_finance WHERE work_date = '2026-02-07' ORDER BY worker_id;",
+  "rows": [
+    {
+      "id": "30002",
+      "worker_id": "90013",
+      "work_date": "2026-02-07",
+      "worked_minutes": "40",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00"
+    },
+    {
+      "id": "60001",
+      "worker_id": "90014",
+      "work_date": "2026-02-07",
+      "worked_minutes": "91",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00"
+    },
+    {
+      "id": "60002",
+      "worker_id": "90015",
+      "work_date": "2026-02-07",
+      "worked_minutes": "91",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00"
+    },
+    {
+      "id": "90001",
+      "worker_id": "90016",
+      "work_date": "2026-02-07",
+      "worked_minutes": "213",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00"
+    },
+    {
+      "id": "90002",
+      "worker_id": "90017",
+      "work_date": "2026-02-07",
+      "worked_minutes": "213",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00"
+    },
+    {
+      "id": "90003",
+      "worker_id": "90018",
+      "work_date": "2026-02-07",
+      "worked_minutes": "212",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\twork_date\tworked_minutes\tfinancial_minutes\tbase_salary\tnet_salary\n30002\t90013\t2026-02-07\t40\t0\t0.00\t0.00\n60001\t90014\t2026-02-07\t91\t0\t0.00\t0.00\n60002\t90015\t2026-02-07\t91\t0\t0.00\t0.00\n90001\t90016\t2026-02-07\t213\t0\t0.00\t0.00\n90002\t90017\t2026-02-07\t213\t0\t0.00\t0.00\n90003\t90018\t2026-02-07\t212\t0\t0.00\t0.00\n",
+  "stderr": "",
+  "execution_time_ms": 1560
+}

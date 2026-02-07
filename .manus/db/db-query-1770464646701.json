@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, batch_code, status, rejection_count, notes, created_at, updated_at FROM payroll_batches WHERE batch_code = 'Batch-2026-02-001';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, batch_code, status, rejection_count, notes, created_at, updated_at FROM payroll_batches WHERE batch_code = 'Batch-2026-02-001';",
+  "rows": [
+    {
+      "id": "90001",
+      "batch_code": "Batch-2026-02-001",
+      "status": "returned_from_accountant",
+      "rejection_count": "2",
+      "notes": "NULL",
+      "created_at": "2026-02-07 09:50:47",
+      "updated_at": "2026-02-07 11:40:40"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatch_code\tstatus\trejection_count\tnotes\tcreated_at\tupdated_at\n90001\tBatch-2026-02-001\treturned_from_accountant\t2\tNULL\t2026-02-07 09:50:47\t2026-02-07 11:40:40\n",
+  "stderr": "",
+  "execution_time_ms": 1626
+}

@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, worker_id, work_date, total_minutes_worked, daily_pay FROM worker_daily_finance WHERE work_date = '2026-02-07' ORDER BY worker_id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, worker_id, work_date, total_minutes_worked, daily_pay FROM worker_daily_finance WHERE work_date = '2026-02-07' ORDER BY worker_id;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'total_minutes_worked' in 'field list'"
+  ]
+}

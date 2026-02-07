@@ -1,0 +1,15 @@
+{
+  "query": "-- إنشاء دفعة اختبار\nINSERT INTO payroll_batches (batch_code, period_start, period_end, status, total_amount, total_workers, created_by)\nVALUES ('TEST-REJECT-001', '2026-02-01', '2026-02-07', 'draft', 1000.00, 1, 1);\n\n-- الحصول على ID الدفعة\nSELECT id, batch_code, status FROM payroll_batches WHERE batch_code = 'TEST-REJECT-001';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute -- إنشاء دفعة اختبار\nINSERT INTO payroll_batches (batch_code, period_start, period_end, status, total_amount, total_workers, created_by)\nVALUES ('TEST-REJECT-001', '2026-02-01', '2026-02-07', 'draft', 1000.00, 1, 1);\n\n-- الحصول على ID الدفعة\nSELECT id, batch_code, status FROM payroll_batches WHERE batch_code = 'TEST-REJECT-001';",
+  "rows": [
+    {
+      "id": "120004",
+      "batch_code": "TEST-REJECT-001",
+      "status": "draft"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatch_code\tstatus\n120004\tTEST-REJECT-001\tdraft\n",
+  "stderr": "",
+  "execution_time_ms": 1851
+}
