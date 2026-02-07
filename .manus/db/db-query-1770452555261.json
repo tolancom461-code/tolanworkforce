@@ -1,0 +1,50 @@
+{
+  "query": "-- عدد السجلات في كل جدول\nSELECT \n  'workers' as table_name, COUNT(*) as count FROM workers\nUNION ALL\nSELECT 'groups', COUNT(*) FROM `groups`\nUNION ALL\nSELECT 'cost_centers', COUNT(*) FROM cost_centers\nUNION ALL\nSELECT 'attendance_events', COUNT(*) FROM attendance_events\nUNION ALL\nSELECT 'payroll_batches', COUNT(*) FROM payroll_batches\nUNION ALL\nSELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items\nUNION ALL\nSELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance\nUNION ALL\nSELECT 'group_shifts', COUNT(*) FROM group_shifts\nUNION ALL\nSELECT 'pay_overrides', COUNT(*) FROM pay_overrides\nUNION ALL\nSELECT 'users', COUNT(*) FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute -- عدد السجلات في كل جدول\nSELECT \n  'workers' as table_name, COUNT(*) as count FROM workers\nUNION ALL\nSELECT 'groups', COUNT(*) FROM `groups`\nUNION ALL\nSELECT 'cost_centers', COUNT(*) FROM cost_centers\nUNION ALL\nSELECT 'attendance_events', COUNT(*) FROM attendance_events\nUNION ALL\nSELECT 'payroll_batches', COUNT(*) FROM payroll_batches\nUNION ALL\nSELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items\nUNION ALL\nSELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance\nUNION ALL\nSELECT 'group_shifts', COUNT(*) FROM group_shifts\nUNION ALL\nSELECT 'pay_overrides', COUNT(*) FROM pay_overrides\nUNION ALL\nSELECT 'users', COUNT(*) FROM users;",
+  "rows": [
+    {
+      "table_name": "attendance_events",
+      "count": "6"
+    },
+    {
+      "table_name": "workers",
+      "count": "6"
+    },
+    {
+      "table_name": "groups",
+      "count": "2"
+    },
+    {
+      "table_name": "cost_centers",
+      "count": "2"
+    },
+    {
+      "table_name": "payroll_batches",
+      "count": "0"
+    },
+    {
+      "table_name": "worker_daily_finance",
+      "count": "0"
+    },
+    {
+      "table_name": "pay_overrides",
+      "count": "0"
+    },
+    {
+      "table_name": "group_shifts",
+      "count": "0"
+    },
+    {
+      "table_name": "payroll_batch_items",
+      "count": "0"
+    },
+    {
+      "table_name": "users",
+      "count": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "table_name\tcount\nattendance_events\t6\nworkers\t6\ngroups\t2\ncost_centers\t2\npayroll_batches\t0\nworker_daily_finance\t0\npay_overrides\t0\ngroup_shifts\t0\npayroll_batch_items\t0\nusers\t6\n",
+  "stderr": "",
+  "execution_time_ms": 1512
+}

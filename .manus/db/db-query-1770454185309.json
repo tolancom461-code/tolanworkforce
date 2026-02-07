@@ -1,0 +1,76 @@
+{
+  "query": "SELECT \n  ae.id,\n  ae.worker_id,\n  w.full_name as worker_name,\n  w.code as worker_code,\n  ae.event_type,\n  ae.event_time,\n  ae.method,\n  ae.note,\n  ae.created_at\nFROM attendance_events ae\nLEFT JOIN workers w ON ae.worker_id = w.id\nORDER BY ae.event_time DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  ae.id,\n  ae.worker_id,\n  w.full_name as worker_name,\n  w.code as worker_code,\n  ae.event_type,\n  ae.event_time,\n  ae.method,\n  ae.note,\n  ae.created_at\nFROM attendance_events ae\nLEFT JOIN workers w ON ae.worker_id = w.id\nORDER BY ae.event_time DESC;",
+  "rows": [
+    {
+      "id": "90080",
+      "worker_id": "90018",
+      "worker_name": "هادي عمر",
+      "worker_code": "R06",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:20:17",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-07 08:20:16"
+    },
+    {
+      "id": "90079",
+      "worker_id": "90017",
+      "worker_name": "احمد هارون",
+      "worker_code": "R05",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:19:02",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-07 08:19:02"
+    },
+    {
+      "id": "90078",
+      "worker_id": "90016",
+      "worker_name": "مشرف خالد",
+      "worker_code": "R04",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:56",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-07 08:18:56"
+    },
+    {
+      "id": "90077",
+      "worker_id": "90015",
+      "worker_name": "فرحان مصطفى",
+      "worker_code": "R03",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:51",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-07 08:18:50"
+    },
+    {
+      "id": "90076",
+      "worker_id": "90014",
+      "worker_name": "كمال خالد",
+      "worker_code": "R02",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:44",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-07 08:18:43"
+    },
+    {
+      "id": "90075",
+      "worker_id": "90013",
+      "worker_name": "علي صالح",
+      "worker_code": "R01",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:36",
+      "method": "qr",
+      "note": "NULL",
+      "created_at": "2026-02-07 08:18:36"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tworker_name\tworker_code\tevent_type\tevent_time\tmethod\tnote\tcreated_at\n90080\t90018\tهادي عمر\tR06\tcheck_in\t2026-02-07 08:20:17\tqr\tNULL\t2026-02-07 08:20:16\n90079\t90017\tاحمد هارون\tR05\tcheck_in\t2026-02-07 08:19:02\tqr\tNULL\t2026-02-07 08:19:02\n90078\t90016\tمشرف خالد\tR04\tcheck_in\t2026-02-07 08:18:56\tqr\tNULL\t2026-02-07 08:18:56\n90077\t90015\tفرحان مصطفى\tR03\tcheck_in\t2026-02-07 08:18:51\tqr\tNULL\t2026-02-07 08:18:50\n90076\t90014\tكمال خالد\tR02\tcheck_in\t2026-02-07 08:18:44\tqr\tNULL\t2026-02-07 08:18:43\n90075\t90013\tعلي صالح\tR01\tcheck_in\t2026-02-07 08:18:36\tqr\tNULL\t2026-02-07 08:18:36\n",
+  "stderr": "",
+  "execution_time_ms": 1581
+}

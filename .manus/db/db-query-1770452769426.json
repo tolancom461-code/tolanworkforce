@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, code, full_name, national_id, phone, group_id, status, created_at \nFROM workers \nORDER BY id DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, national_id, phone, group_id, status, created_at \nFROM workers \nORDER BY id DESC;",
+  "rows": [
+    {
+      "id": "90018",
+      "code": "R06",
+      "full_name": "هادي عمر",
+      "national_id": "89433131",
+      "phone": "468963464",
+      "group_id": "60001",
+      "status": "active",
+      "created_at": "2026-02-07 08:18:20"
+    },
+    {
+      "id": "90017",
+      "code": "R05",
+      "full_name": "احمد هارون",
+      "national_id": "4646546",
+      "phone": "2316464",
+      "group_id": "60001",
+      "status": "active",
+      "created_at": "2026-02-07 08:17:49"
+    },
+    {
+      "id": "90016",
+      "code": "R04",
+      "full_name": "مشرف خالد",
+      "national_id": "1231564654",
+      "phone": "4646846",
+      "group_id": "60001",
+      "status": "active",
+      "created_at": "2026-02-07 08:16:06"
+    },
+    {
+      "id": "90015",
+      "code": "R03",
+      "full_name": "فرحان مصطفى",
+      "national_id": "487674687",
+      "phone": "7864646",
+      "group_id": "60002",
+      "status": "active",
+      "created_at": "2026-02-07 08:15:29"
+    },
+    {
+      "id": "90014",
+      "code": "R02",
+      "full_name": "كمال خالد",
+      "national_id": "156484564",
+      "phone": "4654646",
+      "group_id": "60002",
+      "status": "active",
+      "created_at": "2026-02-07 08:15:09"
+    },
+    {
+      "id": "90013",
+      "code": "R01",
+      "full_name": "علي صالح",
+      "national_id": "45467843564",
+      "phone": "456486464",
+      "group_id": "60002",
+      "status": "active",
+      "created_at": "2026-02-07 08:14:48"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tnational_id\tphone\tgroup_id\tstatus\tcreated_at\n90018\tR06\tهادي عمر\t89433131\t468963464\t60001\tactive\t2026-02-07 08:18:20\n90017\tR05\tاحمد هارون\t4646546\t2316464\t60001\tactive\t2026-02-07 08:17:49\n90016\tR04\tمشرف خالد\t1231564654\t4646846\t60001\tactive\t2026-02-07 08:16:06\n90015\tR03\tفرحان مصطفى\t487674687\t7864646\t60002\tactive\t2026-02-07 08:15:29\n90014\tR02\tكمال خالد\t156484564\t4654646\t60002\tactive\t2026-02-07 08:15:09\n90013\tR01\tعلي صالح\t45467843564\t456486464\t60002\tactive\t2026-02-07 08:14:48\n",
+  "stderr": "",
+  "execution_time_ms": 1534
+}

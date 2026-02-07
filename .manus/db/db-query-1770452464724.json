@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO workers (code, full_name, status, created_at, updated_at) \nVALUES ('TEST-001', 'عامل تجريبي للتحقق', 'active', NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute INSERT INTO workers (code, full_name, status, created_at, updated_at) \nVALUES ('TEST-001', 'عامل تجريبي للتحقق', 'active', NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1674
+}

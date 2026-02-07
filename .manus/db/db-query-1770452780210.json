@@ -1,0 +1,48 @@
+{
+  "query": "SELECT * FROM `groups` ORDER BY id DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT * FROM `groups` ORDER BY id DESC;",
+  "rows": [
+    {
+      "id": "60002",
+      "code": "GRP02",
+      "name": "مجموعة النظافة",
+      "cost_center_id": "30001",
+      "supervisor_id": "NULL",
+      "daily_rate": "NULL",
+      "work_hours": "8.00",
+      "is_active": "1",
+      "created_at": "2026-02-07 08:14:11",
+      "updated_at": "2026-02-07 08:14:11",
+      "daily_wage": "2000.00",
+      "work_minutes": "60",
+      "minute_cost": "NULL",
+      "late_penalty_rate": "100.00",
+      "early_leave_penalty_rate": "50.00",
+      "shift_start_time": "11:30",
+      "shift_end_time": "12:30"
+    },
+    {
+      "id": "60001",
+      "code": "GRP01",
+      "name": "مجموعة كاشيرات المطاعم",
+      "cost_center_id": "30002",
+      "supervisor_id": "NULL",
+      "daily_rate": "NULL",
+      "work_hours": "8.00",
+      "is_active": "1",
+      "created_at": "2026-02-07 08:13:38",
+      "updated_at": "2026-02-07 08:13:38",
+      "daily_wage": "1000.00",
+      "work_minutes": "120",
+      "minute_cost": "NULL",
+      "late_penalty_rate": "100.00",
+      "early_leave_penalty_rate": "150.00",
+      "shift_start_time": "12:00",
+      "shift_end_time": "14:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tname\tcost_center_id\tsupervisor_id\tdaily_rate\twork_hours\tis_active\tcreated_at\tupdated_at\tdaily_wage\twork_minutes\tminute_cost\tlate_penalty_rate\tearly_leave_penalty_rate\tshift_start_time\tshift_end_time\n60002\tGRP02\tمجموعة النظافة\t30001\tNULL\tNULL\t8.00\t1\t2026-02-07 08:14:11\t2026-02-07 08:14:11\t2000.00\t60\tNULL\t100.00\t50.00\t11:30\t12:30\n60001\tGRP01\tمجموعة كاشيرات المطاعم\t30002\tNULL\tNULL\t8.00\t1\t2026-02-07 08:13:38\t2026-02-07 08:13:38\t1000.00\t120\tNULL\t100.00\t150.00\t12:00\t14:00\n",
+  "stderr": "",
+  "execution_time_ms": 1594
+}

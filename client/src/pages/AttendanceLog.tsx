@@ -11,11 +11,20 @@ import {
   ArrowLeftCircle,
   RefreshCw,
   Users,
-  Calendar
+  Calendar,
+  Edit
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 export default function AttendanceLog() {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [editingEvent, setEditingEvent] = useState<any>(null);
+  const [editTime, setEditTime] = useState('');
+  const [editNote, setEditNote] = useState('');
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   const { data: allGroups } = trpc.groups.list.useQuery();
   
@@ -27,6 +36,43 @@ export default function AttendanceLog() {
   const { data: stats } = trpc.attendance.stats.useQuery({
     groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
   });
+
+  const updateEventMutation = trpc.attendance.updateEvent.useMutation({
+    onSuccess: () => {
+      toast.success('تم تعديل سجل الحضور بنجاح');
+      setIsEditDialogOpen(false);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'فشل تعديل سجل الحضور');
+    }
+  });
+
+  const handleEditClick = (record: any) => {
+    setEditingEvent(record);
+    // Format time as HH:MM for input
+    const eventDate = new Date(record.eventTime);
+    const hours = String(eventDate.getHours()).padStart(2, '0');
+    const minutes = String(eventDate.getMinutes()).padStart(2, '0');
+    setEditTime(`${hours}:${minutes}`);
+    setEditNote(record.note || '');
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingEvent || !editTime) return;
+
+    // Combine date from original event with new time
+    const eventDate = new Date(editingEvent.eventTime);
+    const [hours, minutes] = editTime.split(':');
+    eventDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+    updateEventMutation.mutate({
+      eventId: editingEvent.id,
+      newTime: eventDate.toISOString(),
+      internalNote: editNote
+    });
+  };
 
   const formatTime = (date: Date | string) => {
     return new Date(date).toLocaleTimeString('ar-SA', {
@@ -186,6 +232,7 @@ export default function AttendanceLog() {
                     <TableHead className="text-right">الرمز</TableHead>
                     <TableHead className="text-right">النوع</TableHead>
                     <TableHead className="text-right">الطريقة</TableHead>
+                    <TableHead className="text-right">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -206,6 +253,15 @@ export default function AttendanceLog() {
                       <TableCell>
                         {getMethodBadge(record.method || 'manual')}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(record)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -214,6 +270,56 @@ export default function AttendanceLog() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تعديل سجل الحضور</DialogTitle>
+            <DialogDescription>
+              {editingEvent && (
+                <span>
+                  تعديل {editingEvent.eventType === 'check_in' ? 'حضور' : 'انصراف'} للعامل: {editingEvent.workerName}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-time">الوقت</Label>
+              <Input
+                id="edit-time"
+                type="time"
+                value={editTime}
+                onChange={(e) => setEditTime(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-note">ملاحظة (اختياري)</Label>
+              <Input
+                id="edit-note"
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                placeholder="مثال: تعديل بسبب خطأ في التسجيل"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={updateEventMutation.isPending || !editTime}
+            >
+              {updateEventMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديل'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

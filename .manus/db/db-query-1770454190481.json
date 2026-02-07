@@ -1,0 +1,14 @@
+{
+  "query": "SELECT \n  event_type,\n  COUNT(*) as count\nFROM attendance_events\nGROUP BY event_type;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  event_type,\n  COUNT(*) as count\nFROM attendance_events\nGROUP BY event_type;",
+  "rows": [
+    {
+      "event_type": "check_in",
+      "count": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "event_type\tcount\ncheck_in\t6\n",
+  "stderr": "",
+  "execution_time_ms": 1500
+}

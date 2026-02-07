@@ -1,0 +1,17 @@
+{
+  "query": "SELECT \n  (SELECT COUNT(*) FROM `groups`) as total_groups,\n  (SELECT COUNT(*) FROM workers) as total_workers,\n  (SELECT COUNT(*) FROM attendance_events) as total_attendance,\n  (SELECT COUNT(*) FROM payroll_batches) as total_payroll_batches,\n  (SELECT COUNT(*) FROM cost_centers) as total_cost_centers;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  (SELECT COUNT(*) FROM `groups`) as total_groups,\n  (SELECT COUNT(*) FROM workers) as total_workers,\n  (SELECT COUNT(*) FROM attendance_events) as total_attendance,\n  (SELECT COUNT(*) FROM payroll_batches) as total_payroll_batches,\n  (SELECT COUNT(*) FROM cost_centers) as total_cost_centers;",
+  "rows": [
+    {
+      "total_groups": "2",
+      "total_workers": "6",
+      "total_attendance": "6",
+      "total_payroll_batches": "0",
+      "total_cost_centers": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_groups\ttotal_workers\ttotal_attendance\ttotal_payroll_batches\ttotal_cost_centers\n2\t6\t6\t0\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1758
+}
