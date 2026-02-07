@@ -360,4 +360,17 @@
 - [x] تحديث صفحة PayrollBatchCreateSimple لعرض تحذير التعديلات الحديثة - تم إضافة confirm dialog
 - [x] تشغيل `pnpm db:push` لتطبيق التغييرات على قاعدة البيانات - لا حاجة، updated_at موجود
 - [x] اختبار الميزة - السيرفر يعمل بنجاح
+- [x] حفظ checkpoint - تم (a5932737)
+
+## حذف ميزة الورديات الديناميكية (Dynamic Shifts)
+
+- [x] تحديد جميع الملفات والأكواد المرتبطة بالورديات الديناميكية - DynamicSchedules.tsx
+- [x] حذف صفحة DynamicSchedules.tsx من المشروع
+- [x] حذف الرابط من القائمة الجانبية في DashboardLayout.tsx
+- [x] حذف الـ route و import من App.tsx
+- [x] حذف procedures المرتبطة من server/routers.ts - حذف getFullDayOverrideStatus و updateFullDayOverride
+- [x] حذف دوال قاعدة البيانات المرتبطة من server/db.ts - كانت محذوفة مسبقاً
+- [x] حذف جدول dynamic_shifts من schema.ts (إن وجد) - لم يكن موجوداً
+- [x] تشغيل pnpm db:push لتطبيق التغييرات - لا حاجة
+- [x] اختبار النظام والتأكد من عدم وجود أخطاء - السيرفر يعمل بنجاح
 - [ ] حفظ checkpoint

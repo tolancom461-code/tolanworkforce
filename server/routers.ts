@@ -1147,16 +1147,7 @@ export const appRouter = router({
           ctx.user?.id
         );
       }),
-    
-    // Get full day override status
-    getFullDayOverrideStatus: protectedProcedure
-      .input(z.object({
-        workerId: z.number(),
-        workDate: z.string(),
-      }))
-      .query(async ({ input }) => {
-        return await db.getFullDayOverrideStatus(input.workerId, input.workDate);
-      }),
+
   }),
 
   // Attendance Adjustment (HR)
@@ -2124,25 +2115,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getAttendanceForWorkerPeriod(input.workerId, input.periodStart, input.periodEnd);
       }),
-    
-    // Update full day override for a specific day
-    updateFullDayOverride: protectedProcedure
-      .input(z.object({
-        workerId: z.number(),
-        workDate: z.string(),
-        fullDayOverride: z.boolean(),
-        overrideReason: z.string().optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Not authenticated");
-        return await db.updateFullDayOverride(
-          input.workerId,
-          input.workDate,
-          input.fullDayOverride,
-          input.overrideReason,
-          ctx.user.id
-        );
-      }),
+
     
     calculateDailyFinancesForPeriod: protectedProcedure
       .input(z.object({
@@ -2323,16 +2296,7 @@ export const appRouter = router({
         return await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
       }),
 
-    // Get full day override status
-    getFullDayOverrideStatus: protectedProcedure
-      .input(z.object({
-        workerId: z.number(),
-        workDate: z.date(),
-      }))
-      .query(async ({ input }) => {
-        // Simplified implementation
-        return { hasOverride: false, overrideType: null };
-      }),
+
   }),
 
   // ============================================

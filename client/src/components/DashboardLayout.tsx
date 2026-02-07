@@ -109,7 +109,7 @@ const menuSections = [
   {
     label: "⏳ إدارة الورديات والجداول",
     items: [
-      { icon: Calendar, label: "الورديات الديناميكية", path: "/schedules/dynamic", color: "text-blue-600" },
+
       { icon: Clock, label: "الورديات الأسبوعية", path: "/schedules/weekly", color: "text-purple-600" },
     ]
   },
