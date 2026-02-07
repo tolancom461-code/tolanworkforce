@@ -1015,6 +1015,35 @@ export const appRouter = router({
         
         return { success: true, results };
       }),
+
+    // Update attendance event time
+    updateEvent: protectedProcedure
+      .input(z.object({
+        eventId: z.number(),
+        newTime: z.string(), // ISO string
+        internalNote: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        // Get event to check date
+        const event = await db.getAttendanceEventById(input.eventId);
+        if (!event) throw new Error("سجل الحضور غير موجود");
+        
+        // Check if payroll batch exists for this date
+        const eventDate = new Date(event.eventTime).toISOString().split('T')[0];
+        const batch = await db.checkPayrollBatchForDate(eventDate);
+        if (batch) {
+          throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+        }
+        
+        return await db.updateAttendanceEvent(
+          input.eventId,
+          input.newTime,
+          input.internalNote || '',
+          ctx.user.id
+        );
+      }),
   }),
 
   // Work Days Management
