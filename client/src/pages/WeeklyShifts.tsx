@@ -266,17 +266,18 @@ export default function WeeklyShifts() {
                     type="date"
                     value={customDate}
                     onChange={(e) => setCustomDate(e.target.value)}
-                    min={earliestSafeData?.safeDate || new Date().toISOString().split('T')[0]}
                   />
-                  {earliestSafeData && earliestSafeData.safeDate > new Date().toISOString().split('T')[0] && (
-                    <Alert variant="destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>تحذير</AlertTitle>
-                      <AlertDescription>
-                        يوجد دفعات رواتب موجودة. أقرب تاريخ متاح للتطبيق: {new Date(earliestSafeData.safeDate).toLocaleDateString('ar-SA')}
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      يمكنك اختيار أي تاريخ في الماضي أو المستقبل. القيد الوحيد: لا يمكن التعديل على فترات تشملها دفعات رواتب موجودة.
+                      {earliestSafeData && earliestSafeData.safeDate > new Date().toISOString().split('T')[0] && (
+                        <span className="block mt-2 font-medium">
+                          ℹ️ آخر دفعة رواتب: {new Date(earliestSafeData.safeDate).toLocaleDateString('ar-SA')}
+                        </span>
+                      )}
+                    </AlertDescription>
+                  </Alert>
                 </div>
               )}
 
