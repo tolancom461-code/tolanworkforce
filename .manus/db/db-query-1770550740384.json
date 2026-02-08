@@ -1,0 +1,82 @@
+{
+  "query": "SELECT \n  id,\n  action,\n  record_id,\n  old_values,\n  new_values,\n  created_at\nFROM audit_log\nWHERE table_name = 'attendance_events'\n  AND DATE(created_at) >= '2026-02-07'\nORDER BY created_at DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  id,\n  action,\n  record_id,\n  old_values,\n  new_values,\n  created_at\nFROM audit_log\nWHERE table_name = 'attendance_events'\n  AND DATE(created_at) >= '2026-02-07'\nORDER BY created_at DESC;",
+  "rows": [
+    {
+      "id": "30007",
+      "action": "UPDATE_ATTENDANCE",
+      "record_id": "120002",
+      "old_values": "{\"eventTime\":\"2026-02-07T09:50:03.000Z\",\"note\":null}",
+      "new_values": "{\"eventTime\":\"2026-02-08T09:50:00.000Z\",\"note\":\"\"}",
+      "created_at": "2026-02-08 09:58:15"
+    },
+    {
+      "id": "30008",
+      "action": "UPDATE_ATTENDANCE",
+      "record_id": "90077",
+      "old_values": "{\"eventTime\":\"2026-02-07T08:18:51.000Z\",\"note\":null}",
+      "new_values": "{\"eventTime\":\"2026-02-08T08:38:00.000Z\",\"note\":\"\"}",
+      "created_at": "2026-02-08 09:58:15"
+    },
+    {
+      "id": "30005",
+      "action": "UPDATE_ATTENDANCE",
+      "record_id": "120001",
+      "old_values": "{\"eventTime\":\"2026-02-07T09:49:56.000Z\",\"note\":null}",
+      "new_values": "{\"eventTime\":\"2026-02-08T09:49:00.000Z\",\"note\":\"\"}",
+      "created_at": "2026-02-08 09:58:05"
+    },
+    {
+      "id": "30006",
+      "action": "UPDATE_ATTENDANCE",
+      "record_id": "90076",
+      "old_values": "{\"eventTime\":\"2026-02-07T08:18:44.000Z\",\"note\":null}",
+      "new_values": "{\"eventTime\":\"2026-02-08T08:45:00.000Z\",\"note\":\"\"}",
+      "created_at": "2026-02-08 09:58:05"
+    },
+    {
+      "id": "30003",
+      "action": "UPDATE_ATTENDANCE",
+      "record_id": "90075",
+      "old_values": "{\"eventTime\":\"2026-02-07T08:18:36.000Z\",\"note\":null}",
+      "new_values": "{\"eventTime\":\"2026-02-08T08:18:00.000Z\",\"note\":\"مريض\"}",
+      "created_at": "2026-02-08 09:57:47"
+    },
+    {
+      "id": "30004",
+      "action": "UPDATE_ATTENDANCE",
+      "record_id": "90081",
+      "old_values": "{\"eventTime\":\"2026-02-07T08:58:00.000Z\",\"note\":\"\"}",
+      "new_values": "{\"eventTime\":\"2026-02-08T09:30:00.000Z\",\"note\":\"مريض\"}",
+      "created_at": "2026-02-08 09:57:47"
+    },
+    {
+      "id": "30001",
+      "action": "UPDATE_ATTENDANCE",
+      "record_id": "90080",
+      "old_values": "{\"eventTime\":\"2026-02-07T08:20:17.000Z\",\"note\":null}",
+      "new_values": "{\"eventTime\":\"2026-02-08T08:20:00.000Z\",\"note\":\"مريض\"}",
+      "created_at": "2026-02-08 06:38:20"
+    },
+    {
+      "id": "30002",
+      "action": "UPDATE_ATTENDANCE",
+      "record_id": "150003",
+      "old_values": "{\"eventTime\":\"2026-02-07T11:52:19.000Z\",\"note\":null}",
+      "new_values": "{\"eventTime\":\"2026-02-08T11:00:00.000Z\",\"note\":\"مريض\"}",
+      "created_at": "2026-02-08 06:38:20"
+    },
+    {
+      "id": "1",
+      "action": "UPDATE_ATTENDANCE",
+      "record_id": "90081",
+      "old_values": "{\"eventTime\":\"2026-02-07T08:59:08.000Z\",\"note\":null}",
+      "new_values": "{\"eventTime\":\"2026-02-07T08:58:00.000Z\",\"note\":\"\"}",
+      "created_at": "2026-02-07 09:45:21"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\taction\trecord_id\told_values\tnew_values\tcreated_at\n30007\tUPDATE_ATTENDANCE\t120002\t{\"eventTime\":\"2026-02-07T09:50:03.000Z\",\"note\":null}\t{\"eventTime\":\"2026-02-08T09:50:00.000Z\",\"note\":\"\"}\t2026-02-08 09:58:15\n30008\tUPDATE_ATTENDANCE\t90077\t{\"eventTime\":\"2026-02-07T08:18:51.000Z\",\"note\":null}\t{\"eventTime\":\"2026-02-08T08:38:00.000Z\",\"note\":\"\"}\t2026-02-08 09:58:15\n30005\tUPDATE_ATTENDANCE\t120001\t{\"eventTime\":\"2026-02-07T09:49:56.000Z\",\"note\":null}\t{\"eventTime\":\"2026-02-08T09:49:00.000Z\",\"note\":\"\"}\t2026-02-08 09:58:05\n30006\tUPDATE_ATTENDANCE\t90076\t{\"eventTime\":\"2026-02-07T08:18:44.000Z\",\"note\":null}\t{\"eventTime\":\"2026-02-08T08:45:00.000Z\",\"note\":\"\"}\t2026-02-08 09:58:05\n30003\tUPDATE_ATTENDANCE\t90075\t{\"eventTime\":\"2026-02-07T08:18:36.000Z\",\"note\":null}\t{\"eventTime\":\"2026-02-08T08:18:00.000Z\",\"note\":\"مريض\"}\t2026-02-08 09:57:47\n30004\tUPDATE_ATTENDANCE\t90081\t{\"eventTime\":\"2026-02-07T08:58:00.000Z\",\"note\":\"\"}\t{\"eventTime\":\"2026-02-08T09:30:00.000Z\",\"note\":\"مريض\"}\t2026-02-08 09:57:47\n30001\tUPDATE_ATTENDANCE\t90080\t{\"eventTime\":\"2026-02-07T08:20:17.000Z\",\"note\":null}\t{\"eventTime\":\"2026-02-08T08:20:00.000Z\",\"note\":\"مريض\"}\t2026-02-08 06:38:20\n30002\tUPDATE_ATTENDANCE\t150003\t{\"eventTime\":\"2026-02-07T11:52:19.000Z\",\"note\":null}\t{\"eventTime\":\"2026-02-08T11:00:00.000Z\",\"note\":\"مريض\"}\t2026-02-08 06:38:20\n1\tUPDATE_ATTENDANCE\t90081\t{\"eventTime\":\"2026-02-07T08:59:08.000Z\",\"note\":null}\t{\"eventTime\":\"2026-02-07T08:58:00.000Z\",\"note\":\"\"}\t2026-02-07 09:45:21\n",
+  "stderr": "",
+  "execution_time_ms": 1594
+}

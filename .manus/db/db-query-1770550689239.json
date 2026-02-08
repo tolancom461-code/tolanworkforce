@@ -1,0 +1,20 @@
+{
+  "query": "SELECT \n  g.id as group_id,\n  g.name as group_name,\n  COUNT(w.id) as worker_count\nFROM `groups` g\nLEFT JOIN workers w ON g.id = w.group_id\nGROUP BY g.id, g.name\nORDER BY g.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  g.id as group_id,\n  g.name as group_name,\n  COUNT(w.id) as worker_count\nFROM `groups` g\nLEFT JOIN workers w ON g.id = w.group_id\nGROUP BY g.id, g.name\nORDER BY g.id;",
+  "rows": [
+    {
+      "group_id": "60001",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "worker_count": "3"
+    },
+    {
+      "group_id": "60002",
+      "group_name": "مجموعة النظافة",
+      "worker_count": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "group_id\tgroup_name\tworker_count\n60001\tمجموعة كاشيرات المطاعم\t3\n60002\tمجموعة النظافة\t3\n",
+  "stderr": "",
+  "execution_time_ms": 1532
+}

@@ -126,13 +126,18 @@ export default function AttendanceLog() {
   const handleSaveEdit = () => {
     if (!editingRecord) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use the original event date to preserve the record's date
+    // Get the date from the original check-in or check-out time
+    const originalDate = editingRecord.checkInTime || editingRecord.checkOutTime;
+    if (!originalDate) return;
+    
+    const baseDate = new Date(originalDate);
+    baseDate.setHours(0, 0, 0, 0);
 
     // Update check-in if changed
     if (editCheckInTime && editingRecord.checkInId) {
       const [hours, minutes] = editCheckInTime.split(':');
-      const newCheckInTime = new Date(today);
+      const newCheckInTime = new Date(baseDate);
       newCheckInTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
       updateEventMutation.mutate({
@@ -145,7 +150,7 @@ export default function AttendanceLog() {
     // Update check-out if changed
     if (editCheckOutTime && editingRecord.checkOutId) {
       const [hours, minutes] = editCheckOutTime.split(':');
-      const newCheckOutTime = new Date(today);
+      const newCheckOutTime = new Date(baseDate);
       newCheckOutTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
       updateEventMutation.mutate({

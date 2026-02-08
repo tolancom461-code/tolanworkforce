@@ -459,4 +459,16 @@
 - [x] إضافة دالة generateAttendanceLogExcel في server/excel-export.ts - تم
 - [x] إضافة زر "تصدير إلى Excel" في صفحة AttendanceLog.tsx - تم
 - [x] اختبار العرض والتصدير - تم بنجاح (ملف 7KB)
+- [x] حفظ checkpoint - تم (9a385c3c)
+
+
+## إصلاح مشكلة اختفاء البيانات بعد التعديل في سجل الحضور
+
+- [x] فحص بيانات attendance_events في قاعدة البيانات ليوم 7 فبراير - 4 سجلات فقط
+- [x] فحص كود updateEvent في Frontend (AttendanceLog.tsx) - وجدت المشكلة!
+- [x] فحص procedure updateEvent في Backend (server/routers.ts) - الBackend صحيح
+- [x] فحص دالة updateAttendanceEvent في server/db.ts - الدالة صحيحة
+- [x] تحديد السبب الجذري لاختفاء البيانات - استخدام new Date() بدلاً من selectedDate
+- [x] إصلاح المشكلة - تغيير handleSaveEdit لاستخدام التاريخ الأصلي للسجل
+- [x] اختبار التعديل والحفظ - نجح الاختبار!
 - [ ] حفظ checkpoint

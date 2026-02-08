@@ -1,0 +1,145 @@
+{
+  "query": "SELECT \n  ae.id,\n  ae.worker_id,\n  w.full_name,\n  ae.event_type,\n  ae.event_time,\n  ae.method,\n  ae.note\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nWHERE DATE(ae.event_time) = '2026-02-08'\nORDER BY w.id, ae.event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  ae.id,\n  ae.worker_id,\n  w.full_name,\n  ae.event_type,\n  ae.event_time,\n  ae.method,\n  ae.note\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nWHERE DATE(ae.event_time) = '2026-02-08'\nORDER BY w.id, ae.event_time;",
+  "rows": [
+    {
+      "id": "180001",
+      "worker_id": "90013",
+      "full_name": "علي صالح",
+      "event_type": "check_in",
+      "event_time": "2026-02-08 06:19:03",
+      "method": "qr",
+      "note": "NULL"
+    },
+    {
+      "id": "90075",
+      "worker_id": "90013",
+      "full_name": "علي صالح",
+      "event_type": "check_in",
+      "event_time": "2026-02-08 08:18:00",
+      "method": "qr",
+      "note": "مريض"
+    },
+    {
+      "id": "180004",
+      "worker_id": "90013",
+      "full_name": "علي صالح",
+      "event_type": "check_out",
+      "event_time": "2026-02-08 08:55:47",
+      "method": "qr",
+      "note": "NULL"
+    },
+    {
+      "id": "90081",
+      "worker_id": "90013",
+      "full_name": "علي صالح",
+      "event_type": "check_out",
+      "event_time": "2026-02-08 09:30:00",
+      "method": "qr",
+      "note": "مريض"
+    },
+    {
+      "id": "180002",
+      "worker_id": "90014",
+      "full_name": "كمال خالد",
+      "event_type": "check_in",
+      "event_time": "2026-02-08 06:19:09",
+      "method": "qr",
+      "note": "NULL"
+    },
+    {
+      "id": "90076",
+      "worker_id": "90014",
+      "full_name": "كمال خالد",
+      "event_type": "check_in",
+      "event_time": "2026-02-08 08:45:00",
+      "method": "qr",
+      "note": ""
+    },
+    {
+      "id": "180003",
+      "worker_id": "90014",
+      "full_name": "كمال خالد",
+      "event_type": "check_out",
+      "event_time": "2026-02-08 08:55:41",
+      "method": "qr",
+      "note": "NULL"
+    },
+    {
+      "id": "120001",
+      "worker_id": "90014",
+      "full_name": "كمال خالد",
+      "event_type": "check_out",
+      "event_time": "2026-02-08 09:49:00",
+      "method": "qr",
+      "note": ""
+    },
+    {
+      "id": "90077",
+      "worker_id": "90015",
+      "full_name": "فرحان مصطفى",
+      "event_type": "check_in",
+      "event_time": "2026-02-08 08:38:00",
+      "method": "qr",
+      "note": ""
+    },
+    {
+      "id": "120002",
+      "worker_id": "90015",
+      "full_name": "فرحان مصطفى",
+      "event_type": "check_out",
+      "event_time": "2026-02-08 09:50:00",
+      "method": "qr",
+      "note": ""
+    },
+    {
+      "id": "180005",
+      "worker_id": "90016",
+      "full_name": "مشرف خالد",
+      "event_type": "check_in",
+      "event_time": "2026-02-08 08:55:52",
+      "method": "qr",
+      "note": "NULL"
+    },
+    {
+      "id": "150001",
+      "worker_id": "90016",
+      "full_name": "مشرف خالد",
+      "event_type": "check_out",
+      "event_time": "2026-02-08 11:52:00",
+      "method": "qr",
+      "note": "اختبار الإصلاح - تعديل الوقت من 08:18 إلى 08:30"
+    },
+    {
+      "id": "180006",
+      "worker_id": "90017",
+      "full_name": "احمد هارون",
+      "event_type": "check_in",
+      "event_time": "2026-02-08 08:55:59",
+      "method": "qr",
+      "note": "NULL"
+    },
+    {
+      "id": "90080",
+      "worker_id": "90018",
+      "full_name": "هادي عمر",
+      "event_type": "check_in",
+      "event_time": "2026-02-08 08:20:00",
+      "method": "qr",
+      "note": "مريض"
+    },
+    {
+      "id": "150003",
+      "worker_id": "90018",
+      "full_name": "هادي عمر",
+      "event_type": "check_out",
+      "event_time": "2026-02-08 11:00:00",
+      "method": "qr",
+      "note": "مريض"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tfull_name\tevent_type\tevent_time\tmethod\tnote\n180001\t90013\tعلي صالح\tcheck_in\t2026-02-08 06:19:03\tqr\tNULL\n90075\t90013\tعلي صالح\tcheck_in\t2026-02-08 08:18:00\tqr\tمريض\n180004\t90013\tعلي صالح\tcheck_out\t2026-02-08 08:55:47\tqr\tNULL\n90081\t90013\tعلي صالح\tcheck_out\t2026-02-08 09:30:00\tqr\tمريض\n180002\t90014\tكمال خالد\tcheck_in\t2026-02-08 06:19:09\tqr\tNULL\n90076\t90014\tكمال خالد\tcheck_in\t2026-02-08 08:45:00\tqr\t\n180003\t90014\tكمال خالد\tcheck_out\t2026-02-08 08:55:41\tqr\tNULL\n120001\t90014\tكمال خالد\tcheck_out\t2026-02-08 09:49:00\tqr\t\n90077\t90015\tفرحان مصطفى\tcheck_in\t2026-02-08 08:38:00\tqr\t\n120002\t90015\tفرحان مصطفى\tcheck_out\t2026-02-08 09:50:00\tqr\t\n180005\t90016\tمشرف خالد\tcheck_in\t2026-02-08 08:55:52\tqr\tNULL\n150001\t90016\tمشرف خالد\tcheck_out\t2026-02-08 11:52:00\tqr\tاختبار الإصلاح - تعديل الوقت من 08:18 إلى 08:30\n180006\t90017\tاحمد هارون\tcheck_in\t2026-02-08 08:55:59\tqr\tNULL\n90080\t90018\tهادي عمر\tcheck_in\t2026-02-08 08:20:00\tqr\tمريض\n150003\t90018\tهادي عمر\tcheck_out\t2026-02-08 11:00:00\tqr\tمريض\n",
+  "stderr": "",
+  "execution_time_ms": 1597
+}

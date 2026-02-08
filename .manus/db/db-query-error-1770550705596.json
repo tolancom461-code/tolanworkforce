@@ -1,0 +1,8 @@
+{
+  "query": "SELECT \n  al.id,\n  al.table_name,\n  al.record_id,\n  al.action,\n  al.old_value,\n  al.new_value,\n  al.changed_by_user_id,\n  al.changed_at,\n  u.name as user_name\nFROM audit_log al\nLEFT JOIN users u ON al.changed_by_user_id = u.id\nWHERE al.table_name = 'attendance_events'\n  AND DATE(al.changed_at) >= '2026-02-07'\nORDER BY al.changed_at DESC\nLIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  al.id,\n  al.table_name,\n  al.record_id,\n  al.action,\n  al.old_value,\n  al.new_value,\n  al.changed_by_user_id,\n  al.changed_at,\n  u.name as user_name\nFROM audit_log al\nLEFT JOIN users u ON al.changed_by_user_id = u.id\nWHERE al.table_name = 'attendance_events'\n  AND DATE(al.changed_at) >= '2026-02-07'\nORDER BY al.changed_at DESC\nLIMIT 20;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'al.changed_by_user_id' in 'on clause'"
+  ]
+}

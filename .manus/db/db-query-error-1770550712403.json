@@ -1,0 +1,8 @@
+{
+  "query": "SELECT \n  id,\n  table_name,\n  record_id,\n  action,\n  old_value,\n  new_value,\n  changed_at\nFROM audit_log\nWHERE table_name = 'attendance_events'\n  AND DATE(changed_at) >= '2026-02-07'\nORDER BY changed_at DESC\nLIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  id,\n  table_name,\n  record_id,\n  action,\n  old_value,\n  new_value,\n  changed_at\nFROM audit_log\nWHERE table_name = 'attendance_events'\n  AND DATE(changed_at) >= '2026-02-07'\nORDER BY changed_at DESC\nLIMIT 20;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'changed_at' in 'where clause'"
+  ]
+}

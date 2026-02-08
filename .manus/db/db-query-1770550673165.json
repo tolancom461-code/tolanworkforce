@@ -1,0 +1,50 @@
+{
+  "query": "SELECT \n  ae.id,\n  ae.worker_id,\n  w.full_name,\n  w.code as worker_code,\n  g.name as group_name,\n  ae.event_type,\n  ae.event_time,\n  ae.method\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nJOIN `groups` g ON w.group_id = g.id\nWHERE DATE(ae.event_time) = '2026-02-07'\nORDER BY w.id, ae.event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  ae.id,\n  ae.worker_id,\n  w.full_name,\n  w.code as worker_code,\n  g.name as group_name,\n  ae.event_type,\n  ae.event_time,\n  ae.method\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nJOIN `groups` g ON w.group_id = g.id\nWHERE DATE(ae.event_time) = '2026-02-07'\nORDER BY w.id, ae.event_time;",
+  "rows": [
+    {
+      "id": "90078",
+      "worker_id": "90016",
+      "full_name": "مشرف خالد",
+      "worker_code": "R04",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:56",
+      "method": "qr"
+    },
+    {
+      "id": "150001",
+      "worker_id": "90016",
+      "full_name": "مشرف خالد",
+      "worker_code": "R04",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:52:07",
+      "method": "qr"
+    },
+    {
+      "id": "90079",
+      "worker_id": "90017",
+      "full_name": "احمد هارون",
+      "worker_code": "R05",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:19:02",
+      "method": "qr"
+    },
+    {
+      "id": "150002",
+      "worker_id": "90017",
+      "full_name": "احمد هارون",
+      "worker_code": "R05",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:52:13",
+      "method": "qr"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tfull_name\tworker_code\tgroup_name\tevent_type\tevent_time\tmethod\n90078\t90016\tمشرف خالد\tR04\tمجموعة كاشيرات المطاعم\tcheck_in\t2026-02-07 08:18:56\tqr\n150001\t90016\tمشرف خالد\tR04\tمجموعة كاشيرات المطاعم\tcheck_out\t2026-02-07 11:52:07\tqr\n90079\t90017\tاحمد هارون\tR05\tمجموعة كاشيرات المطاعم\tcheck_in\t2026-02-07 08:19:02\tqr\n150002\t90017\tاحمد هارون\tR05\tمجموعة كاشيرات المطاعم\tcheck_out\t2026-02-07 11:52:13\tqr\n",
+  "stderr": "",
+  "execution_time_ms": 1702
+}
