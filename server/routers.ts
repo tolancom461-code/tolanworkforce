@@ -1853,6 +1853,45 @@ export const appRouter = router({
         return await db.deleteBatch(input.batchId);
       }),
     
+    // Export batch details to Excel
+    exportBatchDetailsToExcel: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .mutation(async ({ input }) => {
+        const { generateBatchDetailsExcel } = await import('./excel-export');
+        
+        // Get batch details
+        const batch = await db.getPayrollBatchById(input.batchId);
+        if (!batch) throw new Error('دفعة الراتب غير موجودة');
+        
+        // Get all workers in this batch
+        const items = await db.getPayrollBatchItems(input.batchId);
+        const workers = await Promise.all(
+          items.map(async (item: any) => {
+            const worker = await db.getWorkerById(item.workerId);
+            return {
+              workerId: item.workerId,
+              workerName: worker?.fullName || 'غير معروف',
+              workerCode: worker?.code || '-',
+            };
+          })
+        );
+        
+        // Generate Excel file
+        const buffer = await generateBatchDetailsExcel(
+          input.batchId,
+          batch.batchId || `Batch-${input.batchId}`,
+          batch.periodStart,
+          batch.periodEnd,
+          workers
+        );
+        
+        // Return base64 encoded buffer
+        return {
+          data: buffer.toString('base64'),
+          filename: `تفاصيل-${batch.batchId || input.batchId}.xlsx`,
+        };
+      }),
+    
     // Force unlock payroll batch (requires FORCE_UNLOCK_PAYROLL permission)
     forceUnlock: protectedProcedure
       .input(z.object({

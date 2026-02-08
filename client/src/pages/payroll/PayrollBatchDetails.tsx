@@ -82,8 +82,34 @@ export default function PayrollBatchDetails() {
 
   // Daily Override Mutation - REMOVED (feature deprecated)
 
-  // Export feature removed
-  const exportMutation = { mutate: () => { toast.info("ميزة التصدير غير متاحة حالياً"); }, isPending: false };
+  // Export to Excel mutation
+  const exportMutation = trpc.payroll.exportBatchDetailsToExcel.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('تم تصدير الملف بنجاح');
+    },
+    onError: (error) => {
+      toast.error(`خطأ في التصدير: ${error.message}`);
+    },
+  });
   const updateAttendanceMutation = trpc.attendance.updateEvent.useMutation();
 
   const handleEdit = (item: any) => {
@@ -315,7 +341,7 @@ export default function PayrollBatchDetails() {
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
-                onClick={() => exportMutation.mutate()} 
+                onClick={() => exportMutation.mutate({ batchId })} 
                 disabled={exportMutation.isPending}
               >
                 {exportMutation.isPending ? (

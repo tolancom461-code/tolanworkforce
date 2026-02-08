@@ -429,4 +429,14 @@
 - [x] تحديث getAttendanceForWorkerPeriod لإرجاع actualWorkMinutes - تم
 - [x] تحديث Frontend لعرض عمود "دقائق العمل الفعلية" - تم إضافته في daily details dialog
 - [x] اختبار العرض الجديد - السيرفر يعمل بنجاح
+- [x] حفظ checkpoint - تم (07b229d7)
+
+## تصدير التفاصيل اليومية لدفعة الرواتب إلى Excel
+
+- [x] تحليل البيانات المطلوبة للتصدير - اسم العامل، التاريخ، الحضور، الانصراف، دقائق العمل الفعلية، المبلغ، الخصومات، الإضافات
+- [x] تثبيت مكتبة ExcelJS في Backend - تم
+- [x] إضافة procedure exportBatchDetailsToExcel في server/routers.ts - تم
+- [x] إضافة دالة generateBatchDetailsExcel في server/excel-export.ts - تم
+- [x] إضافة زر "تصدير إلى Excel" في صفحة PayrollBatchDetails.tsx - تم
+- [x] اختبار التصدير وتنزيل الملف - السيرفر يعمل بنجاح
 - [ ] حفظ checkpoint
