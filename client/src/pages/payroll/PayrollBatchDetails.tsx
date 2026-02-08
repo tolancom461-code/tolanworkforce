@@ -690,7 +690,7 @@ export default function PayrollBatchDetails() {
                   
                   // Refresh data
                   if (selectedWorker) {
-                    const data = await trpc.payroll.getAttendanceForWorkerPeriod.query({
+                    const data = await utils.payroll.getAttendanceForWorkerPeriod.fetch({
                       workerId: selectedWorker.workerId,
                       periodStart: batch?.batch?.periodStart?.toISOString().split('T')[0] || '',
                       periodEnd: batch?.batch?.periodEnd?.toISOString().split('T')[0] || '',

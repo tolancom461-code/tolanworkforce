@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 
 export default function PayrollBatchCreateSimple() {
+  const utils = trpc.useUtils();
   const [, setLocation] = useLocation();
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
@@ -31,7 +32,7 @@ export default function PayrollBatchCreateSimple() {
     
     // Check if groups in this cost center have schedules
     try {
-      const groupsWithoutSchedules = await trpc.groups.listWithoutSchedules.query();
+      const groupsWithoutSchedules = await utils.groups.listWithoutSchedules.fetch();
       const selectedCostCenterGroups = groupsWithoutSchedules.filter(
         (g: any) => g.costCenterId === parseInt(costCenterId)
       );

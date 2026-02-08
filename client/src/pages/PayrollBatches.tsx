@@ -38,6 +38,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function PayrollBatches() {
+  const utils = trpc.useUtils();
   const hasPermission = () => true; // All users have full permissions
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -266,7 +267,7 @@ export default function PayrollBatches() {
     // Check if selected group has schedules
     if (selectedGroup !== 'all') {
       const groupId = parseInt(selectedGroup);
-      const hasSchedules = await trpc.groups.checkHasSchedules.query({ groupId });
+      const hasSchedules = await utils.groups.checkHasSchedules.fetch({ groupId });
       
       if (!hasSchedules) {
         toast.error('المجموعة المختارة لا تحتوي على جدول أسبوعي. يرجى إضافة جدول أولاً.', {

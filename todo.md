@@ -387,4 +387,13 @@
 - [x] إصلاح أخطاء PayrollBatchCreate.tsx - تم إصلاح 1 خطأ
 - [x] اختبار النظام بعد الإصلاح - السيرفر يعمل بنجاح
 - [x] التحقق من عدم وجود أخطاء TypeScript - تبقى 3 أخطاء (false positives)
+- [x] حفظ checkpoint - تم (6c7b1d72)
+
+## إصلاح الأخطاء الـ 3 المتبقية في tRPC
+
+- [x] تحليل الأخطاء الـ 3 المتبقية بدقة - المشكلة: استخدام .query() بدلاً من utils.fetch()
+- [x] إصلاح خطأ PayrollBatches.tsx - استخدام utils.groups.checkHasSchedules.fetch()
+- [x] إصلاح خطأ PayrollBatchCreateSimple.tsx - استخدام utils.groups.listWithoutSchedules.fetch()
+- [x] إصلاح خطأ PayrollBatchDetails.tsx - استخدام utils.payroll.getAttendanceForWorkerPeriod.fetch()
+- [x] التحقق من عدم وجود أخطاء TypeScript - 0 أخطاء! 🎉
 - [ ] حفظ checkpoint
