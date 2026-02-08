@@ -15,6 +15,13 @@
       "when": 1770492943010,
       "tag": "0001_flimsy_jack_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770581091100,
+      "tag": "0002_legal_tomorrow_man",
+      "breakpoints": true
     }
   ]
 }

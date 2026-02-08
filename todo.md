@@ -588,3 +588,13 @@
 - [x] اختبار النظام بالكامل - يعمل بنجاح
 - [x] إنشاء تقرير شامل بنتائج الفحص - comprehensive_audit_report.md
 - [x] حفظ checkpoint نهائي
+
+
+## إضافة Foreign Keys لتعزيز سلامة البيانات
+- [x] تحديد جميع العلاقات بين الجداول - 29 علاقة
+- [x] تصميم Foreign Keys مع ON DELETE و ON UPDATE المناسبة
+- [x] تحديث Schema في drizzle/schema.ts - 13 جدول
+- [x] تطبيق التغييرات على قاعدة البيانات - 24 FK مضافة
+- [x] اختبار Foreign Keys - تعمل بنجاح
+- [x] حفظ checkpointمن عدم وجود بيانات يتيمة
+- [ ] حفظ checkpoint

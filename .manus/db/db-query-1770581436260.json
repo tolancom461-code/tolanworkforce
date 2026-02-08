@@ -1,0 +1,178 @@
+{
+  "query": "SELECT \n  TABLE_NAME,\n  COLUMN_NAME,\n  CONSTRAINT_NAME,\n  REFERENCED_TABLE_NAME,\n  REFERENCED_COLUMN_NAME\nFROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE\nWHERE TABLE_SCHEMA = DATABASE()\n  AND REFERENCED_TABLE_NAME IS NOT NULL\nORDER BY TABLE_NAME, COLUMN_NAME;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  TABLE_NAME,\n  COLUMN_NAME,\n  CONSTRAINT_NAME,\n  REFERENCED_TABLE_NAME,\n  REFERENCED_COLUMN_NAME\nFROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE\nWHERE TABLE_SCHEMA = DATABASE()\n  AND REFERENCED_TABLE_NAME IS NOT NULL\nORDER BY TABLE_NAME, COLUMN_NAME;",
+  "rows": [
+    {
+      "TABLE_NAME": "attendance_events",
+      "COLUMN_NAME": "verified_by",
+      "CONSTRAINT_NAME": "fk_attendance_verified_by",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "attendance_events",
+      "COLUMN_NAME": "worker_id",
+      "CONSTRAINT_NAME": "fk_attendance_worker",
+      "REFERENCED_TABLE_NAME": "workers",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "audit_log",
+      "COLUMN_NAME": "user_id",
+      "CONSTRAINT_NAME": "fk_audit_log_user",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "group_schedules",
+      "COLUMN_NAME": "group_id",
+      "CONSTRAINT_NAME": "fk_group_schedules_group",
+      "REFERENCED_TABLE_NAME": "groups",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "groups",
+      "COLUMN_NAME": "cost_center_id",
+      "CONSTRAINT_NAME": "fk_groups_cost_center",
+      "REFERENCED_TABLE_NAME": "cost_centers",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "groups",
+      "COLUMN_NAME": "supervisor_id",
+      "CONSTRAINT_NAME": "fk_groups_supervisor",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "pay_overrides",
+      "COLUMN_NAME": "approved_by",
+      "CONSTRAINT_NAME": "fk_pay_overrides_approved_by",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "pay_overrides",
+      "COLUMN_NAME": "created_by",
+      "CONSTRAINT_NAME": "fk_pay_overrides_created_by",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "pay_overrides",
+      "COLUMN_NAME": "worker_id",
+      "CONSTRAINT_NAME": "fk_pay_overrides_worker",
+      "REFERENCED_TABLE_NAME": "workers",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batch_corrections",
+      "COLUMN_NAME": "batch_id",
+      "CONSTRAINT_NAME": "fk_batch_corrections_batch",
+      "REFERENCED_TABLE_NAME": "payroll_batches",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batch_items",
+      "COLUMN_NAME": "batch_id",
+      "CONSTRAINT_NAME": "fk_payroll_items_batch",
+      "REFERENCED_TABLE_NAME": "payroll_batches",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batch_items",
+      "COLUMN_NAME": "worker_id",
+      "CONSTRAINT_NAME": "fk_payroll_items_worker",
+      "REFERENCED_TABLE_NAME": "workers",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batch_notes",
+      "COLUMN_NAME": "batch_id",
+      "CONSTRAINT_NAME": "fk_batch_notes_batch",
+      "REFERENCED_TABLE_NAME": "payroll_batches",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batch_notes",
+      "COLUMN_NAME": "worker_id",
+      "CONSTRAINT_NAME": "fk_batch_notes_worker",
+      "REFERENCED_TABLE_NAME": "workers",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batches",
+      "COLUMN_NAME": "approved_by",
+      "CONSTRAINT_NAME": "fk_payroll_batches_approved_by",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batches",
+      "COLUMN_NAME": "cost_center_id",
+      "CONSTRAINT_NAME": "fk_payroll_batches_cost_center",
+      "REFERENCED_TABLE_NAME": "cost_centers",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batches",
+      "COLUMN_NAME": "created_by",
+      "CONSTRAINT_NAME": "fk_payroll_batches_created_by",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batches",
+      "COLUMN_NAME": "group_id",
+      "CONSTRAINT_NAME": "fk_payroll_batches_group",
+      "REFERENCED_TABLE_NAME": "groups",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "payroll_batches",
+      "COLUMN_NAME": "unlocked_by",
+      "CONSTRAINT_NAME": "fk_payroll_batches_unlocked_by",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "worker_archive",
+      "COLUMN_NAME": "archived_by",
+      "CONSTRAINT_NAME": "fk_worker_archive_user",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "worker_archive",
+      "COLUMN_NAME": "worker_id",
+      "CONSTRAINT_NAME": "fk_worker_archive_worker",
+      "REFERENCED_TABLE_NAME": "workers",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "worker_daily_finance",
+      "COLUMN_NAME": "locked_batch_id",
+      "CONSTRAINT_NAME": "fk_daily_finance_locked_batch",
+      "REFERENCED_TABLE_NAME": "payroll_batches",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "worker_daily_finance",
+      "COLUMN_NAME": "worker_id",
+      "CONSTRAINT_NAME": "fk_daily_finance_worker",
+      "REFERENCED_TABLE_NAME": "workers",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "TABLE_NAME": "workers",
+      "COLUMN_NAME": "group_id",
+      "CONSTRAINT_NAME": "fk_workers_group",
+      "REFERENCED_TABLE_NAME": "groups",
+      "REFERENCED_COLUMN_NAME": "id"
+    }
+  ],
+  "messages": [],
+  "stdout": "TABLE_NAME\tCOLUMN_NAME\tCONSTRAINT_NAME\tREFERENCED_TABLE_NAME\tREFERENCED_COLUMN_NAME\nattendance_events\tverified_by\tfk_attendance_verified_by\tusers\tid\nattendance_events\tworker_id\tfk_attendance_worker\tworkers\tid\naudit_log\tuser_id\tfk_audit_log_user\tusers\tid\ngroup_schedules\tgroup_id\tfk_group_schedules_group\tgroups\tid\ngroups\tcost_center_id\tfk_groups_cost_center\tcost_centers\tid\ngroups\tsupervisor_id\tfk_groups_supervisor\tusers\tid\npay_overrides\tapproved_by\tfk_pay_overrides_approved_by\tusers\tid\npay_overrides\tcreated_by\tfk_pay_overrides_created_by\tusers\tid\npay_overrides\tworker_id\tfk_pay_overrides_worker\tworkers\tid\npayroll_batch_corrections\tbatch_id\tfk_batch_corrections_batch\tpayroll_batches\tid\npayroll_batch_items\tbatch_id\tfk_payroll_items_batch\tpayroll_batches\tid\npayroll_batch_items\tworker_id\tfk_payroll_items_worker\tworkers\tid\npayroll_batch_notes\tbatch_id\tfk_batch_notes_batch\tpayroll_batches\tid\npayroll_batch_notes\tworker_id\tfk_batch_notes_worker\tworkers\tid\npayroll_batches\tapproved_by\tfk_payroll_batches_approved_by\tusers\tid\npayroll_batches\tcost_center_id\tfk_payroll_batches_cost_center\tcost_centers\tid\npayroll_batches\tcreated_by\tfk_payroll_batches_created_by\tusers\tid\npayroll_batches\tgroup_id\tfk_payroll_batches_group\tgroups\tid\npayroll_batches\tunlocked_by\tfk_payroll_batches_unlocked_by\tusers\tid\nworker_archive\tarchived_by\tfk_worker_archive_user\tusers\tid\nworker_archive\tworker_id\tfk_worker_archive_worker\tworkers\tid\nworker_daily_finance\tlocked_batch_id\tfk_daily_finance_locked_batch\tpayroll_batches\tid\nworker_daily_finance\tworker_id\tfk_daily_finance_worker\tworkers\tid\nworkers\tgroup_id\tfk_workers_group\tgroups\tid\n",
+  "stderr": "",
+  "execution_time_ms": 1601
+}

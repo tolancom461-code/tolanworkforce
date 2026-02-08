@@ -49,8 +49,8 @@ export const groups = mysqlTable("groups", {
   id: int("id").autoincrement().primaryKey(),
   code: varchar("code", { length: 50 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
-  costCenterId: int("cost_center_id"),
-  supervisorId: int("supervisor_id"),
+  costCenterId: int("cost_center_id").references(() => costCenters.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  supervisorId: int("supervisor_id").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   dailyRate: decimal("daily_rate", { precision: 10, scale: 2 }),
   workHours: decimal("work_hours", { precision: 4, scale: 2 }).default("8.00"),
   // New flexible settings (NULL by default)
@@ -72,7 +72,7 @@ export const workers = mysqlTable("workers", {
   fullName: varchar("full_name", { length: 255 }).notNull(),
   nationalId: varchar("national_id", { length: 20 }),
   phone: varchar("phone", { length: 20 }),
-  groupId: int("group_id"),
+  groupId: int("group_id").references(() => groups.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   jobId: int("job_id"),
   dailyRate: decimal("daily_rate", { precision: 10, scale: 2 }),
   photoUrl: text("photo_url"),
@@ -91,10 +91,10 @@ export const workers = mysqlTable("workers", {
 
 export const workerArchive = mysqlTable("worker_archive", {
   id: int("id").autoincrement().primaryKey(),
-  workerId: int("worker_id").notNull(),
+  workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   archivedAt: timestamp("archived_at").defaultNow().notNull(),
   reason: text("reason"),
-  archivedBy: int("archived_by"),
+  archivedBy: int("archived_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
 });
 
 // ============================================
@@ -111,11 +111,11 @@ export const workDays = mysqlTable("work_days", {
 
 export const attendanceEvents = mysqlTable("attendance_events", {
   id: int("id").autoincrement().primaryKey(),
-  workerId: int("worker_id").notNull(),
+  workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   eventType: mysqlEnum("event_type", ["check_in", "check_out"]).notNull(),
   eventTime: timestamp("event_time").notNull(),
   deviceId: int("device_id"),
-  verifiedBy: int("verified_by"),
+  verifiedBy: int("verified_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   method: varchar("method", { length: 50 }),
   note: text("note"),
   isAutomatic: boolean("is_automatic").default(false),
@@ -148,15 +148,15 @@ export const deductionRules = mysqlTable("deduction_rules", {
 
 export const payOverrides = mysqlTable("pay_overrides", {
   id: int("id").autoincrement().primaryKey(),
-  workerId: int("worker_id").notNull(),
+  workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   overrideDate: date("override_date").notNull(),
   overrideType: mysqlEnum("override_type", ["bonus", "deduction", "advance", "emergency_call"]).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   reason: text("reason"),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending"),
-  approvedBy: int("approved_by"),
+  approvedBy: int("approved_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   approvedAt: timestamp("approved_at"),
-  createdBy: int("created_by"),
+  createdBy: int("created_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
@@ -171,7 +171,7 @@ export const payOverrides = mysqlTable("pay_overrides", {
 
 export const workerDailyFinance = mysqlTable("worker_daily_finance", {
   id: int("id").autoincrement().primaryKey(),
-  workerId: int("worker_id").notNull(),
+  workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   workDate: date("work_date").notNull(),
   checkInTime: timestamp("check_in_time"),
   checkOutTime: timestamp("check_out_time"),
@@ -189,7 +189,7 @@ export const workerDailyFinance = mysqlTable("worker_daily_finance", {
   earlyLeaveMinutes: int("early_leave_minutes").default(0),
   notes: text("notes"),
   // Double payment protection: links day to approved batch
-  lockedBatchId: int("locked_batch_id"), // NULL = unlocked, set when batch is approved
+  lockedBatchId: int("locked_batch_id").references(() => payrollBatches.id, { onDelete: 'set null', onUpdate: 'cascade' }), // NULL = unlocked, set when batch is approved
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
@@ -204,8 +204,8 @@ export const payrollBatches = mysqlTable("payroll_batches", {
   batchCode: varchar("batch_code", { length: 50 }).notNull().unique(),
   periodStart: date("period_start").notNull(),
   periodEnd: date("period_end").notNull(),
-  groupId: int("group_id"),
-  costCenterId: int("cost_center_id"),
+  groupId: int("group_id").references(() => groups.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  costCenterId: int("cost_center_id").references(() => costCenters.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).default("0.00"),
   totalWorkers: int("total_workers").default(0),
   totalDeductions: decimal("total_deductions", { precision: 12, scale: 2 }).default("0.00"),
@@ -223,15 +223,15 @@ export const payrollBatches = mysqlTable("payroll_batches", {
   ]).default("draft"),
   rejectionCount: int("rejection_count").default(0),
   notes: text("notes"),
-  approvedBy: int("approved_by"),
+  approvedBy: int("approved_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   approvedAt: timestamp("approved_at"),
-  createdBy: int("created_by"),
+  createdBy: int("created_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
   // Force unlock fields
   isUnlocked: boolean("is_unlocked").default(false),
   unlockReason: text("unlock_reason"),
-  unlockedBy: int("unlocked_by"),
+  unlockedBy: int("unlocked_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   unlockedAt: timestamp("unlocked_at"),
 }, (table) => ({
   statusIdx: index("idx_payroll_batches_status").on(table.status),
@@ -242,8 +242,8 @@ export const payrollBatches = mysqlTable("payroll_batches", {
 
 export const payrollBatchItems = mysqlTable("payroll_batch_items", {
   id: int("id").autoincrement().primaryKey(),
-  batchId: int("batch_id").notNull(),
-  workerId: int("worker_id").notNull(),
+  batchId: int("batch_id").notNull().references(() => payrollBatches.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   daysWorked: int("days_worked").default(0),
   baseAmount: decimal("base_amount", { precision: 10, scale: 2 }).default("0.00"),
   totalDeductions: decimal("total_deductions", { precision: 10, scale: 2 }).default("0.00"),
@@ -261,12 +261,12 @@ export const payrollBatchItems = mysqlTable("payroll_batch_items", {
 // Payroll Batch Notes (ملاحظات المراجعة)
 export const payrollBatchNotes = mysqlTable("payroll_batch_notes", {
   id: int("id").autoincrement().primaryKey(),
-  batchId: int("batch_id").notNull(),
-  reviewerId: int("reviewer_id").notNull(),
+  batchId: int("batch_id").notNull().references(() => payrollBatches.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  reviewerId: int("reviewer_id").notNull().references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   reviewerRole: varchar("reviewer_role", { length: 50 }).notNull(),
   noteType: mysqlEnum("note_type", ["critical", "warning", "info"]).default("info"),
   errorLocation: varchar("error_location", { length: 255 }),
-  workerId: int("worker_id"),
+  workerId: int("worker_id").references(() => workers.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   fieldName: varchar("field_name", { length: 100 }),
   note: text("note").notNull(),
   attachmentUrl: varchar("attachment_url", { length: 500 }),
@@ -276,8 +276,8 @@ export const payrollBatchNotes = mysqlTable("payroll_batch_notes", {
 // Payroll Batch Corrections (سجل التصحيحات)
 export const payrollBatchCorrections = mysqlTable("payroll_batch_corrections", {
   id: int("id").autoincrement().primaryKey(),
-  batchId: int("batch_id").notNull(),
-  correctorId: int("corrector_id").notNull(),
+  batchId: int("batch_id").notNull().references(() => payrollBatches.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  correctorId: int("corrector_id").notNull().references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   correctionNote: text("correction_note"),
   previousStatus: varchar("previous_status", { length: 50 }),
   newStatus: varchar("new_status", { length: 50 }),
@@ -290,7 +290,7 @@ export const payrollBatchCorrections = mysqlTable("payroll_batch_corrections", {
 
 export const auditLog = mysqlTable("audit_log", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id"),
+  userId: int("user_id").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   action: varchar("action", { length: 100 }).notNull(),
   tableName: varchar("table_name", { length: 100 }),
   recordId: int("record_id"),
@@ -328,8 +328,8 @@ export type InsertWorker = typeof workers.$inferInsert;
 
 export const operationalFlags = mysqlTable("operational_flags", {
   id: int("id").autoincrement().primaryKey(),
-  workerId: int("worker_id").notNull(),
-  groupId: int("group_id"),
+  workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  groupId: int("group_id").references(() => groups.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   flagDate: date("flag_date").notNull(), // تاريخ البلاغ
   description: text("description").notNull(), // وصف الاستثناء/التعديل
   status: mysqlEnum("status", [
@@ -337,10 +337,10 @@ export const operationalFlags = mysqlTable("operational_flags", {
     "approved",  // تم الاعتماد
     "rejected"   // تم الرفض
   ]).default("pending").notNull(),
-  approvedBy: int("approved_by"), // من اعتمد البلاغ
+  approvedBy: int("approved_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }), // من اعتمد البلاغ
   approvedAt: timestamp("approved_at"), // متى تم الاعتماد
   approvalNotes: text("approval_notes"), // ملاحظات الاعتماد/الرفض
-  createdBy: int("created_by").notNull(), // من أنشأ البلاغ
+  createdBy: int("created_by").notNull().references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }), // من أنشأ البلاغ
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
@@ -351,7 +351,7 @@ export type InsertOperationalFlag = typeof operationalFlags.$inferInsert;
 // Group Schedules - Flexible Weekly Schedules (جداول الورديات المتغيرة)
 export const groupSchedules = mysqlTable("group_schedules", {
   id: int("id").autoincrement().primaryKey(),
-  groupId: int("group_id").notNull(),
+  groupId: int("group_id").notNull().references(() => groups.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   dayOfWeek: int("day_of_week").notNull(), // 0=Sunday, 1=Monday, ..., 6=Saturday
   startTime: varchar("start_time", { length: 10 }).notNull(), // HH:MM format
   endTime: varchar("end_time", { length: 10 }).notNull(), // HH:MM format

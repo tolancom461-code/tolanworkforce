@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `payroll_batch_items` \nADD CONSTRAINT `fk_payroll_items_batch` \nFOREIGN KEY (`batch_id`) REFERENCES `payroll_batches`(`id`) \nON DELETE CASCADE ON UPDATE CASCADE;\n\nALTER TABLE `payroll_batch_items` \nADD CONSTRAINT `fk_payroll_items_worker` \nFOREIGN KEY (`worker_id`) REFERENCES `workers`(`id`) \nON DELETE CASCADE ON UPDATE CASCADE;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute ALTER TABLE `payroll_batch_items` \nADD CONSTRAINT `fk_payroll_items_batch` \nFOREIGN KEY (`batch_id`) REFERENCES `payroll_batches`(`id`) \nON DELETE CASCADE ON UPDATE CASCADE;\n\nALTER TABLE `payroll_batch_items` \nADD CONSTRAINT `fk_payroll_items_worker` \nFOREIGN KEY (`worker_id`) REFERENCES `workers`(`id`) \nON DELETE CASCADE ON UPDATE CASCADE;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2736
+}

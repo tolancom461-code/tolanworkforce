@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `group_schedules` \nADD CONSTRAINT `fk_group_schedules_group` \nFOREIGN KEY (`group_id`) REFERENCES `groups`(`id`) \nON DELETE CASCADE ON UPDATE CASCADE;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute ALTER TABLE `group_schedules` \nADD CONSTRAINT `fk_group_schedules_group` \nFOREIGN KEY (`group_id`) REFERENCES `groups`(`id`) \nON DELETE CASCADE ON UPDATE CASCADE;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2226
+}

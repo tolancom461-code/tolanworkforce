@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as total_foreign_keys \nFROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE\nWHERE TABLE_SCHEMA = DATABASE()\n  AND REFERENCED_TABLE_NAME IS NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT COUNT(*) as total_foreign_keys \nFROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE\nWHERE TABLE_SCHEMA = DATABASE()\n  AND REFERENCED_TABLE_NAME IS NOT NULL;",
+  "rows": [
+    {
+      "total_foreign_keys": "24"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_foreign_keys\n24\n",
+  "stderr": "",
+  "execution_time_ms": 1607
+}
