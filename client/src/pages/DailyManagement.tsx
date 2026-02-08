@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -37,12 +37,23 @@ export default function DailyManagement() {
     status: "present" as const,
     notes: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+  
+  // Reset page when date changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedDate]);
 
   // Queries
-  const { data: attendanceRecords = [], isLoading, refetch } = trpc.attendance.getDailyRecords.useQuery(
-    { date: selectedDate },
+  const { data: attendanceData, isLoading, refetch } = trpc.attendance.getDailyRecordsWithPagination.useQuery(
+    { date: selectedDate, page: currentPage, limit: pageSize },
     { enabled: !!selectedDate }
   );
+  
+  const attendanceRecords = attendanceData?.data || [];
+  const totalPages = attendanceData?.totalPages || 1;
+  const total = attendanceData?.total || 0;
 
   // Mutations
   const updateRecordMutation = trpc.attendance.updateDailyRecord.useMutation({
@@ -226,6 +237,57 @@ export default function DailyManagement() {
             </div>
           )}
         </CardContent>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              عرض {((currentPage - 1) * pageSize) + 1} إلى {Math.min(currentPage * pageSize, total)} من {total} سجل
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                السابق
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                التالي
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Edit Dialog */}

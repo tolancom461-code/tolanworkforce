@@ -691,6 +691,87 @@ export async function getWorkerByManualCode(code: string) {
   return worker || null;
 }
 
+// New paginated version
+export async function getTodayAttendanceWithPagination(groupId?: number, dateStr?: string, page: number = 1, limit: number = 20) {
+  const db = await getDb();
+  if (!db) return { data: [], total: 0, totalPages: 0 };
+
+  const { attendanceEvents, workers } = await import('../drizzle/schema');
+  
+  // Use provided date or default to today
+  const today = dateStr ? new Date(dateStr) : new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  // Build where conditions
+  const whereConditions = [
+    gte(attendanceEvents.eventTime, today),
+    lt(attendanceEvents.eventTime, tomorrow)
+  ];
+  
+  if (groupId) {
+    whereConditions.push(eq(workers.groupId, groupId));
+  }
+  
+  // Get all events for today with pagination
+  const events = await db
+    .select({
+      id: attendanceEvents.id,
+      workerId: attendanceEvents.workerId,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      groupId: workers.groupId,
+      eventType: attendanceEvents.eventType,
+      eventTime: attendanceEvents.eventTime,
+      method: attendanceEvents.method,
+    })
+    .from(attendanceEvents)
+    .innerJoin(workers, eq(attendanceEvents.workerId, workers.id))
+    .where(and(...whereConditions))
+    .orderBy(attendanceEvents.workerId, attendanceEvents.eventTime);
+  
+  // Group by worker and merge check_in/check_out
+  const workerMap = new Map();
+  
+  for (const event of events) {
+    if (!workerMap.has(event.workerId)) {
+      workerMap.set(event.workerId, {
+        workerId: event.workerId,
+        workerName: event.workerName,
+        workerCode: event.workerCode,
+        groupId: event.groupId,
+        checkInId: null,
+        checkInTime: null,
+        checkInMethod: null,
+        checkOutId: null,
+        checkOutTime: null,
+        checkOutMethod: null,
+      });
+    }
+    
+    const record = workerMap.get(event.workerId);
+    if (event.eventType === 'check_in') {
+      record.checkInId = event.id;
+      record.checkInTime = event.eventTime;
+      record.checkInMethod = event.method;
+    } else if (event.eventType === 'check_out') {
+      record.checkOutId = event.id;
+      record.checkOutTime = event.eventTime;
+      record.checkOutMethod = event.method;
+    }
+  }
+  
+  const allResults = Array.from(workerMap.values());
+  const total = allResults.length;
+  const totalPages = Math.ceil(total / limit);
+  const offset = (page - 1) * limit;
+  const data = allResults.slice(offset, offset + limit);
+  
+  return { data, total, totalPages };
+}
+
+// Keep old function for backward compatibility
 export async function getTodayAttendance(groupId?: number, dateStr?: string) {
   const db = await getDb();
   if (!db) return [];
@@ -3690,7 +3771,49 @@ export async function updateUserRole(userId: number, role: 'user' | 'admin') {
 // ============================================
 
 /**
- * Get all attendance records for a specific date
+ * Get all attendance records for a specific date (with pagination)
+ */
+export async function getDailyAttendanceRecordsWithPagination(date: string, page: number = 1, limit: number = 20) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const allWorkers = await db.select().from(workers);
+  const events = await db
+    .select()
+    .from(attendanceEvents)
+    .where(sql`DATE(${attendanceEvents.eventTime}) = ${date}`);
+
+  const recordMap = new Map();
+  
+  for (const worker of allWorkers) {
+    const workerEvents = events.filter((e: any) => e.workerId === worker.id);
+    const checkInEvent = workerEvents.find(e => e.eventType === 'check_in');
+    const checkOutEvent = workerEvents.find(e => e.eventType === 'check_out');
+    
+    recordMap.set(worker.id, {
+      id: worker.id,
+      workerId: worker.id,
+      workerName: worker.fullName,
+      workerCode: worker.code,
+      date: date,
+      checkInTime: checkInEvent ? new Date(checkInEvent.eventTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : null,
+      checkOutTime: checkOutEvent ? new Date(checkOutEvent.eventTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : null,
+      status: workerEvents.length > 0 ? 'present' : 'absent',
+      notes: null,
+    });
+  }
+
+  const allResults = Array.from(recordMap.values());
+  const total = allResults.length;
+  const totalPages = Math.ceil(total / limit);
+  const offset = (page - 1) * limit;
+  const data = allResults.slice(offset, offset + limit);
+
+  return { data, total, totalPages };
+}
+
+/**
+ * Get all attendance records for a specific date (old version - kept for backward compatibility)
  */
 export async function getDailyAttendanceRecords(date: string) {
   const db = await getDb();

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +29,13 @@ export default function AttendanceLog() {
   const [editCheckOutTime, setEditCheckOutTime] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+  
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedGroup, selectedDate]);
   
   // Check if selected date is locked
   const { data: dateLockStatus } = trpc.attendance.checkDateLocked.useQuery(
@@ -39,10 +46,16 @@ export default function AttendanceLog() {
   const { data: allGroups } = trpc.groups.list.useQuery();
   
   const groups = allGroups;
-  const { data: todayLog, isLoading, refetch } = trpc.attendance.todayLog.useQuery({
+  const { data: todayLogData, isLoading, refetch } = trpc.attendance.todayLogWithPagination.useQuery({
     groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined,
-    date: selectedDate
+    date: selectedDate,
+    page: currentPage,
+    limit: pageSize
   });
+  
+  const todayLog = todayLogData?.data || [];
+  const totalPages = todayLogData?.totalPages || 1;
+  const total = todayLogData?.total || 0;
   const { data: stats } = trpc.attendance.stats.useQuery({
     groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
   });
@@ -365,6 +378,57 @@ export default function AttendanceLog() {
             </div>
           )}
         </CardContent>
+        
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              عرض {((currentPage - 1) * pageSize) + 1} إلى {Math.min(currentPage * pageSize, total)} من {total} سجل
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                السابق
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                التالي
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Edit Dialog */}

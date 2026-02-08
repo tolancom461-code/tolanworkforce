@@ -862,7 +862,19 @@ export const appRouter = router({
         return { ...result, worker, eventType: nextEventType };
       }),
     
-    // Get today's attendance log
+    // Get today's attendance log (paginated)
+    todayLogWithPagination: protectedProcedure
+      .input(z.object({ 
+        groupId: z.number().optional(),
+        date: z.string().optional(), // Format: YYYY-MM-DD
+        page: z.number().default(1),
+        limit: z.number().default(20)
+      }))
+      .query(async ({ input }) => {
+        return await db.getTodayAttendanceWithPagination(input.groupId, input.date, input.page, input.limit);
+      }),
+    
+    // Get today's attendance log (old version - kept for backward compatibility)
     todayLog: protectedProcedure
       .input(z.object({ 
         groupId: z.number().optional(),
@@ -945,7 +957,18 @@ export const appRouter = router({
         return results;
       }),
 
-    // Get daily attendance records for a specific date
+    // Get daily attendance records for a specific date (paginated)
+    getDailyRecordsWithPagination: protectedProcedure
+      .input(z.object({
+        date: z.string(),
+        page: z.number().default(1),
+        limit: z.number().default(20)
+      }))
+      .query(async ({ input }) => {
+        return await db.getDailyAttendanceRecordsWithPagination(input.date, input.page, input.limit);
+      }),
+    
+    // Get daily attendance records for a specific date (old version - kept for backward compatibility)
     getDailyRecords: protectedProcedure
       .input(z.object({
         date: z.string(),
