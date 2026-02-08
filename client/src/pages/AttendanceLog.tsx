@@ -14,7 +14,8 @@ import {
   Calendar,
   Edit,
   Lock,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -58,6 +59,30 @@ export default function AttendanceLog() {
   const total = todayLogData?.total || 0;
   const { data: stats } = trpc.attendance.stats.useQuery({
     groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+  });
+
+  const exportMutation = trpc.attendance.exportToExcel.useMutation({
+    onSuccess: (result) => {
+      // Convert base64 to blob and download
+      const binaryString = atob(result.data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('تم تصدير سجل الحضور بنجاح');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'فشل تصدير سجل الحضور');
+    }
   });
 
   const updateEventMutation = trpc.attendance.updateEvent.useMutation({
@@ -203,6 +228,17 @@ export default function AttendanceLog() {
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
+          <Button 
+            variant="default" 
+            onClick={() => exportMutation.mutate({ 
+              date: selectedDate, 
+              groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined 
+            })}
+            disabled={exportMutation.isPending || !todayLog?.length}
+          >
+            <Download className="h-4 w-4 ml-2" />
+            تصدير Excel
+          </Button>
         </div>
       </div>
 
@@ -318,6 +354,7 @@ export default function AttendanceLog() {
                     <TableHead className="text-right">طريقة الحضور</TableHead>
                     <TableHead className="text-right">وقت الانصراف</TableHead>
                     <TableHead className="text-right">طريقة الانصراف</TableHead>
+                    <TableHead className="text-right">دقائق العمل</TableHead>
                     <TableHead className="text-right">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -355,6 +392,16 @@ export default function AttendanceLog() {
                       </TableCell>
                       <TableCell>
                         {getMethodBadge(record.checkOutMethod)}
+                      </TableCell>
+                      <TableCell className="font-mono font-semibold">
+                        {record.checkInTime && record.checkOutTime ? (
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-blue-600" />
+                            {Math.round((new Date(record.checkOutTime).getTime() - new Date(record.checkInTime).getTime()) / 60000)} دقيقة
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Button

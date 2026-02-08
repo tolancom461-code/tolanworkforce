@@ -1056,6 +1056,40 @@ export const appRouter = router({
           ctx.user.id
         );
       }),
+
+    // Export attendance log to Excel
+    exportToExcel: protectedProcedure
+      .input(z.object({
+        date: z.string(),
+        groupId: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { generateAttendanceLogExcel } = await import('./excel-export');
+        
+        // Get attendance log data
+        const records = await db.getTodayAttendance(
+          input.groupId,
+          input.date
+        );
+        
+        // Get group name if groupId is provided
+        let groupName = null;
+        if (input.groupId) {
+          const group = await db.getGroupById(input.groupId);
+          groupName = group?.name || null;
+        }
+        
+        const excelBuffer = await generateAttendanceLogExcel(
+          input.date,
+          groupName,
+          records
+        );
+        
+        return {
+          data: excelBuffer.toString('base64'),
+          filename: `attendance-log-${input.date}.xlsx`
+        };
+      }),
   }),
 
   // Work Days Management
