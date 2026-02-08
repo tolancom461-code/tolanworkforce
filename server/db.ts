@@ -1236,8 +1236,35 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   // Round deductions
   deductions = Math.round(deductions * 100) / 100;
   
+  // Calculate baseAmount based on actual work hours
+  let baseAmount = 0;
+  
+  if (actualCheckInTime && actualCheckOutTime) {
+    // Calculate actual work minutes (within shift boundaries)
+    const actualWorkMinutes = Math.round((actualCheckOutTime.getTime() - actualCheckInTime.getTime()) / (1000 * 60));
+    
+    if (groupDailyWage && groupWorkMinutes && groupWorkMinutes > 0) {
+      // Use minute-based calculation: (actual minutes / expected minutes) × daily wage
+      baseAmount = (actualWorkMinutes / groupWorkMinutes) * groupDailyWage;
+    } else {
+      // Fallback: assume 8-hour work day (480 minutes)
+      const expectedMinutes = 480;
+      baseAmount = (actualWorkMinutes / expectedMinutes) * dailyRate;
+    }
+    
+    // Round to 2 decimal places
+    baseAmount = Math.round(baseAmount * 100) / 100;
+  } else if (!checkIn && !checkOut) {
+    // Absent: no base amount
+    baseAmount = 0;
+  } else {
+    // Incomplete attendance (only check-in or only check-out)
+    // For now, give 0 base amount (can be adjusted manually)
+    baseAmount = 0;
+  }
+  
   return {
-    baseAmount: dailyRate,
+    baseAmount,
     deductions,
     bonuses: 0,
     lateMinutes,
