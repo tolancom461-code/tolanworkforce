@@ -1,0 +1,31 @@
+{
+  "query": "\nSELECT \n  id,\n  worker_id,\n  event_type,\n  event_time,\n  method\nFROM attendance_events\nWHERE DATE(event_time) = '2026-02-07'\nORDER BY event_time;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \nSELECT \n  id,\n  worker_id,\n  event_type,\n  event_time,\n  method\nFROM attendance_events\nWHERE DATE(event_time) = '2026-02-07'\nORDER BY event_time;\n",
+  "rows": [
+    {
+      "id": "90078",
+      "worker_id": "90016",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:56",
+      "method": "qr"
+    },
+    {
+      "id": "90079",
+      "worker_id": "90017",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:19:02",
+      "method": "qr"
+    },
+    {
+      "id": "150002",
+      "worker_id": "90017",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:52:00",
+      "method": "qr"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tevent_type\tevent_time\tmethod\n90078\t90016\tcheck_in\t2026-02-07 08:18:56\tqr\n90079\t90017\tcheck_in\t2026-02-07 08:19:02\tqr\n150002\t90017\tcheck_out\t2026-02-07 11:52:00\tqr\n",
+  "stderr": "",
+  "execution_time_ms": 1517
+}

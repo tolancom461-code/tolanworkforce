@@ -1,165 +1,139 @@
-import { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2, AlertTriangle, CheckCircle, Clock, Edit2, Check, X } from 'lucide-react';
-import { trpc } from '@/lib/trpc';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, Clock, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-interface PunchRecord {
-  id: number;
-  workerId: number;
-  workerName: string;
-  workerCode: string;
-  groupName: string;
-  eventType: 'check_in' | 'check_out';
-  eventTime: string;
-  method: string;
-  isAutomatic: boolean;
-  note?: string;
-  status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
-}
+export default function PunchesReviewCenter() {
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedGroup, setSelectedGroup] = useState<string>("all");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [timeInput, setTimeInput] = useState("");
 
-export function PunchesReviewCenter() {
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [selectedStatus, setSelectedStatus] = useState<string>('PENDING_REVIEW');
-  const [selectedRecord, setSelectedRecord] = useState<PunchRecord | null>(null);
-  const [editingNote, setEditingNote] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Fetch incomplete attendance records
+  const { data: incompleteRecords = [], isLoading, refetch } = trpc.attendance.getForReview.useQuery({
+    workDate: new Date(selectedDate),
+  });
 
-  // Fetch attendance events that need review
-  const { data: attendanceEvents, isLoading: eventsLoading, refetch: refetchEvents } = 
-    trpc.attendance.getForReview.useQuery(
-      {
-        workDate: new Date(selectedDate),
-        status: selectedStatus as 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED',
-      },
-      { enabled: !!selectedDate }
-    );
+  // Fetch groups for filter
+  const { data: groups = [] } = trpc.groups.list.useQuery();
 
-  // Filter records
-  const punchRecords = useMemo(() => {
-    if (!attendanceEvents) return [];
-    return attendanceEvents.map((event: any) => ({
-      id: event.id,
-      workerId: event.workerId,
-      workerName: event.worker?.fullName || 'Unknown',
-      workerCode: event.worker?.code || 'N/A',
-      groupName: event.worker?.group?.name || 'N/A',
-      eventType: event.eventType,
-      eventTime: event.eventTime,
-      method: event.method,
-      isAutomatic: event.method === 'auto_complete',
-      note: event.note,
-      status: event.status || 'PENDING_REVIEW',
-    }));
-  }, [attendanceEvents]);
+  // Mutations
+  const addCheckInMutation = trpc.attendance.addMissingCheckIn.useMutation({
+    onSuccess: () => {
+      toast.success("تم إضافة وقت الحضور بنجاح");
+      refetch();
+      setDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(`فشل إضافة وقت الحضور: ${error.message}`);
+    },
+  });
 
-  const pendingCount = punchRecords.filter((r: PunchRecord) => r.status === 'PENDING_REVIEW').length;
-  const approvedCount = punchRecords.filter((r: PunchRecord) => r.status === 'APPROVED').length;
-  const rejectedCount = punchRecords.filter((r: PunchRecord) => r.status === 'REJECTED').length;
+  const addCheckOutMutation = trpc.attendance.addMissingCheckOut.useMutation({
+    onSuccess: () => {
+      toast.success("تم إضافة وقت الانصراف بنجاح");
+      refetch();
+      setDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(`فشل إضافة وقت الانصراف: ${error.message}`);
+    },
+  });
 
-  const handleApprove = async (record: PunchRecord) => {
-    setLoading(true);
-    setError(null);
+  const deletePunchMutation = trpc.attendance.deletePunchEvent.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف البصمة بنجاح");
+      refetch();
+      setDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error(`فشل حذف البصمة: ${error.message}`);
+    },
+  });
 
-    try {
-      // Call approve mutation
-      const approveMutation = trpc.attendance.approvePunch.useMutation();
-      await approveMutation.mutateAsync({
-        id: record.id,
-        note: editingNote,
-      });
+  // Filter records by group
+  const filteredRecords = selectedGroup === "all" 
+    ? incompleteRecords 
+    : incompleteRecords.filter((r: any) => r.groupId?.toString() === selectedGroup);
 
-      toast.success('تم الموافقة على البصمة');
-      setSelectedRecord(null);
-      setEditingNote('');
-      await refetchEvents();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'حدث خطأ';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+  // Count incomplete records
+  const incompleteCount = filteredRecords.length;
+
+  const handleAddMissing = (record: any, type: 'check_in' | 'check_out') => {
+    setSelectedRecord({ ...record, actionType: type });
+    setTimeInput("");
+    setDialogOpen(true);
   };
 
-  const handleReject = async (record: PunchRecord) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Call reject mutation
-      const rejectMutation = trpc.attendance.rejectPunch.useMutation();
-      await rejectMutation.mutateAsync({
-        id: record.id,
-        note: editingNote,
-      });
-
-      toast.success('تم رفض البصمة');
-      setSelectedRecord(null);
-      setEditingNote('');
-      await refetchEvents();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'حدث خطأ';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+  const handleDelete = (record: any) => {
+    setSelectedRecord({ ...record, actionType: 'delete' });
+    setDialogOpen(true);
   };
 
-  const getMethodBadge = (method: string, isAutomatic: boolean) => {
-    if (isAutomatic) {
-      return <Badge variant="outline" className="bg-yellow-50 text-yellow-800">مكتمل تلقائي</Badge>;
-    }
+  const handleConfirmAction = () => {
+    if (!selectedRecord) return;
+
+    const workDate = new Date(selectedDate);
     
-    switch (method) {
-      case 'qr_code':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-800">QR Code</Badge>;
-      case 'biometric':
-        return <Badge variant="outline" className="bg-green-50 text-green-800">بيومتري</Badge>;
-      case 'manual':
-        return <Badge variant="outline" className="bg-purple-50 text-purple-800">يدوي</Badge>;
-      default:
-        return <Badge variant="outline">{method}</Badge>;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'PENDING_REVIEW':
-        return <Badge className="bg-yellow-100 text-yellow-800">قيد المراجعة</Badge>;
-      case 'APPROVED':
-        return <Badge className="bg-green-100 text-green-800">موافق عليه</Badge>;
-      case 'REJECTED':
-        return <Badge className="bg-red-100 text-red-800">مرفوض</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
+    if (selectedRecord.actionType === 'check_in') {
+      if (!timeInput) {
+        toast.error("يرجى إدخال وقت الحضور");
+        return;
+      }
+      const [hours, minutes] = timeInput.split(':');
+      const checkInDate = new Date(workDate);
+      checkInDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      addCheckInMutation.mutate({
+        workerId: selectedRecord.workerId,
+        checkInTime: checkInDate.toISOString(),
+        note: "تم الإضافة يدوياً من مركز مراجعة البصمات",
+      });
+    } else if (selectedRecord.actionType === 'check_out') {
+      if (!timeInput) {
+        toast.error("يرجى إدخال وقت الانصراف");
+        return;
+      }
+      const [hours, minutes] = timeInput.split(':');
+      const checkOutDate = new Date(workDate);
+      checkOutDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      addCheckOutMutation.mutate({
+        workerId: selectedRecord.workerId,
+        checkOutTime: checkOutDate.toISOString(),
+        note: "تم الإضافة يدوياً من مركز مراجعة البصمات",
+      });
+    } else if (selectedRecord.actionType === 'delete') {
+      deletePunchMutation.mutate({
+        eventId: selectedRecord.checkInId || selectedRecord.checkOutId,
+        reason: "حذف من مركز مراجعة البصمات - بصمة خاطئة",
+      });
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">مركز مراجعة البصمات</h1>
-        <p className="text-gray-600 mt-2">مراجعة والموافقة على البصمات المكتملة تلقائياً أو التي تحتاج مراجعة</p>
+    <div className="container py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">مركز مراجعة البصمات</h1>
+        <p className="text-muted-foreground">
+          مراجعة ومعالجة البصمات الناقصة (حضور بدون انصراف أو انصراف بدون حضور)
+        </p>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle>الفلاتر</CardTitle>
-          <CardDescription>اختر التاريخ والحالة للفلترة</CardDescription>
+          <CardDescription>اختر التاريخ والمجموعة للفلترة</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -170,19 +144,21 @@ export function PunchesReviewCenter() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="mt-1"
               />
             </div>
             <div>
-              <Label htmlFor="status">الحالة</Label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger id="status" className="mt-1">
-                  <SelectValue />
+              <Label htmlFor="group">المجموعة</Label>
+              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                <SelectTrigger id="group">
+                  <SelectValue placeholder="اختر المجموعة" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PENDING_REVIEW">قيد المراجعة</SelectItem>
-                  <SelectItem value="APPROVED">موافق عليه</SelectItem>
-                  <SelectItem value="REJECTED">مرفوض</SelectItem>
+                  <SelectItem value="all">جميع المجموعات</SelectItem>
+                  {groups.map((group: any) => (
+                    <SelectItem key={group.id} value={group.id.toString()}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -190,247 +166,192 @@ export function PunchesReviewCenter() {
         </CardContent>
       </Card>
 
-      {/* Error Alert */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {/* Summary Card */}
+      <Card className="mb-6 border-orange-200 bg-orange-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-orange-700">
+            <AlertCircle className="h-5 w-5" />
+            بصمات ناقصة
+          </CardTitle>
+          <CardDescription>يجب معالجة جميع البصمات قبل إنشاء دفعة رواتب</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-bold text-orange-700">{incompleteCount}</div>
+          <p className="text-sm text-muted-foreground">بصمة تحتاج معالجة</p>
+        </CardContent>
+      </Card>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">قيد المراجعة</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-8 w-8 text-yellow-600" />
-              <div>
-                <p className="text-2xl font-bold">{pendingCount}</p>
-                <p className="text-xs text-gray-500">بصمة</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">موافق عليها</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-              <div>
-                <p className="text-2xl font-bold">{approvedCount}</p>
-                <p className="text-xs text-gray-500">بصمة</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">مرفوضة</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <X className="h-8 w-8 text-red-600" />
-              <div>
-                <p className="text-2xl font-bold">{rejectedCount}</p>
-                <p className="text-xs text-gray-500">بصمة</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Punches Table */}
+      {/* Records Table */}
       <Card>
         <CardHeader>
           <CardTitle>سجلات البصمات</CardTitle>
-          <CardDescription>اضغط على أي سجل لعرض التفاصيل والموافقة أو الرفض</CardDescription>
+          <CardDescription>
+            اضغط على أي سجل لعرض التفاصيل والإجراءات أو الزر
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {eventsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-            </div>
-          ) : punchRecords.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              لا توجد بصمات للعرض
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
+          ) : filteredRecords.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              ✅ لا توجد بصمات ناقصة لهذا التاريخ
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>الموظف</TableHead>
-                    <TableHead>المجموعة</TableHead>
-                    <TableHead className="text-right">النوع</TableHead>
-                    <TableHead className="text-right">الوقت</TableHead>
-                    <TableHead className="text-right">الطريقة</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
-                    <TableHead className="text-right">الإجراء</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {punchRecords.map((record: PunchRecord) => (
-                    <TableRow key={record.id} className={record.isAutomatic ? 'bg-yellow-50' : ''}>
-                      <TableCell className="font-medium">
-                        {record.workerName}
-                        <br />
-                        <span className="text-xs text-gray-500">{record.workerCode}</span>
-                      </TableCell>
-                      <TableCell>{record.groupName}</TableCell>
-                      <TableCell className="text-right">
-                        {record.eventType === 'check_in' ? (
-                          <Badge className="bg-green-100 text-green-800">دخول</Badge>
-                        ) : (
-                          <Badge className="bg-red-100 text-red-800">خروج</Badge>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>رمز العامل</TableHead>
+                  <TableHead>اسم العامل</TableHead>
+                  <TableHead>المجموعة</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>وقت الحضور</TableHead>
+                  <TableHead>وقت الانصراف</TableHead>
+                  <TableHead className="text-center">الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRecords.map((record: any, index: number) => (
+                  <TableRow 
+                    key={index}
+                    className="border-l-4 border-l-orange-500 bg-orange-50/50"
+                  >
+                    <TableCell className="font-medium">{record.workerCode}</TableCell>
+                    <TableCell>{record.workerName}</TableCell>
+                    <TableCell>{record.groupName || "غير محدد"}</TableCell>
+                    <TableCell>
+                      {!record.checkInTime && record.checkOutTime && (
+                        <Badge variant="destructive" className="gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          انصراف بدون حضور
+                        </Badge>
+                      )}
+                      {record.checkInTime && !record.checkOutTime && (
+                        <Badge variant="destructive" className="gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          حضور بدون انصراف
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {record.checkInTime ? (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4 text-green-600" />
+                          {new Date(record.checkInTime).toLocaleTimeString('ar-SA', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </span>
+                      ) : (
+                        <span className="text-red-500">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {record.checkOutTime ? (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4 text-blue-600" />
+                          {new Date(record.checkOutTime).toLocaleTimeString('ar-SA', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </span>
+                      ) : (
+                        <span className="text-red-500">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2 justify-center">
+                        {!record.checkInTime && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAddMissing(record, 'check_in')}
+                            className="gap-1"
+                          >
+                            <Plus className="h-4 w-4" />
+                            إضافة حضور
+                          </Button>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {format(new Date(record.eventTime), 'HH:mm:ss')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {getMethodBadge(record.method, record.isAutomatic)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {getStatusBadge(record.status)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedRecord(record);
-                                setEditingNote(record.note || '');
-                              }}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>مراجعة البصمة</DialogTitle>
-                              <DialogDescription>
-                                {record.workerName} - {format(new Date(record.eventTime), 'yyyy-MM-dd HH:mm:ss')}
-                              </DialogDescription>
-                            </DialogHeader>
-
-                            <div className="space-y-4">
-                              {/* Punch Details */}
-                              <div className="space-y-2">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">الموظف:</span>
-                                  <span className="font-semibold">{record.workerName}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">الكود:</span>
-                                  <span className="font-semibold">{record.workerCode}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">المجموعة:</span>
-                                  <span className="font-semibold">{record.groupName}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">النوع:</span>
-                                  <span className="font-semibold">
-                                    {record.eventType === 'check_in' ? 'دخول' : 'خروج'}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">الوقت:</span>
-                                  <span className="font-semibold">
-                                    {format(new Date(record.eventTime), 'HH:mm:ss')}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">الطريقة:</span>
-                                  <span className="font-semibold">
-                                    {record.isAutomatic ? 'مكتمل تلقائي' : record.method}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Auto-complete Warning */}
-                              {record.isAutomatic && (
-                                <Alert>
-                                  <AlertTriangle className="h-4 w-4" />
-                                  <AlertDescription>
-                                    هذه البصمة تم إكمالها تلقائياً بسبب بصمة ناقصة. يرجى المراجعة بعناية.
-                                  </AlertDescription>
-                                </Alert>
-                              )}
-
-                              {/* Note Input */}
-                              <div>
-                                <Label htmlFor="note">ملاحظات</Label>
-                                <Input
-                                  id="note"
-                                  value={editingNote}
-                                  onChange={(e) => setEditingNote(e.target.value)}
-                                  placeholder="أضف ملاحظاتك هنا..."
-                                  className="mt-1"
-                                />
-                              </div>
-
-                              {/* Action Buttons */}
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => handleReject(record)}
-                                  disabled={loading}
-                                >
-                                  {loading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  ) : (
-                                    <X className="h-4 w-4 mr-2" />
-                                  )}
-                                  رفض
-                                </Button>
-                                <Button
-                                  onClick={() => handleApprove(record)}
-                                  disabled={loading}
-                                >
-                                  {loading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  ) : (
-                                    <Check className="h-4 w-4 mr-2" />
-                                  )}
-                                  موافق
-                                </Button>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                        {!record.checkOutTime && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAddMissing(record, 'check_out')}
+                            className="gap-1"
+                          >
+                            <Plus className="h-4 w-4" />
+                            إضافة انصراف
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(record)}
+                          className="gap-1"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          حذف
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
 
-      {/* Info Card */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-blue-900">ملاحظات مهمة</CardTitle>
-        </CardHeader>
-        <CardContent className="text-blue-800 space-y-2">
-          <p>• البصمات المكتملة تلقائياً تظهر بخلفية صفراء</p>
-          <p>• يمكنك إضافة ملاحظات قبل الموافقة أو الرفض</p>
-          <p>• الموافقة على البصمة ستثبتها في النظام وتزيل علامة التنبيه</p>
-          <p>• الرفض سيتطلب إدخال بصمة جديدة من الموظف</p>
-          <p>• جميع الإجراءات يتم تسجيلها في سجل التدقيق</p>
-        </CardContent>
-      </Card>
+      {/* Action Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedRecord?.actionType === 'check_in' && "إضافة وقت حضور"}
+              {selectedRecord?.actionType === 'check_out' && "إضافة وقت انصراف"}
+              {selectedRecord?.actionType === 'delete' && "تأكيد حذف البصمة"}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedRecord?.actionType === 'delete' ? (
+                <>هل أنت متأكد من حذف هذه البصمة؟ هذا الإجراء لا يمكن التراجع عنه.</>
+              ) : (
+                <>العامل: {selectedRecord?.workerName} ({selectedRecord?.workerCode})</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedRecord?.actionType !== 'delete' && (
+            <div className="py-4">
+              <Label htmlFor="time">
+                {selectedRecord?.actionType === 'check_in' ? "وقت الحضور" : "وقت الانصراف"}
+              </Label>
+              <Input
+                id="time"
+                type="time"
+                value={timeInput}
+                onChange={(e) => setTimeInput(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button
+              variant={selectedRecord?.actionType === 'delete' ? 'destructive' : 'default'}
+              onClick={handleConfirmAction}
+              disabled={
+                addCheckInMutation.isPending || 
+                addCheckOutMutation.isPending || 
+                deletePunchMutation.isPending
+              }
+            >
+              {selectedRecord?.actionType === 'delete' ? 'حذف' : 'حفظ'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

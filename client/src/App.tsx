@@ -44,7 +44,7 @@ import OperationalFlagsSimple from "./pages/OperationalFlagsSimple";
 import { PayrollDashboard } from "./pages/PayrollDashboard";
 
 import WeeklyShifts from "./pages/WeeklyShifts";
-import { PunchesReviewCenter } from "./pages/PunchesReviewCenter";
+import PunchesReviewCenter from "./pages/PunchesReviewCenter";
 import Backfill from "./pages/Backfill";
 import TestButton from "./pages/TestButton";
 

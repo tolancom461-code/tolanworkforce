@@ -775,8 +775,74 @@ export const appRouter = router({
         status: z.enum(['PENDING_REVIEW', 'APPROVED', 'REJECTED']).optional(),
       }))
       .query(async ({ input }) => {
-        const dateStr = input.workDate.toISOString().split('T')[0];
-        return [];
+        // Get incomplete attendance records for the date
+        const incompleteRecords = await db.getIncompleteAttendance(input.workDate);
+        
+        // Get regular attendance events for review (auto-completed or manual)
+        const database = await db.getDb();
+        if (!database) return [];
+        
+        const { workers, groups } = await import('../drizzle/schema');
+        const { eq } = await import('drizzle-orm');
+        
+        const regularEvents = await database
+          .select({
+            id: attendanceEvents.id,
+            workerId: attendanceEvents.workerId,
+            workerName: workers.fullName,
+            workerCode: workers.code,
+            groupName: groups.name,
+            eventType: attendanceEvents.eventType,
+            eventTime: attendanceEvents.eventTime,
+            method: attendanceEvents.method,
+            note: attendanceEvents.note,
+            isAutomatic: sql<boolean>`is_automatic`,
+          })
+          .from(attendanceEvents)
+          .leftJoin(workers, eq(attendanceEvents.workerId, workers.id))
+          .leftJoin(groups, eq(workers.groupId, groups.id))
+          .where(
+            sql`DATE(${attendanceEvents.eventTime}) = DATE(${input.workDate})`
+          )
+          .orderBy(attendanceEvents.eventTime);
+        
+        // Transform incomplete records
+        const incompleteTransformed = incompleteRecords.map(record => ({
+          id: record.checkInId || record.checkOutId || 0,
+          workerId: record.workerId,
+          workerName: record.workerName,
+          workerCode: record.workerCode,
+          groupName: record.groupName,
+          eventType: record.incompleteType === 'missing_check_out' ? 'check_in' : 'check_out',
+          eventTime: (record.checkInTime || record.checkOutTime || new Date()).toISOString(),
+          method: 'manual',
+          note: null,
+          status: 'PENDING_REVIEW',
+          isAutomatic: false,
+          incompleteType: record.incompleteType,
+          checkInId: record.checkInId,
+          checkInTime: record.checkInTime,
+          checkOutId: record.checkOutId,
+          checkOutTime: record.checkOutTime,
+        }));
+        
+        // Transform regular events
+        const regularTransformed = regularEvents.map(event => ({
+          id: event.id,
+          workerId: event.workerId,
+          workerName: event.workerName || 'Unknown',
+          workerCode: event.workerCode || 'N/A',
+          groupName: event.groupName || 'No Group',
+          eventType: event.eventType,
+          eventTime: event.eventTime.toISOString(),
+          method: event.method,
+          note: event.note,
+          status: 'PENDING_REVIEW',
+          isAutomatic: event.isAutomatic || false,
+        }));
+        
+        // Combine and return both types
+        return [...incompleteTransformed, ...regularTransformed];
       }),
     
     // Approve a punch record
@@ -799,6 +865,78 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         console.log('Rejecting punch:', input.id);
         return { success: true, message: 'تم رفض البصمة' };
+      }),
+    
+    // Add missing check-in for incomplete attendance
+    addMissingCheckIn: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        checkInTime: z.string(), // ISO string
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const { attendanceEvents } = await import('../drizzle/schema');
+        const database = await db.getDb();
+        if (!database) throw new Error('Database not available');
+        
+        // Insert check-in event
+        await database.insert(attendanceEvents).values({
+          workerId: input.workerId,
+          eventType: 'check_in',
+          eventTime: new Date(input.checkInTime),
+          method: 'manual',
+          note: input.note || 'تم إضافة الحضور يدوياً لمعالجة بصمة ناقصة',
+        });
+        
+        return { success: true, message: 'تم إضافة بصمة الحضور بنجاح' };
+      }),
+    
+    // Add missing check-out for incomplete attendance
+    addMissingCheckOut: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        checkOutTime: z.string(), // ISO string
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const { attendanceEvents } = await import('../drizzle/schema');
+        const database = await db.getDb();
+        if (!database) throw new Error('Database not available');
+        
+        // Insert check-out event
+        await database.insert(attendanceEvents).values({
+          workerId: input.workerId,
+          eventType: 'check_out',
+          eventTime: new Date(input.checkOutTime),
+          method: 'manual',
+          note: input.note || 'تم إضافة الانصراف يدوياً لمعالجة بصمة ناقصة',
+        });
+        
+        return { success: true, message: 'تم إضافة بصمة الانصراف بنجاح' };
+      }),
+    
+    // Delete an attendance event (for incorrect punches)
+    deletePunchEvent: protectedProcedure
+      .input(z.object({
+        eventId: z.number(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const { attendanceEvents } = await import('../drizzle/schema');
+        const database = await db.getDb();
+        if (!database) throw new Error('Database not available');
+        
+        // Delete the event
+        const { eq } = await import('drizzle-orm');
+        await database.delete(attendanceEvents).where(eq(attendanceEvents.id, input.eventId));
+        
+        return { success: true, message: 'تم حذف البصمة بنجاح' };
       }),
 
     // Confirm and record attendance
@@ -1705,6 +1843,27 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        
+        // Check for incomplete attendance records in the period
+        const startDate = new Date(input.periodStart);
+        const endDate = new Date(input.periodEnd);
+        
+        const incompleteCheck = await db.checkIncompleteAttendanceForPeriod(startDate, endDate);
+        
+        if (incompleteCheck.hasIncomplete) {
+          const errorDetails = incompleteCheck.incompleteRecords
+            .slice(0, 10) // Show first 10 records
+            .map(r => `${r.date}: ${r.workerName} (${r.workerCode}) - ${r.incompleteType}`)
+            .join('\n');
+          
+          const moreCount = incompleteCheck.incompleteCount - 10;
+          const moreText = moreCount > 0 ? `\n... و ${moreCount} سجل آخر` : '';
+          
+          throw new Error(
+            `لا يمكن إنشاء دفعة الرواتب. يوجد ${incompleteCheck.incompleteCount} سجل حضور ناقص يحتاج للمعالجة:\n\n${errorDetails}${moreText}\n\nيرجى مراجعة البصمات الناقصة في "مركز مراجعة البصمات" قبل إنشاء دفعة الرواتب.`
+          );
+        }
+        
         return await db.createPayrollBatch({
           ...input,
           createdBy: ctx.user.id,

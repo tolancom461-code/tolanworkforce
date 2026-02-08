@@ -1,0 +1,17 @@
+{
+  "query": "SELECT \n  ae.id,\n  ae.event_type,\n  ae.event_time,\n  ae.method,\n  ae.note\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nWHERE w.code = 'R04'\n  AND DATE(ae.event_time) = '2026-02-07'\nORDER BY ae.event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  ae.id,\n  ae.event_type,\n  ae.event_time,\n  ae.method,\n  ae.note\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nWHERE w.code = 'R04'\n  AND DATE(ae.event_time) = '2026-02-07'\nORDER BY ae.event_time;",
+  "rows": [
+    {
+      "id": "90078",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:56",
+      "method": "qr",
+      "note": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tevent_type\tevent_time\tmethod\tnote\n90078\tcheck_in\t2026-02-07 08:18:56\tqr\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1609
+}

@@ -5612,3 +5612,224 @@ export async function getRecentScheduleChanges(hoursThreshold: number = 24): Pro
     modifiedSchedules: Number(change.modifiedSchedules),
   }));
 }
+
+
+/**
+ * Get incomplete attendance records for a specific date
+ * Returns records that have either check-in without check-out or check-out without check-in
+ */
+export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
+  workerId: number;
+  workerCode: string;
+  workerName: string;
+  groupName: string;
+  checkInId: number | null;
+  checkInTime: Date | null;
+  checkOutId: number | null;
+  checkOutTime: Date | null;
+  incompleteType: 'missing_check_out' | 'missing_check_in';
+}>> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const { attendanceEvents, workers, groups } = await import('../drizzle/schema');
+  
+  // Get date range for the work date
+  const dateStr = workDate.toISOString().split('T')[0];
+  const startOfDay = new Date(`${dateStr}T00:00:00Z`);
+  const endOfDay = new Date(`${dateStr}T23:59:59Z`);
+  
+  // Get all attendance events for the day
+  const events = await db
+    .select({
+      id: attendanceEvents.id,
+      workerId: attendanceEvents.workerId,
+      eventType: attendanceEvents.eventType,
+      eventTime: attendanceEvents.eventTime,
+      workerCode: workers.code,
+      workerName: workers.fullName,
+      groupName: groups.name,
+    })
+    .from(attendanceEvents)
+    .innerJoin(workers, eq(attendanceEvents.workerId, workers.id))
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .where(
+      and(
+        gte(attendanceEvents.eventTime, startOfDay),
+        lte(attendanceEvents.eventTime, endOfDay)
+      )
+    )
+    .orderBy(attendanceEvents.workerId, attendanceEvents.eventTime);
+  
+  // Group events by worker
+  const workerEvents = new Map<number, {
+    workerId: number;
+    workerCode: string;
+    workerName: string;
+    groupName: string;
+    checkIns: Array<{ id: number; time: Date }>;
+    checkOuts: Array<{ id: number; time: Date }>;
+  }>();
+  
+  for (const event of events) {
+    if (!workerEvents.has(event.workerId)) {
+      workerEvents.set(event.workerId, {
+        workerId: event.workerId,
+        workerCode: event.workerCode,
+        workerName: event.workerName,
+        groupName: event.groupName || 'N/A',
+        checkIns: [],
+        checkOuts: [],
+      });
+    }
+    
+    const workerData = workerEvents.get(event.workerId)!;
+    if (event.eventType === 'check_in') {
+      workerData.checkIns.push({ id: event.id, time: event.eventTime });
+    } else {
+      workerData.checkOuts.push({ id: event.id, time: event.eventTime });
+    }
+  }
+  
+  // Find incomplete records
+  const incompleteRecords: Array<{
+    workerId: number;
+    workerCode: string;
+    workerName: string;
+    groupName: string;
+    checkInId: number | null;
+    checkInTime: Date | null;
+    checkOutId: number | null;
+    checkOutTime: Date | null;
+    incompleteType: 'missing_check_out' | 'missing_check_in';
+  }> = [];
+  
+  for (const [workerId, data] of Array.from(workerEvents)) {
+    const checkInCount = data.checkIns.length;
+    const checkOutCount = data.checkOuts.length;
+    
+    // Case 1: Has check-in but no check-out
+    if (checkInCount > 0 && checkOutCount === 0) {
+      for (const checkIn of data.checkIns) {
+        incompleteRecords.push({
+          workerId: data.workerId,
+          workerCode: data.workerCode,
+          workerName: data.workerName,
+          groupName: data.groupName,
+          checkInId: checkIn.id,
+          checkInTime: checkIn.time,
+          checkOutId: null,
+          checkOutTime: null,
+          incompleteType: 'missing_check_out',
+        });
+      }
+    }
+    
+    // Case 2: Has check-out but no check-in
+    if (checkOutCount > 0 && checkInCount === 0) {
+      for (const checkOut of data.checkOuts) {
+        incompleteRecords.push({
+          workerId: data.workerId,
+          workerCode: data.workerCode,
+          workerName: data.workerName,
+          groupName: data.groupName,
+          checkInId: null,
+          checkInTime: null,
+          checkOutId: checkOut.id,
+          checkOutTime: checkOut.time,
+          incompleteType: 'missing_check_in',
+        });
+      }
+    }
+    
+    // Case 3: Unmatched pairs (more check-ins than check-outs or vice versa)
+    if (checkInCount > checkOutCount && checkOutCount > 0) {
+      // Has extra check-ins
+      const unmatchedCheckIns = data.checkIns.slice(checkOutCount);
+      for (const checkIn of unmatchedCheckIns) {
+        incompleteRecords.push({
+          workerId: data.workerId,
+          workerCode: data.workerCode,
+          workerName: data.workerName,
+          groupName: data.groupName,
+          checkInId: checkIn.id,
+          checkInTime: checkIn.time,
+          checkOutId: null,
+          checkOutTime: null,
+          incompleteType: 'missing_check_out',
+        });
+      }
+    } else if (checkOutCount > checkInCount && checkInCount > 0) {
+      // Has extra check-outs
+      const unmatchedCheckOuts = data.checkOuts.slice(checkInCount);
+      for (const checkOut of unmatchedCheckOuts) {
+        incompleteRecords.push({
+          workerId: data.workerId,
+          workerCode: data.workerCode,
+          workerName: data.workerName,
+          groupName: data.groupName,
+          checkInId: null,
+          checkInTime: null,
+          checkOutId: checkOut.id,
+          checkOutTime: checkOut.time,
+          incompleteType: 'missing_check_in',
+        });
+      }
+    }
+  }
+  
+  return incompleteRecords;
+}
+
+/**
+ * Check if there are any incomplete attendance records for a date range
+ * Used before creating payroll batches to ensure all attendance is complete
+ */
+export async function checkIncompleteAttendanceForPeriod(
+  startDate: Date,
+  endDate: Date
+): Promise<{
+  hasIncomplete: boolean;
+  incompleteCount: number;
+  incompleteRecords: Array<{
+    date: string;
+    workerCode: string;
+    workerName: string;
+    incompleteType: string;
+  }>;
+}> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const incompleteRecords: Array<{
+    date: string;
+    workerCode: string;
+    workerName: string;
+    incompleteType: string;
+  }> = [];
+  
+  // Check each date in the range
+  const currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    const dayIncomplete = await getIncompleteAttendance(currentDate);
+    
+    for (const record of dayIncomplete) {
+      incompleteRecords.push({
+        date: currentDate.toISOString().split('T')[0],
+        workerCode: record.workerCode,
+        workerName: record.workerName,
+        incompleteType: record.incompleteType === 'missing_check_out' 
+          ? 'حضور بدون انصراف' 
+          : 'انصراف بدون حضور',
+      });
+    }
+    
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return {
+    hasIncomplete: incompleteRecords.length > 0,
+    incompleteCount: incompleteRecords.length,
+    incompleteRecords,
+  };
+}

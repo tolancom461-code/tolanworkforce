@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  id,\n  worker_id,\n  event_type,\n  event_time,\n  method,\n  status\nFROM attendance_events\nWHERE DATE(event_time) = '2026-02-07'\nORDER BY event_time;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \nSELECT \n  id,\n  worker_id,\n  event_type,\n  event_time,\n  method,\n  status\nFROM attendance_events\nWHERE DATE(event_time) = '2026-02-07'\nORDER BY event_time;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'status' in 'field list'"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "query": "SELECT \n  w.id,\n  w.code,\n  w.full_name,\n  g.name as group_name\nFROM workers w\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE w.code = 'R04';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  w.id,\n  w.code,\n  w.full_name,\n  g.name as group_name\nFROM workers w\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE w.code = 'R04';",
+  "rows": [
+    {
+      "id": "90016",
+      "code": "R04",
+      "full_name": "مشرف خالد",
+      "group_name": "مجموعة كاشيرات المطاعم"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tgroup_name\n90016\tR04\tمشرف خالد\tمجموعة كاشيرات المطاعم\n",
+  "stderr": "",
+  "execution_time_ms": 1620
+}
