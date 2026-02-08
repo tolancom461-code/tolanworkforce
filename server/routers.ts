@@ -2053,11 +2053,12 @@ export const appRouter = router({
         const { generateBatchDetailsExcel } = await import('./excel-export');
         
         // Get batch details
-        const batch = await db.getPayrollBatchById(input.batchId);
+        const batchDetails = await db.getPayrollBatchDetails(input.batchId);
+        const batch = batchDetails.batch;
         if (!batch) throw new Error('دفعة الراتب غير موجودة');
         
         // Get all workers in this batch
-        const items = await db.getPayrollBatchItems(input.batchId);
+        const items = batchDetails.items;
         const workers = await Promise.all(
           items.map(async (item: any) => {
             const worker = await db.getWorkerById(item.workerId);
@@ -2072,16 +2073,16 @@ export const appRouter = router({
         // Generate Excel file
         const buffer = await generateBatchDetailsExcel(
           input.batchId,
-          batch.batchId || `Batch-${input.batchId}`,
-          batch.periodStart,
-          batch.periodEnd,
+          batch.batchCode || `Batch-${input.batchId}`,
+          batch.periodStart.toISOString().split('T')[0],
+          batch.periodEnd.toISOString().split('T')[0],
           workers
         );
         
         // Return base64 encoded buffer
         return {
           data: buffer.toString('base64'),
-          filename: `تفاصيل-${batch.batchId || input.batchId}.xlsx`,
+          filename: `تفاصيل-${batch.batchCode || input.batchId}.xlsx`,
         };
       }),
     

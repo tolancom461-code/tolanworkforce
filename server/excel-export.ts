@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { getAttendanceForWorkerPeriod } from './db';
+import { getAttendanceForWorkerPeriod, getDailyFinanceForWorker } from './db';
 
 export async function generateBatchDetailsExcel(
   batchId: number,
@@ -76,7 +76,20 @@ export async function generateBatchDetailsExcel(
       periodEnd
     );
 
+    // Get daily finance data for this worker
+    const dailyFinanceData = await getDailyFinanceForWorker(
+      worker.workerId,
+      periodStart,
+      periodEnd
+    );
+    
+    // Create a map for quick lookup
+    const financeMap = new Map(
+      dailyFinanceData.map((f: any) => [f.workDate, f])
+    );
+
     for (const day of attendanceData) {
+      const finance = financeMap.get(day.date);
       const checkInTime = day.checkIn
         ? new Date(day.checkIn.eventTime).toLocaleTimeString('ar-SA', {
             hour: '2-digit',
@@ -98,9 +111,9 @@ export async function generateBatchDetailsExcel(
         checkInTime,
         checkOutTime,
         day.actualWorkMinutes || 0,
-        day.baseAmount || 0,
-        day.deductions || 0,
-        day.bonuses || 0
+        finance?.baseAmount || 0,
+        finance?.deductions || 0,
+        finance?.bonuses || 0
       ]);
 
       row.alignment = { horizontal: 'center', vertical: 'middle' };
