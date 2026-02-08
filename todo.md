@@ -418,4 +418,15 @@
 - [x] إصلاح معادلات حساب الإضافات (العمل الإضافي) - يتم يدوياً عبر إدارة الحضور اليومي
 - [x] إصلاح أخطاء TypeScript في server/routers.ts - تم إصلاحها تلقائياً (0 أخطاء)
 - [x] التحقق من صحة الحسابات - السيرفر يعمل بنجاح
+- [x] حفظ checkpoint - تم (065632e0)
+
+## تحسين عرض تفاصيل دفعة الراتب
+
+- [x] تحليل صفحة PayrollBatchDetails.tsx الحالية - يوجد daily details dialog
+- [x] تحديد البيانات المطلوبة - actualWorkMinutes لكل يوم
+- [x] تحديث workerDailyFinance schema لإضافة actualWorkMinutes - كان موجود مسبقاً (workedMinutes)
+- [x] تحديث calculateDailyFinanceFromAttendance لحفظ actualWorkMinutes - تم إضافته للـ return
+- [x] تحديث getAttendanceForWorkerPeriod لإرجاع actualWorkMinutes - تم
+- [x] تحديث Frontend لعرض عمود "دقائق العمل الفعلية" - تم إضافته في daily details dialog
+- [x] اختبار العرض الجديد - السيرفر يعمل بنجاح
 - [ ] حفظ checkpoint

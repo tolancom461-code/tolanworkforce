@@ -1238,10 +1238,11 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   
   // Calculate baseAmount based on actual work hours
   let baseAmount = 0;
+  let actualWorkMinutes = 0;
   
   if (actualCheckInTime && actualCheckOutTime) {
     // Calculate actual work minutes (within shift boundaries)
-    const actualWorkMinutes = Math.round((actualCheckOutTime.getTime() - actualCheckInTime.getTime()) / (1000 * 60));
+    actualWorkMinutes = Math.round((actualCheckOutTime.getTime() - actualCheckInTime.getTime()) / (1000 * 60));
     
     if (groupDailyWage && groupWorkMinutes && groupWorkMinutes > 0) {
       // Use minute-based calculation: (actual minutes / expected minutes) × daily wage
@@ -1257,10 +1258,12 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   } else if (!checkIn && !checkOut) {
     // Absent: no base amount
     baseAmount = 0;
+    actualWorkMinutes = 0;
   } else {
     // Incomplete attendance (only check-in or only check-out)
     // For now, give 0 base amount (can be adjusted manually)
     baseAmount = 0;
+    actualWorkMinutes = 0;
   }
   
   return {
@@ -1269,6 +1272,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     bonuses: 0,
     lateMinutes,
     earlyLeaveMinutes,
+    actualWorkMinutes,
   };
 }
 
@@ -3521,12 +3525,24 @@ export async function getAttendanceForWorkerPeriod(
     }
   });
   
-  // Convert to array
-  return Object.entries(groupedByDate).map(([date, data]) => ({
-    date,
-    checkIn: data.checkIn || null,
-    checkOut: data.checkOut || null,
-  })).sort((a, b) => a.date.localeCompare(b.date));
+  // Convert to array and calculate actualWorkMinutes
+  return Object.entries(groupedByDate).map(([date, data]) => {
+    let actualWorkMinutes = 0;
+    
+    if (data.checkIn && data.checkOut) {
+      // Calculate actual work minutes
+      const checkInTime = new Date(data.checkIn.eventTime);
+      const checkOutTime = new Date(data.checkOut.eventTime);
+      actualWorkMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
+    }
+    
+    return {
+      date,
+      checkIn: data.checkIn || null,
+      checkOut: data.checkOut || null,
+      actualWorkMinutes,
+    };
+  }).sort((a, b) => a.date.localeCompare(b.date));
 }
 
 // updateFullDayOverride function removed - feature deprecated

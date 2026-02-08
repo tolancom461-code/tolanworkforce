@@ -553,6 +553,12 @@ export default function PayrollBatchDetails() {
                                   <span className="font-medium">{checkOutTime}</span>
                                 </div>
                                 <div>
+                                  <span className="text-muted-foreground">دقائق العمل الفعلية:</span>{" "}
+                                  <span className="font-medium font-mono text-primary">
+                                    {day.actualWorkMinutes || 0} دقيقة
+                                  </span>
+                                </div>
+                                <div>
                                   <span className="text-muted-foreground">الحالة:</span>{" "}
                                   <span className="font-medium">
                                     {day.checkIn && day.checkOut ? "مكتمل" : day.checkIn ? "حضور فقط" : "لا يوجد"}
