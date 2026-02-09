@@ -1,0 +1,64 @@
+{
+  "query": "SELECT \n  DATE(ae.event_time) as work_date,\n  w.manual_code,\n  w.full_name,\n  ae.event_type,\n  COUNT(*) as count,\n  GROUP_CONCAT(ae.id ORDER BY ae.event_time) as event_ids,\n  GROUP_CONCAT(TIME(ae.event_time) ORDER BY ae.event_time) as times\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nGROUP BY DATE(ae.event_time), w.id, ae.event_type\nHAVING COUNT(*) > 1\nORDER BY work_date DESC, w.manual_code;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  DATE(ae.event_time) as work_date,\n  w.manual_code,\n  w.full_name,\n  ae.event_type,\n  COUNT(*) as count,\n  GROUP_CONCAT(ae.id ORDER BY ae.event_time) as event_ids,\n  GROUP_CONCAT(TIME(ae.event_time) ORDER BY ae.event_time) as times\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nGROUP BY DATE(ae.event_time), w.id, ae.event_type\nHAVING COUNT(*) > 1\nORDER BY work_date DESC, w.manual_code;",
+  "rows": [
+    {
+      "work_date": "2026-02-08",
+      "manual_code": "R01",
+      "full_name": "علي صالح",
+      "event_type": "check_in",
+      "count": "2",
+      "event_ids": "180001,90075",
+      "times": "06:19:03,08:18:00"
+    },
+    {
+      "work_date": "2026-02-08",
+      "manual_code": "R01",
+      "full_name": "علي صالح",
+      "event_type": "check_out",
+      "count": "2",
+      "event_ids": "180004,90081",
+      "times": "08:55:47,09:30:00"
+    },
+    {
+      "work_date": "2026-02-08",
+      "manual_code": "R02",
+      "full_name": "كمال خالد",
+      "event_type": "check_in",
+      "count": "2",
+      "event_ids": "180002,90076",
+      "times": "06:19:09,08:45:00"
+    },
+    {
+      "work_date": "2026-02-08",
+      "manual_code": "R02",
+      "full_name": "كمال خالد",
+      "event_type": "check_out",
+      "count": "2",
+      "event_ids": "180003,120001",
+      "times": "08:55:41,09:49:00"
+    },
+    {
+      "work_date": "2026-02-07",
+      "manual_code": "R04",
+      "full_name": "مشرف خالد",
+      "event_type": "check_in",
+      "count": "2",
+      "event_ids": "90078,240002",
+      "times": "08:18:56,10:00:00"
+    },
+    {
+      "work_date": "2026-02-07",
+      "manual_code": "R04",
+      "full_name": "مشرف خالد",
+      "event_type": "check_out",
+      "count": "2",
+      "event_ids": "240003,240001",
+      "times": "11:00:00,11:30:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "work_date\tmanual_code\tfull_name\tevent_type\tcount\tevent_ids\ttimes\n2026-02-08\tR01\tعلي صالح\tcheck_in\t2\t180001,90075\t06:19:03,08:18:00\n2026-02-08\tR01\tعلي صالح\tcheck_out\t2\t180004,90081\t08:55:47,09:30:00\n2026-02-08\tR02\tكمال خالد\tcheck_in\t2\t180002,90076\t06:19:09,08:45:00\n2026-02-08\tR02\tكمال خالد\tcheck_out\t2\t180003,120001\t08:55:41,09:49:00\n2026-02-07\tR04\tمشرف خالد\tcheck_in\t2\t90078,240002\t08:18:56,10:00:00\n2026-02-07\tR04\tمشرف خالد\tcheck_out\t2\t240003,240001\t11:00:00,11:30:00\n",
+  "stderr": "",
+  "execution_time_ms": 1598
+}

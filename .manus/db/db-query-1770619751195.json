@@ -1,0 +1,9 @@
+{
+  "query": "SELECT \n  DATE(ae.event_time) as work_date,\n  w.manual_code,\n  w.full_name,\n  ae.event_type,\n  COUNT(*) as count\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nGROUP BY DATE(ae.event_time), w.id, ae.event_type\nHAVING COUNT(*) > 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  DATE(ae.event_time) as work_date,\n  w.manual_code,\n  w.full_name,\n  ae.event_type,\n  COUNT(*) as count\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nGROUP BY DATE(ae.event_time), w.id, ae.event_type\nHAVING COUNT(*) > 1;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1511
+}

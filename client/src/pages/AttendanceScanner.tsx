@@ -134,7 +134,18 @@ export default function AttendanceScanner() {
       }, 3000);
       
     } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ أثناء التسجيل');
+      // Show clear alert for duplicate punch attempts
+      const errorMessage = error.message || 'حدث خطأ أثناء التسجيل';
+      
+      // Check if it's a duplicate punch error
+      if (errorMessage.includes('لقد تم تسجيل') || errorMessage.includes('مسبقاً')) {
+        toast.error(errorMessage, {
+          duration: 5000,
+          description: 'لا يمكن البصم أكثر من مرة واحدة في اليوم',
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsProcessing(false);
     }

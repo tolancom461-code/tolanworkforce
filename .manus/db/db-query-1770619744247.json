@@ -1,0 +1,9 @@
+{
+  "query": "-- Delete duplicate punches, keeping only the first one for each type per day\nDELETE ae FROM attendance_events ae\nINNER JOIN (\n  SELECT \n    DATE(event_time) as work_date,\n    worker_id,\n    event_type,\n    MIN(id) as first_id\n  FROM attendance_events\n  GROUP BY DATE(event_time), worker_id, event_type\n  HAVING COUNT(*) > 1\n) duplicates ON DATE(ae.event_time) = duplicates.work_date \n  AND ae.worker_id = duplicates.worker_id \n  AND ae.event_type = duplicates.event_type\n  AND ae.id > duplicates.first_id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute -- Delete duplicate punches, keeping only the first one for each type per day\nDELETE ae FROM attendance_events ae\nINNER JOIN (\n  SELECT \n    DATE(event_time) as work_date,\n    worker_id,\n    event_type,\n    MIN(id) as first_id\n  FROM attendance_events\n  GROUP BY DATE(event_time), worker_id, event_type\n  HAVING COUNT(*) > 1\n) duplicates ON DATE(ae.event_time) = duplicates.work_date \n  AND ae.worker_id = duplicates.worker_id \n  AND ae.event_type = duplicates.event_type\n  AND ae.id > duplicates.first_id;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1511
+}
