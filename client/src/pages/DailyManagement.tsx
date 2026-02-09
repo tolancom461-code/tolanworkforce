@@ -28,7 +28,7 @@ interface AttendanceRecord {
 export default function DailyManagement() {
   const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({

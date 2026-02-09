@@ -1,4 +1,7 @@
 import "dotenv/config";
+// Set timezone to Saudi Arabia (UTC+3)
+process.env.TZ = 'Asia/Riyadh';
+
 import express from "express";
 import { createServer } from "http";
 import net from "net";

@@ -14,9 +14,9 @@ export function AttendanceExport() {
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 30);
-    return date.toISOString().split('T')[0];
+    return date.toLocaleDateString('en-CA');
   });
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>();
   const [selectedCostCenterId, setSelectedCostCenterId] = useState<number | undefined>();
 

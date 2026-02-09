@@ -736,9 +736,8 @@ export async function getTodayAttendanceWithPagination(groupId?: number, dateStr
 
   const { attendanceEvents, workers } = await import('../drizzle/schema');
   
-  // Use provided date or default to today
-  const today = dateStr ? new Date(dateStr) : new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use provided date or default to today (local time Asia/Riyadh)
+  const today = dateStr ? new Date(dateStr + 'T00:00:00') : new Date(new Date().toLocaleDateString('en-CA') + 'T00:00:00');
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
@@ -816,9 +815,8 @@ export async function getTodayAttendance(groupId?: number, dateStr?: string) {
 
   const { attendanceEvents, workers } = await import('../drizzle/schema');
   
-  // Use provided date or default to today
-  const today = dateStr ? new Date(dateStr) : new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use provided date or default to today (local time Asia/Riyadh)
+  const today = dateStr ? new Date(dateStr + 'T00:00:00') : new Date(new Date().toLocaleDateString('en-CA') + 'T00:00:00');
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
@@ -888,8 +886,7 @@ export async function getWorkerLastEvent(workerId: number) {
 
   const { attendanceEvents } = await import('../drizzle/schema');
   
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(new Date().toLocaleDateString('en-CA') + 'T00:00:00');
   
   const [lastEvent] = await db
     .select()
@@ -935,7 +932,7 @@ export async function getMonthlyAttendanceReport(year: number, month: number, gr
     
     // Group events by date
     const eventsByDate = workerEvents.reduce((acc, event) => {
-      const dateKey = new Date(event.eventTime).toISOString().split('T')[0];
+      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
       if (!acc[dateKey]) acc[dateKey] = [];
       acc[dateKey].push(event);
       return acc;
@@ -986,8 +983,8 @@ export async function getWorkDays(year: number, month: number) {
     .select()
     .from(workDays)
     .where(and(
-      gte(workDays.workDate, sql`${startDate.toISOString().split('T')[0]}`),
-      lte(workDays.workDate, sql`${endDate.toISOString().split('T')[0]}`)
+      gte(workDays.workDate, sql`${startDate.toLocaleDateString('en-CA')}`),
+      lte(workDays.workDate, sql`${endDate.toLocaleDateString('en-CA')}`)
     ));
 }
 
@@ -1145,9 +1142,9 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? safeParseDecimal(group.earlyLeavePenaltyRate) : null;
       
       // Get shift times from weekly schedule based on day of week and effective date
-      const workDateObj = typeof workDate === 'string' ? new Date(workDate) : workDate;
+      const workDateObj = typeof workDate === 'string' ? new Date(workDate + 'T00:00:00') : workDate;
       const dayOfWeek = workDateObj.getDay();
-      const workDateStr = typeof workDate === 'string' ? workDate : workDateObj.toISOString().split('T')[0];
+      const workDateStr = typeof workDate === 'string' ? workDate : workDateObj.toLocaleDateString('en-CA');
       
       const [schedule] = await db
         .select()
@@ -1180,11 +1177,9 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     return { baseAmount: 0, deductions: 0, bonuses: 0, lateMinutes: 0, earlyLeaveMinutes: 0, actualWorkMinutes: 0 };
   }
   
-  // Get attendance events for the day
-  const dateStart = new Date(workDate);
-  dateStart.setHours(0, 0, 0, 0);
-  const dateEnd = new Date(workDate);
-  dateEnd.setHours(23, 59, 59, 999);
+  // Get attendance events for the day (local time Asia/Riyadh)
+  const dateStart = new Date(workDate + 'T00:00:00');
+  const dateEnd = new Date(workDate + 'T23:59:59.999');
   
   const events = await db
     .select()
@@ -1225,10 +1220,12 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       const [shiftStartHour, shiftStartMin] = shiftStartTime.split(':').map(Number);
       const [shiftEndHour, shiftEndMin] = shiftEndTime.split(':').map(Number);
       
-      const shiftStart = new Date(checkInTime);
+      // Build shift times using the WORK DATE in local time
+      const shiftDateBase = new Date(workDate + 'T00:00:00');
+      const shiftStart = new Date(shiftDateBase);
       shiftStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
       
-      const shiftEnd = new Date(checkInTime);
+      const shiftEnd = new Date(shiftDateBase);
       shiftEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
       
       // Financial check-in: capped to shift start (early arrival not counted)
@@ -1346,7 +1343,7 @@ export async function updateAttendanceEvent(
   if (!original) throw new Error("سجل الحضور غير موجود");
   
   // Check if payroll batch exists for this date
-  const eventDate = new Date(original.eventTime).toISOString().split('T')[0];
+  const eventDate = new Date(original.eventTime).toLocaleDateString('en-CA');
   const batch = await checkPayrollBatchForDate(eventDate);
   if (batch) {
     throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
@@ -1372,7 +1369,7 @@ export async function updateAttendanceEvent(
   });
   
   // Recalculate daily finance
-  const workDate = new Date(original.eventTime).toISOString().split('T')[0];
+  const workDate = new Date(original.eventTime).toLocaleDateString('en-CA');
   await processAttendanceToFinance(original.workerId, workDate);
   
   return { success: true };
@@ -1384,10 +1381,8 @@ export async function getAttendanceEventsForEdit(workerId: number, workDate: str
 
   const { attendanceEvents } = await import('../drizzle/schema');
   
-  const dateStart = new Date(workDate);
-  dateStart.setHours(0, 0, 0, 0);
-  const dateEnd = new Date(workDate);
-  dateEnd.setHours(23, 59, 59, 999);
+  const dateStart = new Date(workDate + 'T00:00:00');
+  const dateEnd = new Date(workDate + 'T23:59:59.999');
   
   return await db
     .select()
@@ -1416,10 +1411,8 @@ export async function getAttendanceEventsByGroup(groupId: number, workDate: stri
   
   const workerIds = groupWorkers.map(w => w.id);
   
-  const dateStart = new Date(workDate);
-  dateStart.setHours(0, 0, 0, 0);
-  const dateEnd = new Date(workDate);
-  dateEnd.setHours(23, 59, 59, 999);
+  const dateStart = new Date(workDate + 'T00:00:00');
+  const dateEnd = new Date(workDate + 'T23:59:59.999');
   
   // Get all events for all workers in the group
   const events = await db
@@ -3602,7 +3595,7 @@ export async function getAttendanceForWorkerPeriod(
   const groupedByDate: { [date: string]: { checkIn?: any; checkOut?: any } } = {};
   
   events.forEach(event => {
-    const dateStr = event.eventTime.toISOString().split('T')[0];
+    const dateStr = event.eventTime.toLocaleDateString('en-CA');
     if (!groupedByDate[dateStr]) {
       groupedByDate[dateStr] = {};
     }
@@ -4498,7 +4491,7 @@ export async function getAttendanceSummaryByWorker(
     // Group events by date
     const eventsByDate: Record<string, any[]> = {};
     workerEvents.forEach(event => {
-      const dateKey = new Date(event.eventTime).toISOString().split('T')[0];
+      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
       if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
       eventsByDate[dateKey].push(event);
     });
@@ -4586,14 +4579,14 @@ export async function getAttendanceSummaryByGroup(
     
     // Get unique days with attendance
     const daysWithAttendance = new Set(
-      groupEvents.map(e => new Date(e.eventTime).toISOString().split('T')[0])
+      groupEvents.map(e => new Date(e.eventTime).toLocaleDateString('en-CA'))
     ).size;
     
     // Calculate total work hours
     let totalHours = 0;
     const eventsByDate: Record<string, any[]> = {};
     groupEvents.forEach(event => {
-      const dateKey = new Date(event.eventTime).toISOString().split('T')[0];
+      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
       if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
       eventsByDate[dateKey].push(event);
     });
@@ -4666,14 +4659,14 @@ export async function getAttendanceSummaryByCostCenter(
     
     // Get unique days with attendance
     const daysWithAttendance = new Set(
-      costCenterEvents.map(e => new Date(e.eventTime).toISOString().split('T')[0])
+      costCenterEvents.map(e => new Date(e.eventTime).toLocaleDateString('en-CA'))
     ).size;
     
     // Calculate total work hours
     let totalHours = 0;
     const eventsByDate: Record<string, any[]> = {};
     costCenterEvents.forEach(event => {
-      const dateKey = new Date(event.eventTime).toISOString().split('T')[0];
+      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
       if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
       eventsByDate[dateKey].push(event);
     });
@@ -4732,7 +4725,7 @@ export async function calculateDailyFinancesForPeriod(
   const dates: string[] = [];
   
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = d.toLocaleDateString('en-CA');
     dates.push(dateStr);
   }
 
@@ -5095,7 +5088,7 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   const { workers, groups, attendanceEvents, workerDailyFinance } = await import('../drizzle/schema');
   
   const workDate = new Date(checkOutTime);
-  workDate.setHours(0, 0, 0, 0); // Start of day
+  workDate.setHours(0, 0, 0, 0); // Start of day (local time)
   
   // Get check_in time - look back up to 48 hours to support night shifts
   const lookbackTime = new Date(checkOutTime);
@@ -5151,8 +5144,8 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   let shiftEndTime: string | null = null;
   
   if (workerData.groupId) {
-    const dayOfWeek = workDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-    const workDateStr = typeof workDate === 'string' ? workDate : workDate.toISOString().split('T')[0];
+    const dayOfWeek = workDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday (local time)
+    const workDateStr = typeof workDate === 'string' ? workDate : workDate.toLocaleDateString('en-CA');
     
     const [schedule] = await db
       .select()
@@ -5199,10 +5192,12 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
     const [shiftStartHour, shiftStartMin] = shiftStartTime.split(':').map(Number);
     const [shiftEndHour, shiftEndMin] = shiftEndTime.split(':').map(Number);
     
-    const shiftStart = new Date(workDate);
+    // Build shift times in local time to match stored event times
+    const shiftDateBase = new Date(workDate.toLocaleDateString('en-CA') + 'T00:00:00');
+    const shiftStart = new Date(shiftDateBase);
     shiftStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
     
-    let shiftEnd = new Date(workDate);
+    let shiftEnd = new Date(shiftDateBase);
     shiftEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
     
     // If shift ends after midnight
@@ -5316,7 +5311,7 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
     });
   }
   
-  console.log(`✅ Daily finance calculated for worker ${workerId} on ${workDate.toISOString().split('T')[0]}`);
+  console.log(`✅ Daily finance calculated for worker ${workerId} on ${workDate.toLocaleDateString('en-CA')}`);
 }
 
 
@@ -5619,8 +5614,8 @@ export async function checkScheduleDateConflict(
     const batch = batches[0];
     return {
       batchCode: batch.batchCode,
-      periodStart: batch.periodStart instanceof Date ? batch.periodStart.toISOString().split('T')[0] : batch.periodStart,
-      periodEnd: batch.periodEnd instanceof Date ? batch.periodEnd.toISOString().split('T')[0] : batch.periodEnd,
+      periodStart: batch.periodStart instanceof Date ? batch.periodStart.toLocaleDateString('en-CA') : batch.periodStart,
+      periodEnd: batch.periodEnd instanceof Date ? batch.periodEnd.toLocaleDateString('en-CA') : batch.periodEnd,
       status: batch.status || 'draft'
     };
   }
@@ -5645,7 +5640,7 @@ export async function getEarliestSafeEffectiveDate(groupId: number): Promise<str
   
   if (groupWorkers.length === 0) {
     // No workers, today is safe
-    return new Date().toISOString().split('T')[0];
+    return new Date().toLocaleDateString('en-CA');
   }
   
   const workerIds = groupWorkers.map(w => w.id);
@@ -5668,13 +5663,13 @@ export async function getEarliestSafeEffectiveDate(groupId: number): Promise<str
   
   if (!latestBatch) {
     // No batches found, today is safe
-    return new Date().toISOString().split('T')[0];
+    return new Date().toLocaleDateString('en-CA');
   }
   
   // Return the day after the latest batch end date
   const safeDate = new Date(latestBatch.periodEnd);
   safeDate.setDate(safeDate.getDate() + 1);
-  return safeDate.toISOString().split('T')[0];
+  return safeDate.toLocaleDateString('en-CA');
 }
 
 
@@ -5743,9 +5738,9 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
   const { attendanceEvents, workers, groups } = await import('../drizzle/schema');
   
   // Get date range for the work date
-  const dateStr = workDate.toISOString().split('T')[0];
-  const startOfDay = new Date(`${dateStr}T00:00:00Z`);
-  const endOfDay = new Date(`${dateStr}T23:59:59Z`);
+  const dateStr = workDate.toLocaleDateString('en-CA');
+  const startOfDay = new Date(`${dateStr}T00:00:00`);
+  const endOfDay = new Date(`${dateStr}T23:59:59`);
   
   // Get all attendance events for the day
   const events = await db
@@ -5932,7 +5927,7 @@ export async function checkIncompleteAttendanceForPeriod(
     
     for (const record of dayIncomplete) {
       incompleteRecords.push({
-        date: currentDate.toISOString().split('T')[0],
+        date: currentDate.toLocaleDateString('en-CA'),
         workerCode: record.workerCode,
         workerName: record.workerName,
         incompleteType: record.incompleteType === 'missing_check_out' 
@@ -5957,10 +5952,8 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
   
 
 
-  const startOfDay = new Date(workDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(workDate);
-  endOfDay.setHours(23, 59, 59, 999);
+  const startOfDay = new Date(workDate + 'T00:00:00');
+  const endOfDay = new Date(workDate + 'T23:59:59.999');
 
   // Get all workers (optionally filtered by group)
   const workerConditions = [eq(workers.status, 'active')];

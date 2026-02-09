@@ -73,7 +73,7 @@ export default function WorkDays() {
       const dayNum = prevMonthLastDay - i;
       const date = new Date(selectedYear, selectedMonth - 2, dayNum);
       days.push({
-        date: date.toISOString().split('T')[0],
+        date: date.toLocaleDateString('en-CA'),
         dayNum,
         isCurrentMonth: false,
         dayOfWeek: date.getDay()
@@ -84,7 +84,7 @@ export default function WorkDays() {
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(selectedYear, selectedMonth - 1, i);
       days.push({
-        date: date.toISOString().split('T')[0],
+        date: date.toLocaleDateString('en-CA'),
         dayNum: i,
         isCurrentMonth: true,
         dayOfWeek: date.getDay()
@@ -96,7 +96,7 @@ export default function WorkDays() {
     for (let i = 1; i <= remainingDays; i++) {
       const date = new Date(selectedYear, selectedMonth, i);
       days.push({
-        date: date.toISOString().split('T')[0],
+        date: date.toLocaleDateString('en-CA'),
         dayNum: i,
         isCurrentMonth: false,
         dayOfWeek: date.getDay()

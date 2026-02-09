@@ -43,7 +43,7 @@ interface DailyPayrollItem {
 }
 
 export function PayrollDashboard() {
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'));
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

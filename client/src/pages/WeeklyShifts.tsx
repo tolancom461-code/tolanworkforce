@@ -58,7 +58,7 @@ export default function WeeklyShifts() {
 
   // Check date conflict
   const effectiveDate = applyOption === 'today' 
-    ? new Date().toISOString().split('T')[0] 
+    ? new Date().toLocaleDateString('en-CA') 
     : customDate;
 
   const { data: conflictData } = (trpc.groupSchedules as any).checkDateConflict.useQuery(
@@ -271,7 +271,7 @@ export default function WeeklyShifts() {
                     <Info className="h-4 w-4" />
                     <AlertDescription>
                       يمكنك اختيار أي تاريخ في الماضي أو المستقبل. القيد الوحيد: لا يمكن التعديل على فترات تشملها دفعات رواتب موجودة.
-                      {earliestSafeData && earliestSafeData.safeDate > new Date().toISOString().split('T')[0] && (
+                      {earliestSafeData && earliestSafeData.safeDate > new Date().toLocaleDateString('en-CA') && (
                         <span className="block mt-2 font-medium">
                           ℹ️ آخر دفعة رواتب: {new Date(earliestSafeData.safeDate).toLocaleDateString('ar-SA')}
                         </span>

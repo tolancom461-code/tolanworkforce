@@ -711,7 +711,7 @@ export const appRouter = router({
         const nextEventType = (!lastEvent || lastEvent.eventType === 'check_out') ? 'check_in' : 'check_out';
         
         // Get today's events
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString('en-CA');
         const todayEventsRaw = await db.getAttendanceEventsForEdit(worker.id, today);
         
         // Convert snake_case from DB to camelCase for frontend
@@ -1214,7 +1214,7 @@ export const appRouter = router({
         if (!event) throw new Error("سجل الحضور غير موجود");
         
         // Check if payroll batch exists for this date
-        const eventDate = new Date(event.eventTime).toISOString().split('T')[0];
+        const eventDate = new Date(event.eventTime).toLocaleDateString('en-CA');
         const batch = await db.checkPayrollBatchForDate(eventDate);
         if (batch) {
           throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
@@ -1415,7 +1415,7 @@ export const appRouter = router({
         if (!event) throw new Error("Event not found");
         
         // Check if payroll batch exists for this date
-        const eventDate = new Date(event.eventTime).toISOString().split('T')[0];
+        const eventDate = new Date(event.eventTime).toLocaleDateString('en-CA');
         const batch = await db.checkPayrollBatchForDate(eventDate);
         if (batch) {
           throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
@@ -1785,7 +1785,7 @@ export const appRouter = router({
         const buffer = await generatePayrollExcel(
           excelData,
           batch.batch.batchCode || `دفعة ${batch.batch.id}`,
-          `${batch.batch.periodStart.toISOString().split('T')[0]} - ${batch.batch.periodEnd.toISOString().split('T')[0]}`
+          `${batch.batch.periodStart.toLocaleDateString('en-CA')} - ${batch.batch.periodEnd.toLocaleDateString('en-CA')}`
         );
         
         // Return base64 encoded buffer
@@ -2107,8 +2107,8 @@ export const appRouter = router({
         const buffer = await generateBatchDetailsExcel(
           input.batchId,
           batch.batchCode || `Batch-${input.batchId}`,
-          batch.periodStart.toISOString().split('T')[0],
-          batch.periodEnd.toISOString().split('T')[0],
+          batch.periodStart.toLocaleDateString('en-CA'),
+          batch.periodEnd.toLocaleDateString('en-CA'),
           workers
         );
         
@@ -3019,7 +3019,7 @@ export const appRouter = router({
           return {
             success: true,
             data: buffer.toString('base64'),
-            filename: `groups_export_${new Date().toISOString().split('T')[0]}.xlsx`,
+            filename: `groups_export_${new Date().toLocaleDateString('en-CA')}.xlsx`,
           };
         } catch (error: any) {
           throw new TRPCError({
@@ -3038,7 +3038,7 @@ export const appRouter = router({
           return {
             success: true,
             data: buffer.toString('base64'),
-            filename: `workers_export_${new Date().toISOString().split('T')[0]}.xlsx`,
+            filename: `workers_export_${new Date().toLocaleDateString('en-CA')}.xlsx`,
           };
         } catch (error: any) {
           throw new TRPCError({

@@ -68,8 +68,8 @@ export function PeriodSelector({ onPeriodChange, defaultPeriodType = 'monthly' }
     }
 
     return {
-      start: start.toISOString().split('T')[0],
-      end: end.toISOString().split('T')[0],
+      start: start.toLocaleDateString('en-CA'),
+      end: end.toLocaleDateString('en-CA'),
     };
   }, [periodType, customStartDate, customEndDate]);
 

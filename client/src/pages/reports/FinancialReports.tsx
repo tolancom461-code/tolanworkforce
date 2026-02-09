@@ -15,8 +15,8 @@ export default function FinancialReports() {
   // Date range state
   const today = new Date();
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(firstDayOfMonth.toLocaleDateString('en-CA'));
+  const [endDate, setEndDate] = useState(today.toLocaleDateString('en-CA'));
   
   // Filter states
   const [selectedWorkerId, setSelectedWorkerId] = useState<number | null>(null);
@@ -61,8 +61,8 @@ export default function FinancialReports() {
       start = new Date(end.getFullYear(), end.getMonth(), 1);
     }
     
-    setStartDate(start.toISOString().split('T')[0]);
-    setEndDate(end.toISOString().split('T')[0]);
+    setStartDate(start.toLocaleDateString('en-CA'));
+    setEndDate(end.toLocaleDateString('en-CA'));
   };
   
   // Format currency

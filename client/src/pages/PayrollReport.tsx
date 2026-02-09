@@ -327,7 +327,7 @@ export default function PayrollReport() {
                 </div>
                 <div className="flex">
                   <span className="font-semibold w-32">تاريخ الإصدار:</span>
-                  <span>{new Date().toISOString().split('T')[0]}</span>
+                  <span>{new Date().toLocaleDateString('en-CA')}</span>
                 </div>
               </div>
 
@@ -406,7 +406,7 @@ export default function PayrollReport() {
               <div className="text-center text-sm text-gray-600 border-t pt-4 space-y-1">
                 <p>تم إنشاء هذا التقرير بواسطة نظام إدارة العمالة اليومية</p>
                 <p>
-                  تاريخ الطباعة: {new Date().toISOString().split('T')[0]} | المستخدم: Admin
+                  تاريخ الطباعة: {new Date().toLocaleDateString('en-CA')} | المستخدم: Admin
                 </p>
               </div>
             </CardContent>

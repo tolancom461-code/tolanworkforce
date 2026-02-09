@@ -34,7 +34,7 @@ export default function PayOverrides() {
   const [formData, setFormData] = useState({
     groupId: '', // إضافة حقل المجموعة
     workerId: '',
-    overrideDate: new Date().toISOString().split('T')[0],
+    overrideDate: new Date().toLocaleDateString('en-CA'),
     overrideType: 'bonus' as 'bonus' | 'deduction' | 'advance' | 'emergency_call',
     amount: '',
     reason: '',
@@ -55,7 +55,7 @@ export default function PayOverrides() {
       setFormData({
         groupId: '',
         workerId: '',
-        overrideDate: new Date().toISOString().split('T')[0],
+        overrideDate: new Date().toLocaleDateString('en-CA'),
         overrideType: 'bonus',
         amount: '',
         reason: '',

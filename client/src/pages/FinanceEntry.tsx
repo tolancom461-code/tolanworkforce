@@ -52,8 +52,8 @@ export default function FinanceEntry() {
   const { data: entries = [], isLoading, refetch } = trpc.dailyFinance.getRecords.useQuery(
     selectedWorkerId ? {
       workerId: selectedWorkerId,
-      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
+      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('en-CA'),
+      endDate: new Date().toLocaleDateString('en-CA'),
     } : undefined as any
   );
 

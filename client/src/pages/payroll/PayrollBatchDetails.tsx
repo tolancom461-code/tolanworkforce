@@ -144,11 +144,11 @@ export default function PayrollBatchDetails() {
     try {
       // Convert dates safely - handle both Date objects and strings
       const periodStart = batch!.batch.periodStart instanceof Date 
-        ? batch!.batch.periodStart.toISOString().split('T')[0]
-        : new Date(batch!.batch.periodStart).toISOString().split('T')[0];
+        ? batch!.batch.periodStart.toLocaleDateString('en-CA')
+        : new Date(batch!.batch.periodStart).toLocaleDateString('en-CA');
       const periodEnd = batch!.batch.periodEnd instanceof Date
-        ? batch!.batch.periodEnd.toISOString().split('T')[0]
-        : new Date(batch!.batch.periodEnd).toISOString().split('T')[0];
+        ? batch!.batch.periodEnd.toLocaleDateString('en-CA')
+        : new Date(batch!.batch.periodEnd).toLocaleDateString('en-CA');
       
       const data = await utils.client.payroll.getAttendanceForWorkerPeriod.query({
         workerId: worker.workerId,
@@ -695,7 +695,7 @@ export default function PayrollBatchDetails() {
                 try {
                   // Update check-in if changed
                   if (editTimeForm.checkInTime && editingDay.checkIn) {
-                    const date = new Date(editingDay.date).toISOString().split('T')[0];
+                    const date = new Date(editingDay.date).toLocaleDateString('en-CA');
                     const newCheckInTime = `${date}T${editTimeForm.checkInTime}:00`;
                     
                     await updateAttendanceMutation.mutateAsync({
@@ -707,7 +707,7 @@ export default function PayrollBatchDetails() {
                   
                   // Update check-out if changed
                   if (editTimeForm.checkOutTime && editingDay.checkOut) {
-                    const date = new Date(editingDay.date).toISOString().split('T')[0];
+                    const date = new Date(editingDay.date).toLocaleDateString('en-CA');
                     const newCheckOutTime = `${date}T${editTimeForm.checkOutTime}:00`;
                     
                     await updateAttendanceMutation.mutateAsync({
@@ -724,8 +724,8 @@ export default function PayrollBatchDetails() {
                   if (selectedWorker) {
                     const data = await utils.payroll.getAttendanceForWorkerPeriod.fetch({
                       workerId: selectedWorker.workerId,
-                      periodStart: batch?.batch?.periodStart?.toISOString().split('T')[0] || '',
-                      periodEnd: batch?.batch?.periodEnd?.toISOString().split('T')[0] || '',
+                      periodStart: batch?.batch?.periodStart?.toLocaleDateString('en-CA') || '',
+                      periodEnd: batch?.batch?.periodEnd?.toLocaleDateString('en-CA') || '',
                     });
                     setDailyData(data);
                   }

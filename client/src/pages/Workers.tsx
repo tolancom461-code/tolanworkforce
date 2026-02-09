@@ -161,7 +161,7 @@ export default function Workers() {
       groupId: worker.groupId,
       jobId: worker.jobId,
       photoUrl: worker.photoUrl || "",
-      hireDate: worker.hireDate ? new Date(worker.hireDate).toISOString().split('T')[0] : "",
+      hireDate: worker.hireDate ? new Date(worker.hireDate).toLocaleDateString('en-CA') : "",
       status: worker.status || "active",
     });
     setIsEditDialogOpen(true);
@@ -258,7 +258,7 @@ export default function Workers() {
       };
     });
 
-    const timestamp = new Date().toISOString().split('T')[0];
+    const timestamp = new Date().toLocaleDateString('en-CA');
     exportToExcel(exportData, `قائمة_العمال_${timestamp}`, 'العمال');
     toast.success('تم تصدير القائمة بنجاح');
   };

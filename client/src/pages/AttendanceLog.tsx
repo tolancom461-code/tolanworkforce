@@ -24,7 +24,7 @@ import { toast } from 'sonner';
 
 export default function AttendanceLog() {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'));
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [editCheckInTime, setEditCheckInTime] = useState('');
   const [editCheckOutTime, setEditCheckOutTime] = useState('');
