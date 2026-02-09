@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +30,12 @@ export default function AttendanceLog() {
   const [editCheckOutTime, setEditCheckOutTime] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAbsentDialogOpen, setIsAbsentDialogOpen] = useState(false);
+  const [isPrepareDialogOpen, setIsPrepareDialogOpen] = useState(false);
+  const [selectedAbsentWorker, setSelectedAbsentWorker] = useState<any>(null);
+  const [prepareCheckInTime, setPrepareCheckInTime] = useState('');
+  const [prepareCheckOutTime, setPrepareCheckOutTime] = useState('');
+  const [prepareNote, setPrepareNote] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   
@@ -60,6 +65,40 @@ export default function AttendanceLog() {
   const total = todayLogData?.total || 0;
   const { data: stats } = trpc.attendance.stats.useQuery({
     groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+  });
+
+  // Get absent workers
+  const { data: absentWorkers, refetch: refetchAbsent } = trpc.attendance.getAbsentWorkers.useQuery(
+    {
+      workDate: new Date(selectedDate),
+      groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+    },
+    { enabled: isAbsentDialogOpen }
+  );
+
+  // Mutations for manual attendance
+  const addCheckInMutation = trpc.attendance.addMissingCheckIn.useMutation({
+    onSuccess: () => {
+      toast.success('تم إضافة الحضور بنجاح');
+      refetchAbsent();
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'فشل إضافة الحضور');
+    }
+  });
+
+  const addCheckOutMutation = trpc.attendance.addMissingCheckOut.useMutation({
+    onSuccess: () => {
+      toast.success('تم إضافة الانصراف بنجاح');
+      setIsPrepareDialogOpen(false);
+      setIsAbsentDialogOpen(false);
+      refetchAbsent();
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'فشل إضافة الانصراف');
+    }
   });
 
   const exportMutation = trpc.attendance.exportToExcel.useMutation({
@@ -160,6 +199,46 @@ export default function AttendanceLog() {
         internalNote: editNote
       });
     }
+  };
+
+  const handlePrepareWorker = (worker: any) => {
+    setSelectedAbsentWorker(worker);
+    setPrepareCheckInTime('');
+    setPrepareCheckOutTime('');
+    setPrepareNote('');
+    setIsPrepareDialogOpen(true);
+  };
+
+  const handleSavePrepare = async () => {
+    if (!selectedAbsentWorker || !prepareCheckInTime || !prepareCheckOutTime) {
+      toast.error('يجب إدخال وقت الحضور والانصراف');
+      return;
+    }
+
+    const baseDate = new Date(selectedDate);
+    baseDate.setHours(0, 0, 0, 0);
+
+    // Add check-in
+    const [checkInHours, checkInMinutes] = prepareCheckInTime.split(':');
+    const checkInTime = new Date(baseDate);
+    checkInTime.setHours(parseInt(checkInHours), parseInt(checkInMinutes), 0, 0);
+
+    await addCheckInMutation.mutateAsync({
+      workerId: selectedAbsentWorker.workerId,
+      checkInTime: checkInTime.toISOString(),
+      note: prepareNote || 'تحضير يدوي'
+    });
+
+    // Add check-out
+    const [checkOutHours, checkOutMinutes] = prepareCheckOutTime.split(':');
+    const checkOutTime = new Date(baseDate);
+    checkOutTime.setHours(parseInt(checkOutHours), parseInt(checkOutMinutes), 0, 0);
+
+    await addCheckOutMutation.mutateAsync({
+      workerId: selectedAbsentWorker.workerId,
+      checkOutTime: checkOutTime.toISOString(),
+      note: prepareNote || 'تحضير يدوي'
+    });
   };
 
   const formatTime = (date: Date | string | null) => {
@@ -306,7 +385,7 @@ export default function AttendanceLog() {
         </Card>
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => setLocation(`/attendance/absent?date=${selectedDate}`)}
+          onClick={() => setIsAbsentDialogOpen(true)}
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -540,6 +619,116 @@ export default function AttendanceLog() {
             </Button>
             <Button onClick={handleSaveEdit} disabled={updateEventMutation.isPending}>
               {updateEventMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Absent Workers Dialog */}
+      <Dialog open={isAbsentDialogOpen} onOpenChange={setIsAbsentDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>العمال الغائبون</DialogTitle>
+            <DialogDescription>
+              قائمة العمال الغائبين ليوم {new Date(selectedDate).toLocaleDateString('ar-SA')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {!absentWorkers || absentWorkers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <p>لا يوجد عمال غائبون لهذا اليوم</p>
+              </div>
+            ) : (
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-red-50">
+                      <TableHead className="text-right">كود العامل</TableHead>
+                      <TableHead className="text-right">اسم العامل</TableHead>
+                      <TableHead className="text-right">المجموعة</TableHead>
+                      <TableHead className="text-right">الإجراء</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {absentWorkers.map((worker: any) => (
+                      <TableRow key={worker.workerId} className="bg-red-50/50">
+                        <TableCell className="font-mono">{worker.workerCode}</TableCell>
+                        <TableCell className="font-medium">{worker.workerName}</TableCell>
+                        <TableCell>{worker.groupName || '-'}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => handlePrepareWorker(worker)}
+                          >
+                            تحضير
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAbsentDialogOpen(false)}>
+              إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Prepare Worker Dialog */}
+      <Dialog open={isPrepareDialogOpen} onOpenChange={setIsPrepareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>تحضير يدوي</DialogTitle>
+            <DialogDescription>
+              إضافة حضور وانصراف يدوي للعامل: {selectedAbsentWorker?.workerName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="prepareCheckInTime">وقت الحضور *</Label>
+              <Input
+                id="prepareCheckInTime"
+                type="time"
+                value={prepareCheckInTime}
+                onChange={(e) => setPrepareCheckInTime(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prepareCheckOutTime">وقت الانصراف *</Label>
+              <Input
+                id="prepareCheckOutTime"
+                type="time"
+                value={prepareCheckOutTime}
+                onChange={(e) => setPrepareCheckOutTime(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prepareNote">ملاحظة (اختياري)</Label>
+              <Input
+                id="prepareNote"
+                value={prepareNote}
+                onChange={(e) => setPrepareNote(e.target.value)}
+                placeholder="سبب التحضير اليدوي..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPrepareDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={handleSavePrepare} 
+              disabled={addCheckInMutation.isPending || addCheckOutMutation.isPending}
+            >
+              {(addCheckInMutation.isPending || addCheckOutMutation.isPending) ? 'جاري الحفظ...' : 'حفظ'}
             </Button>
           </DialogFooter>
         </DialogContent>

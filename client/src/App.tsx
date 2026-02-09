@@ -45,7 +45,6 @@ import { PayrollDashboard } from "./pages/PayrollDashboard";
 
 import WeeklyShifts from "./pages/WeeklyShifts";
 import PunchesReviewCenter from "./pages/PunchesReviewCenter";
-import AbsentWorkers from "./pages/AbsentWorkers";
 import Backfill from "./pages/Backfill";
 import TestButton from "./pages/TestButton";
 
@@ -126,11 +125,6 @@ function Router() {
       </Route>
       <Route path="/attendance/reports" component={AttendanceReports} />
       <Route path="/attendance/export" component={AttendanceExport} />
-      <Route path="/attendance/absent">
-        <ProtectedRoute>
-          <AbsentWorkers />
-        </ProtectedRoute>
-      </Route>
       <Route path="/attendance/daily-management">
         <ProtectedRoute>
           <DailyManagement />
