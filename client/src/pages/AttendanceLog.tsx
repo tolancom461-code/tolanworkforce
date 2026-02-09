@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -303,16 +304,20 @@ export default function AttendanceLog() {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => setLocation(`/attendance/absent?date=${selectedDate}`)}
+        >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
                 <ArrowLeftCircle className="h-5 w-5 text-red-600" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-2xl font-bold">{stats?.absentToday || 0}</p>
                 <p className="text-sm text-muted-foreground">غائبون</p>
               </div>
+              <ArrowLeftCircle className="h-5 w-5 text-red-600 transform rotate-180" />
             </div>
           </CardContent>
         </Card>

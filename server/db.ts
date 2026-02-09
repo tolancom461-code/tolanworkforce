@@ -5882,3 +5882,57 @@ export async function checkIncompleteAttendanceForPeriod(
     incompleteRecords,
   };
 }
+// دالة مؤقتة لإضافتها إلى server/db.ts
+export async function getAbsentWorkers(workDate: Date, groupId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startOfDay = new Date(workDate);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(workDate);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  // Get all workers (optionally filtered by group)
+  let allWorkersQuery = db
+    .select({
+      workerId: workers.id,
+      workerCode: workers.code,
+      workerName: workers.fullName,
+      groupId: workers.groupId,
+      groupName: groups.name,
+    })
+    .from(workers)
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .where(eq(workers.isActive, true));
+
+  if (groupId) {
+    allWorkersQuery = allWorkersQuery.where(eq(workers.groupId, groupId));
+  }
+
+  const allWorkers = await allWorkersQuery;
+
+  // Get workers who have attendance records for this date
+  const workersWithAttendance = await db
+    .select({
+      workerId: attendanceEvents.workerId,
+    })
+    .from(attendanceEvents)
+    .where(
+      and(
+        gte(attendanceEvents.timestamp, startOfDay),
+        lte(attendanceEvents.timestamp, endOfDay)
+      )
+    )
+    .groupBy(attendanceEvents.workerId);
+
+  const workerIdsWithAttendance = new Set(
+    workersWithAttendance.map((w) => w.workerId)
+  );
+
+  // Filter out workers who have attendance
+  const absentWorkers = allWorkers.filter(
+    (worker) => !workerIdsWithAttendance.has(worker.workerId)
+  );
+
+  return absentWorkers;
+}

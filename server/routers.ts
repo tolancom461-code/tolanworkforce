@@ -845,6 +845,16 @@ export const appRouter = router({
         return [...incompleteTransformed, ...regularTransformed];
       }),
     
+    // Get absent workers for a specific date
+    getAbsentWorkers: protectedProcedure
+      .input(z.object({
+        workDate: z.date(),
+        groupId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getAbsentWorkers(input.workDate, input.groupId);
+      }),
+    
     // Approve a punch record
     approvePunch: protectedProcedure
       .input(z.object({
