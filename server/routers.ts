@@ -1067,13 +1067,16 @@ export const appRouter = router({
     
     // Get attendance stats
     stats: protectedProcedure
-      .input(z.object({ groupId: z.number().optional() }))
+      .input(z.object({ 
+        groupId: z.number().optional(),
+        date: z.string().optional() // Format: YYYY-MM-DD
+      }))
       .query(async ({ input }) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
+        const targetDate = input.date ? new Date(input.date) : new Date();
+        targetDate.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(targetDate);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        return await db.getAttendanceStats(today, tomorrow, input.groupId);
+        return await db.getAttendanceStats(targetDate, tomorrow, input.groupId);
       }),
     
     // Bulk update attendance times

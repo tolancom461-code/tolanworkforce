@@ -674,4 +674,15 @@
 - [x] إضافة نافذة التحضير اليدوي الثانية (وقت حضور + انصراف + ملاحظات)
 - [x] حذف الصفحة المنفصلة AbsentWorkers.tsx والـ route
 - [x] اختبار النافذة المنبثقة
+- [x] حفظ checkpoint
+
+
+## إصلاح عدم ظهور العمال الغائبين في النافذة المنبثقة
+- [x] فحص دالة getAbsentWorkers في server/db.ts
+- [x] فحص دالة حساب الإحصائيات (stats) في server/db.ts
+- [x] تحديد الاختلاف بين المنطقين
+- [x] إصلاح منطق getAbsentWorkers ليتطابق مع الإحصائيات
+- [x] إصلاح stats API ليأخذ date كمعامل
+- [x] إصلاح getAttendanceStats لاستخدام startDate/endDate المُمررة
+- [x] اختبار الإصلاح
 - [ ] حفظ checkpoint

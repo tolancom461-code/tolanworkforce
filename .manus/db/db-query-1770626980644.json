@@ -1,0 +1,18 @@
+{
+  "query": "SELECT DATE(event_time) as event_date, COUNT(DISTINCT worker_id) as present_count FROM attendance_events WHERE event_type = 'check_in' GROUP BY DATE(event_time) HAVING present_count < 6 ORDER BY event_date DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT DATE(event_time) as event_date, COUNT(DISTINCT worker_id) as present_count FROM attendance_events WHERE event_type = 'check_in' GROUP BY DATE(event_time) HAVING present_count < 6 ORDER BY event_date DESC LIMIT 5;",
+  "rows": [
+    {
+      "event_date": "2026-02-09",
+      "present_count": "2"
+    },
+    {
+      "event_date": "2026-02-07",
+      "present_count": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "event_date\tpresent_count\n2026-02-09\t2\n2026-02-07\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1586
+}

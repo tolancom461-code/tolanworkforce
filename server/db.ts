@@ -1022,18 +1022,13 @@ export async function getAttendanceStats(startDate: Date, endDate: Date, groupId
     allWorkers = allWorkers.filter(w => w.groupId === groupId);
   }
   
-  // Get today's check-ins
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  
+  // Get check-ins for the specified date range
   const todayEvents = await db
     .select()
     .from(attendanceEvents)
     .where(and(
-      gte(attendanceEvents.eventTime, today),
-      lt(attendanceEvents.eventTime, tomorrow),
+      gte(attendanceEvents.eventTime, startDate),
+      lt(attendanceEvents.eventTime, endDate),
       eq(attendanceEvents.eventType, 'check_in')
     ));
   
@@ -5886,6 +5881,8 @@ export async function checkIncompleteAttendanceForPeriod(
 export async function getAbsentWorkers(workDate: Date, groupId?: number) {
   const db = await getDb();
   if (!db) return [];
+  
+
 
   const startOfDay = new Date(workDate);
   startOfDay.setHours(0, 0, 0, 0);
@@ -5903,7 +5900,7 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
     })
     .from(workers)
     .leftJoin(groups, eq(workers.groupId, groups.id))
-    .where(eq(workers.isActive, true));
+    .where(eq(workers.status, 'active'));
 
   if (groupId) {
     allWorkersQuery = allWorkersQuery.where(eq(workers.groupId, groupId));
@@ -5911,7 +5908,8 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
 
   const allWorkers = await allWorkersQuery;
 
-  // Get workers who have attendance records for this date
+
+  // Get workers who have check_in records for this date (same logic as stats)
   const workersWithAttendance = await db
     .select({
       workerId: attendanceEvents.workerId,
@@ -5919,8 +5917,9 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
     .from(attendanceEvents)
     .where(
       and(
-        gte(attendanceEvents.timestamp, startOfDay),
-        lte(attendanceEvents.timestamp, endOfDay)
+        gte(attendanceEvents.eventTime, startOfDay),
+        lt(attendanceEvents.eventTime, endOfDay),
+        eq(attendanceEvents.eventType, 'check_in')
       )
     )
     .groupBy(attendanceEvents.workerId);
@@ -5929,10 +5928,12 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
     workersWithAttendance.map((w) => w.workerId)
   );
 
+
   // Filter out workers who have attendance
   const absentWorkers = allWorkers.filter(
     (worker) => !workerIdsWithAttendance.has(worker.workerId)
   );
+
 
   return absentWorkers;
 }

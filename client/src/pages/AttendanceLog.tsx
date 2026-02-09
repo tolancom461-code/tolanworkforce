@@ -64,17 +64,15 @@ export default function AttendanceLog() {
   const totalPages = todayLogData?.totalPages || 1;
   const total = todayLogData?.total || 0;
   const { data: stats } = trpc.attendance.stats.useQuery({
-    groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+    groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined,
+    date: selectedDate
   });
 
   // Get absent workers
-  const { data: absentWorkers, refetch: refetchAbsent } = trpc.attendance.getAbsentWorkers.useQuery(
-    {
-      workDate: new Date(selectedDate),
-      groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
-    },
-    { enabled: isAbsentDialogOpen }
-  );
+  const { data: absentWorkers, refetch: refetchAbsent } = trpc.attendance.getAbsentWorkers.useQuery({
+    workDate: new Date(selectedDate),
+    groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+  });
 
   // Mutations for manual attendance
   const addCheckInMutation = trpc.attendance.addMissingCheckIn.useMutation({

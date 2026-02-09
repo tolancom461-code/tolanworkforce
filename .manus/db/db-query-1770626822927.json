@@ -1,0 +1,52 @@
+{
+  "query": "SELECT id, code, full_name, status, group_id FROM workers ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, status, group_id FROM workers ORDER BY id;",
+  "rows": [
+    {
+      "id": "90013",
+      "code": "R01",
+      "full_name": "علي صالح",
+      "status": "active",
+      "group_id": "60002"
+    },
+    {
+      "id": "90014",
+      "code": "R02",
+      "full_name": "كمال خالد",
+      "status": "active",
+      "group_id": "60002"
+    },
+    {
+      "id": "90015",
+      "code": "R03",
+      "full_name": "فرحان مصطفى",
+      "status": "active",
+      "group_id": "60002"
+    },
+    {
+      "id": "90016",
+      "code": "R04",
+      "full_name": "مشرف خالد",
+      "status": "active",
+      "group_id": "60001"
+    },
+    {
+      "id": "90017",
+      "code": "R05",
+      "full_name": "احمد هارون",
+      "status": "active",
+      "group_id": "60001"
+    },
+    {
+      "id": "90018",
+      "code": "R06",
+      "full_name": "هادي عمر",
+      "status": "active",
+      "group_id": "60001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tstatus\tgroup_id\n90013\tR01\tعلي صالح\tactive\t60002\n90014\tR02\tكمال خالد\tactive\t60002\n90015\tR03\tفرحان مصطفى\tactive\t60002\n90016\tR04\tمشرف خالد\tactive\t60001\n90017\tR05\tاحمد هارون\tactive\t60001\n90018\tR06\tهادي عمر\tactive\t60001\n",
+  "stderr": "",
+  "execution_time_ms": 1547
+}
