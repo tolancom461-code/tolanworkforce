@@ -1,0 +1,70 @@
+{
+  "query": "SELECT \n  ae.id,\n  ae.worker_id,\n  w.manual_code as worker_code,\n  w.full_name as worker_name,\n  w.group_id,\n  g.name as group_name,\n  ae.event_type,\n  ae.event_time\nFROM attendance_events ae\nLEFT JOIN workers w ON ae.worker_id = w.id\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE DATE(ae.event_time) = '2026-02-07'\nORDER BY w.id, ae.event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  ae.id,\n  ae.worker_id,\n  w.manual_code as worker_code,\n  w.full_name as worker_name,\n  w.group_id,\n  g.name as group_name,\n  ae.event_type,\n  ae.event_time\nFROM attendance_events ae\nLEFT JOIN workers w ON ae.worker_id = w.id\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE DATE(ae.event_time) = '2026-02-07'\nORDER BY w.id, ae.event_time;",
+  "rows": [
+    {
+      "id": "90078",
+      "worker_id": "90016",
+      "worker_code": "R04",
+      "worker_name": "مشرف خالد",
+      "group_id": "60001",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:56"
+    },
+    {
+      "id": "240002",
+      "worker_id": "90016",
+      "worker_code": "R04",
+      "worker_name": "مشرف خالد",
+      "group_id": "60001",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 10:00:00"
+    },
+    {
+      "id": "240003",
+      "worker_id": "90016",
+      "worker_code": "R04",
+      "worker_name": "مشرف خالد",
+      "group_id": "60001",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:00:00"
+    },
+    {
+      "id": "240001",
+      "worker_id": "90016",
+      "worker_code": "R04",
+      "worker_name": "مشرف خالد",
+      "group_id": "60001",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:30:00"
+    },
+    {
+      "id": "90079",
+      "worker_id": "90017",
+      "worker_code": "R05",
+      "worker_name": "احمد هارون",
+      "group_id": "60001",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:19:00"
+    },
+    {
+      "id": "150002",
+      "worker_id": "90017",
+      "worker_code": "R05",
+      "worker_name": "احمد هارون",
+      "group_id": "60001",
+      "group_name": "مجموعة كاشيرات المطاعم",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:59:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tworker_code\tworker_name\tgroup_id\tgroup_name\tevent_type\tevent_time\n90078\t90016\tR04\tمشرف خالد\t60001\tمجموعة كاشيرات المطاعم\tcheck_in\t2026-02-07 08:18:56\n240002\t90016\tR04\tمشرف خالد\t60001\tمجموعة كاشيرات المطاعم\tcheck_in\t2026-02-07 10:00:00\n240003\t90016\tR04\tمشرف خالد\t60001\tمجموعة كاشيرات المطاعم\tcheck_out\t2026-02-07 11:00:00\n240001\t90016\tR04\tمشرف خالد\t60001\tمجموعة كاشيرات المطاعم\tcheck_out\t2026-02-07 11:30:00\n90079\t90017\tR05\tاحمد هارون\t60001\tمجموعة كاشيرات المطاعم\tcheck_in\t2026-02-07 08:19:00\n150002\t90017\tR05\tاحمد هارون\t60001\tمجموعة كاشيرات المطاعم\tcheck_out\t2026-02-07 11:59:00\n",
+  "stderr": "",
+  "execution_time_ms": 1610
+}

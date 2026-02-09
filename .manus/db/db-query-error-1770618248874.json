@@ -1,0 +1,8 @@
+{
+  "query": "SELECT \n  ae.id,\n  ae.worker_id,\n  w.manual_code as worker_code,\n  w.name as worker_name,\n  w.group_id,\n  g.name as group_name,\n  ae.event_type,\n  ae.event_time,\n  ae.work_date\nFROM attendance_events ae\nLEFT JOIN workers w ON ae.worker_id = w.id\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE ae.work_date = '2026-02-07'\nORDER BY w.id, ae.event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  ae.id,\n  ae.worker_id,\n  w.manual_code as worker_code,\n  w.name as worker_name,\n  w.group_id,\n  g.name as group_name,\n  ae.event_type,\n  ae.event_time,\n  ae.work_date\nFROM attendance_events ae\nLEFT JOIN workers w ON ae.worker_id = w.id\nLEFT JOIN `groups` g ON w.group_id = g.id\nWHERE ae.work_date = '2026-02-07'\nORDER BY w.id, ae.event_time;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'ae.work_date' in 'where clause'"
+  ]
+}

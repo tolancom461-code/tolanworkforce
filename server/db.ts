@@ -5622,6 +5622,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
   workerId: number;
   workerCode: string;
   workerName: string;
+  groupId: number | null;
   groupName: string;
   checkInId: number | null;
   checkInTime: Date | null;
@@ -5648,6 +5649,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
       eventTime: attendanceEvents.eventTime,
       workerCode: workers.code,
       workerName: workers.fullName,
+      groupId: workers.groupId,
       groupName: groups.name,
     })
     .from(attendanceEvents)
@@ -5666,6 +5668,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
     workerId: number;
     workerCode: string;
     workerName: string;
+    groupId: number | null;
     groupName: string;
     checkIns: Array<{ id: number; time: Date }>;
     checkOuts: Array<{ id: number; time: Date }>;
@@ -5677,6 +5680,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
         workerId: event.workerId,
         workerCode: event.workerCode,
         workerName: event.workerName,
+        groupId: event.groupId,
         groupName: event.groupName || 'N/A',
         checkIns: [],
         checkOuts: [],
@@ -5696,6 +5700,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
     workerId: number;
     workerCode: string;
     workerName: string;
+    groupId: number | null;
     groupName: string;
     checkInId: number | null;
     checkInTime: Date | null;
@@ -5715,6 +5720,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
           workerId: data.workerId,
           workerCode: data.workerCode,
           workerName: data.workerName,
+          groupId: data.groupId,
           groupName: data.groupName,
           checkInId: checkIn.id,
           checkInTime: checkIn.time,
@@ -5732,6 +5738,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
           workerId: data.workerId,
           workerCode: data.workerCode,
           workerName: data.workerName,
+          groupId: data.groupId,
           groupName: data.groupName,
           checkInId: null,
           checkInTime: null,
@@ -5751,6 +5758,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
           workerId: data.workerId,
           workerCode: data.workerCode,
           workerName: data.workerName,
+          groupId: data.groupId,
           groupName: data.groupName,
           checkInId: checkIn.id,
           checkInTime: checkIn.time,
@@ -5767,6 +5775,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
           workerId: data.workerId,
           workerCode: data.workerCode,
           workerName: data.workerName,
+          groupId: data.groupId,
           groupName: data.groupName,
           checkInId: null,
           checkInTime: null,
