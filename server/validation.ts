@@ -81,8 +81,6 @@ export function validateGroupData(data: {
   workMinutes?: number;
   latePenaltyRate?: number;
   earlyLeavePenaltyRate?: number;
-  shiftStartTime?: string;
-  shiftEndTime?: string;
 }): ValidationResult {
   const errors: string[] = [];
 
@@ -142,26 +140,6 @@ export function validateGroupData(data: {
     }
     if (data.earlyLeavePenaltyRate > 100) {
       errors.push('Early leave penalty rate cannot exceed 100%');
-    }
-  }
-
-  // Validate shift times
-  if (data.shiftStartTime !== undefined) {
-    if (!isValidTimeFormat(data.shiftStartTime)) {
-      errors.push('Shift start time must be in HH:MM format');
-    }
-  }
-
-  if (data.shiftEndTime !== undefined) {
-    if (!isValidTimeFormat(data.shiftEndTime)) {
-      errors.push('Shift end time must be in HH:MM format');
-    }
-  }
-
-  // Validate shift time order
-  if (data.shiftStartTime && data.shiftEndTime) {
-    if (data.shiftStartTime >= data.shiftEndTime) {
-      errors.push('Shift end time must be after shift start time');
     }
   }
 

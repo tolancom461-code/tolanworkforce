@@ -194,7 +194,6 @@ describe('Excel Import/Export', () => {
           costCenterId: null,
           supervisorId: null,
           dailyRate: '100.00',
-          workHours: '8.00',
           dailyWage: '100.00',
           workMinutes: 480,
           latePenaltyRate: '5.00',

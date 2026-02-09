@@ -19,7 +19,6 @@ describe('Payroll Functions', () => {
       code: 'TEST-GROUP-001',
       name: 'Test Group',
       dailyRate: 500,
-      workHours: 8,
       isActive: true,
     }).returning({ id: groups.id });
     

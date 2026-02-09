@@ -52,8 +52,7 @@ export const groups = mysqlTable("groups", {
   costCenterId: int("cost_center_id").references(() => costCenters.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   supervisorId: int("supervisor_id").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   dailyRate: decimal("daily_rate", { precision: 10, scale: 2 }),
-  workHours: decimal("work_hours", { precision: 4, scale: 2 }).default("8.00"),
-  // New flexible settings (NULL by default)
+  // Flexible financial settings
   dailyWage: decimal("daily_wage", { precision: 10, scale: 2 }),
   workMinutes: int("work_minutes"),
   minuteCost: decimal("minute_cost", { precision: 10, scale: 4 }),

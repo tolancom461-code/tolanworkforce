@@ -19,7 +19,6 @@ describe('Payroll Triggers', () => {
       code: 'TRIGGER-TEST-GROUP',
       name: 'Trigger Test Group',
       dailyRate: 500,
-      workHours: 8,
       isActive: true,
     }).returning({ id: groups.id });
     

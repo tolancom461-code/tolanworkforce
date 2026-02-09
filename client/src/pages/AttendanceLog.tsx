@@ -214,30 +214,51 @@ export default function AttendanceLog() {
       return;
     }
 
-    const baseDate = new Date(selectedDate);
-    baseDate.setHours(0, 0, 0, 0);
+    try {
+      const baseDate = new Date(selectedDate);
+      baseDate.setHours(0, 0, 0, 0);
 
-    // Add check-in
-    const [checkInHours, checkInMinutes] = prepareCheckInTime.split(':');
-    const checkInTime = new Date(baseDate);
-    checkInTime.setHours(parseInt(checkInHours), parseInt(checkInMinutes), 0, 0);
+      // Add check-in
+      const [checkInHours, checkInMinutes] = prepareCheckInTime.split(':');
+      const checkInTime = new Date(baseDate);
+      checkInTime.setHours(parseInt(checkInHours), parseInt(checkInMinutes), 0, 0);
 
-    await addCheckInMutation.mutateAsync({
-      workerId: selectedAbsentWorker.workerId,
-      checkInTime: checkInTime.toISOString(),
-      note: prepareNote || 'تحضير يدوي'
-    });
+      console.log('Adding check-in:', {
+        workerId: selectedAbsentWorker.workerId,
+        checkInTime: checkInTime.toISOString(),
+        note: prepareNote || 'تحضير يدوي'
+      });
 
-    // Add check-out
-    const [checkOutHours, checkOutMinutes] = prepareCheckOutTime.split(':');
-    const checkOutTime = new Date(baseDate);
-    checkOutTime.setHours(parseInt(checkOutHours), parseInt(checkOutMinutes), 0, 0);
+      await addCheckInMutation.mutateAsync({
+        workerId: selectedAbsentWorker.workerId,
+        checkInTime: checkInTime.toISOString(),
+        note: prepareNote || 'تحضير يدوي'
+      });
 
-    await addCheckOutMutation.mutateAsync({
-      workerId: selectedAbsentWorker.workerId,
-      checkOutTime: checkOutTime.toISOString(),
-      note: prepareNote || 'تحضير يدوي'
-    });
+      // Add check-out
+      const [checkOutHours, checkOutMinutes] = prepareCheckOutTime.split(':');
+      const checkOutTime = new Date(baseDate);
+      checkOutTime.setHours(parseInt(checkOutHours), parseInt(checkOutMinutes), 0, 0);
+
+      console.log('Adding check-out:', {
+        workerId: selectedAbsentWorker.workerId,
+        checkOutTime: checkOutTime.toISOString(),
+        note: prepareNote || 'تحضير يدوي'
+      });
+
+      await addCheckOutMutation.mutateAsync({
+        workerId: selectedAbsentWorker.workerId,
+        checkOutTime: checkOutTime.toISOString(),
+        note: prepareNote || 'تحضير يدوي'
+      });
+
+      toast.success('تم إضافة الحضور والانصراف بنجاح');
+      setIsPrepareDialogOpen(false);
+      setIsAbsentDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error in handleSavePrepare:', error);
+      toast.error(error.message || 'فشل إضافة الحضور');
+    }
   };
 
   const formatTime = (date: Date | string | null) => {

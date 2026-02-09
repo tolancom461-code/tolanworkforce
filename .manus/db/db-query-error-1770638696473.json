@@ -1,0 +1,8 @@
+{
+  "query": "SELECT w.id, w.code, w.full_name, w.daily_rate, w.group_id, \n       pbi.days_worked, pbi.total_deductions, pbi.total_bonuses, pbi.net_amount\nFROM workers w\nLEFT JOIN payroll_batch_items pbi ON w.id = pbi.worker_id AND pbi.batch_id IN (SELECT id FROM payroll_batches WHERE period_start = '2026-02-02')\nWHERE w.group_id = 1\nORDER BY w.code;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT w.id, w.code, w.full_name, w.daily_rate, w.group_id, \n       pbi.days_worked, pbi.total_deductions, pbi.total_bonuses, pbi.net_amount\nFROM workers w\nLEFT JOIN payroll_batch_items pbi ON w.id = pbi.worker_id AND pbi.batch_id IN (SELECT id FROM payroll_batches WHERE period_start = '2026-02-02')\nWHERE w.group_id = 1\nORDER BY w.code;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1105 (HY000) at line 1: ON condition doesn't support subqueries yet"
+  ]
+}

@@ -61,7 +61,6 @@ export const GroupCreateSchema = z.object({
   costCenterId: z.number().int().positive().optional().nullable(),
   supervisorId: z.number().int().positive().optional().nullable(),
   dailyRate: CurrencySchema.optional(),
-  workHours: z.string().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -72,7 +71,6 @@ export const GroupUpdateSchema = z.object({
   costCenterId: z.number().int().positive().optional().nullable(),
   supervisorId: z.number().int().positive().optional().nullable(),
   dailyRate: CurrencySchema.optional(),
-  workHours: z.string().optional(),
   isActive: z.boolean().optional(),
 });
 

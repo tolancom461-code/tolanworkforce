@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, name, code FROM `groups` LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, name, code FROM `groups` LIMIT 10;",
+  "rows": [
+    {
+      "id": "60001",
+      "name": "مجموعة كاشيرات المطاعم",
+      "code": "GRP01"
+    },
+    {
+      "id": "60002",
+      "name": "مجموعة النظافة",
+      "code": "GRP02"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tcode\n60001\tمجموعة كاشيرات المطاعم\tGRP01\n60002\tمجموعة النظافة\tGRP02\n",
+  "stderr": "",
+  "execution_time_ms": 1593
+}

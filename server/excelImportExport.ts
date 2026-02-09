@@ -11,13 +11,10 @@ export const GroupImportSchema = z.object({
   costCenterId: z.number().optional().nullable(),
   supervisorId: z.number().optional().nullable(),
   dailyRate: z.string().optional().nullable(),
-  workHours: z.string().optional().nullable(),
   dailyWage: z.string().optional().nullable(),
   workMinutes: z.string().optional().nullable(),
   latePenaltyRate: z.string().optional().nullable(),
   earlyLeavePenaltyRate: z.string().optional().nullable(),
-  shiftStartTime: z.string().optional().nullable(),
-  shiftEndTime: z.string().optional().nullable(),
   isActive: z.boolean().optional().default(true),
 });
 
@@ -69,13 +66,11 @@ export async function parseGroupsFromExcel(buffer: any): Promise<{
         costCenterId: values[3] ? parseInt(String(values[3])) : null,
         supervisorId: values[4] ? parseInt(String(values[4])) : null,
         dailyRate: values[5] ? String(values[5]) : null,
-        workHours: values[6] ? String(values[6]) : null,
         dailyWage: values[7] ? String(values[7]) : null,
         workMinutes: values[8] ? String(values[8]) : null,
         latePenaltyRate: values[9] ? String(values[9]) : null,
         earlyLeavePenaltyRate: values[10] ? String(values[10]) : null,
-        shiftStartTime: values[11] ? String(values[11]) : null,
-        shiftEndTime: values[12] ? String(values[12]) : null,
+
         isActive: values[13] !== false,
       };
 
@@ -154,13 +149,10 @@ export async function generateGroupsExcelTemplate(): Promise<any> {
     { header: 'مركز التكلفة ID', key: 'costCenterId', width: 15 },
     { header: 'المشرف ID', key: 'supervisorId', width: 15 },
     { header: 'معدل الراتب اليومي', key: 'dailyRate', width: 18 },
-    { header: 'ساعات العمل', key: 'workHours', width: 15 },
     { header: 'الراتب اليومي', key: 'dailyWage', width: 15 },
     { header: 'دقائق العمل', key: 'workMinutes', width: 15 },
     { header: 'معدل غرامة التأخير', key: 'latePenaltyRate', width: 18 },
     { header: 'معدل غرامة المغادرة المبكرة', key: 'earlyLeavePenaltyRate', width: 20 },
-    { header: 'وقت بداية الورديه', key: 'shiftStartTime', width: 18 },
-    { header: 'وقت نهاية الورديه', key: 'shiftEndTime', width: 18 },
     { header: 'نشط', key: 'isActive', width: 10 },
   ];
 
@@ -177,13 +169,11 @@ export async function generateGroupsExcelTemplate(): Promise<any> {
     costCenterId: 1,
     supervisorId: 1,
     dailyRate: '100.00',
-    workHours: '8.00',
     dailyWage: '100.00',
     workMinutes: 480,
     latePenaltyRate: '5.00',
     earlyLeavePenaltyRate: '5.00',
-    shiftStartTime: '08:00',
-    shiftEndTime: '16:00',
+
     isActive: true,
   });
 
@@ -239,13 +229,10 @@ export async function generateGroupsExcelExport(groups: any[]): Promise<any> {
     { header: 'مركز التكلفة ID', key: 'costCenterId', width: 15 },
     { header: 'المشرف ID', key: 'supervisorId', width: 15 },
     { header: 'معدل الراتب اليومي', key: 'dailyRate', width: 18 },
-    { header: 'ساعات العمل', key: 'workHours', width: 15 },
     { header: 'الراتب اليومي', key: 'dailyWage', width: 15 },
     { header: 'دقائق العمل', key: 'workMinutes', width: 15 },
     { header: 'معدل غرامة التأخير', key: 'latePenaltyRate', width: 18 },
     { header: 'معدل غرامة المغادرة المبكرة', key: 'earlyLeavePenaltyRate', width: 20 },
-    { header: 'وقت بداية الورديه', key: 'shiftStartTime', width: 18 },
-    { header: 'وقت نهاية الورديه', key: 'shiftEndTime', width: 18 },
     { header: 'نشط', key: 'isActive', width: 10 },
     { header: 'تاريخ الإنشاء', key: 'createdAt', width: 18 },
   ];
@@ -265,13 +252,10 @@ export async function generateGroupsExcelExport(groups: any[]): Promise<any> {
       costCenterId: group.costCenterId,
       supervisorId: group.supervisorId,
       dailyRate: group.dailyRate,
-      workHours: group.workHours,
       dailyWage: group.dailyWage,
       workMinutes: group.workMinutes,
       latePenaltyRate: group.latePenaltyRate,
       earlyLeavePenaltyRate: group.earlyLeavePenaltyRate,
-      shiftStartTime: group.shiftStartTime,
-      shiftEndTime: group.shiftEndTime,
       isActive: group.isActive ? 'نعم' : 'لا',
       createdAt: group.createdAt,
     });

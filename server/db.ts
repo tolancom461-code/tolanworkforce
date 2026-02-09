@@ -275,7 +275,6 @@ function transformGroup(group: any): any {
     costCenterId: group.costCenterId,
     supervisorId: group.supervisorId,
     dailyRate: group.dailyRate,
-    workHours: group.workHours,
     dailyWage: group.dailyWage,
     workMinutes: group.workMinutes,
     minuteCost: group.minuteCost,
@@ -1114,24 +1113,24 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
 
   const { attendanceEvents, workers, groups, workDays, workerDailyFinance } = await import('../drizzle/schema');
   
-
-  
   // Get worker with group info
   const [worker] = await db.select().from(workers).where(eq(workers.id, workerId)).limit(1);
   if (!worker) throw new Error("العامل غير موجود");
   
   // Get group and shift info
   let dailyRate = safeParseDecimal(worker.dailyRate);
-  let expectedStartTime = '08:00';
-  let expectedEndTime = '17:00';
   
-  // New: Group settings for minute-based calculations
+  // Group settings for minute-based calculations
   let groupDailyWage: number | null = null;
   let groupWorkMinutes: number | null = null;
   let groupLatePenaltyRate: number | null = null;
   let groupEarlyLeavePenaltyRate: number | null = null;
+  
+  // ⚠️ CRITICAL: Shift times from group_schedules are the SOLE reference
+  // If no shift is defined, NO penalties are calculated
   let shiftStartTime: string | null = null;
   let shiftEndTime: string | null = null;
+  let hasShiftDefined = false;
   
   if (worker.groupId) {
     const [group] = await db.select().from(groups).where(eq(groups.id, worker.groupId)).limit(1);
@@ -1139,7 +1138,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       if (group.dailyRate) {
         dailyRate = dailyRate || safeParseDecimal(group.dailyRate);
       }
-      // Load new flexible settings
+      // Load group settings
       groupDailyWage = group.dailyWage ? safeParseDecimal(group.dailyWage) : null;
       groupWorkMinutes = safeParseInt(group.workMinutes);
       groupLatePenaltyRate = group.latePenaltyRate ? safeParseDecimal(group.latePenaltyRate) : null;
@@ -1147,7 +1146,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       
       // Get shift times from weekly schedule based on day of week and effective date
       const workDateObj = typeof workDate === 'string' ? new Date(workDate) : workDate;
-      const dayOfWeek = workDateObj.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+      const dayOfWeek = workDateObj.getDay();
       const workDateStr = typeof workDate === 'string' ? workDate : workDateObj.toISOString().split('T')[0];
       
       const [schedule] = await db
@@ -1170,10 +1169,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       if (schedule) {
         shiftStartTime = schedule.startTime;
         shiftEndTime = schedule.endTime;
-        
-        // If shift times are defined, use them as expected times
-        expectedStartTime = shiftStartTime;
-        expectedEndTime = shiftEndTime;
+        hasShiftDefined = true;
       }
     }
   }
@@ -1181,8 +1177,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   // Check if it's a work day
   const [workDay] = await db.select().from(workDays).where(eq(workDays.workDate, sql`${workDate}`)).limit(1);
   if (workDay && (workDay.dayType === 'holiday' || workDay.dayType === 'weekend')) {
-    // No work expected on holidays/weekends
-    return { baseAmount: 0, deductions: 0, bonuses: 0, lateMinutes: 0, earlyLeaveMinutes: 0 };
+    return { baseAmount: 0, deductions: 0, bonuses: 0, lateMinutes: 0, earlyLeaveMinutes: 0, actualWorkMinutes: 0 };
   }
   
   // Get attendance events for the day
@@ -1206,96 +1201,102 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   
   let lateMinutes = 0;
   let earlyLeaveMinutes = 0;
-  let actualCheckInTime: Date | null = null;
-  let actualCheckOutTime: Date | null = null;
-  
-  // Parse shift times
-  const [shiftStartHour, shiftStartMin] = expectedStartTime.split(':').map(Number);
-  const [shiftEndHour, shiftEndMin] = expectedEndTime.split(':').map(Number);
-  
-  if (checkIn) {
-    const checkInTime = new Date(checkIn.eventTime);
-    const shiftStart = new Date(checkInTime);
-    shiftStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
-    
-    // Financial calculation: use shift start if checked in before shift
-    // This means early arrival is NOT counted financially
-    actualCheckInTime = checkInTime < shiftStart ? shiftStart : checkInTime;
-    
-    // Calculate late minutes (only if checked in after shift start)
-    if (checkInTime > shiftStart) {
-      lateMinutes = Math.round((checkInTime.getTime() - shiftStart.getTime()) / (1000 * 60));
-    }
-  }
-  
-  if (checkOut) {
-    const checkOutTime = new Date(checkOut.eventTime);
-    const shiftEnd = new Date(checkOutTime);
-    shiftEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
-    
-    // Financial calculation: use shift end if checked out after shift
-    // This means late departure is NOT counted financially
-    actualCheckOutTime = checkOutTime > shiftEnd ? shiftEnd : checkOutTime;
-    
-    // Calculate early leave minutes (only if checked out before shift end)
-    if (checkOutTime < shiftEnd) {
-      earlyLeaveMinutes = Math.round((shiftEnd.getTime() - checkOutTime.getTime()) / (1000 * 60));
-    }
-  }
-  
-  // Calculate deductions based on late/early
+  let actualWorkMinutes = 0;
+  let baseAmount = 0;
   let deductions = 0;
   
-  // Use new minute-based calculation if group settings are available
-  if (groupDailyWage && groupWorkMinutes && groupWorkMinutes > 0) {
-    // Use calculateLatePenalty and calculateEarlyLeavePenalty
-    if (lateMinutes > 0) {
-      deductions += calculateLatePenalty(groupDailyWage, groupWorkMinutes, lateMinutes, groupLatePenaltyRate);
-    }
-    if (earlyLeaveMinutes > 0) {
-      deductions += calculateEarlyLeavePenalty(groupDailyWage, groupWorkMinutes, earlyLeaveMinutes, groupEarlyLeavePenaltyRate);
-    }
-  } else {
-    // Fallback to old hourly calculation
-    const hourlyRate = dailyRate / 8; // Assuming 8 hour work day
+  // If worker has both check-in and check-out
+  if (checkIn && checkOut) {
+    const checkInTime = new Date(checkIn.eventTime);
+    const checkOutTime = new Date(checkOut.eventTime);
     
-    if (lateMinutes > 0) {
-      deductions += (lateMinutes / 60) * hourlyRate;
-    }
-    if (earlyLeaveMinutes > 0) {
-      deductions += (earlyLeaveMinutes / 60) * hourlyRate;
-    }
-  }
-  
-  // Round deductions
-  deductions = Math.round(deductions * 100) / 100;
-  
-  // Calculate baseAmount based on actual work hours
-  let baseAmount = 0;
-  let actualWorkMinutes = 0;
-  
-  if (actualCheckInTime && actualCheckOutTime) {
-    // Calculate actual work minutes (within shift boundaries)
-    actualWorkMinutes = Math.round((actualCheckOutTime.getTime() - actualCheckInTime.getTime()) / (1000 * 60));
+    // Raw work minutes (for attendance log display)
+    const rawWorkMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
     
-    if (groupDailyWage && groupWorkMinutes && groupWorkMinutes > 0) {
-      // Use minute-based calculation: (actual minutes / expected minutes) × daily wage
-      baseAmount = (actualWorkMinutes / groupWorkMinutes) * groupDailyWage;
+    // Base amount = fixed daily wage
+    if (groupDailyWage && groupDailyWage > 0) {
+      baseAmount = groupDailyWage;
+    } else if (dailyRate > 0) {
+      baseAmount = dailyRate;
+    }
+    
+    // ⚠️ SHIFT-BASED CALCULATIONS: Only if shift is defined in group_schedules
+    if (hasShiftDefined && shiftStartTime && shiftEndTime) {
+      const [shiftStartHour, shiftStartMin] = shiftStartTime.split(':').map(Number);
+      const [shiftEndHour, shiftEndMin] = shiftEndTime.split(':').map(Number);
+      
+      const shiftStart = new Date(checkInTime);
+      shiftStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
+      
+      const shiftEnd = new Date(checkInTime);
+      shiftEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
+      
+      // Financial check-in: capped to shift start (early arrival not counted)
+      const financialCheckIn = checkInTime < shiftStart ? shiftStart : checkInTime;
+      // Financial check-out: capped to shift end (late departure not counted)
+      const financialCheckOut = checkOutTime > shiftEnd ? shiftEnd : checkOutTime;
+      
+      // Financial work minutes (within shift boundaries)
+      if (financialCheckOut > financialCheckIn) {
+        const financialMinutes = Math.round((financialCheckOut.getTime() - financialCheckIn.getTime()) / (1000 * 60));
+        actualWorkMinutes = groupWorkMinutes && groupWorkMinutes > 0 
+          ? Math.min(financialMinutes, groupWorkMinutes) 
+          : financialMinutes;
+      } else {
+        // Worker left before shift started or arrived after shift ended
+        actualWorkMinutes = 0;
+      }
+      
+      // Late minutes: only if checked in AFTER shift start
+      if (checkInTime > shiftStart) {
+        lateMinutes = Math.round((checkInTime.getTime() - shiftStart.getTime()) / (1000 * 60));
+      }
+      
+      // Early leave minutes: only if checked out BEFORE shift end
+      if (checkOutTime < shiftEnd) {
+        earlyLeaveMinutes = Math.round((shiftEnd.getTime() - checkOutTime.getTime()) / (1000 * 60));
+      }
+      
+      // Calculate deductions using penalty rates
+      if (groupDailyWage && groupWorkMinutes && groupWorkMinutes > 0) {
+        const minuteCost = groupDailyWage / groupWorkMinutes;
+        
+        if (lateMinutes > 0 && groupLatePenaltyRate) {
+          // penaltyRate is percentage: 200% = double the minute cost
+          deductions += minuteCost * lateMinutes * (groupLatePenaltyRate / 100);
+        }
+        if (earlyLeaveMinutes > 0 && groupEarlyLeavePenaltyRate) {
+          deductions += minuteCost * earlyLeaveMinutes * (groupEarlyLeavePenaltyRate / 100);
+        }
+      }
     } else {
-      // Fallback: assume 8-hour work day (480 minutes)
-      const expectedMinutes = 480;
-      baseAmount = (actualWorkMinutes / expectedMinutes) * dailyRate;
+      // ❌ NO SHIFT DEFINED: No penalties calculated
+      // Worker gets full daily wage, no late/early deductions
+      // Work minutes = raw work minutes capped at groupWorkMinutes
+      if (groupWorkMinutes && groupWorkMinutes > 0) {
+        actualWorkMinutes = Math.min(rawWorkMinutes, groupWorkMinutes);
+      } else {
+        actualWorkMinutes = rawWorkMinutes;
+      }
     }
     
-    // Round to 2 decimal places
+    // Round deductions
+    deductions = Math.round(deductions * 100) / 100;
+    
+    // ⚠️ CAP: Deductions cannot exceed base amount (net >= 0)
+    if (deductions > baseAmount) {
+      deductions = baseAmount;
+    }
+    
+    // Round base amount
     baseAmount = Math.round(baseAmount * 100) / 100;
+    
   } else if (!checkIn && !checkOut) {
     // Absent: no base amount
     baseAmount = 0;
     actualWorkMinutes = 0;
   } else {
     // Incomplete attendance (only check-in or only check-out)
-    // For now, give 0 base amount (can be adjusted manually)
     baseAmount = 0;
     actualWorkMinutes = 0;
   }
@@ -2104,16 +2105,65 @@ export async function createPayrollBatch(params: {
   const sequence = String(batchesThisMonth.length + 1).padStart(3, '0');
   const finalBatchCode = `${batchCode}-${sequence}`;
 
-  // Use items from parameters instead of calculating from workerDailyFinance
-  console.log('[createPayrollBatch] Using items from parameters:', params.items.length, 'items');
-  const batchItems = params.items.map(item => ({
-    workerId: item.workerId,
-    daysWorked: 0, // Not provided in items
-    baseAmount: item.baseAmount,
-    totalDeductions: item.deductions,
-    totalBonuses: item.bonuses,
-    netAmount: item.netAmount,
-  }));
+  // If items are empty, calculate from workerDailyFinance
+  let batchItems: Array<{
+    workerId: number;
+    daysWorked: number;
+    baseAmount: string;
+    totalDeductions: string;
+    totalBonuses: string;
+    netAmount: string;
+  }> = [];
+  
+  if (params.items.length === 0) {
+    console.log('[createPayrollBatch] Items empty, calculating from workerDailyFinance...');
+    
+    // Get all workers in the group (or all workers if no group specified)
+    let workersToInclude: any[] = [];
+    if (params.groupId) {
+      workersToInclude = await db.select().from(workers).where(eq(workers.groupId, params.groupId));
+    } else {
+      workersToInclude = await db.select().from(workers);
+    }
+    
+    console.log('[createPayrollBatch] Found', workersToInclude.length, 'workers to include');
+    
+    // Calculate finance for each worker
+    for (const worker of workersToInclude) {
+      const finance = await getDailyFinanceRecords(
+        worker.id,
+        periodStartDate,
+        periodEndDate
+      );
+      
+      const baseAmount = finance.reduce((sum, day) => sum + parseFloat(day.baseAmount || '0'), 0);
+      const totalDeductions = finance.reduce((sum, day) => sum + parseFloat(day.deductions || '0'), 0);
+      const totalBonuses = finance.reduce((sum, day) => sum + parseFloat(day.bonuses || '0'), 0);
+      const netAmount = baseAmount - totalDeductions + totalBonuses;
+      const daysWorked = finance.length;
+      
+      batchItems.push({
+        workerId: worker.id,
+        daysWorked,
+        baseAmount: baseAmount.toFixed(2),
+        totalDeductions: totalDeductions.toFixed(2),
+        totalBonuses: totalBonuses.toFixed(2),
+        netAmount: netAmount.toFixed(2),
+      });
+    }
+    
+    console.log('[createPayrollBatch] Calculated', batchItems.length, 'batch items');
+  } else {
+    console.log('[createPayrollBatch] Using items from parameters:', params.items.length, 'items');
+    batchItems = params.items.map(item => ({
+      workerId: item.workerId,
+      daysWorked: 0, // Not provided in items
+      baseAmount: item.baseAmount,
+      totalDeductions: item.deductions,
+      totalBonuses: item.bonuses,
+      netAmount: item.netAmount,
+    }));
+  }
 
   // Calculate batch totals
   const totalAmount = batchItems.reduce((sum, item) => sum + parseFloat(item.netAmount), 0);
@@ -3233,7 +3283,9 @@ export function calculateLatePenalty(
 ): number {
   if (!dailyWage || !workMinutes || workMinutes <= 0 || !latePenaltyRate) return 0;
   const minuteCost = dailyWage / workMinutes;
-  const penalty = minuteCost * lateMinutes * latePenaltyRate;
+  // latePenaltyRate is stored as percentage (e.g., 100 = 100% = 1x multiplier)
+  const rateMultiplier = latePenaltyRate / 100;
+  const penalty = minuteCost * lateMinutes * rateMultiplier;
   return Math.round(penalty * 100) / 100;
 }
 
@@ -3250,7 +3302,9 @@ export function calculateEarlyLeavePenalty(
 ): number {
   if (!dailyWage || !workMinutes || workMinutes <= 0 || !earlyLeavePenaltyRate) return 0;
   const minuteCost = dailyWage / workMinutes;
-  const penalty = minuteCost * earlyLeaveMinutes * earlyLeavePenaltyRate;
+  // earlyLeavePenaltyRate is stored as percentage (e.g., 50 = 50% = 0.5x multiplier)
+  const rateMultiplier = earlyLeavePenaltyRate / 100;
+  const penalty = minuteCost * earlyLeaveMinutes * rateMultiplier;
   return Math.round(penalty * 100) / 100;
 }
 
@@ -5123,15 +5177,23 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
     }
   }
   
-  let baseSalary = dailyRate;
+  // Get group daily wage
+  const groupData = workerData.groupId ? await db.select().from(groups).where(eq(groups.id, workerData.groupId)).limit(1) : [];
+  const groupDailyWage = groupData.length > 0 && groupData[0].dailyWage ? Number(groupData[0].dailyWage) : 0;
+  const groupWorkMinutes = groupData.length > 0 && groupData[0].workMinutes ? Number(groupData[0].workMinutes) : 0;
+  
+  // Base salary = fixed daily wage (not calculated from minutes)
+  let baseSalary = groupDailyWage > 0 ? groupDailyWage : dailyRate;
   let latePenalty = 0;
   let earlyLeavePenalty = 0;
   let workedMinutes = Math.floor((checkOutTime.getTime() - checkInTime.getTime()) / 60000);
-  let financialMinutes = workedMinutes;
+  // Cap worked minutes at shift duration
+  let financialMinutes = groupWorkMinutes > 0 ? Math.min(workedMinutes, groupWorkMinutes) : workedMinutes;
   let lateMinutes = 0;
   let earlyLeaveMinutes = 0;
   
-  // If shift times are defined, calculate penalties
+  // ⚠️ SHIFT-BASED CALCULATIONS: Only if shift is defined in group_schedules
+  // If no shift is defined, NO penalties are calculated (worker gets full daily wage)
   if (shiftStartTime && shiftEndTime) {
     // Parse shift times
     const [shiftStartHour, shiftStartMin] = shiftStartTime.split(':').map(Number);
@@ -5154,36 +5216,47 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
     
     if (actualEnd > actualStart) {
       financialMinutes = Math.floor((actualEnd.getTime() - actualStart.getTime()) / 60000);
+      // Cap at shift duration
+      if (groupWorkMinutes > 0) {
+        financialMinutes = Math.min(financialMinutes, groupWorkMinutes);
+      }
     } else {
       financialMinutes = 0;
     }
     
-    // Calculate late minutes
+    // Calculate late minutes: only if checked in AFTER shift start
     if (checkInTime > shiftStart) {
       lateMinutes = Math.floor((checkInTime.getTime() - shiftStart.getTime()) / 60000);
     }
     
-    // Calculate early leave minutes
+    // Calculate early leave minutes: only if checked out BEFORE shift end
     if (checkOutTime < shiftEnd) {
       earlyLeaveMinutes = Math.floor((shiftEnd.getTime() - checkOutTime.getTime()) / 60000);
     }
     
-    // Calculate base salary based on financial minutes
-    if (minuteCost > 0) {
-      baseSalary = financialMinutes * minuteCost;
-    }
-    
-    // Calculate penalties
+    // Calculate penalties using minuteCost
+    // penaltyRate is stored as percentage (e.g., 200% = double the minute cost)
     if (latePenaltyRate > 0 && lateMinutes > 0 && minuteCost > 0) {
-      latePenalty = lateMinutes * minuteCost * latePenaltyRate;
+      latePenalty = lateMinutes * minuteCost * (latePenaltyRate / 100);
     }
     
     if (earlyLeavePenaltyRate > 0 && earlyLeaveMinutes > 0 && minuteCost > 0) {
-      earlyLeavePenalty = earlyLeaveMinutes * minuteCost * earlyLeavePenaltyRate;
+      earlyLeavePenalty = earlyLeaveMinutes * minuteCost * (earlyLeavePenaltyRate / 100);
     }
   }
+  // else: No shift defined = no penalties, worker gets full daily wage
   
-  const netSalary = baseSalary - latePenalty - earlyLeavePenalty;
+  // ⚠️ CAP: Total deductions cannot exceed base salary (net >= 0)
+  let totalDeductions = latePenalty + earlyLeavePenalty;
+  if (totalDeductions > baseSalary) {
+    // Scale down penalties proportionally to cap at baseSalary
+    const scale = baseSalary / totalDeductions;
+    latePenalty = Math.round(latePenalty * scale * 100) / 100;
+    earlyLeavePenalty = Math.round(earlyLeavePenalty * scale * 100) / 100;
+    totalDeductions = baseSalary;
+  }
+  
+  const netSalary = baseSalary - totalDeductions;
   
   // Save to worker_daily_finance
   // Check if record exists
@@ -5214,7 +5287,7 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
         netSalary: netSalary.toString(),
         // New columns
         baseAmount: baseSalary.toString(),
-        deductions: (latePenalty + earlyLeavePenalty).toString(),
+        deductions: totalDeductions.toString(),
         bonuses: '0.00',
         netAmount: netSalary.toString(),
         updatedAt: new Date(),
@@ -5237,7 +5310,7 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
       netSalary: netSalary.toString(),
       // New columns
       baseAmount: baseSalary.toString(),
-      deductions: (latePenalty + earlyLeavePenalty).toString(),
+      deductions: totalDeductions.toString(),
       bonuses: '0.00',
       netAmount: netSalary.toString(),
     });
@@ -5890,7 +5963,12 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
   endOfDay.setHours(23, 59, 59, 999);
 
   // Get all workers (optionally filtered by group)
-  let allWorkersQuery = db
+  const workerConditions = [eq(workers.status, 'active')];
+  if (groupId) {
+    workerConditions.push(eq(workers.groupId, groupId));
+  }
+  
+  const allWorkers = await db
     .select({
       workerId: workers.id,
       workerCode: workers.code,
@@ -5900,13 +5978,7 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
     })
     .from(workers)
     .leftJoin(groups, eq(workers.groupId, groups.id))
-    .where(eq(workers.status, 'active'));
-
-  if (groupId) {
-    allWorkersQuery = allWorkersQuery.where(eq(workers.groupId, groupId));
-  }
-
-  const allWorkers = await allWorkersQuery;
+    .where(and(...workerConditions));
 
 
   // Get workers who have check_in records for this date (same logic as stats)

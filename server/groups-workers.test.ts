@@ -5,12 +5,9 @@ import type { TrpcContext } from "./_core/context";
 // Mock the database module
 vi.mock("./db", () => ({
   getAllGroups: vi.fn().mockResolvedValue([
-    { id: 1, code: "GRP001", name: "المجموعة الأولى", costCenterId: 1, dailyRate: "100.00", workHours: "8.00", isActive: true },
-    { id: 2, code: "GRP002", name: "المجموعة الثانية", costCenterId: 2, dailyRate: "120.00", workHours: "8.00", isActive: true },
   ]),
   getGroupById: vi.fn().mockImplementation((id: number) => {
     if (id === 1) {
-      return Promise.resolve({ id: 1, code: "GRP001", name: "المجموعة الأولى", costCenterId: 1, dailyRate: "100.00", workHours: "8.00", isActive: true });
     }
     return Promise.resolve(null);
   }),
@@ -128,7 +125,6 @@ describe("Groups Router", () => {
       name: "المجموعة الثالثة",
       costCenterId: 1,
       dailyRate: "150.00",
-      workHours: "8.00",
       isActive: true,
     });
     

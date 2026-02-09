@@ -1,0 +1,36 @@
+{
+  "query": "SELECT * FROM payroll_batch_items WHERE batch_id IN (SELECT id FROM payroll_batches WHERE period_start = '2026-02-02');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT * FROM payroll_batch_items WHERE batch_id IN (SELECT id FROM payroll_batches WHERE period_start = '2026-02-02');",
+  "rows": [
+    {
+      "id": "150003",
+      "batch_id": "180002",
+      "worker_id": "90013",
+      "days_worked": "0",
+      "base_amount": "-400.00",
+      "total_deductions": "30000.00",
+      "total_bonuses": "0.00",
+      "net_amount": "-30400.00",
+      "notes": "NULL",
+      "created_at": "2026-02-09 12:02:15",
+      "updated_at": "2026-02-09 12:02:15"
+    },
+    {
+      "id": "150004",
+      "batch_id": "180002",
+      "worker_id": "90015",
+      "days_worked": "0",
+      "base_amount": "-800.00",
+      "total_deductions": "60000.00",
+      "total_bonuses": "0.00",
+      "net_amount": "-60800.00",
+      "notes": "NULL",
+      "created_at": "2026-02-09 12:02:15",
+      "updated_at": "2026-02-09 12:02:15"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatch_id\tworker_id\tdays_worked\tbase_amount\ttotal_deductions\ttotal_bonuses\tnet_amount\tnotes\tcreated_at\tupdated_at\n150003\t180002\t90013\t0\t-400.00\t30000.00\t0.00\t-30400.00\tNULL\t2026-02-09 12:02:15\t2026-02-09 12:02:15\n150004\t180002\t90015\t0\t-800.00\t60000.00\t0.00\t-60800.00\tNULL\t2026-02-09 12:02:15\t2026-02-09 12:02:15\n",
+  "stderr": "",
+  "execution_time_ms": 1520
+}

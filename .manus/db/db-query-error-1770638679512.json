@@ -1,0 +1,8 @@
+{
+  "query": "SELECT pb.id as batch_id, pb.period_start, pb.period_end, pb.group_id, pb.total_amount, pb.status,\n       pbi.worker_id, w.code as worker_code, w.full_name as worker_name, \n       pbi.days_worked, pbi.base_amount, pbi.deductions, pbi.bonuses, pbi.net_amount\nFROM payroll_batches pb\nJOIN payroll_batch_items pbi ON pb.id = pbi.batch_id\nJOIN workers w ON pbi.worker_id = w.id\nWHERE pb.period_start = '2026-02-02'\nORDER BY w.code;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT pb.id as batch_id, pb.period_start, pb.period_end, pb.group_id, pb.total_amount, pb.status,\n       pbi.worker_id, w.code as worker_code, w.full_name as worker_name, \n       pbi.days_worked, pbi.base_amount, pbi.deductions, pbi.bonuses, pbi.net_amount\nFROM payroll_batches pb\nJOIN payroll_batch_items pbi ON pb.id = pbi.batch_id\nJOIN workers w ON pbi.worker_id = w.id\nWHERE pb.period_start = '2026-02-02'\nORDER BY w.code;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'pbi.deductions' in 'field list'"
+  ]
+}

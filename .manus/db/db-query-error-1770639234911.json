@@ -1,0 +1,9 @@
+{
+  "query": "SELECT id, name, code, daily_wage, work_minutes, daily_rate \nFROM groups \nWHERE code = 'GRP02';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, name, code, daily_wage, work_minutes, daily_rate \nFROM groups \nWHERE code = 'GRP02';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 2 column 12 near \"groups ",
+    "WHERE code = 'GRP02'\""
+  ]
+}

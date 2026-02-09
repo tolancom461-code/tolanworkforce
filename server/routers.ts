@@ -143,13 +143,10 @@ export const appRouter = router({
         costCenterId: z.number().optional().nullable(),
         supervisorId: z.number().optional().nullable(),
         dailyRate: z.string().optional(),
-        workHours: z.string().optional(),
         dailyWage: z.string().optional().nullable(),
         workMinutes: z.string().optional().nullable(),
         latePenaltyRate: z.string().optional().nullable(),
         earlyLeavePenaltyRate: z.string().optional().nullable(),
-        shiftStartTime: z.string().optional().nullable(),
-        shiftEndTime: z.string().optional().nullable(),
         isActive: z.boolean().default(true),
       }))
       .mutation(async ({ input }) => {
@@ -160,13 +157,10 @@ export const appRouter = router({
             costCenterId: input.costCenterId,
             supervisorId: input.supervisorId,
             dailyRate: input.dailyRate ? input.dailyRate : undefined,
-            workHours: input.workHours ? input.workHours : undefined,
             dailyWage: input.dailyWage ? parseFloat(input.dailyWage) : null,
             workMinutes: input.workMinutes ? parseInt(input.workMinutes) : null,
             latePenaltyRate: input.latePenaltyRate ? parseFloat(input.latePenaltyRate) : null,
             earlyLeavePenaltyRate: input.earlyLeavePenaltyRate ? parseFloat(input.earlyLeavePenaltyRate) : null,
-            shiftStartTime: input.shiftStartTime,
-            shiftEndTime: input.shiftEndTime,
             isActive: input.isActive,
           } as any);
           return { id, success: true };
@@ -275,13 +269,10 @@ export const appRouter = router({
         costCenterId: z.number().optional().nullable(),
         supervisorId: z.number().optional().nullable(),
         dailyRate: z.string().optional(),
-        workHours: z.string().optional(),
         dailyWage: z.string().optional().nullable(),
         workMinutes: z.string().optional().nullable(),
         latePenaltyRate: z.string().optional().nullable(),
         earlyLeavePenaltyRate: z.string().optional().nullable(),
-        shiftStartTime: z.string().optional().nullable(),
-        shiftEndTime: z.string().optional().nullable(),
         isActive: z.boolean().default(true),
       }))
       .mutation(async ({ input }) => {
@@ -292,13 +283,10 @@ export const appRouter = router({
             costCenterId: input.costCenterId,
             supervisorId: input.supervisorId,
             dailyRate: input.dailyRate,
-            workHours: input.workHours,
             dailyWage: input.dailyWage ? parseFloat(input.dailyWage) : null,
             workMinutes: input.workMinutes ? parseInt(input.workMinutes) : null,
             latePenaltyRate: input.latePenaltyRate ? parseFloat(input.latePenaltyRate) : null,
             earlyLeavePenaltyRate: input.earlyLeavePenaltyRate ? parseFloat(input.earlyLeavePenaltyRate) : null,
-            shiftStartTime: input.shiftStartTime,
-            shiftEndTime: input.shiftEndTime,
             isActive: input.isActive,
           } as any);
           return { id, success: true };
@@ -318,13 +306,10 @@ export const appRouter = router({
         costCenterId: z.number().optional().nullable(),
         supervisorId: z.number().optional().nullable(),
         dailyRate: z.string().optional(),
-        workHours: z.string().optional(),
         dailyWage: z.string().optional().nullable(),
         workMinutes: z.string().optional().nullable(),
         latePenaltyRate: z.string().optional().nullable(),
         earlyLeavePenaltyRate: z.string().optional().nullable(),
-        shiftStartTime: z.string().optional().nullable(),
-        shiftEndTime: z.string().optional().nullable(),
         isActive: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
@@ -336,13 +321,10 @@ export const appRouter = router({
         if (data.costCenterId !== undefined) updateData.costCenterId = data.costCenterId;
         if (data.supervisorId !== undefined) updateData.supervisorId = data.supervisorId;
         if (data.dailyRate !== undefined) updateData.dailyRate = data.dailyRate;
-        if (data.workHours !== undefined) updateData.workHours = data.workHours;
         if (data.dailyWage !== undefined) updateData.dailyWage = data.dailyWage ? parseFloat(data.dailyWage) : null;
         if (data.workMinutes !== undefined) updateData.workMinutes = data.workMinutes ? parseInt(data.workMinutes) : null;
         if (data.latePenaltyRate !== undefined) updateData.latePenaltyRate = data.latePenaltyRate ? parseFloat(data.latePenaltyRate) : null;
         if (data.earlyLeavePenaltyRate !== undefined) updateData.earlyLeavePenaltyRate = data.earlyLeavePenaltyRate ? parseFloat(data.earlyLeavePenaltyRate) : null;
-        if (data.shiftStartTime !== undefined) updateData.shiftStartTime = data.shiftStartTime;
-        if (data.shiftEndTime !== undefined) updateData.shiftEndTime = data.shiftEndTime;
         if (data.isActive !== undefined) updateData.isActive = data.isActive;
         
         await db.updateGroup(id, updateData);
@@ -885,22 +867,41 @@ export const appRouter = router({
         note: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Not authenticated");
-        
-        const { attendanceEvents } = await import('../drizzle/schema');
-        const database = await db.getDb();
-        if (!database) throw new Error('Database not available');
-        
-        // Insert check-in event
-        await database.insert(attendanceEvents).values({
-          workerId: input.workerId,
-          eventType: 'check_in',
-          eventTime: new Date(input.checkInTime),
-          method: 'manual',
-          note: input.note || 'تم إضافة الحضور يدوياً لمعالجة بصمة ناقصة',
-        });
-        
-        return { success: true, message: 'تم إضافة بصمة الحضور بنجاح' };
+        try {
+          if (!ctx.user) throw new Error("Not authenticated");
+          
+          const { attendanceEvents } = await import('../drizzle/schema');
+          const database = await db.getDb();
+          if (!database) throw new Error('Database not available');
+          
+          // Validate date
+          const eventTime = new Date(input.checkInTime);
+          if (isNaN(eventTime.getTime())) {
+            throw new Error('تاريخ غير صالح');
+          }
+          
+          console.log('[addMissingCheckIn] Inserting:', {
+            workerId: input.workerId,
+            eventType: 'check_in',
+            eventTime: eventTime.toISOString(),
+            method: 'manual',
+          });
+          
+          // Insert check-in event
+          await database.insert(attendanceEvents).values({
+            workerId: input.workerId,
+            eventType: 'check_in',
+            eventTime: eventTime,
+            method: 'manual',
+            note: input.note || 'تم إضافة الحضور يدوياً لمعالجة بصمة ناقصة',
+          });
+          
+          console.log('[addMissingCheckIn] Success');
+          return { success: true, message: 'تم إضافة بصمة الحضور بنجاح' };
+        } catch (error: any) {
+          console.error('[addMissingCheckIn] Error:', error);
+          throw new Error(error.message || 'فشل إضافة الحضور');
+        }
       }),
     
     // Add missing check-out for incomplete attendance
@@ -911,22 +912,41 @@ export const appRouter = router({
         note: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Not authenticated");
-        
-        const { attendanceEvents } = await import('../drizzle/schema');
-        const database = await db.getDb();
-        if (!database) throw new Error('Database not available');
-        
-        // Insert check-out event
-        await database.insert(attendanceEvents).values({
-          workerId: input.workerId,
-          eventType: 'check_out',
-          eventTime: new Date(input.checkOutTime),
-          method: 'manual',
-          note: input.note || 'تم إضافة الانصراف يدوياً لمعالجة بصمة ناقصة',
-        });
-        
-        return { success: true, message: 'تم إضافة بصمة الانصراف بنجاح' };
+        try {
+          if (!ctx.user) throw new Error("Not authenticated");
+          
+          const { attendanceEvents } = await import('../drizzle/schema');
+          const database = await db.getDb();
+          if (!database) throw new Error('Database not available');
+          
+          // Validate date
+          const eventTime = new Date(input.checkOutTime);
+          if (isNaN(eventTime.getTime())) {
+            throw new Error('تاريخ غير صالح');
+          }
+          
+          console.log('[addMissingCheckOut] Inserting:', {
+            workerId: input.workerId,
+            eventType: 'check_out',
+            eventTime: eventTime.toISOString(),
+            method: 'manual',
+          });
+          
+          // Insert check-out event
+          await database.insert(attendanceEvents).values({
+            workerId: input.workerId,
+            eventType: 'check_out',
+            eventTime: eventTime,
+            method: 'manual',
+            note: input.note || 'تم إضافة الانصراف يدوياً لمعالجة بصمة ناقصة',
+          });
+          
+          console.log('[addMissingCheckOut] Success');
+          return { success: true, message: 'تم إضافة بصمة الانصراف بنجاح' };
+        } catch (error: any) {
+          console.error('[addMissingCheckOut] Error:', error);
+          throw new Error(error.message || 'فشل إضافة الانصراف');
+        }
       }),
     
     // Delete an attendance event (for incorrect punches)
