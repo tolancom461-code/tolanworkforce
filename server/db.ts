@@ -633,6 +633,63 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
   
   const eventTime = new Date();
   
+  // 🔥 RULE 1: Prevent duplicate punches within 1 minute
+  // Check if there's a recent punch of the same type within the last minute
+  const oneMinuteAgo = new Date(eventTime.getTime() - 60 * 1000);
+  const recentPunches = await db.select()
+    .from(attendanceEvents)
+    .where(
+      and(
+        eq(attendanceEvents.workerId, workerId),
+        eq(attendanceEvents.eventType, eventType),
+        gte(attendanceEvents.eventTime, oneMinuteAgo)
+      )
+    )
+    .limit(1);
+  
+  if (recentPunches.length > 0) {
+    // Return the existing punch instead of creating a duplicate
+    const existingPunch = recentPunches[0];
+    return { 
+      success: true, 
+      eventType, 
+      workerId, 
+      eventId: existingPunch.id, 
+      timestamp: existingPunch.eventTime,
+      isDuplicate: true,
+      message: 'تم تسجيل البصمة مسبقاً خلال الدقيقة الأخيرة'
+    };
+  }
+  
+  // 🔥 RULE 2: Prevent more than 2 punches per day (1 check-in + 1 check-out)
+  // Get today's date range
+  const startOfDay = new Date(eventTime);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(eventTime);
+  endOfDay.setHours(23, 59, 59, 999);
+  
+  // Count today's punches by type
+  const todayPunches = await db.select()
+    .from(attendanceEvents)
+    .where(
+      and(
+        eq(attendanceEvents.workerId, workerId),
+        gte(attendanceEvents.eventTime, startOfDay),
+        lte(attendanceEvents.eventTime, endOfDay)
+      )
+    );
+  
+  const checkInCount = todayPunches.filter(p => p.eventType === 'check_in').length;
+  const checkOutCount = todayPunches.filter(p => p.eventType === 'check_out').length;
+  
+  // Prevent more than 1 check-in or 1 check-out per day
+  if (eventType === 'check_in' && checkInCount >= 1) {
+    throw new Error('لقد تم تسجيل الحضور مسبقاً لهذا اليوم');
+  }
+  if (eventType === 'check_out' && checkOutCount >= 1) {
+    throw new Error('لقد تم تسجيل الانصراف مسبقاً لهذا اليوم');
+  }
+  
   // Insert attendance event
   const result = await db.insert(attendanceEvents).values({
     workerId,
@@ -5749,28 +5806,29 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
       }
     }
     
-    // Case 3: Unmatched pairs (more check-ins than check-outs or vice versa)
-    if (checkInCount > checkOutCount && checkOutCount > 0) {
-      // Has extra check-ins
-      const unmatchedCheckIns = data.checkIns.slice(checkOutCount);
-      for (const checkIn of unmatchedCheckIns) {
+    // Case 3: Unmatched pairs - only when counts don't match
+    // If counts are equal (e.g., 2 check-ins + 2 check-outs), consider it complete
+    if (checkInCount !== checkOutCount) {
+      if (checkInCount > checkOutCount) {
+        // Has more check-ins than check-outs
+        // Only report the LAST unmatched check-in as incomplete
+        const lastCheckIn = data.checkIns[data.checkIns.length - 1];
         incompleteRecords.push({
           workerId: data.workerId,
           workerCode: data.workerCode,
           workerName: data.workerName,
           groupId: data.groupId,
           groupName: data.groupName,
-          checkInId: checkIn.id,
-          checkInTime: checkIn.time,
+          checkInId: lastCheckIn.id,
+          checkInTime: lastCheckIn.time,
           checkOutId: null,
           checkOutTime: null,
           incompleteType: 'missing_check_out',
         });
-      }
-    } else if (checkOutCount > checkInCount && checkInCount > 0) {
-      // Has extra check-outs
-      const unmatchedCheckOuts = data.checkOuts.slice(checkInCount);
-      for (const checkOut of unmatchedCheckOuts) {
+      } else {
+        // Has more check-outs than check-ins
+        // Only report the FIRST unmatched check-out as incomplete
+        const firstCheckOut = data.checkOuts[0];
         incompleteRecords.push({
           workerId: data.workerId,
           workerCode: data.workerCode,
@@ -5779,8 +5837,8 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
           groupName: data.groupName,
           checkInId: null,
           checkInTime: null,
-          checkOutId: checkOut.id,
-          checkOutTime: checkOut.time,
+          checkOutId: firstCheckOut.id,
+          checkOutTime: firstCheckOut.time,
           incompleteType: 'missing_check_in',
         });
       }

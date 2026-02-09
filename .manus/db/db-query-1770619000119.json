@@ -1,0 +1,42 @@
+{
+  "query": "SELECT \n  ae.id,\n  ae.event_type,\n  ae.event_time,\n  ae.is_automatic,\n  w.manual_code as worker_code,\n  w.full_name as worker_name\nFROM attendance_events ae\nLEFT JOIN workers w ON ae.worker_id = w.id\nWHERE w.manual_code = 'R04'\n  AND DATE(ae.event_time) = '2026-02-07'\nORDER BY ae.event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  ae.id,\n  ae.event_type,\n  ae.event_time,\n  ae.is_automatic,\n  w.manual_code as worker_code,\n  w.full_name as worker_name\nFROM attendance_events ae\nLEFT JOIN workers w ON ae.worker_id = w.id\nWHERE w.manual_code = 'R04'\n  AND DATE(ae.event_time) = '2026-02-07'\nORDER BY ae.event_time;",
+  "rows": [
+    {
+      "id": "90078",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 08:18:56",
+      "is_automatic": "0",
+      "worker_code": "R04",
+      "worker_name": "مشرف خالد"
+    },
+    {
+      "id": "240002",
+      "event_type": "check_in",
+      "event_time": "2026-02-07 10:00:00",
+      "is_automatic": "0",
+      "worker_code": "R04",
+      "worker_name": "مشرف خالد"
+    },
+    {
+      "id": "240003",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:00:00",
+      "is_automatic": "0",
+      "worker_code": "R04",
+      "worker_name": "مشرف خالد"
+    },
+    {
+      "id": "240001",
+      "event_type": "check_out",
+      "event_time": "2026-02-07 11:30:00",
+      "is_automatic": "0",
+      "worker_code": "R04",
+      "worker_name": "مشرف خالد"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tevent_type\tevent_time\tis_automatic\tworker_code\tworker_name\n90078\tcheck_in\t2026-02-07 08:18:56\t0\tR04\tمشرف خالد\n240002\tcheck_in\t2026-02-07 10:00:00\t0\tR04\tمشرف خالد\n240003\tcheck_out\t2026-02-07 11:00:00\t0\tR04\tمشرف خالد\n240001\tcheck_out\t2026-02-07 11:30:00\t0\tR04\tمشرف خالد\n",
+  "stderr": "",
+  "execution_time_ms": 1576
+}

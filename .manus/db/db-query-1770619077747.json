@@ -1,0 +1,58 @@
+{
+  "query": "SELECT \n  w.manual_code,\n  w.full_name,\n  ae.event_type,\n  TIME(ae.event_time) as time_only,\n  ae.event_time,\n  ae.is_automatic\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nWHERE w.manual_code IN ('R04', 'R05')\n  AND DATE(ae.event_time) = '2026-02-07'\nORDER BY w.manual_code, ae.event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  w.manual_code,\n  w.full_name,\n  ae.event_type,\n  TIME(ae.event_time) as time_only,\n  ae.event_time,\n  ae.is_automatic\nFROM attendance_events ae\nJOIN workers w ON ae.worker_id = w.id\nWHERE w.manual_code IN ('R04', 'R05')\n  AND DATE(ae.event_time) = '2026-02-07'\nORDER BY w.manual_code, ae.event_time;",
+  "rows": [
+    {
+      "manual_code": "R04",
+      "full_name": "مشرف خالد",
+      "event_type": "check_in",
+      "time_only": "08:18:56",
+      "event_time": "2026-02-07 08:18:56",
+      "is_automatic": "0"
+    },
+    {
+      "manual_code": "R04",
+      "full_name": "مشرف خالد",
+      "event_type": "check_in",
+      "time_only": "10:00:00",
+      "event_time": "2026-02-07 10:00:00",
+      "is_automatic": "0"
+    },
+    {
+      "manual_code": "R04",
+      "full_name": "مشرف خالد",
+      "event_type": "check_out",
+      "time_only": "11:00:00",
+      "event_time": "2026-02-07 11:00:00",
+      "is_automatic": "0"
+    },
+    {
+      "manual_code": "R04",
+      "full_name": "مشرف خالد",
+      "event_type": "check_out",
+      "time_only": "11:30:00",
+      "event_time": "2026-02-07 11:30:00",
+      "is_automatic": "0"
+    },
+    {
+      "manual_code": "R05",
+      "full_name": "احمد هارون",
+      "event_type": "check_in",
+      "time_only": "08:19:00",
+      "event_time": "2026-02-07 08:19:00",
+      "is_automatic": "0"
+    },
+    {
+      "manual_code": "R05",
+      "full_name": "احمد هارون",
+      "event_type": "check_out",
+      "time_only": "11:59:00",
+      "event_time": "2026-02-07 11:59:00",
+      "is_automatic": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "manual_code\tfull_name\tevent_type\ttime_only\tevent_time\tis_automatic\nR04\tمشرف خالد\tcheck_in\t08:18:56\t2026-02-07 08:18:56\t0\nR04\tمشرف خالد\tcheck_in\t10:00:00\t2026-02-07 10:00:00\t0\nR04\tمشرف خالد\tcheck_out\t11:00:00\t2026-02-07 11:00:00\t0\nR04\tمشرف خالد\tcheck_out\t11:30:00\t2026-02-07 11:30:00\t0\nR05\tاحمد هارون\tcheck_in\t08:19:00\t2026-02-07 08:19:00\t0\nR05\tاحمد هارون\tcheck_out\t11:59:00\t2026-02-07 11:59:00\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1676
+}
