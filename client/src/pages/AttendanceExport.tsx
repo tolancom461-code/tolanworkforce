@@ -21,8 +21,13 @@ export function AttendanceExport() {
   const [selectedCostCenterId, setSelectedCostCenterId] = useState<number | undefined>();
 
   // Fetch groups and cost centers
-  const { data: groups = [], isLoading: groupsLoading } = trpc.groups.list.useQuery();
+  const { data: allGroups = [], isLoading: groupsLoading } = trpc.groups.list.useQuery();
   const { data: costCenters = [], isLoading: costCentersLoading } = trpc.costCenters.list.useQuery();
+  
+  // Filter groups based on selected cost center (Cascading Filter)
+  const groups = selectedCostCenterId 
+    ? allGroups.filter(g => g.costCenterId === selectedCostCenterId)
+    : allGroups;
 
   // Export mutations
   const exportDetailedMutation = trpc.export.detailedAttendance.useMutation();
@@ -152,16 +157,27 @@ export function AttendanceExport() {
                   onValueChange={(value) =>
                     setSelectedGroupId(value ? parseInt(value) : undefined)
                   }
+                  disabled={!selectedCostCenterId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="اختر مجموعة" />
+                    <SelectValue placeholder={
+                      selectedCostCenterId 
+                        ? "اختر مجموعة" 
+                        : "اختر مركز التكلفة أولاً"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
-                    {groups.map((group) => (
-                      <SelectItem key={group.id} value={group.id.toString()}>
-                        {group.name}
-                      </SelectItem>
-                    ))}
+                    {groups.length > 0 ? (
+                      groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        لا توجد مجموعات في هذا المركز
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               )}
@@ -174,9 +190,11 @@ export function AttendanceExport() {
               ) : (
                 <Select
                   value={selectedCostCenterId?.toString() || ''}
-                  onValueChange={(value) =>
-                    setSelectedCostCenterId(value ? parseInt(value) : undefined)
-                  }
+                  onValueChange={(value) => {
+                    setSelectedCostCenterId(value ? parseInt(value) : undefined);
+                    // Reset group selection when cost center changes
+                    setSelectedGroupId(undefined);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="اختر مركز تكلفة" />
