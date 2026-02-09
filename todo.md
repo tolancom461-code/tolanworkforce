@@ -633,3 +633,11 @@
 - [x] تحديث رسائل الخطأ في AttendanceScanner.tsx - رسالتين مختلفتين
 - [x] اختبار القواعد الجديدة - السيرفر يعمل بنجاح
 - [x] حفظ checkpoint
+
+
+## إصلاح خطأ حذف البصمة
+- [x] فحص كود حذف البصمة في server/routers.ts - صحيح
+- [x] تحديد سبب خطأ eventId undefined - في PunchesReviewCenter.tsx
+- [x] إصلاح المشكلة - إضافة تحقق من eventId
+- [x] اختبار حذف البصمة - السيرفر يعمل بنجاح
+- [x] حفظ checkpoint

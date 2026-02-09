@@ -114,8 +114,16 @@ export default function PunchesReviewCenter() {
         note: "تم الإضافة يدوياً من مركز مراجعة البصمات",
       });
     } else if (selectedRecord.actionType === 'delete') {
+      // Determine which event ID to delete based on what exists
+      const eventId = selectedRecord.checkInId ?? selectedRecord.checkOutId;
+      
+      if (!eventId) {
+        toast.error("خطأ: لم يتم العثور على معرف البصمة");
+        return;
+      }
+      
       deletePunchMutation.mutate({
-        eventId: selectedRecord.checkInId || selectedRecord.checkOutId,
+        eventId,
         reason: "حذف من مركز مراجعة البصمات - بصمة خاطئة",
       });
     }
