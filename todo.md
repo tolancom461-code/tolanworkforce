@@ -685,4 +685,13 @@
 - [x] إصلاح stats API ليأخذ date كمعامل
 - [x] إصلاح getAttendanceStats لاستخدام startDate/endDate المُمررة
 - [x] اختبار الإصلاح
+- [x] حفظ checkpoint
+
+
+## إضافة فلترة حسب المجموعة في نافذة الغائبين
+- [x] إضافة state لتخزين المجموعة المختارة في AttendanceLog.tsx
+- [x] إضافة dropdown لاختيار المجموعة في النافذة المنبثقة
+- [x] إضافة خيار "جميع المجموعات" كقيمة افتراضية
+- [x] تمرير groupId إلى API getAbsentWorkers
+- [x] اختبار الفلترة مع مجموعات مختلفة
 - [ ] حفظ checkpoint

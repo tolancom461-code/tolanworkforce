@@ -36,6 +36,7 @@ export default function AttendanceLog() {
   const [prepareCheckInTime, setPrepareCheckInTime] = useState('');
   const [prepareCheckOutTime, setPrepareCheckOutTime] = useState('');
   const [prepareNote, setPrepareNote] = useState('');
+  const [absentFilterGroup, setAbsentFilterGroup] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   
@@ -71,7 +72,7 @@ export default function AttendanceLog() {
   // Get absent workers
   const { data: absentWorkers, refetch: refetchAbsent } = trpc.attendance.getAbsentWorkers.useQuery({
     workDate: new Date(selectedDate),
-    groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+    groupId: absentFilterGroup !== 'all' ? parseInt(absentFilterGroup) : undefined
   });
 
   // Mutations for manual attendance
@@ -632,6 +633,23 @@ export default function AttendanceLog() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
+            {/* Group Filter */}
+            <div className="mb-4">
+              <Label>فلترة حسب المجموعة</Label>
+              <Select value={absentFilterGroup} onValueChange={setAbsentFilterGroup}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="اختر المجموعة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع المجموعات</SelectItem>
+                  {groups?.map((group: any) => (
+                    <SelectItem key={group.id} value={group.id.toString()}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {!absentWorkers || absentWorkers.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
