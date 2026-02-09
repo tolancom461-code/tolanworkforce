@@ -134,17 +134,26 @@ export default function AttendanceScanner() {
       }, 3000);
       
     } catch (error: any) {
-      // Show clear alert for duplicate punch attempts
+      // Show clear alert for punch errors
       const errorMessage = error.message || 'حدث خطأ أثناء التسجيل';
       
-      // Check if it's a duplicate punch error
-      if (errorMessage.includes('لقد تم تسجيل') || errorMessage.includes('مسبقاً')) {
+      // Check error type and show appropriate message
+      if (errorMessage.includes('حركتين متتاليتين')) {
+        // 60 seconds rule
         toast.error(errorMessage, {
           duration: 5000,
-          description: 'لا يمكن البصم أكثر من مرة واحدة في اليوم',
+          description: 'يجب الانتظار دقيقة كاملة بين البصمتين',
+        });
+      } else if (errorMessage.includes('متتالي') || errorMessage.includes('مسجل ك')) {
+        // Duplicate check-in/check-out rule
+        toast.error(errorMessage, {
+          duration: 5000,
+          description: 'يجب تسجيل الحضور والانصراف بالترتيب',
         });
       } else {
-        toast.error(errorMessage);
+        toast.error(errorMessage, {
+          duration: 4000,
+        });
       }
     } finally {
       setIsProcessing(false);

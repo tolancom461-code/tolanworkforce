@@ -633,61 +633,43 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
   
   const eventTime = new Date();
   
-  // 🔥 RULE 1: Prevent duplicate punches within 1 minute
-  // Check if there's a recent punch of the same type within the last minute
-  const oneMinuteAgo = new Date(eventTime.getTime() - 60 * 1000);
+  // 🔥 RULE 1: Prevent any punch within 60 seconds of the last punch (regardless of type)
+  const sixtySecondsAgo = new Date(eventTime.getTime() - 60 * 1000);
   const recentPunches = await db.select()
     .from(attendanceEvents)
     .where(
       and(
         eq(attendanceEvents.workerId, workerId),
-        eq(attendanceEvents.eventType, eventType),
-        gte(attendanceEvents.eventTime, oneMinuteAgo)
+        gte(attendanceEvents.eventTime, sixtySecondsAgo)
       )
     )
+    .orderBy(desc(attendanceEvents.eventTime))
     .limit(1);
   
   if (recentPunches.length > 0) {
-    // Return the existing punch instead of creating a duplicate
-    const existingPunch = recentPunches[0];
-    return { 
-      success: true, 
-      eventType, 
-      workerId, 
-      eventId: existingPunch.id, 
-      timestamp: existingPunch.eventTime,
-      isDuplicate: true,
-      message: 'تم تسجيل البصمة مسبقاً خلال الدقيقة الأخيرة'
-    };
+    throw new Error('عذراً، لا يمكن تسجيل حركتين متتاليتين خلال نفس الدقيقة، يرجى الانتظار.');
   }
   
-  // 🔥 RULE 2: Prevent more than 2 punches per day (1 check-in + 1 check-out)
-  // Get today's date range
-  const startOfDay = new Date(eventTime);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(eventTime);
-  endOfDay.setHours(23, 59, 59, 999);
-  
-  // Count today's punches by type
-  const todayPunches = await db.select()
+  // 🔥 RULE 2: Prevent duplicate check-out (must have check-in first)
+  // Get the last punch for this worker
+  const lastPunch = await db.select()
     .from(attendanceEvents)
-    .where(
-      and(
-        eq(attendanceEvents.workerId, workerId),
-        gte(attendanceEvents.eventTime, startOfDay),
-        lte(attendanceEvents.eventTime, endOfDay)
-      )
-    );
+    .where(eq(attendanceEvents.workerId, workerId))
+    .orderBy(desc(attendanceEvents.eventTime))
+    .limit(1);
   
-  const checkInCount = todayPunches.filter(p => p.eventType === 'check_in').length;
-  const checkOutCount = todayPunches.filter(p => p.eventType === 'check_out').length;
-  
-  // Prevent more than 1 check-in or 1 check-out per day
-  if (eventType === 'check_in' && checkInCount >= 1) {
-    throw new Error('لقد تم تسجيل الحضور مسبقاً لهذا اليوم');
-  }
-  if (eventType === 'check_out' && checkOutCount >= 1) {
-    throw new Error('لقد تم تسجيل الانصراف مسبقاً لهذا اليوم');
+  if (lastPunch.length > 0) {
+    const lastEventType = lastPunch[0].eventType;
+    
+    // If trying to check out but last event was also check out
+    if (eventType === 'check_out' && lastEventType === 'check_out') {
+      throw new Error('لا يمكن تسجيل انصراف متتالي، أنت مسجل كمنصرف بالفعل.');
+    }
+    
+    // If trying to check in but last event was also check in
+    if (eventType === 'check_in' && lastEventType === 'check_in') {
+      throw new Error('لا يمكن تسجيل حضور متتالي، أنت مسجل كحاضر بالفعل.');
+    }
   }
   
   // Insert attendance event
