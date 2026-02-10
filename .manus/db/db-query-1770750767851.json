@@ -1,0 +1,82 @@
+{
+  "query": "SELECT \"cost_centers\" as tbl, COUNT(*) as cnt FROM `cost_centers` UNION ALL SELECT \"users\" as tbl, COUNT(*) as cnt FROM `users` UNION ALL SELECT \"user_cost_centers\" as tbl, COUNT(*) as cnt FROM `user_cost_centers` UNION ALL SELECT \"groups\" as tbl, COUNT(*) as cnt FROM `groups` UNION ALL SELECT \"workers\" as tbl, COUNT(*) as cnt FROM `workers` UNION ALL SELECT \"worker_archive\" as tbl, COUNT(*) as cnt FROM `worker_archive` UNION ALL SELECT \"work_days\" as tbl, COUNT(*) as cnt FROM `work_days` UNION ALL SELECT \"attendance_events\" as tbl, COUNT(*) as cnt FROM `attendance_events` UNION ALL SELECT \"deduction_rules\" as tbl, COUNT(*) as cnt FROM `deduction_rules` UNION ALL SELECT \"pay_overrides\" as tbl, COUNT(*) as cnt FROM `pay_overrides` UNION ALL SELECT \"worker_daily_finance\" as tbl, COUNT(*) as cnt FROM `worker_daily_finance` UNION ALL SELECT \"payroll_batches\" as tbl, COUNT(*) as cnt FROM `payroll_batches` UNION ALL SELECT \"payroll_batch_items\" as tbl, COUNT(*) as cnt FROM `payroll_batch_items` UNION ALL SELECT \"payroll_batch_notes\" as tbl, COUNT(*) as cnt FROM `payroll_batch_notes` UNION ALL SELECT \"payroll_batch_corrections\" as tbl, COUNT(*) as cnt FROM `payroll_batch_corrections` UNION ALL SELECT \"audit_log\" as tbl, COUNT(*) as cnt FROM `audit_log` UNION ALL SELECT \"operational_flags\" as tbl, COUNT(*) as cnt FROM `operational_flags` UNION ALL SELECT \"group_schedules\" as tbl, COUNT(*) as cnt FROM `group_schedules`;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \"cost_centers\" as tbl, COUNT(*) as cnt FROM `cost_centers` UNION ALL SELECT \"users\" as tbl, COUNT(*) as cnt FROM `users` UNION ALL SELECT \"user_cost_centers\" as tbl, COUNT(*) as cnt FROM `user_cost_centers` UNION ALL SELECT \"groups\" as tbl, COUNT(*) as cnt FROM `groups` UNION ALL SELECT \"workers\" as tbl, COUNT(*) as cnt FROM `workers` UNION ALL SELECT \"worker_archive\" as tbl, COUNT(*) as cnt FROM `worker_archive` UNION ALL SELECT \"work_days\" as tbl, COUNT(*) as cnt FROM `work_days` UNION ALL SELECT \"attendance_events\" as tbl, COUNT(*) as cnt FROM `attendance_events` UNION ALL SELECT \"deduction_rules\" as tbl, COUNT(*) as cnt FROM `deduction_rules` UNION ALL SELECT \"pay_overrides\" as tbl, COUNT(*) as cnt FROM `pay_overrides` UNION ALL SELECT \"worker_daily_finance\" as tbl, COUNT(*) as cnt FROM `worker_daily_finance` UNION ALL SELECT \"payroll_batches\" as tbl, COUNT(*) as cnt FROM `payroll_batches` UNION ALL SELECT \"payroll_batch_items\" as tbl, COUNT(*) as cnt FROM `payroll_batch_items` UNION ALL SELECT \"payroll_batch_notes\" as tbl, COUNT(*) as cnt FROM `payroll_batch_notes` UNION ALL SELECT \"payroll_batch_corrections\" as tbl, COUNT(*) as cnt FROM `payroll_batch_corrections` UNION ALL SELECT \"audit_log\" as tbl, COUNT(*) as cnt FROM `audit_log` UNION ALL SELECT \"operational_flags\" as tbl, COUNT(*) as cnt FROM `operational_flags` UNION ALL SELECT \"group_schedules\" as tbl, COUNT(*) as cnt FROM `group_schedules`;",
+  "rows": [
+    {
+      "tbl": "users",
+      "cnt": "33"
+    },
+    {
+      "tbl": "user_cost_centers",
+      "cnt": "0"
+    },
+    {
+      "tbl": "groups",
+      "cnt": "233"
+    },
+    {
+      "tbl": "cost_centers",
+      "cnt": "2"
+    },
+    {
+      "tbl": "workers",
+      "cnt": "1341"
+    },
+    {
+      "tbl": "work_days",
+      "cnt": "0"
+    },
+    {
+      "tbl": "deduction_rules",
+      "cnt": "0"
+    },
+    {
+      "tbl": "attendance_events",
+      "cnt": "304"
+    },
+    {
+      "tbl": "pay_overrides",
+      "cnt": "6"
+    },
+    {
+      "tbl": "worker_archive",
+      "cnt": "0"
+    },
+    {
+      "tbl": "worker_daily_finance",
+      "cnt": "172"
+    },
+    {
+      "tbl": "payroll_batches",
+      "cnt": "560"
+    },
+    {
+      "tbl": "payroll_batch_notes",
+      "cnt": "0"
+    },
+    {
+      "tbl": "payroll_batch_corrections",
+      "cnt": "0"
+    },
+    {
+      "tbl": "payroll_batch_items",
+      "cnt": "2260"
+    },
+    {
+      "tbl": "operational_flags",
+      "cnt": "95"
+    },
+    {
+      "tbl": "audit_log",
+      "cnt": "0"
+    },
+    {
+      "tbl": "group_schedules",
+      "cnt": "21"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\nusers\t33\nuser_cost_centers\t0\ngroups\t233\ncost_centers\t2\nworkers\t1341\nwork_days\t0\ndeduction_rules\t0\nattendance_events\t304\npay_overrides\t6\nworker_archive\t0\nworker_daily_finance\t172\npayroll_batches\t560\npayroll_batch_notes\t0\npayroll_batch_corrections\t0\npayroll_batch_items\t2260\noperational_flags\t95\naudit_log\t0\ngroup_schedules\t21\n",
+  "stderr": "",
+  "execution_time_ms": 1698
+}

@@ -1,0 +1,82 @@
+{
+  "query": "SELECT 'users' as tbl, COUNT(*) as cnt FROM users UNION ALL SELECT 'user_cost_centers', COUNT(*) FROM user_cost_centers UNION ALL SELECT 'cost_centers', COUNT(*) FROM cost_centers UNION ALL SELECT 'groups', COUNT(*) FROM `groups` UNION ALL SELECT 'workers', COUNT(*) FROM workers UNION ALL SELECT 'worker_archive', COUNT(*) FROM worker_archive UNION ALL SELECT 'attendance_events', COUNT(*) FROM attendance_events UNION ALL SELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance UNION ALL SELECT 'payroll_batches', COUNT(*) FROM payroll_batches UNION ALL SELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items UNION ALL SELECT 'payroll_batch_notes', COUNT(*) FROM payroll_batch_notes UNION ALL SELECT 'payroll_batch_corrections', COUNT(*) FROM payroll_batch_corrections UNION ALL SELECT 'operational_flags', COUNT(*) FROM operational_flags UNION ALL SELECT 'group_schedules', COUNT(*) FROM group_schedules UNION ALL SELECT 'pay_overrides', COUNT(*) FROM pay_overrides UNION ALL SELECT 'work_days', COUNT(*) FROM work_days UNION ALL SELECT 'deduction_rules', COUNT(*) FROM deduction_rules UNION ALL SELECT 'audit_log', COUNT(*) FROM audit_log;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT 'users' as tbl, COUNT(*) as cnt FROM users UNION ALL SELECT 'user_cost_centers', COUNT(*) FROM user_cost_centers UNION ALL SELECT 'cost_centers', COUNT(*) FROM cost_centers UNION ALL SELECT 'groups', COUNT(*) FROM `groups` UNION ALL SELECT 'workers', COUNT(*) FROM workers UNION ALL SELECT 'worker_archive', COUNT(*) FROM worker_archive UNION ALL SELECT 'attendance_events', COUNT(*) FROM attendance_events UNION ALL SELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance UNION ALL SELECT 'payroll_batches', COUNT(*) FROM payroll_batches UNION ALL SELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items UNION ALL SELECT 'payroll_batch_notes', COUNT(*) FROM payroll_batch_notes UNION ALL SELECT 'payroll_batch_corrections', COUNT(*) FROM payroll_batch_corrections UNION ALL SELECT 'operational_flags', COUNT(*) FROM operational_flags UNION ALL SELECT 'group_schedules', COUNT(*) FROM group_schedules UNION ALL SELECT 'pay_overrides', COUNT(*) FROM pay_overrides UNION ALL SELECT 'work_days', COUNT(*) FROM work_days UNION ALL SELECT 'deduction_rules', COUNT(*) FROM deduction_rules UNION ALL SELECT 'audit_log', COUNT(*) FROM audit_log;",
+  "rows": [
+    {
+      "tbl": "users",
+      "cnt": "33"
+    },
+    {
+      "tbl": "cost_centers",
+      "cnt": "0"
+    },
+    {
+      "tbl": "groups",
+      "cnt": "0"
+    },
+    {
+      "tbl": "user_cost_centers",
+      "cnt": "0"
+    },
+    {
+      "tbl": "workers",
+      "cnt": "0"
+    },
+    {
+      "tbl": "worker_archive",
+      "cnt": "0"
+    },
+    {
+      "tbl": "worker_daily_finance",
+      "cnt": "0"
+    },
+    {
+      "tbl": "attendance_events",
+      "cnt": "0"
+    },
+    {
+      "tbl": "payroll_batches",
+      "cnt": "0"
+    },
+    {
+      "tbl": "payroll_batch_notes",
+      "cnt": "0"
+    },
+    {
+      "tbl": "payroll_batch_corrections",
+      "cnt": "0"
+    },
+    {
+      "tbl": "operational_flags",
+      "cnt": "0"
+    },
+    {
+      "tbl": "payroll_batch_items",
+      "cnt": "0"
+    },
+    {
+      "tbl": "deduction_rules",
+      "cnt": "0"
+    },
+    {
+      "tbl": "work_days",
+      "cnt": "0"
+    },
+    {
+      "tbl": "group_schedules",
+      "cnt": "0"
+    },
+    {
+      "tbl": "pay_overrides",
+      "cnt": "0"
+    },
+    {
+      "tbl": "audit_log",
+      "cnt": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\nusers\t33\ncost_centers\t0\ngroups\t0\nuser_cost_centers\t0\nworkers\t0\nworker_archive\t0\nworker_daily_finance\t0\nattendance_events\t0\npayroll_batches\t0\npayroll_batch_notes\t0\npayroll_batch_corrections\t0\noperational_flags\t0\npayroll_batch_items\t0\ndeduction_rules\t0\nwork_days\t0\ngroup_schedules\t0\npay_overrides\t0\naudit_log\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1546
+}
