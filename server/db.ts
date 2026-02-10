@@ -5952,8 +5952,12 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
   
 
 
-  const startOfDay = new Date(workDate + 'T00:00:00');
-  const endOfDay = new Date(workDate + 'T23:59:59.999');
+  // Convert workDate to date string properly (workDate may be a Date object from tRPC)
+  const dateStr = workDate instanceof Date 
+    ? workDate.toLocaleDateString('en-CA') 
+    : String(workDate).split('T')[0];
+  const startOfDay = new Date(dateStr + 'T00:00:00');
+  const endOfDay = new Date(dateStr + 'T23:59:59.999');
 
   // Get all workers (optionally filtered by group)
   const workerConditions = [eq(workers.status, 'active')];

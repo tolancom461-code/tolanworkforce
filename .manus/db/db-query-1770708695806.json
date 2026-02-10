@@ -1,0 +1,58 @@
+{
+  "query": "SELECT id, full_name, status, group_id FROM workers ORDER BY group_id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, full_name, status, group_id FROM workers ORDER BY group_id",
+  "rows": [
+    {
+      "id": "120001",
+      "full_name": "احمد يوسف",
+      "status": "active",
+      "group_id": "90001"
+    },
+    {
+      "id": "120002",
+      "full_name": "محمد ابراهيم علي",
+      "status": "active",
+      "group_id": "90001"
+    },
+    {
+      "id": "120003",
+      "full_name": "محمد ابراهيم محمد",
+      "status": "active",
+      "group_id": "90001"
+    },
+    {
+      "id": "120004",
+      "full_name": "محمد الطيب",
+      "status": "active",
+      "group_id": "90001"
+    },
+    {
+      "id": "120005",
+      "full_name": "مصطفى الرشيد",
+      "status": "active",
+      "group_id": "90001"
+    },
+    {
+      "id": "120006",
+      "full_name": "مهاب فيصل",
+      "status": "active",
+      "group_id": "90001"
+    },
+    {
+      "id": "120007",
+      "full_name": "اسراء حسن",
+      "status": "active",
+      "group_id": "90002"
+    },
+    {
+      "id": "120008",
+      "full_name": "سماح عادل",
+      "status": "active",
+      "group_id": "90002"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfull_name\tstatus\tgroup_id\n120001\tاحمد يوسف\tactive\t90001\n120002\tمحمد ابراهيم علي\tactive\t90001\n120003\tمحمد ابراهيم محمد\tactive\t90001\n120004\tمحمد الطيب\tactive\t90001\n120005\tمصطفى الرشيد\tactive\t90001\n120006\tمهاب فيصل\tactive\t90001\n120007\tاسراء حسن\tactive\t90002\n120008\tسماح عادل\tactive\t90002\n",
+  "stderr": "",
+  "execution_time_ms": 1609
+}

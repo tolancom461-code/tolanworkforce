@@ -1,0 +1,74 @@
+{
+  "query": "SELECT w.id, w.full_name, w.code, w.status, w.group_id, g.name as gname FROM workers w LEFT JOIN `groups` g ON w.group_id = g.id ORDER BY w.group_id, w.id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT w.id, w.full_name, w.code, w.status, w.group_id, g.name as gname FROM workers w LEFT JOIN `groups` g ON w.group_id = g.id ORDER BY w.group_id, w.id",
+  "rows": [
+    {
+      "id": "120001",
+      "full_name": "احمد يوسف",
+      "code": "T01",
+      "status": "active",
+      "group_id": "90001",
+      "gname": "مجموعة السودانيين"
+    },
+    {
+      "id": "120002",
+      "full_name": "محمد ابراهيم علي",
+      "code": "T02",
+      "status": "active",
+      "group_id": "90001",
+      "gname": "مجموعة السودانيين"
+    },
+    {
+      "id": "120003",
+      "full_name": "محمد ابراهيم محمد",
+      "code": "T03",
+      "status": "active",
+      "group_id": "90001",
+      "gname": "مجموعة السودانيين"
+    },
+    {
+      "id": "120004",
+      "full_name": "محمد الطيب",
+      "code": "T04",
+      "status": "active",
+      "group_id": "90001",
+      "gname": "مجموعة السودانيين"
+    },
+    {
+      "id": "120005",
+      "full_name": "مصطفى الرشيد",
+      "code": "T05",
+      "status": "active",
+      "group_id": "90001",
+      "gname": "مجموعة السودانيين"
+    },
+    {
+      "id": "120006",
+      "full_name": "مهاب فيصل",
+      "code": "T06",
+      "status": "active",
+      "group_id": "90001",
+      "gname": "مجموعة السودانيين"
+    },
+    {
+      "id": "120007",
+      "full_name": "اسراء حسن",
+      "code": "T07",
+      "status": "active",
+      "group_id": "90002",
+      "gname": "مجموعة كاشيرات المطاعم"
+    },
+    {
+      "id": "120008",
+      "full_name": "سماح عادل",
+      "code": "T08",
+      "status": "active",
+      "group_id": "90002",
+      "gname": "مجموعة كاشيرات المطاعم"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfull_name\tcode\tstatus\tgroup_id\tgname\n120001\tاحمد يوسف\tT01\tactive\t90001\tمجموعة السودانيين\n120002\tمحمد ابراهيم علي\tT02\tactive\t90001\tمجموعة السودانيين\n120003\tمحمد ابراهيم محمد\tT03\tactive\t90001\tمجموعة السودانيين\n120004\tمحمد الطيب\tT04\tactive\t90001\tمجموعة السودانيين\n120005\tمصطفى الرشيد\tT05\tactive\t90001\tمجموعة السودانيين\n120006\tمهاب فيصل\tT06\tactive\t90001\tمجموعة السودانيين\n120007\tاسراء حسن\tT07\tactive\t90002\tمجموعة كاشيرات المطاعم\n120008\tسماح عادل\tT08\tactive\t90002\tمجموعة كاشيرات المطاعم\n",
+  "stderr": "",
+  "execution_time_ms": 1583
+}
