@@ -227,7 +227,7 @@ if (storedBuf.length !== tokenBuf.length) {
 |----------|-------|---------|
 | Rate Limiter في الذاكرة | Rate Limiter الحالي يخزن البيانات في ذاكرة العملية. عند إعادة تشغيل السيرفر تُفقد جميع العدادات. | استخدام Redis أو حل خارجي مثل `express-rate-limit` مع Redis store |
 | غياب Audit Log للعمليات الأمنية | لا يوجد تسجيل لمحاولات تسجيل الدخول الفاشلة أو محاولات الوصول غير المصرح | إضافة جدول `security_audit_log` لتسجيل: محاولات الدخول الفاشلة، محاولات الوصول المرفوضة، تغييرات الأدوار |
-| غياب CSRF Token في الطلبات | رغم وجود `CSRFTokenManager` جاهز، لم يُفعَّل بعد كـ middleware | تفعيل CSRF validation على جميع mutation endpoints |
+| ~~غياب CSRF Token في الطلبات~~ | ~~رغم وجود `CSRFTokenManager` جاهز، لم يُفعَّل بعد كـ middleware~~ | **تم التفعيل** — راجع القسم أدناه |
 | تشفير البيانات الحساسة | الرواتب والبيانات المالية مخزنة كنص عادي في قاعدة البيانات | استخدام `Encryptor` الموجود لتشفير حقول الرواتب الحساسة |
 
 ### 6.2 مخاطر متوسطة (يُستحسن معالجتها)
@@ -287,4 +287,52 @@ if (storedBuf.length !== tokenBuf.length) {
 
 ---
 
-*نهاية التقرير*
+## 9. تحديث: تفعيل حماية CSRF Token (10 فبراير 2026)
+
+### النمط المستخدم: Signed Double Submit Cookie
+
+**آلية العمل:**
+1. عند تحميل التطبيق، الفرونت إند يطلب `GET /api/csrf-token`
+2. السيرفر يولّد token عشوائي (32 bytes) + timestamp، ويوقّعه بـ HMAC-SHA256 باستخدام JWT_SECRET
+3. Token يُرسل كـ cookie (`csrf_token`, sameSite=lax) وفي body الاستجابة
+4. الفرونت إند يحفظ الـ token ويرسله في header `X-CSRF-Token` مع كل mutation
+5. السيرفر يتحقق: cookie = header (constant-time comparison) + التوقيع صحيح + لم تنتهِ الصلاحية
+
+**لماذا هذا آمن:**
+- المهاجم يمكنه إرسال طلبات تتضمن الكوكيز تلقائياً (هجمة CSRF)
+- لكن المهاجم لا يستطيع قراءة قيمة الكوكيز (بسبب sameSite=lax)
+- بالتالي لا يستطيع وضع القيمة الصحيحة في header `X-CSRF-Token`
+- التوقيع يمنع المهاجم من تزوير token خاص به
+
+**الاستثناءات:**
+- `auth.localLogin` و `auth.logout` و `auth.me` معفاة (أول طلب قبل جلب الـ token)
+- طلبات GET (queries) لا تحتاج حماية CSRF
+
+**التجديد التلقائي:**
+- Token صالح لمدة ساعة واحدة
+- الفرونت إند يجدد الـ token كل 50 دقيقة تلقائياً
+
+**الاختبارات:** 9 حالات اختبار جديدة (62 إجمالي) تغطي:
+- توليد token بـ 3 أجزاء (token.timestamp.signature)
+- التحقق عند تطابق cookie و header
+- الرفض عند عدم التطابق
+- الرفض عند غياب cookie أو header
+- الرفض عند تزوير التوقيع
+- الرفض عند انتهاء الصلاحية
+- الرفض عند صيغة غير صالحة
+- تفرد كل token مولّد
+
+### الملفات المعدلة:
+
+| الملف | التعديل |
+|-------|--------|
+| `server/_core/security.ts` | إعادة كتابة `CSRFTokenManager` بنمط Signed Double Submit Cookie |
+| `server/_core/index.ts` | إضافة endpoint `GET /api/csrf-token` + CSRF validation middleware |
+| `client/src/hooks/useCsrfToken.ts` | hook جديد لجلب وتجديد CSRF token |
+| `client/src/main.tsx` | تفعيل CSRF protection وإرسال token في headers |
+| `server/security.test.ts` | تحديث اختبارات CSRF (9 حالات) |
+| `server/users.test.ts` | إصلاح اختبار حذف المستخدم (منع حذف النفس) |
+
+---
+
+*نهاية التقرير — النسخة 1.1*

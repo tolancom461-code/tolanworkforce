@@ -938,4 +938,13 @@
 - [x] إصلاح جميع الثغرات المكتشفة - 12 ثغرة تم إصلاحها
 - [x] كتابة اختبارات أمنية - 57 اختبار نجحوا جميعاً
 - [x] إعداد تقرير أمني شامل
+- [x] حفظ checkpoint - 39fbeb0e
+
+## تفعيل حماية CSRF Token
+- [x] مراجعة CSRFTokenManager الموجود في security.ts
+- [x] إضافة endpoint لتوليد CSRF token (GET /api/csrf-token)
+- [x] إضافة CSRF middleware على جميع mutations في tRPC
+- [x] تحديث الفرونت إند لجلب وإرسال CSRF token مع كل mutation
+- [x] كتابة اختبارات للتحقق من عمل الحماية - 62 اختبار نجحوا
+- [x] تشغيل جميع الاختبارات والتأكد من عدم وجود regression
 - [ ] حفظ checkpoint

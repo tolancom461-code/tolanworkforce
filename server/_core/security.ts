@@ -6,57 +6,91 @@ import crypto from 'crypto';
  */
 
 /**
- * CSRF Token Management
+ * CSRF Protection using Signed Double Submit Cookie pattern
+ * 
+ * How it works:
+ * 1. Server generates a random token and signs it with HMAC-SHA256 using JWT_SECRET
+ * 2. Token is sent as a cookie (csrf_token) AND returned in the response body
+ * 3. Frontend stores the token and sends it in X-CSRF-Token header with every mutation
+ * 4. Server validates: cookie token matches header token, and signature is valid
+ * 
+ * Why this is secure:
+ * - Attacker's site can trigger requests that include cookies (CSRF attack)
+ * - But attacker CANNOT read the cookie value (due to sameSite + httpOnly=false for CSRF cookie)
+ * - So attacker cannot set the X-CSRF-Token header correctly
+ * - The signed token prevents attacker from forging their own tokens
  */
 export class CSRFTokenManager {
-  private tokens = new Map<string, { token: string; timestamp: number }>();
+  private readonly TOKEN_COOKIE = 'csrf_token';
+  private readonly TOKEN_HEADER = 'x-csrf-token';
   private readonly TTL = 3600000; // 1 hour
   
-  generateToken(sessionId: string): string {
+  /**
+   * Generate a signed CSRF token
+   */
+  generateToken(): { token: string; signature: string; combined: string } {
     const token = crypto.randomBytes(32).toString('hex');
-    this.tokens.set(sessionId, {
-      token,
-      timestamp: Date.now(),
-    });
-    return token;
+    const timestamp = Date.now().toString(36);
+    const payload = `${token}.${timestamp}`;
+    const secret = process.env.JWT_SECRET || '';
+    const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+    const combined = `${payload}.${signature}`;
+    return { token, signature, combined };
   }
   
-  validateToken(sessionId: string, token: string): boolean {
-    const stored = this.tokens.get(sessionId);
-    
-    if (!stored) {
+  /**
+   * Validate a CSRF token
+   * Checks: format, signature, expiry, and cookie-header match
+   */
+  validateToken(cookieToken: string | undefined, headerToken: string | undefined): boolean {
+    // Both must be present
+    if (!cookieToken || !headerToken) {
       return false;
     }
     
-    // Check if expired
-    if (Date.now() - stored.timestamp > this.TTL) {
-      this.tokens.delete(sessionId);
+    // Must match (constant-time comparison)
+    const cookieBuf = Buffer.from(cookieToken);
+    const headerBuf = Buffer.from(headerToken);
+    if (cookieBuf.length !== headerBuf.length) {
+      return false;
+    }
+    if (!crypto.timingSafeEqual(cookieBuf, headerBuf)) {
       return false;
     }
     
-    // Length check first - timingSafeEqual requires same length buffers
-    const storedBuf = Buffer.from(stored.token);
-    const tokenBuf = Buffer.from(token);
-    if (storedBuf.length !== tokenBuf.length) {
+    // Parse the token: token.timestamp.signature
+    const parts = cookieToken.split('.');
+    if (parts.length !== 3) {
       return false;
     }
     
-    // Constant-time comparison to prevent timing attacks
-    return crypto.timingSafeEqual(storedBuf, tokenBuf);
+    const [tokenPart, timestampPart, signaturePart] = parts;
+    
+    // Verify signature
+    const payload = `${tokenPart}.${timestampPart}`;
+    const secret = process.env.JWT_SECRET || '';
+    const expectedSig = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+    
+    const sigBuf = Buffer.from(signaturePart);
+    const expectedBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expectedBuf.length) {
+      return false;
+    }
+    if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+      return false;
+    }
+    
+    // Check expiry
+    const timestamp = parseInt(timestampPart, 36);
+    if (isNaN(timestamp) || Date.now() - timestamp > this.TTL) {
+      return false;
+    }
+    
+    return true;
   }
   
-  invalidateToken(sessionId: string): void {
-    this.tokens.delete(sessionId);
-  }
-  
-  cleanup(): void {
-    const now = Date.now();
-    this.tokens.forEach((data, sessionId) => {
-      if (now - data.timestamp > this.TTL) {
-        this.tokens.delete(sessionId);
-      }
-    });
-  }
+  get cookieName() { return this.TOKEN_COOKIE; }
+  get headerName() { return this.TOKEN_HEADER; }
 }
 
 export const csrfManager = new CSRFTokenManager();

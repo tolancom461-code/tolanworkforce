@@ -280,33 +280,74 @@ describe("Security - Rate Limiter", () => {
   });
 });
 
-describe("Security - CSRF Token Manager", () => {
+describe("Security - CSRF Token Manager (Signed Double Submit Cookie)", () => {
   let csrf: CSRFTokenManager;
 
   beforeEach(() => {
+    // Set JWT_SECRET for testing
+    process.env.JWT_SECRET = 'test-secret-key-for-csrf-testing-1234';
     csrf = new CSRFTokenManager();
   });
 
-  it("should generate and validate tokens", () => {
-    const token = csrf.generateToken("session-1");
-    expect(token).toBeTruthy();
-    expect(csrf.validateToken("session-1", token)).toBe(true);
+  it("should generate a signed token with 3 parts", () => {
+    const { combined } = csrf.generateToken();
+    expect(combined).toBeTruthy();
+    const parts = combined.split('.');
+    expect(parts.length).toBe(3); // token.timestamp.signature
   });
 
-  it("should reject invalid tokens", () => {
-    csrf.generateToken("session-1");
-    expect(csrf.validateToken("session-1", "wrong-token")).toBe(false);
+  it("should validate when cookie and header match", () => {
+    const { combined } = csrf.generateToken();
+    // Simulate: cookie = combined, header = combined (same value)
+    expect(csrf.validateToken(combined, combined)).toBe(true);
   });
 
-  it("should reject tokens for wrong session", () => {
-    const token = csrf.generateToken("session-1");
-    expect(csrf.validateToken("session-2", token)).toBe(false);
+  it("should reject when header token is different from cookie", () => {
+    const { combined } = csrf.generateToken();
+    expect(csrf.validateToken(combined, "wrong-token")).toBe(false);
   });
 
-  it("should invalidate tokens on demand", () => {
-    const token = csrf.generateToken("session-1");
-    csrf.invalidateToken("session-1");
-    expect(csrf.validateToken("session-1", token)).toBe(false);
+  it("should reject when cookie token is missing", () => {
+    const { combined } = csrf.generateToken();
+    expect(csrf.validateToken(undefined, combined)).toBe(false);
+  });
+
+  it("should reject when header token is missing", () => {
+    const { combined } = csrf.generateToken();
+    expect(csrf.validateToken(combined, undefined)).toBe(false);
+  });
+
+  it("should reject forged tokens with wrong signature", () => {
+    const { combined } = csrf.generateToken();
+    const parts = combined.split('.');
+    // Tamper with the signature
+    const forged = `${parts[0]}.${parts[1]}.${'a'.repeat(64)}`;
+    expect(csrf.validateToken(forged, forged)).toBe(false);
+  });
+
+  it("should reject expired tokens", () => {
+    // Generate a token with a timestamp from 2 hours ago
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const oldTimestamp = (Date.now() - 7200000).toString(36); // 2 hours ago
+    const payload = `${token}.${oldTimestamp}`;
+    const secret = process.env.JWT_SECRET || '';
+    const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+    const expired = `${payload}.${signature}`;
+    expect(csrf.validateToken(expired, expired)).toBe(false);
+  });
+
+  it("should reject tokens with invalid format", () => {
+    expect(csrf.validateToken("no-dots-here", "no-dots-here")).toBe(false);
+    expect(csrf.validateToken("one.dot", "one.dot")).toBe(false);
+  });
+
+  it("each generated token should be unique", () => {
+    const tokens = new Set<string>();
+    for (let i = 0; i < 50; i++) {
+      tokens.add(csrf.generateToken().combined);
+    }
+    expect(tokens.size).toBe(50);
   });
 });
 

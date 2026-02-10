@@ -152,16 +152,29 @@ describe("users router", () => {
   });
 
   describe("users.delete", () => {
-    it("deletes user successfully", async () => {
+    it("deletes another user successfully", async () => {
       vi.mocked(db.deleteUser).mockResolvedValue(undefined);
 
-      const ctx = createAuthContext();
+      const ctx = createAuthContext(); // user id = 1
       const caller = appRouter.createCaller(ctx);
 
-      const result = await caller.users.delete({ id: 1 });
+      // Delete user 2 (not self)
+      const result = await caller.users.delete({ id: 2 });
 
       expect(result).toEqual({ success: true });
-      expect(db.deleteUser).toHaveBeenCalledWith(1);
+      expect(db.deleteUser).toHaveBeenCalledWith(2);
+    });
+
+    it("prevents deleting own account", async () => {
+      vi.mocked(db.deleteUser).mockResolvedValue(undefined);
+
+      const ctx = createAuthContext(); // user id = 1
+      const caller = appRouter.createCaller(ctx);
+
+      // Try to delete self (id = 1)
+      await expect(caller.users.delete({ id: 1 })).rejects.toThrow(
+        'لا يمكنك حذف حسابك الخاص'
+      );
     });
   });
 });

@@ -6,7 +6,11 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
+import { getCsrfToken, initCsrfProtection } from "./hooks/useCsrfToken";
 import "./index.css";
+
+// Initialize CSRF protection (fetch token on load, refresh periodically)
+initCsrfProtection();
 
 const queryClient = new QueryClient();
 
@@ -42,6 +46,16 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      headers() {
+        // Attach CSRF token to every request
+        const token = getCsrfToken();
+        if (token) {
+          return {
+            'x-csrf-token': token,
+          };
+        }
+        return {};
+      },
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),
