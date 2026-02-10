@@ -1132,25 +1132,63 @@ export const appRouter = router({
         if (!ctx.user) throw new Error("Not authenticated");
         
         const targetDate = input.date;
-        const results = [];
+        const results: Array<{ workerId: number; success: boolean; error?: string }> = [];
         
         // Get all check_out events for the target date
         const checkOutEvents = await db.getCheckOutEventsByDate(targetDate);
         
-        // Delete existing finance records for this date
-        await db.deleteWorkerDailyFinanceByDate(targetDate);
-        
-        // Recalculate for each worker
+        // Recalculate for each worker who has a check_out
         for (const checkOut of checkOutEvents) {
           try {
-            await db.calculateAndSaveDailyFinance(checkOut.workerId, new Date(checkOut.eventTime));
+            await db.processAttendanceToFinance(checkOut.workerId, targetDate);
             results.push({ workerId: checkOut.workerId, success: true });
           } catch (error) {
             results.push({ workerId: checkOut.workerId, success: false, error: String(error) });
           }
         }
         
-        return { success: true, results };
+        return { success: true, results, recalculated: results.length };
+      }),
+    
+    // Recalculate daily finance for a period (all days)
+    recalculatePeriod: protectedProcedure
+      .input(z.object({
+        periodStart: z.string(), // YYYY-MM-DD
+        periodEnd: z.string(), // YYYY-MM-DD
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const start = new Date(input.periodStart);
+        const end = new Date(input.periodEnd);
+        const totalResults: Array<{ date: string; workerId: number; success: boolean; error?: string }> = [];
+        
+        // Iterate through each day in the period
+        const current = new Date(start);
+        while (current <= end) {
+          const dateStr = current.toLocaleDateString('en-CA');
+          
+          // Get all check_out events for this date
+          const checkOutEvents = await db.getCheckOutEventsByDate(dateStr);
+          
+          for (const checkOut of checkOutEvents) {
+            try {
+              await db.processAttendanceToFinance(checkOut.workerId, dateStr);
+              totalResults.push({ date: dateStr, workerId: checkOut.workerId, success: true });
+            } catch (error) {
+              totalResults.push({ date: dateStr, workerId: checkOut.workerId, success: false, error: String(error) });
+            }
+          }
+          
+          current.setDate(current.getDate() + 1);
+        }
+        
+        return { 
+          success: true, 
+          results: totalResults, 
+          recalculated: totalResults.filter(r => r.success).length,
+          failed: totalResults.filter(r => !r.success).length,
+        };
       }),
 
     // Update attendance event time

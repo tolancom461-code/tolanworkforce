@@ -1,0 +1,82 @@
+{
+  "query": "SELECT wdf.id, w.code, w.full_name, wdf.work_date, wdf.worked_minutes, wdf.financial_minutes, wdf.base_salary, wdf.net_salary, wdf.base_amount, wdf.net_amount FROM worker_daily_finance wdf JOIN workers w ON wdf.worker_id = w.id ORDER BY wdf.work_date, w.code LIMIT 30;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT wdf.id, w.code, w.full_name, wdf.work_date, wdf.worked_minutes, wdf.financial_minutes, wdf.base_salary, wdf.net_salary, wdf.base_amount, wdf.net_amount FROM worker_daily_finance wdf JOIN workers w ON wdf.worker_id = w.id ORDER BY wdf.work_date, w.code LIMIT 30;",
+  "rows": [
+    {
+      "id": "180029",
+      "code": "T03",
+      "full_name": "محمد ابراهيم محمد",
+      "work_date": "2026-02-01",
+      "worked_minutes": "0",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00",
+      "base_amount": "0.00",
+      "net_amount": "15.00"
+    },
+    {
+      "id": "180030",
+      "code": "T06",
+      "full_name": "مهاب فيصل",
+      "work_date": "2026-02-01",
+      "worked_minutes": "0",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00",
+      "base_amount": "0.00",
+      "net_amount": "-20.00"
+    },
+    {
+      "id": "180031",
+      "code": "T07",
+      "full_name": "اسراء حسن",
+      "work_date": "2026-02-01",
+      "worked_minutes": "0",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00",
+      "base_amount": "0.00",
+      "net_amount": "-20.00"
+    },
+    {
+      "id": "180032",
+      "code": "T08",
+      "full_name": "سماح عادل",
+      "work_date": "2026-02-01",
+      "worked_minutes": "0",
+      "financial_minutes": "0",
+      "base_salary": "0.00",
+      "net_salary": "0.00",
+      "base_amount": "0.00",
+      "net_amount": "10.00"
+    },
+    {
+      "id": "180028",
+      "code": "T01",
+      "full_name": "احمد يوسف",
+      "work_date": "2026-02-10",
+      "worked_minutes": "41",
+      "financial_minutes": "39",
+      "base_salary": "100.00",
+      "net_salary": "100.00",
+      "base_amount": "100.00",
+      "net_amount": "100.00"
+    },
+    {
+      "id": "180027",
+      "code": "T07",
+      "full_name": "اسراء حسن",
+      "work_date": "2026-02-10",
+      "worked_minutes": "26",
+      "financial_minutes": "23",
+      "base_salary": "100.00",
+      "net_salary": "100.00",
+      "base_amount": "100.00",
+      "net_amount": "100.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\twork_date\tworked_minutes\tfinancial_minutes\tbase_salary\tnet_salary\tbase_amount\tnet_amount\n180029\tT03\tمحمد ابراهيم محمد\t2026-02-01\t0\t0\t0.00\t0.00\t0.00\t15.00\n180030\tT06\tمهاب فيصل\t2026-02-01\t0\t0\t0.00\t0.00\t0.00\t-20.00\n180031\tT07\tاسراء حسن\t2026-02-01\t0\t0\t0.00\t0.00\t0.00\t-20.00\n180032\tT08\tسماح عادل\t2026-02-01\t0\t0\t0.00\t0.00\t0.00\t10.00\n180028\tT01\tاحمد يوسف\t2026-02-10\t41\t39\t100.00\t100.00\t100.00\t100.00\n180027\tT07\tاسراء حسن\t2026-02-10\t26\t23\t100.00\t100.00\t100.00\t100.00\n",
+  "stderr": "",
+  "execution_time_ms": 1599
+}

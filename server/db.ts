@@ -1053,6 +1053,9 @@ export async function createOrUpdateDailyFinance(
     bonuses?: number;
     lateMinutes?: number;
     earlyLeaveMinutes?: number;
+    actualWorkMinutes?: number;
+    checkInTime?: Date | null;
+    checkOutTime?: Date | null;
     notes?: string;
   }
 ) {
@@ -1075,6 +1078,9 @@ export async function createOrUpdateDailyFinance(
   const deductions = data.deductions || 0;
   const bonuses = data.bonuses || 0;
   const netAmount = baseAmount - deductions + bonuses;
+  const workedMinutes = data.actualWorkMinutes || 0;
+  // Financial minutes = worked minutes (already capped to shift boundaries)
+  const financialMinutes = workedMinutes;
   
   if (existing) {
     await db.update(workerDailyFinance).set({
@@ -1082,8 +1088,15 @@ export async function createOrUpdateDailyFinance(
       deductions: sql`${deductions}`,
       bonuses: sql`${bonuses}`,
       netAmount: sql`${netAmount}`,
+      baseSalary: sql`${baseAmount}`,
+      netSalary: sql`${netAmount}`,
+      workedMinutes: workedMinutes,
+      financialMinutes: financialMinutes,
       lateMinutes: data.lateMinutes || 0,
       earlyLeaveMinutes: data.earlyLeaveMinutes || 0,
+      latePenalty: sql`${deductions}`,
+      checkInTime: data.checkInTime || existing.checkInTime,
+      checkOutTime: data.checkOutTime || existing.checkOutTime,
       notes: data.notes,
       updatedAt: new Date(),
     }).where(eq(workerDailyFinance.id, existing.id));
@@ -1096,8 +1109,15 @@ export async function createOrUpdateDailyFinance(
       deductions: sql`${deductions}`,
       bonuses: sql`${bonuses}`,
       netAmount: sql`${netAmount}`,
+      baseSalary: sql`${baseAmount}`,
+      netSalary: sql`${netAmount}`,
+      workedMinutes: workedMinutes,
+      financialMinutes: financialMinutes,
       lateMinutes: data.lateMinutes || 0,
       earlyLeaveMinutes: data.earlyLeaveMinutes || 0,
+      latePenalty: sql`${deductions}`,
+      checkInTime: data.checkInTime || null,
+      checkOutTime: data.checkOutTime || null,
       notes: data.notes,
     });
     return { id: (result as any).insertId, created: true };
@@ -1310,7 +1330,33 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
 
 export async function processAttendanceToFinance(workerId: number, workDate: string) {
   const financeData = await calculateDailyFinanceFromAttendance(workerId, workDate);
-  return await createOrUpdateDailyFinance(workerId, workDate, financeData);
+  
+  // Get check-in and check-out times for the record
+  const db = await getDb();
+  let checkInTime: Date | null = null;
+  let checkOutTime: Date | null = null;
+  if (db) {
+    const { attendanceEvents } = await import('../drizzle/schema');
+    const dateStart = new Date(workDate + 'T00:00:00');
+    const dateEnd = new Date(workDate + 'T23:59:59.999');
+    const events = await db.select().from(attendanceEvents)
+      .where(and(
+        eq(attendanceEvents.workerId, workerId),
+        gte(attendanceEvents.eventTime, dateStart),
+        lte(attendanceEvents.eventTime, dateEnd)
+      ))
+      .orderBy(attendanceEvents.eventTime);
+    const checkInEvent = events.find(e => e.eventType === 'check_in');
+    const checkOutEvent = events.find(e => e.eventType === 'check_out');
+    if (checkInEvent) checkInTime = new Date(checkInEvent.eventTime);
+    if (checkOutEvent) checkOutTime = new Date(checkOutEvent.eventTime);
+  }
+  
+  return await createOrUpdateDailyFinance(workerId, workDate, {
+    ...financeData,
+    checkInTime,
+    checkOutTime,
+  });
 }
 
 // ============================================

@@ -795,3 +795,16 @@
 - [x] تحديث الفرونت إند (PunchesReviewCenter, AttendanceLog, PayrollDashboard)
 - [x] كتابة 9 اختبارات vitest - جميعها نجحت
 - [x] حفظ checkpoint
+
+## إصلاح حساب الرواتب في دفعة الرواتب
+- [x] فحص بيانات الحضور والمالية اليومية (worker_daily_finance)
+- [x] فحص كود إنشاء دفعة الرواتب (createPayrollBatch)
+- [x] تحديد السبب الجذري: createOrUpdateDailyFinance لم يحفظ workedMinutes/financialMinutes/checkInTime/checkOutTime
+- [x] إصلاح createOrUpdateDailyFinance لحفظ جميع الحقول المالية
+- [x] إصلاح processAttendanceToFinance لتمرير البيانات بشكل صحيح
+- [x] إصلاح recalculateDailyFinance لاستخدام processAttendanceToFinance
+- [x] إعادة حساب السجلات المالية لجميع الأيام
+- [x] حذف دفعة الرواتب القديمة الخاطئة
+- [x] اختبار إنشاء دفعة رواتب جديدة - 6 عمال بإجمالي 610 ر.س
+- [x] كتابة 9 اختبارات vitest - جميعها نجحت
+- [x] حفظ checkpoint
