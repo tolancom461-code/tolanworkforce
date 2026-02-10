@@ -1,0 +1,24 @@
+{
+  "query": "SELECT u.id, u.full_name, u.username, u.role, GROUP_CONCAT(uc.cost_center_id) as cc_ids FROM users u LEFT JOIN user_cost_centers uc ON u.id = uc.user_id WHERE u.full_name LIKE '%مشرف%' GROUP BY u.id, u.full_name, u.username, u.role",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT u.id, u.full_name, u.username, u.role, GROUP_CONCAT(uc.cost_center_id) as cc_ids FROM users u LEFT JOIN user_cost_centers uc ON u.id = uc.user_id WHERE u.full_name LIKE '%مشرف%' GROUP BY u.id, u.full_name, u.username, u.role",
+  "rows": [
+    {
+      "id": "451245",
+      "full_name": "مشرف تولان",
+      "username": "suptolan",
+      "role": "supervisor",
+      "cc_ids": "NULL"
+    },
+    {
+      "id": "451242",
+      "full_name": "مشرف الملقا",
+      "username": "supmalqa",
+      "role": "supervisor",
+      "cc_ids": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfull_name\tusername\trole\tcc_ids\n451245\tمشرف تولان\tsuptolan\tsupervisor\tNULL\n451242\tمشرف الملقا\tsupmalqa\tsupervisor\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1636
+}

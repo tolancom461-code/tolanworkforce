@@ -1,6 +1,6 @@
 /**
  * Role-Based Access Control (RBAC) System
- * 8 roles with specific page/feature access
+ * 9 roles with specific page/feature access
  */
 
 import type { UserRole } from "../drizzle/schema";
@@ -42,9 +42,27 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canAccessOperations: false,
     restrictedByCostCenter: false,
   },
-  supervisor: {
-    label: "Supervisor",
-    labelAr: "مشرف",
+  supervisor_tolan: {
+    label: "Supervisor Tolan",
+    labelAr: "مشرف تولان",
+    pages: ["operations"],
+    canCreateBatch: false,
+    canReviewAsAccountant: false,
+    canReviewAsAuditor: false,
+    canApproveAsFM: false,
+    canManageWorkers: false,
+    canManageGroups: false,
+    canManageCostCenters: false,
+    canManageUsers: false,
+    canViewFinancialReports: false,
+    canViewAttendanceReports: false,
+    canViewExecutiveDashboard: false,
+    canAccessOperations: true,
+    restrictedByCostCenter: true,
+  },
+  supervisor_malqa: {
+    label: "Supervisor Malqa",
+    labelAr: "مشرف الملقا",
     pages: ["operations"],
     canCreateBatch: false,
     canReviewAsAccountant: false,
@@ -169,6 +187,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     restrictedByCostCenter: false,
   },
 };
+
+// Helper to check if a role is a supervisor type
+export function isSupervisorRole(role: UserRole): boolean {
+  return role === 'supervisor_tolan' || role === 'supervisor_malqa';
+}
 
 // Helper functions
 export function hasPageAccess(role: UserRole, page: string): boolean {

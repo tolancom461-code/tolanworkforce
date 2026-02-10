@@ -17,7 +17,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 // تعريف الأدوار الـ 8
 const ROLES = [
   { value: 'guard', label: 'حارس', description: 'تسجيل الحضور والانصراف فقط', color: 'bg-gray-500' },
-  { value: 'supervisor', label: 'مشرف', description: 'العمليات التشغيلية - مقيّد بمراكز التكلفة', color: 'bg-blue-500' },
+  { value: 'supervisor_tolan', label: 'مشرف تولان', description: 'العمليات التشغيلية - مراكز تكلفة تولان (CC001-CC005)', color: 'bg-blue-500' },
+  { value: 'supervisor_malqa', label: 'مشرف الملقا', description: 'العمليات التشغيلية - مراكز تكلفة الملقا (CC006-CC010)', color: 'bg-cyan-500' },
   { value: 'admin_affairs', label: 'شؤون إدارية', description: 'كل الصلاحيات ما عدا لوحة الإدارة العليا', color: 'bg-emerald-500' },
   { value: 'accountant', label: 'محاسب مالي', description: 'نفس الشؤون الإدارية + مراجعة الدفعات (المرحلة 1)', color: 'bg-teal-500' },
   { value: 'auditor', label: 'مراجع مالي', description: 'التقارير المالية + اعتماد أولي للدفعات (المرحلة 2)', color: 'bg-amber-500' },
@@ -38,6 +39,8 @@ function getRoleBadgeVariant(role: string): "default" | "secondary" | "destructi
     case 'auditor':
     case 'finance_manager':
     case 'executive': return 'outline';
+    case 'supervisor_tolan':
+    case 'supervisor_malqa': return 'secondary';
     default: return 'secondary';
   }
 }

@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, full_name, username, role FROM users WHERE role = 'supervisor'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, full_name, username, role FROM users WHERE role = 'supervisor'",
+  "rows": [
+    {
+      "id": "451242",
+      "full_name": "مشرف الملقا",
+      "username": "supmalqa",
+      "role": "supervisor"
+    },
+    {
+      "id": "451245",
+      "full_name": "مشرف تولان",
+      "username": "suptolan",
+      "role": "supervisor"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfull_name\tusername\trole\n451242\tمشرف الملقا\tsupmalqa\tsupervisor\n451245\tمشرف تولان\tsuptolan\tsupervisor\n",
+  "stderr": "",
+  "execution_time_ms": 1624
+}

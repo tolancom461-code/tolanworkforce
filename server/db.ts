@@ -3174,7 +3174,7 @@ export async function createLocalUser(data: {
   email?: string;
   phone?: string;
   isActive?: boolean;
-  role?: 'guard' | 'supervisor' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin';
+  role?: 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin';
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -3994,7 +3994,7 @@ export async function checkUnresolvedFlags(workerId?: number, groupId?: number, 
  * NOTE: All users have full permissions now.
  */
 
-export async function updateUserRole(userId: number, role: 'guard' | 'supervisor' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin') {
+export async function updateUserRole(userId: number, role: 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin') {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   await db

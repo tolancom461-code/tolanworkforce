@@ -1,0 +1,9 @@
+{
+  "query": "SELECT u.id, u.full_name, u.username, u.role, GROUP_CONCAT(cc.code ORDER BY cc.code) as cost_centers FROM users u LEFT JOIN user_cost_centers uc ON u.id = uc.user_id LEFT JOIN cost_centers cc ON cc.id = uc.cost_center_id WHERE u.role IN ('supervisor_tolan', 'supervisor_malqa') GROUP BY u.id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT u.id, u.full_name, u.username, u.role, GROUP_CONCAT(cc.code ORDER BY cc.code) as cost_centers FROM users u LEFT JOIN user_cost_centers uc ON u.id = uc.user_id LEFT JOIN cost_centers cc ON cc.id = uc.cost_center_id WHERE u.role IN ('supervisor_tolan', 'supervisor_malqa') GROUP BY u.id",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1563
+}

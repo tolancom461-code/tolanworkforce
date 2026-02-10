@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM user_cost_centers; INSERT INTO user_cost_centers (user_id, cost_center_id) SELECT u.id, cc.id FROM users u, cost_centers cc WHERE u.role = 'supervisor_tolan' AND cc.code IN ('CC001', 'CC002', 'CC003', 'CC004', 'CC005'); INSERT INTO user_cost_centers (user_id, cost_center_id) SELECT u.id, cc.id FROM users u, cost_centers cc WHERE u.role = 'supervisor_malqa' AND cc.code IN ('CC006', 'CC007', 'CC008', 'CC009', 'CC010')",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute DELETE FROM user_cost_centers; INSERT INTO user_cost_centers (user_id, cost_center_id) SELECT u.id, cc.id FROM users u, cost_centers cc WHERE u.role = 'supervisor_tolan' AND cc.code IN ('CC001', 'CC002', 'CC003', 'CC004', 'CC005'); INSERT INTO user_cost_centers (user_id, cost_center_id) SELECT u.id, cc.id FROM users u, cost_centers cc WHERE u.role = 'supervisor_malqa' AND cc.code IN ('CC006', 'CC007', 'CC008', 'CC009', 'CC010')",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1957
+}

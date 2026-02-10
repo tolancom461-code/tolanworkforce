@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { ROLE_PERMISSIONS, hasPageAccess, canApproveBatchAtStage, cannotSelfReview, getRoleLabel, getAllRoles } from "./permissions";
+import { ROLE_PERMISSIONS, hasPageAccess, canApproveBatchAtStage, cannotSelfReview, getRoleLabel, getAllRoles, isSupervisorRole } from "./permissions";
 import type { UserRole } from "../drizzle/schema";
 import { userRoleEnum } from "../drizzle/schema";
 
 describe("RBAC - Role Definitions", () => {
-  it("should have exactly 8 roles defined", () => {
-    expect(userRoleEnum).toHaveLength(8);
-    expect(Object.keys(ROLE_PERMISSIONS)).toHaveLength(8);
+  it("should have exactly 9 roles defined", () => {
+    expect(userRoleEnum).toHaveLength(9);
+    expect(Object.keys(ROLE_PERMISSIONS)).toHaveLength(9);
   });
 
-  it("should have all 8 expected roles", () => {
+  it("should have all 9 expected roles", () => {
     const expectedRoles: UserRole[] = [
-      "guard", "supervisor", "admin_affairs", "accountant",
+      "guard", "supervisor_tolan", "supervisor_malqa", "admin_affairs", "accountant",
       "auditor", "finance_manager", "executive", "super_admin"
     ];
     for (const role of expectedRoles) {
@@ -36,11 +36,18 @@ describe("RBAC - Page Access", () => {
     expect(hasPageAccess("guard", "executiveDashboard")).toBe(false);
   });
 
-  it("supervisor can only access operations page", () => {
-    expect(hasPageAccess("supervisor", "operations")).toBe(true);
-    expect(hasPageAccess("supervisor", "attendance")).toBe(false);
-    expect(hasPageAccess("supervisor", "workers")).toBe(false);
-    expect(hasPageAccess("supervisor", "payroll")).toBe(false);
+  it("supervisor_tolan can only access operations page", () => {
+    expect(hasPageAccess("supervisor_tolan", "operations")).toBe(true);
+    expect(hasPageAccess("supervisor_tolan", "attendance")).toBe(false);
+    expect(hasPageAccess("supervisor_tolan", "workers")).toBe(false);
+    expect(hasPageAccess("supervisor_tolan", "payroll")).toBe(false);
+  });
+
+  it("supervisor_malqa can only access operations page", () => {
+    expect(hasPageAccess("supervisor_malqa", "operations")).toBe(true);
+    expect(hasPageAccess("supervisor_malqa", "attendance")).toBe(false);
+    expect(hasPageAccess("supervisor_malqa", "workers")).toBe(false);
+    expect(hasPageAccess("supervisor_malqa", "payroll")).toBe(false);
   });
 
   it("admin_affairs has broad access except executive dashboard", () => {
@@ -181,11 +188,20 @@ describe("RBAC - Role Capabilities", () => {
     expect(batchCreators.sort()).toEqual(["accountant", "admin_affairs"]);
   });
 
-  it("only supervisor is restricted by cost center", () => {
+  it("both supervisor roles are restricted by cost center", () => {
     const restricted = Object.entries(ROLE_PERMISSIONS)
       .filter(([_, perms]) => perms.restrictedByCostCenter)
-      .map(([role]) => role);
-    expect(restricted).toEqual(["supervisor"]);
+      .map(([role]) => role)
+      .sort();
+    expect(restricted).toEqual(["supervisor_malqa", "supervisor_tolan"]);
+  });
+
+  it("isSupervisorRole correctly identifies supervisor roles", () => {
+    expect(isSupervisorRole("supervisor_tolan")).toBe(true);
+    expect(isSupervisorRole("supervisor_malqa")).toBe(true);
+    expect(isSupervisorRole("guard")).toBe(false);
+    expect(isSupervisorRole("admin_affairs")).toBe(false);
+    expect(isSupervisorRole("super_admin")).toBe(false);
   });
 
   it("only super_admin can manage users", () => {
@@ -216,18 +232,21 @@ describe("RBAC - Role Capabilities", () => {
 describe("RBAC - Helper Functions", () => {
   it("getRoleLabel returns Arabic label by default", () => {
     expect(getRoleLabel("guard")).toBe("حارس");
-    expect(getRoleLabel("supervisor")).toBe("مشرف");
+    expect(getRoleLabel("supervisor_tolan")).toBe("مشرف تولان");
+    expect(getRoleLabel("supervisor_malqa")).toBe("مشرف الملقا");
     expect(getRoleLabel("super_admin")).toBe("سوبر أدمن");
   });
 
   it("getRoleLabel returns English label when specified", () => {
     expect(getRoleLabel("guard", "en")).toBe("Guard");
     expect(getRoleLabel("executive", "en")).toBe("Executive");
+    expect(getRoleLabel("supervisor_tolan", "en")).toBe("Supervisor Tolan");
+    expect(getRoleLabel("supervisor_malqa", "en")).toBe("Supervisor Malqa");
   });
 
-  it("getAllRoles returns all 8 roles", () => {
+  it("getAllRoles returns all 9 roles", () => {
     const roles = getAllRoles();
-    expect(roles).toHaveLength(8);
+    expect(roles).toHaveLength(9);
     expect(roles.every(r => r.value && r.label && r.labelAr)).toBe(true);
   });
 });

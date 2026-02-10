@@ -1,0 +1,9 @@
+{
+  "query": "SELECT uc.user_id, u.full_name, u.role, uc.cost_center_id, cc.name as cost_center_name FROM user_cost_centers uc JOIN users u ON u.id = uc.user_id JOIN cost_centers cc ON cc.id = uc.cost_center_id ORDER BY uc.user_id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT uc.user_id, u.full_name, u.role, uc.cost_center_id, cc.name as cost_center_name FROM user_cost_centers uc JOIN users u ON u.id = uc.user_id JOIN cost_centers cc ON cc.id = uc.cost_center_id ORDER BY uc.user_id",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1637
+}

@@ -57,6 +57,13 @@
       "when": 1770737502714,
       "tag": "0007_easy_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1770741430325,
+      "tag": "0008_cold_lifeguard",
+      "breakpoints": true
     }
   ]
 }

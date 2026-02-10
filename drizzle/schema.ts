@@ -20,7 +20,7 @@ export const costCenters = mysqlTable("cost_centers", {
 // Users & Permissions (المستخدمين والصلاحيات)
 // ============================================
 // Role-Based Access Control (RBAC) - 8 roles
-export const userRoleEnum = ["guard", "supervisor", "admin_affairs", "accountant", "auditor", "finance_manager", "executive", "super_admin"] as const;
+export const userRoleEnum = ["guard", "supervisor_tolan", "supervisor_malqa", "admin_affairs", "accountant", "auditor", "finance_manager", "executive", "super_admin"] as const;
 export type UserRole = typeof userRoleEnum[number];
 
 export const users = mysqlTable("users", {
@@ -33,7 +33,7 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 20 }),
   isActive: boolean("is_active").default(true),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["guard", "supervisor", "admin_affairs", "accountant", "auditor", "finance_manager", "executive", "super_admin"]).default("guard").notNull(),
+  role: mysqlEnum("role", ["guard", "supervisor_tolan", "supervisor_malqa", "admin_affairs", "accountant", "auditor", "finance_manager", "executive", "super_admin"]).default("guard").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

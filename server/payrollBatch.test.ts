@@ -192,11 +192,21 @@ describe('Advanced Payroll Batch System', { timeout: 60000 }, () => {
 
   describe('Phase 6: Batch Deletion', () => {
     it('should delete draft batches', async () => {
+      // Refresh worker IDs in case previous tests affected them
+      const freshWorkers = await db.getAllWorkers();
+      const freshItems = freshWorkers.slice(0, 2).map((w, i) => ({
+        workerId: w.id,
+        baseAmount: i === 0 ? '150.00' : '200.00',
+        deductions: i === 0 ? '10.00' : '15.00',
+        bonuses: i === 0 ? '5.00' : '10.00',
+        netAmount: i === 0 ? '145.00' : '195.00',
+      }));
+
       const createResult = await db.createPayrollBatch({
         periodStart: '2026-04-05',
         periodEnd: '2026-04-11',
         createdBy: testUserId,
-        items: testItems,
+        items: freshItems,
       });
 
       await db.deleteBatch(createResult.batchId);
@@ -210,11 +220,21 @@ describe('Advanced Payroll Batch System', { timeout: 60000 }, () => {
     });
 
     it('should prevent deletion of approved batches', async () => {
+      // Refresh worker IDs in case previous tests affected them
+      const freshWorkers = await db.getAllWorkers();
+      const freshItems = freshWorkers.slice(0, 2).map((w, i) => ({
+        workerId: w.id,
+        baseAmount: i === 0 ? '150.00' : '200.00',
+        deductions: i === 0 ? '10.00' : '15.00',
+        bonuses: i === 0 ? '5.00' : '10.00',
+        netAmount: i === 0 ? '145.00' : '195.00',
+      }));
+
       const createResult = await db.createPayrollBatch({
         periodStart: '2026-04-12',
         periodEnd: '2026-04-18',
         createdBy: testUserId,
-        items: testItems,
+        items: freshItems,
       });
 
       allCreatedBatchIds.push(createResult.batchId);

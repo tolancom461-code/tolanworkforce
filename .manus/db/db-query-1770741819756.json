@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, full_name, username, role FROM users ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, full_name, username, role FROM users ORDER BY id",
+  "rows": [
+    {
+      "id": "1",
+      "full_name": "anem2031",
+      "username": "fQvX5e3Eytk42QF5qSXDcP",
+      "role": "super_admin"
+    },
+    {
+      "id": "30004",
+      "full_name": "مدير النظام",
+      "username": "admin",
+      "role": "super_admin"
+    },
+    {
+      "id": "451009",
+      "full_name": "المحاسب المالي",
+      "username": "accountant",
+      "role": "accountant"
+    },
+    {
+      "id": "451010",
+      "full_name": "المراجع المالي",
+      "username": "auditor",
+      "role": "auditor"
+    },
+    {
+      "id": "451231",
+      "full_name": "الحراسة",
+      "username": "gar",
+      "role": "guard"
+    },
+    {
+      "id": "451234",
+      "full_name": "الادارة العليا",
+      "username": "ceo",
+      "role": "executive"
+    },
+    {
+      "id": "451238",
+      "full_name": "المدير المالي",
+      "username": "manger",
+      "role": "finance_manager"
+    },
+    {
+      "id": "451242",
+      "full_name": "مشرف الملقا",
+      "username": "supmalqa",
+      "role": "supervisor"
+    },
+    {
+      "id": "451245",
+      "full_name": "مشرف تولان",
+      "username": "suptolan",
+      "role": "supervisor"
+    },
+    {
+      "id": "451248",
+      "full_name": "الشئون الادارية",
+      "username": "affairs",
+      "role": "admin_affairs"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfull_name\tusername\trole\n1\tanem2031\tfQvX5e3Eytk42QF5qSXDcP\tsuper_admin\n30004\tمدير النظام\tadmin\tsuper_admin\n451009\tالمحاسب المالي\taccountant\taccountant\n451010\tالمراجع المالي\tauditor\tauditor\n451231\tالحراسة\tgar\tguard\n451234\tالادارة العليا\tceo\texecutive\n451238\tالمدير المالي\tmanger\tfinance_manager\n451242\tمشرف الملقا\tsupmalqa\tsupervisor\n451245\tمشرف تولان\tsuptolan\tsupervisor\n451248\tالشئون الادارية\taffairs\tadmin_affairs\n",
+  "stderr": "",
+  "execution_time_ms": 1575
+}

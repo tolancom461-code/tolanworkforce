@@ -69,11 +69,12 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 
 // تعريف الصفحات المسموحة لكل دور
-type UserRoleType = 'guard' | 'supervisor' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin';
+type UserRoleType = 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin';
 
 const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
   guard: ['/attendance', '/profile'],
-  supervisor: ['/operations', '/profile'],
+  supervisor_tolan: ['/operations', '/profile'],
+  supervisor_malqa: ['/operations', '/profile'],
   admin_affairs: [
     '/dashboard', '/executive', '/users', '/workers', '/groups',
     '/attendance', '/attendance/log', '/attendance/reports', '/work-days',
