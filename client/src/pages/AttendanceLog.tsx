@@ -71,7 +71,7 @@ export default function AttendanceLog() {
 
   // Get absent workers
   const { data: absentWorkers, refetch: refetchAbsent } = trpc.attendance.getAbsentWorkers.useQuery({
-    workDate: new Date(selectedDate),
+    workDateStr: selectedDate, // Send as YYYY-MM-DD string for stable query key
     groupId: absentFilterGroup !== 'all' ? parseInt(absentFilterGroup) : undefined
   });
 

@@ -1,0 +1,8 @@
+{
+  "query": "SELECT ae.id, ae.worker_id, ae.event_type, ae.event_time, ae.work_date, ae.status, ae.is_manual, w.code as worker_code, w.full_name FROM attendance_events ae JOIN workers w ON ae.worker_id = w.id WHERE ae.work_date = '2026-02-01' ORDER BY ae.worker_id, ae.event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT ae.id, ae.worker_id, ae.event_type, ae.event_time, ae.work_date, ae.status, ae.is_manual, w.code as worker_code, w.full_name FROM attendance_events ae JOIN workers w ON ae.worker_id = w.id WHERE ae.work_date = '2026-02-01' ORDER BY ae.worker_id, ae.event_time;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'ae.work_date' in 'where clause'"
+  ]
+}

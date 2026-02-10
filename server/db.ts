@@ -5815,48 +5815,46 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
     const checkInCount = data.checkIns.length;
     const checkOutCount = data.checkOuts.length;
     
-    // Case 1: Has check-in but no check-out
+    // Case 1: Has check-in(s) but NO check-out at all
     if (checkInCount > 0 && checkOutCount === 0) {
-      for (const checkIn of data.checkIns) {
-        incompleteRecords.push({
-          workerId: data.workerId,
-          workerCode: data.workerCode,
-          workerName: data.workerName,
-          groupId: data.groupId,
-          groupName: data.groupName,
-          checkInId: checkIn.id,
-          checkInTime: checkIn.time,
-          checkOutId: null,
-          checkOutTime: null,
-          incompleteType: 'missing_check_out',
-        });
-      }
+      // Report only the LAST check-in as incomplete (one record per worker)
+      const lastCheckIn = data.checkIns[data.checkIns.length - 1];
+      incompleteRecords.push({
+        workerId: data.workerId,
+        workerCode: data.workerCode,
+        workerName: data.workerName,
+        groupId: data.groupId,
+        groupName: data.groupName,
+        checkInId: lastCheckIn.id,
+        checkInTime: lastCheckIn.time,
+        checkOutId: null,
+        checkOutTime: null,
+        incompleteType: 'missing_check_out',
+      });
     }
-    
-    // Case 2: Has check-out but no check-in
-    if (checkOutCount > 0 && checkInCount === 0) {
-      for (const checkOut of data.checkOuts) {
-        incompleteRecords.push({
-          workerId: data.workerId,
-          workerCode: data.workerCode,
-          workerName: data.workerName,
-          groupId: data.groupId,
-          groupName: data.groupName,
-          checkInId: null,
-          checkInTime: null,
-          checkOutId: checkOut.id,
-          checkOutTime: checkOut.time,
-          incompleteType: 'missing_check_in',
-        });
-      }
+    // Case 2: Has check-out(s) but NO check-in at all
+    else if (checkOutCount > 0 && checkInCount === 0) {
+      // Report only the FIRST check-out as incomplete (one record per worker)
+      const firstCheckOut = data.checkOuts[0];
+      incompleteRecords.push({
+        workerId: data.workerId,
+        workerCode: data.workerCode,
+        workerName: data.workerName,
+        groupId: data.groupId,
+        groupName: data.groupName,
+        checkInId: null,
+        checkInTime: null,
+        checkOutId: firstCheckOut.id,
+        checkOutTime: firstCheckOut.time,
+        incompleteType: 'missing_check_in',
+      });
     }
-    
-    // Case 3: Unmatched pairs - only when counts don't match
-    // If counts are equal (e.g., 2 check-ins + 2 check-outs), consider it complete
-    if (checkInCount !== checkOutCount) {
+    // Case 3: Both exist but counts don't match (e.g., 2 check-ins + 1 check-out)
+    // If counts are equal (e.g., 1 check-in + 1 check-out), consider it complete
+    else if (checkInCount > 0 && checkOutCount > 0 && checkInCount !== checkOutCount) {
       if (checkInCount > checkOutCount) {
         // Has more check-ins than check-outs
-        // Only report the LAST unmatched check-in as incomplete
+        // Report the LAST unmatched check-in as incomplete
         const lastCheckIn = data.checkIns[data.checkIns.length - 1];
         incompleteRecords.push({
           workerId: data.workerId,
@@ -5872,7 +5870,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
         });
       } else {
         // Has more check-outs than check-ins
-        // Only report the FIRST unmatched check-out as incomplete
+        // Report the FIRST unmatched check-out as incomplete
         const firstCheckOut = data.checkOuts[0];
         incompleteRecords.push({
           workerId: data.workerId,
@@ -5888,6 +5886,7 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
         });
       }
     }
+    // Case 4: Equal counts (checkInCount === checkOutCount) → complete, skip
   }
   
   return incompleteRecords;

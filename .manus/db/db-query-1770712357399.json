@@ -1,0 +1,160 @@
+{
+  "query": "SELECT ae.id, ae.worker_id, ae.event_type, ae.event_time, ae.method, ae.is_automatic, w.code as worker_code, w.full_name FROM attendance_events ae JOIN workers w ON ae.worker_id = w.id WHERE DATE(ae.event_time) = '2026-02-01' ORDER BY ae.worker_id, ae.event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT ae.id, ae.worker_id, ae.event_type, ae.event_time, ae.method, ae.is_automatic, w.code as worker_code, w.full_name FROM attendance_events ae JOIN workers w ON ae.worker_id = w.id WHERE DATE(ae.event_time) = '2026-02-01' ORDER BY ae.worker_id, ae.event_time;",
+  "rows": [
+    {
+      "id": "300032",
+      "worker_id": "120001",
+      "event_type": "check_in",
+      "event_time": "2026-02-01 13:00:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T01",
+      "full_name": "احمد يوسف"
+    },
+    {
+      "id": "300033",
+      "worker_id": "120001",
+      "event_type": "check_out",
+      "event_time": "2026-02-01 14:00:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T01",
+      "full_name": "احمد يوسف"
+    },
+    {
+      "id": "300034",
+      "worker_id": "120002",
+      "event_type": "check_in",
+      "event_time": "2026-02-01 13:05:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T02",
+      "full_name": "محمد ابراهيم علي"
+    },
+    {
+      "id": "300035",
+      "worker_id": "120002",
+      "event_type": "check_out",
+      "event_time": "2026-02-01 14:05:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T02",
+      "full_name": "محمد ابراهيم علي"
+    },
+    {
+      "id": "300036",
+      "worker_id": "120003",
+      "event_type": "check_in",
+      "event_time": "2026-02-01 12:55:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T03",
+      "full_name": "محمد ابراهيم محمد"
+    },
+    {
+      "id": "300037",
+      "worker_id": "120003",
+      "event_type": "check_out",
+      "event_time": "2026-02-01 14:05:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T03",
+      "full_name": "محمد ابراهيم محمد"
+    },
+    {
+      "id": "300038",
+      "worker_id": "120004",
+      "event_type": "check_in",
+      "event_time": "2026-02-01 12:55:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T04",
+      "full_name": "محمد الطيب"
+    },
+    {
+      "id": "300039",
+      "worker_id": "120004",
+      "event_type": "check_out",
+      "event_time": "2026-02-01 13:55:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T04",
+      "full_name": "محمد الطيب"
+    },
+    {
+      "id": "300040",
+      "worker_id": "120005",
+      "event_type": "check_in",
+      "event_time": "2026-02-01 13:00:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T05",
+      "full_name": "مصطفى الرشيد"
+    },
+    {
+      "id": "300041",
+      "worker_id": "120005",
+      "event_type": "check_out",
+      "event_time": "2026-02-01 13:30:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T05",
+      "full_name": "مصطفى الرشيد"
+    },
+    {
+      "id": "300042",
+      "worker_id": "120006",
+      "event_type": "check_in",
+      "event_time": "2026-02-01 13:00:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T06",
+      "full_name": "مهاب فيصل"
+    },
+    {
+      "id": "300043",
+      "worker_id": "120006",
+      "event_type": "check_out",
+      "event_time": "2026-02-01 14:00:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T06",
+      "full_name": "مهاب فيصل"
+    },
+    {
+      "id": "300044",
+      "worker_id": "120007",
+      "event_type": "check_in",
+      "event_time": "2026-02-01 12:00:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T07",
+      "full_name": "اسراء حسن"
+    },
+    {
+      "id": "300045",
+      "worker_id": "120007",
+      "event_type": "check_out",
+      "event_time": "2026-02-01 14:00:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T07",
+      "full_name": "اسراء حسن"
+    },
+    {
+      "id": "300046",
+      "worker_id": "120008",
+      "event_type": "check_in",
+      "event_time": "2026-02-01 11:55:00",
+      "method": "manual",
+      "is_automatic": "0",
+      "worker_code": "T08",
+      "full_name": "سماح عادل"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tevent_type\tevent_time\tmethod\tis_automatic\tworker_code\tfull_name\n300032\t120001\tcheck_in\t2026-02-01 13:00:00\tmanual\t0\tT01\tاحمد يوسف\n300033\t120001\tcheck_out\t2026-02-01 14:00:00\tmanual\t0\tT01\tاحمد يوسف\n300034\t120002\tcheck_in\t2026-02-01 13:05:00\tmanual\t0\tT02\tمحمد ابراهيم علي\n300035\t120002\tcheck_out\t2026-02-01 14:05:00\tmanual\t0\tT02\tمحمد ابراهيم علي\n300036\t120003\tcheck_in\t2026-02-01 12:55:00\tmanual\t0\tT03\tمحمد ابراهيم محمد\n300037\t120003\tcheck_out\t2026-02-01 14:05:00\tmanual\t0\tT03\tمحمد ابراهيم محمد\n300038\t120004\tcheck_in\t2026-02-01 12:55:00\tmanual\t0\tT04\tمحمد الطيب\n300039\t120004\tcheck_out\t2026-02-01 13:55:00\tmanual\t0\tT04\tمحمد الطيب\n300040\t120005\tcheck_in\t2026-02-01 13:00:00\tmanual\t0\tT05\tمصطفى الرشيد\n300041\t120005\tcheck_out\t2026-02-01 13:30:00\tmanual\t0\tT05\tمصطفى الرشيد\n300042\t120006\tcheck_in\t2026-02-01 13:00:00\tmanual\t0\tT06\tمهاب فيصل\n300043\t120006\tcheck_out\t2026-02-01 14:00:00\tmanual\t0\tT06\tمهاب فيصل\n300044\t120007\tcheck_in\t2026-02-01 12:00:00\tmanual\t0\tT07\tاسراء حسن\n300045\t120007\tcheck_out\t2026-02-01 14:00:00\tmanual\t0\tT07\tاسراء حسن\n300046\t120008\tcheck_in\t2026-02-01 11:55:00\tmanual\t0\tT08\tسماح عادل\n",
+  "stderr": "",
+  "execution_time_ms": 1678
+}

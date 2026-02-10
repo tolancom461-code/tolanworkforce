@@ -785,3 +785,13 @@
 - [x] حذف المجموعات ما عدا GRP01 و GRP02 (12 مجموعة)
 - [x] التحقق من نظافة البيانات
 - [x] حفظ checkpoint
+
+## إصلاح مركز مراجعة البصمات (10 فبراير 2026)
+- [x] فحص بيانات الحضور ليوم 1 فبراير في قاعدة البيانات
+- [x] فحص كود مركز المراجعة (getIncompleteAttendance) وفهم منطق تحديد البصمات الناقصة
+- [x] تحديد السبب الجذري: تغيير التاريخ في الفرونت لا يعيد الاستعلام بسبب z.date() في tRPC input
+- [x] إصلاح المنطق: تحويل جميع workDate من z.date() إلى z.string() (workDateStr بتنسيق YYYY-MM-DD)
+- [x] إصلاح التكرار في getIncompleteAttendance (Case 3 كان يضيف سجلات مكررة)
+- [x] تحديث الفرونت إند (PunchesReviewCenter, AttendanceLog, PayrollDashboard)
+- [x] كتابة 9 اختبارات vitest - جميعها نجحت
+- [x] حفظ checkpoint

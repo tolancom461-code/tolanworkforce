@@ -52,13 +52,13 @@ export function PayrollDashboard() {
   // Fetch data
   const { data: groups } = trpc.groups.list.useQuery();
   const { data: groupPayrollData, isLoading: groupPayrollLoading } = trpc.payrollFunctions.getGroupPayrollSummary.useQuery(
-    { workDate: new Date(selectedDate) },
+    { workDateStr: selectedDate },
     { enabled: !!selectedDate }
   );
 
   const { data: dailyPayrollData, isLoading: dailyPayrollLoading } = trpc.payrollFunctions.getDailyPayrollSummary.useQuery(
     {
-      workDate: new Date(selectedDate),
+      workDateStr: selectedDate,
       groupId: selectedGroupId ? parseInt(selectedGroupId) : undefined,
     },
     { enabled: !!selectedDate }

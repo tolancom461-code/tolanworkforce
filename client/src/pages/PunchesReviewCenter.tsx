@@ -20,7 +20,7 @@ export default function PunchesReviewCenter() {
 
   // Fetch incomplete attendance records
   const { data: incompleteRecords = [], isLoading, refetch } = trpc.attendance.getForReview.useQuery({
-    workDate: new Date(selectedDate),
+    workDateStr: selectedDate, // Send as YYYY-MM-DD string for stable query key
   });
 
   // Fetch groups for filter

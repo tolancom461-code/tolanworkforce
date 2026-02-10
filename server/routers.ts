@@ -750,57 +750,26 @@ export const appRouter = router({
         }
       }),
     
-    // Get attendance events for review
+    // Get attendance events for review - returns ONLY incomplete (unpaired) records
     getForReview: protectedProcedure
       .input(z.object({
-        workDate: z.date(),
+        workDateStr: z.string(), // YYYY-MM-DD format to avoid Date serialization issues
         status: z.enum(['PENDING_REVIEW', 'APPROVED', 'REJECTED']).optional(),
       }))
       .query(async ({ input }) => {
+        // Parse the date string to Date object for the query
+        const workDate = new Date(`${input.workDateStr}T00:00:00`);
         // Get incomplete attendance records for the date
-        const incompleteRecords = await db.getIncompleteAttendance(input.workDate);
+        const incompleteRecords = await db.getIncompleteAttendance(workDate);
         
-        // Get regular attendance events for review (auto-completed or manual)
-        const database = await db.getDb();
-        if (!database) return [];
-        
-        const { workers, groups } = await import('../drizzle/schema');
-        const { eq } = await import('drizzle-orm');
-        
-        const regularEvents = await database
-          .select({
-            id: attendanceEvents.id,
-            workerId: attendanceEvents.workerId,
-            workerName: workers.fullName,
-            workerCode: workers.code,
-            groupName: groups.name,
-            eventType: attendanceEvents.eventType,
-            eventTime: attendanceEvents.eventTime,
-            method: attendanceEvents.method,
-            note: attendanceEvents.note,
-            isAutomatic: sql<boolean>`is_automatic`,
-          })
-          .from(attendanceEvents)
-          .leftJoin(workers, eq(attendanceEvents.workerId, workers.id))
-          .leftJoin(groups, eq(workers.groupId, groups.id))
-          .where(
-            sql`DATE(${attendanceEvents.eventTime}) = DATE(${input.workDate})`
-          )
-          .orderBy(attendanceEvents.eventTime);
-        
-        // Transform incomplete records
+        // Transform incomplete records - these are the ONLY records that need review
         const incompleteTransformed = incompleteRecords.map(record => ({
           id: record.checkInId || record.checkOutId || 0,
           workerId: record.workerId,
           workerName: record.workerName,
           workerCode: record.workerCode,
+          groupId: record.groupId,
           groupName: record.groupName,
-          eventType: record.incompleteType === 'missing_check_out' ? 'check_in' : 'check_out',
-          eventTime: (record.checkInTime || record.checkOutTime || new Date()).toISOString(),
-          method: 'manual',
-          note: null,
-          status: 'PENDING_REVIEW',
-          isAutomatic: false,
           incompleteType: record.incompleteType,
           checkInId: record.checkInId,
           checkInTime: record.checkInTime,
@@ -808,33 +777,18 @@ export const appRouter = router({
           checkOutTime: record.checkOutTime,
         }));
         
-        // Transform regular events
-        const regularTransformed = regularEvents.map(event => ({
-          id: event.id,
-          workerId: event.workerId,
-          workerName: event.workerName || 'Unknown',
-          workerCode: event.workerCode || 'N/A',
-          groupName: event.groupName || 'No Group',
-          eventType: event.eventType,
-          eventTime: event.eventTime.toISOString(),
-          method: event.method,
-          note: event.note,
-          status: 'PENDING_REVIEW',
-          isAutomatic: event.isAutomatic || false,
-        }));
-        
-        // Combine and return both types
-        return [...incompleteTransformed, ...regularTransformed];
+        return incompleteTransformed;
       }),
     
     // Get absent workers for a specific date
     getAbsentWorkers: protectedProcedure
       .input(z.object({
-        workDate: z.date(),
+        workDateStr: z.string(), // YYYY-MM-DD format for stable query key
         groupId: z.number().optional(),
       }))
       .query(async ({ input }) => {
-        return await db.getAbsentWorkers(input.workDate, input.groupId);
+        const workDate = new Date(`${input.workDateStr}T00:00:00`);
+        return await db.getAbsentWorkers(workDate, input.groupId);
       }),
     
     // Approve a punch record
@@ -2596,15 +2550,16 @@ export const appRouter = router({
     calculateDailyPayroll: protectedProcedure
       .input(z.object({
         workerId: z.number(),
-        workDate: z.date(),
+        workDateStr: z.string(), // YYYY-MM-DD format
       }))
       .query(async ({ input }) => {
         try {
+          const workDate = new Date(`${input.workDateStr}T00:00:00`);
           // Note: This will call the database function when implemented
           // For now, return a placeholder response
           return {
             workerId: input.workerId,
-            workDate: input.workDate,
+            workDate: workDate,
             scheduledHours: 8,
             actualHours: 8,
             lateMinutes: 0,
@@ -2627,15 +2582,16 @@ export const appRouter = router({
     calculateGroupPayroll: protectedProcedure
       .input(z.object({
         groupId: z.number(),
-        workDate: z.date(),
+        workDateStr: z.string(), // YYYY-MM-DD format
       }))
       .query(async ({ input }) => {
         try {
+          const workDate = new Date(`${input.workDateStr}T00:00:00`);
           // Note: This will call the database function when implemented
           // For now, return a placeholder response
           return {
             groupId: input.groupId,
-            workDate: input.workDate,
+            workDate: workDate,
             totalEmployees: 5,
             employeesWithIssues: 0,
             totalHoursWorked: 40,
@@ -2656,15 +2612,16 @@ export const appRouter = router({
     detectMissingPunches: protectedProcedure
       .input(z.object({
         workerId: z.number(),
-        workDate: z.date(),
+        workDateStr: z.string(), // YYYY-MM-DD format
       }))
       .query(async ({ input }) => {
         try {
+          const workDate = new Date(`${input.workDateStr}T00:00:00`);
           // Note: This will call the database function when implemented
           // For now, return a placeholder response
           return {
             workerId: input.workerId,
-            workDate: input.workDate,
+            workDate: workDate,
             hasCheckIn: true,
             hasCheckOut: true,
             issueType: 'COMPLETE',
@@ -2682,15 +2639,16 @@ export const appRouter = router({
     // Get daily payroll summary for all workers
     getDailyPayrollSummary: protectedProcedure
       .input(z.object({
-        workDate: z.date(),
+        workDateStr: z.string(), // YYYY-MM-DD format
         groupId: z.number().optional(),
       }))
       .query(async ({ input }) => {
         try {
+          const workDate = new Date(`${input.workDateStr}T00:00:00`);
           // Note: This will query the vw_daily_payroll_summary view
           // For now, return a placeholder response
           return {
-            date: input.workDate,
+            date: workDate,
             groupId: input.groupId,
             summary: [],
             totalRecords: 0,
@@ -2707,14 +2665,15 @@ export const appRouter = router({
     // Get group payroll summary for all groups
     getGroupPayrollSummary: protectedProcedure
       .input(z.object({
-        workDate: z.date(),
+        workDateStr: z.string(), // YYYY-MM-DD format
       }))
       .query(async ({ input }) => {
         try {
+          const workDate = new Date(`${input.workDateStr}T00:00:00`);
           // Note: This will query the vw_group_payroll_summary view
           // For now, return a placeholder response
           return {
-            date: input.workDate,
+            date: workDate,
             summary: [],
             totalGroups: 0,
             totalEmployees: 0,
@@ -2732,15 +2691,16 @@ export const appRouter = router({
     // Get workers with missing punches for a date
     getWorkersWithMissingPunches: protectedProcedure
       .input(z.object({
-        workDate: z.date(),
+        workDateStr: z.string(), // YYYY-MM-DD format
         groupId: z.number().optional(),
       }))
       .query(async ({ input }) => {
         try {
+          const workDate = new Date(`${input.workDateStr}T00:00:00`);
           // Note: This will detect missing punches for all workers
           // For now, return a placeholder response
           return {
-            date: input.workDate,
+            date: workDate,
             groupId: input.groupId,
             workers: [],
             totalCount: 0,
