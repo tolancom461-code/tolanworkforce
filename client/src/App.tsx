@@ -37,6 +37,7 @@ import AccountsManagerReview from "./pages/payroll/AccountsManagerReview";
 import CostCenters from "./pages/CostCenters";
 
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
+import ExecutiveFinanceDashboard from "./pages/ExecutiveFinanceDashboard";
 import FinancialReports from "./pages/reports/FinancialReports";
 import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
@@ -76,6 +77,7 @@ function Router() {
         </ProtectedRoute>
       </Route>
       <Route path="/executive" component={ExecutiveDashboard} />
+      <Route path="/executive/finance" component={ExecutiveFinanceDashboard} />
       <Route path="/users">
         <ProtectedRoute>
           <LazyPage>

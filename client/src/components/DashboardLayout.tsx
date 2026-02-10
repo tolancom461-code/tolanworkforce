@@ -75,6 +75,7 @@ const menuSections = [
     items: [
       { icon: LayoutDashboard, label: "الرئيسية", path: "/dashboard" },
       { icon: TrendingUp, label: "لوحة المدير", path: "/executive" },
+      { icon: DollarSign, label: "لوحة الإدارة العليا", path: "/executive/finance" },
     ]
   },
   {

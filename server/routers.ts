@@ -3094,6 +3094,27 @@ export const appRouter = router({
         return await db.getAuditLog(input);
       }),
   }),
+
+  // ============================================
+  // Executive Dashboard (لوحة الإدارة العليا)
+  // ============================================
+  executive: router({
+    financeSummary: protectedProcedure
+      .input(z.object({
+        periodStart: z.string(),
+        periodEnd: z.string(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getExecutiveFinanceSummary(
+          input.periodStart,
+          input.periodEnd,
+          input.groupId,
+          input.costCenterId
+        );
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
