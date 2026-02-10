@@ -1,0 +1,80 @@
+{
+  "query": "SELECT id, code, name FROM `groups` ORDER BY code;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, name FROM `groups` ORDER BY code;",
+  "rows": [
+    {
+      "id": "120010",
+      "code": "GRP-ADMIN-1-1770708912273",
+      "name": "إدارة - الفريق الأول"
+    },
+    {
+      "id": "120004",
+      "code": "GRP-AFTERNOON-1-1770708912273",
+      "name": "ظهيري - الفريق الأول"
+    },
+    {
+      "id": "120005",
+      "code": "GRP-AFTERNOON-2-1770708912273",
+      "name": "ظهيري - الفريق الثاني"
+    },
+    {
+      "id": "120008",
+      "code": "GRP-FLEXIBLE-1-1770708912273",
+      "name": "مرن - الفريق الأول"
+    },
+    {
+      "id": "120009",
+      "code": "GRP-FLEXIBLE-2-1770708912273",
+      "name": "مرن - الفريق الثاني"
+    },
+    {
+      "id": "120002",
+      "code": "GRP-MORNING-1-1770708912273",
+      "name": "صباحي - الفريق الأول"
+    },
+    {
+      "id": "120003",
+      "code": "GRP-MORNING-2-1770708912273",
+      "name": "صباحي - الفريق الثاني"
+    },
+    {
+      "id": "120006",
+      "code": "GRP-NIGHT-1-1770708912273",
+      "name": "ليلي - الفريق الأول"
+    },
+    {
+      "id": "120007",
+      "code": "GRP-NIGHT-2-1770708912273",
+      "name": "ليلي - الفريق الثاني"
+    },
+    {
+      "id": "120011",
+      "code": "GRP-SUPPORT-1-1770708912273",
+      "name": "دعم - الفريق الأول"
+    },
+    {
+      "id": "120013",
+      "code": "GRP001",
+      "name": "المجموعة الأولى"
+    },
+    {
+      "id": "90001",
+      "code": "GRP01",
+      "name": "مجموعة السودانيين"
+    },
+    {
+      "id": "90002",
+      "code": "GRP02",
+      "name": "مجموعة كاشيرات المطاعم"
+    },
+    {
+      "id": "120012",
+      "code": "TEST-EDIT-FIX-001-UPD",
+      "name": "مجموعة اختبار الإصلاح - محدثة"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tname\n120010\tGRP-ADMIN-1-1770708912273\tإدارة - الفريق الأول\n120004\tGRP-AFTERNOON-1-1770708912273\tظهيري - الفريق الأول\n120005\tGRP-AFTERNOON-2-1770708912273\tظهيري - الفريق الثاني\n120008\tGRP-FLEXIBLE-1-1770708912273\tمرن - الفريق الأول\n120009\tGRP-FLEXIBLE-2-1770708912273\tمرن - الفريق الثاني\n120002\tGRP-MORNING-1-1770708912273\tصباحي - الفريق الأول\n120003\tGRP-MORNING-2-1770708912273\tصباحي - الفريق الثاني\n120006\tGRP-NIGHT-1-1770708912273\tليلي - الفريق الأول\n120007\tGRP-NIGHT-2-1770708912273\tليلي - الفريق الثاني\n120011\tGRP-SUPPORT-1-1770708912273\tدعم - الفريق الأول\n120013\tGRP001\tالمجموعة الأولى\n90001\tGRP01\tمجموعة السودانيين\n90002\tGRP02\tمجموعة كاشيرات المطاعم\n120012\tTEST-EDIT-FIX-001-UPD\tمجموعة اختبار الإصلاح - محدثة\n",
+  "stderr": "",
+  "execution_time_ms": 1725
+}
