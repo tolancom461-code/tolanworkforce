@@ -1,0 +1,325 @@
+{
+  "query": "SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "id",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "id",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "id",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "id",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "id",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "openId",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "openId",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "openId",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "openId",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "openId",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "openId",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "name",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "name",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "name",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "username",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "name",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "name",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "email",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "email",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "email",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "password_hash",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "email",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "email",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "loginMethod",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "local"
+    },
+    {
+      "COLUMN_NAME": "loginMethod",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "full_name",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "loginMethod",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "loginMethod",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "loginMethod",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "role",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "user"
+    },
+    {
+      "COLUMN_NAME": "email",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "role",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "user"
+    },
+    {
+      "COLUMN_NAME": "role",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "user"
+    },
+    {
+      "COLUMN_NAME": "role",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "user"
+    },
+    {
+      "COLUMN_NAME": "role",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "user"
+    },
+    {
+      "COLUMN_NAME": "phone",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "role_id",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "lastSignedIn",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "lastSignedIn",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "lastSignedIn",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "lastSignedIn",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "lastSignedIn",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "is_active",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "1"
+    },
+    {
+      "COLUMN_NAME": "bio",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "username",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "loginMethod",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "avatarUrl",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "passwordHash",
+      "IS_NULLABLE": "YES",
+      "COLUMN_DEFAULT": "NULL"
+    },
+    {
+      "COLUMN_NAME": "role",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "guard"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    },
+    {
+      "COLUMN_NAME": "lastSignedIn",
+      "IS_NULLABLE": "NO",
+      "COLUMN_DEFAULT": "CURRENT_TIMESTAMP"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tIS_NULLABLE\tCOLUMN_DEFAULT\nid\tNO\tNULL\nid\tNO\tNULL\nid\tNO\tNULL\nid\tNO\tNULL\nid\tNO\tNULL\nid\tNO\tNULL\nopenId\tYES\tNULL\nopenId\tNO\tNULL\nopenId\tNO\tNULL\nopenId\tNO\tNULL\nopenId\tYES\tNULL\nopenId\tNO\tNULL\nname\tYES\tNULL\nname\tYES\tNULL\nname\tYES\tNULL\nusername\tNO\tNULL\nname\tYES\tNULL\nname\tYES\tNULL\nemail\tYES\tNULL\nemail\tYES\tNULL\nemail\tYES\tNULL\npassword_hash\tYES\tNULL\nemail\tYES\tNULL\nemail\tYES\tNULL\nloginMethod\tYES\tlocal\nloginMethod\tYES\tNULL\nfull_name\tNO\tNULL\nloginMethod\tYES\tNULL\nloginMethod\tYES\tNULL\nloginMethod\tYES\tNULL\nrole\tNO\tuser\nemail\tYES\tNULL\nrole\tNO\tuser\nrole\tNO\tuser\nrole\tNO\tuser\nrole\tNO\tuser\nphone\tYES\tNULL\ncreatedAt\tNO\tCURRENT_TIMESTAMP\ncreatedAt\tNO\tCURRENT_TIMESTAMP\ncreatedAt\tNO\tCURRENT_TIMESTAMP\ncreatedAt\tNO\tCURRENT_TIMESTAMP\ncreatedAt\tNO\tCURRENT_TIMESTAMP\nupdatedAt\tNO\tCURRENT_TIMESTAMP\nupdatedAt\tNO\tCURRENT_TIMESTAMP\nrole_id\tYES\tNULL\nupdatedAt\tNO\tCURRENT_TIMESTAMP\nupdatedAt\tNO\tCURRENT_TIMESTAMP\nupdatedAt\tNO\tCURRENT_TIMESTAMP\nlastSignedIn\tNO\tCURRENT_TIMESTAMP\nlastSignedIn\tNO\tCURRENT_TIMESTAMP\nlastSignedIn\tNO\tCURRENT_TIMESTAMP\nlastSignedIn\tNO\tCURRENT_TIMESTAMP\nlastSignedIn\tNO\tCURRENT_TIMESTAMP\nis_active\tYES\t1\nbio\tYES\tNULL\nusername\tYES\tNULL\nloginMethod\tYES\tNULL\navatarUrl\tYES\tNULL\npasswordHash\tYES\tNULL\nrole\tNO\tguard\ncreatedAt\tNO\tCURRENT_TIMESTAMP\nupdatedAt\tNO\tCURRENT_TIMESTAMP\nlastSignedIn\tNO\tCURRENT_TIMESTAMP\n",
+  "stderr": "",
+  "execution_time_ms": 1674
+}

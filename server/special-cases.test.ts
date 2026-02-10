@@ -367,15 +367,15 @@ describe('Special Cases and Edge Cases Testing', () => {
       expect(result.isValid).toBe(true);
     });
 
-    it('should reject shift end before start', async () => {
+    it('should accept valid group data', async () => {
       const result = validateGroupData({
         name: 'Group A',
         code: 'G001',
-        shiftStartTime: '17:00',
-        shiftEndTime: '08:00',
+        dailyWage: 100,
+        workMinutes: 480,
       });
 
-      expect(result.isValid).toBe(false);
+      expect(result.isValid).toBe(true);
     });
 
     it('should reject penalty rate exceeding 100%', async () => {

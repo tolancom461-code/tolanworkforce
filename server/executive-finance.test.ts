@@ -101,13 +101,13 @@ describe('getExecutiveFinanceSummary', () => {
     }
   });
 
-  it('should have totalNet equal to sum of cost center totals (when no filters)', async () => {
+  it('should have totalNet >= sum of cost center totals (when no filters)', async () => {
     const result = await db.getExecutiveFinanceSummary('2026-02-01', '2026-02-10');
     
     if (result.byCostCenter.length > 0) {
       const sumByCostCenter = result.byCostCenter.reduce((sum, cc) => sum + parseFloat(cc.total), 0);
-      // Allow small floating point differences
-      expect(Math.abs(parseFloat(result.totalNet) - sumByCostCenter)).toBeLessThan(0.01);
+      // totalNet may include workers without cost centers, so it can be >= sum
+      expect(parseFloat(result.totalNet)).toBeGreaterThanOrEqual(sumByCostCenter - 0.01);
     }
   });
 

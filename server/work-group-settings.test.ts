@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { 
   calculateMinuteCost, 
   calculateLatePenalty, 
@@ -36,24 +36,25 @@ describe('Work Group Settings - Calculation Functions', () => {
       expect(result).toBe(0);
     });
 
-    it('should calculate late penalty with penalty rate', () => {
-      const result = calculateLatePenalty(150, 480, 30, 0.5);
-      // (150 / 480) * 30 * 0.5 = 4.6875 rounded to 4.69
+    it('should calculate late penalty with penalty rate (50 = 50%)', () => {
+      // latePenaltyRate is stored as percentage: 50 means 50% = 0.5x multiplier
+      const result = calculateLatePenalty(150, 480, 30, 50);
+      // (150 / 480) * 30 * (50/100) = 0.3125 * 30 * 0.5 = 4.6875 rounded to 4.69
       expect(result).toBe(4.69);
     });
 
     it('should return 0 when lateMinutes is 0', () => {
-      const result = calculateLatePenalty(150, 480, 0, 0.5);
+      const result = calculateLatePenalty(150, 480, 0, 50);
       expect(result).toBe(0);
     });
 
     it('should return 0 when dailyWage is null', () => {
-      const result = calculateLatePenalty(null, 480, 30, 0.5);
+      const result = calculateLatePenalty(null, 480, 30, 50);
       expect(result).toBe(0);
     });
 
     it('should return 0 when workMinutes is null', () => {
-      const result = calculateLatePenalty(150, null, 30, 0.5);
+      const result = calculateLatePenalty(150, null, 30, 50);
       expect(result).toBe(0);
     });
   });
@@ -65,24 +66,25 @@ describe('Work Group Settings - Calculation Functions', () => {
       expect(result).toBe(0);
     });
 
-    it('should calculate early leave penalty with penalty rate', () => {
-      const result = calculateEarlyLeavePenalty(150, 480, 45, 0.5);
-      // (150 / 480) * 45 * 0.5 = 7.03125 rounded to 7.03
+    it('should calculate early leave penalty with penalty rate (50 = 50%)', () => {
+      // earlyLeavePenaltyRate is stored as percentage: 50 means 50% = 0.5x multiplier
+      const result = calculateEarlyLeavePenalty(150, 480, 45, 50);
+      // (150 / 480) * 45 * (50/100) = 0.3125 * 45 * 0.5 = 7.03125 rounded to 7.03
       expect(result).toBe(7.03);
     });
 
     it('should return 0 when earlyLeaveMinutes is 0', () => {
-      const result = calculateEarlyLeavePenalty(150, 480, 0, 0.5);
+      const result = calculateEarlyLeavePenalty(150, 480, 0, 50);
       expect(result).toBe(0);
     });
 
     it('should return 0 when dailyWage is null', () => {
-      const result = calculateEarlyLeavePenalty(null, 480, 45, 0.5);
+      const result = calculateEarlyLeavePenalty(null, 480, 45, 50);
       expect(result).toBe(0);
     });
 
     it('should return 0 when workMinutes is null', () => {
-      const result = calculateEarlyLeavePenalty(150, null, 45, 0.5);
+      const result = calculateEarlyLeavePenalty(150, null, 45, 50);
       expect(result).toBe(0);
     });
   });
@@ -114,32 +116,16 @@ describe('Work Group Settings - Calculation Functions', () => {
       expect(result).toBe(0);
     });
 
-    it('should handle penalty rate of 1 (100%)', () => {
-      const result = calculateLatePenalty(150, 480, 30, 1);
-      // (150 / 480) * 30 * 1 = 9.375 rounded to 9.38
+    it('should handle penalty rate of 100 (100%)', () => {
+      const result = calculateLatePenalty(150, 480, 30, 100);
+      // (150 / 480) * 30 * (100/100) = 0.3125 * 30 * 1 = 9.375 rounded to 9.38
       expect(result).toBe(9.38);
     });
 
-    it('should handle penalty rate of 2 (200%)', () => {
-      const result = calculateEarlyLeavePenalty(150, 480, 30, 2);
-      // (150 / 480) * 30 * 2 = 18.75 rounded to 18.75
+    it('should handle penalty rate of 200 (200%)', () => {
+      const result = calculateEarlyLeavePenalty(150, 480, 30, 200);
+      // (150 / 480) * 30 * (200/100) = 0.3125 * 30 * 2 = 18.75
       expect(result).toBe(18.75);
     });
-  });
-});
-
-describe('Work Group Settings - Integration with Payroll', () => {
-  it('should use group settings when available', async () => {
-    // This test verifies that calculateDailyFinanceFromAttendance
-    // uses the new group settings when they are available
-    // Note: This is a placeholder test that would need actual database setup
-    expect(true).toBe(true);
-  });
-
-  it('should fallback to old calculation when group settings are null', async () => {
-    // This test verifies that the system falls back to the old
-    // hourly calculation when group settings are not available
-    // Note: This is a placeholder test that would need actual database setup
-    expect(true).toBe(true);
   });
 });

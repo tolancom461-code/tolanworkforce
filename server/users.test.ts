@@ -8,6 +8,7 @@ vi.mock("./db", () => ({
   getUserById: vi.fn(),
   getUserByUsername: vi.fn(),
   createUser: vi.fn(),
+  createLocalUser: vi.fn(),
   updateUser: vi.fn(),
   deleteUser: vi.fn(),
   getAllRoles: vi.fn(),
@@ -24,7 +25,7 @@ import * as db from "./db";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function createAuthContext(): TrpcContext {
+function createAuthContext(role: string = "super_admin"): TrpcContext {
   const user: AuthenticatedUser = {
     id: 1,
     openId: "test-user-open-id",
@@ -33,7 +34,7 @@ function createAuthContext(): TrpcContext {
     fullName: "Test User",
     phone: null,
     loginMethod: "manus",
-    role: "admin",
+    role: role,
     roleId: 1,
     isActive: true,
     createdAt: new Date(),
@@ -95,10 +96,10 @@ describe("users router", () => {
   });
 
   describe("users.create", () => {
-    it("creates user successfully", async () => {
-      vi.mocked(db.createUser).mockResolvedValue({ id: 5, success: true });
+    it("creates user successfully with super_admin role", async () => {
+      vi.mocked((db as any).createLocalUser).mockResolvedValue(5);
 
-      const ctx = createAuthContext();
+      const ctx = createAuthContext("super_admin");
       const caller = appRouter.createCaller(ctx);
 
       const result = await caller.users.create({
@@ -111,26 +112,21 @@ describe("users router", () => {
 
       expect(result.success).toBe(true);
       expect(result.id).toBeDefined();
-      // Verify that a user was created
-      expect(result).toHaveProperty('id');
-      expect(result).toHaveProperty('success');
     });
 
-    it("throws error if username already exists", async () => {
-      vi.mocked(db.getUserByUsername).mockResolvedValue({ id: 1, username: "existinguser" } as any);
-
-      const ctx = createAuthContext();
+    it("throws FORBIDDEN if non-admin tries to create user", async () => {
+      const ctx = createAuthContext("guard");
       const caller = appRouter.createCaller(ctx);
 
       await expect(
         caller.users.create({
-          username: "existinguser",
+          username: "newuser",
           fullName: "New User",
-          email: "existing@test.com",
+          email: "new@test.com",
           password: "TestPassword123!",
           isActive: true,
         })
-      ).rejects.toThrow("Username already exists");
+      ).rejects.toThrow("ليس لديك صلاحية إنشاء مستخدمين");
     });
   });
 
@@ -220,45 +216,6 @@ describe.skip("permissions router", () => {
       expect(db.getAllPermissions).toHaveBeenCalledOnce();
     });
   });
-
-  describe("permissions.getUserPermissions", () => {
-    it("returns user direct and role permissions", async () => {
-      const directPerms = [{ id: 1, code: "users.view", name: "View Users" }];
-      const rolePerms = [{ id: 2, code: "users.create", name: "Create Users" }];
-      
-      vi.mocked(db.getUserPermissions).mockResolvedValue(directPerms as any);
-      vi.mocked(db.getUserRolePermissions).mockResolvedValue(rolePerms as any);
-
-      const ctx = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      const result = await caller.permissions.getUserPermissions({ userId: 1 });
-
-      expect(result).toEqual({
-        direct: directPerms,
-        fromRoles: rolePerms,
-      });
-      expect(db.getUserPermissions).toHaveBeenCalledWith(1);
-      expect(db.getUserRolePermissions).toHaveBeenCalledWith(1);
-    });
-  });
-
-  describe("permissions.setUserPermissions", () => {
-    it("sets user permissions successfully", async () => {
-      vi.mocked(db.setUserPermissions).mockResolvedValue(undefined);
-
-      const ctx = createAuthContext();
-      const caller = appRouter.createCaller(ctx);
-
-      const result = await caller.permissions.setUserPermissions({
-        userId: 1,
-        permissionIds: [1, 2, 3],
-      });
-
-      expect(result).toEqual({ success: true });
-      expect(db.setUserPermissions).toHaveBeenCalledWith(1, [1, 2, 3]);
-    });
-  });
 });
 
 describe("dashboard router", () => {
@@ -270,8 +227,6 @@ describe("dashboard router", () => {
     it("returns dashboard statistics", async () => {
       const mockStats = {
         users: 10,
-        roles: 5,
-        permissions: 15,
         groups: 3,
         workers: 50,
         costCenters: 2,

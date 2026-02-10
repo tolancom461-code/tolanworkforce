@@ -43,7 +43,7 @@ describe("Local Authentication System", () => {
       username: testUsername,
       password: testPassword,
       fullName: "Test User",
-      role: "user",
+      role: "guard",
     });
     testUserId = result.userId;
   });
@@ -99,7 +99,7 @@ describe("Local Authentication System", () => {
       username: inactiveUsername,
       password: testPassword,
       fullName: "Inactive User",
-      role: "user",
+      role: "guard",
     });
 
     // Deactivate the user
@@ -137,7 +137,7 @@ describe("Local Authentication System", () => {
       username: adminUsername,
       password: testPassword,
       fullName: "Admin Test User",
-      role: "admin",
+      role: "super_admin",
     });
 
     expect(result.userId).toBeGreaterThan(0);
@@ -153,7 +153,7 @@ describe("Local Authentication System", () => {
       expect(adminUsers.length).toBe(1);
       const adminUser = adminUsers[0];
       expect(adminUser).toBeDefined();
-      expect(adminUser?.role).toBe("admin");
+      expect(adminUser?.role).toBe("super_admin");
       expect(adminUser?.username).toBe(adminUsername);
     }
   });

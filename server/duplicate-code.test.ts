@@ -1,25 +1,19 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import * as db from "./db";
 
+const ts = Date.now();
+
 describe("Duplicate Code Validation", () => {
-  // تنظيف قاعدة البيانات قبل وبعد الاختبارات
-  beforeEach(async () => {
-    // يتم تنظيف البيانات قبل كل اختبار
-  });
-
-  afterEach(async () => {
-    // يتم تنظيف البيانات بعد كل اختبار
-  });
-
   describe("Group Code Validation", () => {
     it("should throw error when creating group with duplicate code", async () => {
+      const code = `GRP-DUP-${ts}`;
       const groupData = {
-        code: "GRP001",
+        code,
         name: "المجموعة الأولى",
         isActive: true,
       };
 
-      // محاولة إنشاء مجموعة أولى
+      // إنشاء مجموعة أولى
       const firstId = await db.createGroup(groupData);
       expect(firstId).toBeGreaterThan(0);
 
@@ -29,19 +23,19 @@ describe("Duplicate Code Validation", () => {
         expect.fail("يجب أن يرفع استثناء عند محاولة إنشاء مجموعة بكود مكرر");
       } catch (error: any) {
         expect(error.message).toContain("مسجل مسبقاً");
-        expect(error.message).toContain("GRP001");
+        expect(error.message).toContain(code);
       }
     });
 
     it("should allow creating groups with different codes", async () => {
       const group1 = {
-        code: "GRP-ALPHA",
+        code: `GRP-ALPHA-${ts}`,
         name: "المجموعة ألفا",
         isActive: true,
       };
 
       const group2 = {
-        code: "GRP-BETA",
+        code: `GRP-BETA-${ts}`,
         name: "المجموعة بيتا",
         isActive: true,
       };
@@ -55,53 +49,53 @@ describe("Duplicate Code Validation", () => {
     });
 
     it("should retrieve group by code", async () => {
+      const code = `GRP-RET-${ts}`;
       const groupData = {
-        code: "GRP-TEST-001",
+        code,
         name: "مجموعة الاختبار",
         isActive: true,
       };
 
       const createdId = await db.createGroup(groupData);
-      const retrieved = await db.getGroupByCode("GRP-TEST-001");
+      const retrieved = await db.getGroupByCode(code);
 
       expect(retrieved).not.toBeNull();
       expect(retrieved?.id).toBe(createdId);
-      expect(retrieved?.code).toBe("GRP-TEST-001");
+      expect(retrieved?.code).toBe(code);
       expect(retrieved?.name).toBe("مجموعة الاختبار");
     });
   });
 
   describe("Worker Code Validation", () => {
     it("should throw error when creating worker with duplicate code", async () => {
+      const code = `WRK-DUP-${ts}`;
       const workerData = {
-        code: "WRK001",
+        code,
         fullName: "أحمد محمد",
         status: "active" as const,
       };
 
-      // محاولة إنشاء عامل أول
       const firstId = await db.createWorker(workerData);
       expect(firstId).toBeGreaterThan(0);
 
-      // محاولة إنشاء عامل بنفس الكود
       try {
         await db.createWorker(workerData);
         expect.fail("يجب أن يرفع استثناء عند محاولة إنشاء عامل بكود مكرر");
       } catch (error: any) {
         expect(error.message).toContain("مسجل مسبقاً");
-        expect(error.message).toContain("WRK001");
+        expect(error.message).toContain(code);
       }
     });
 
     it("should allow creating workers with different codes", async () => {
       const worker1 = {
-        code: "EMP-001",
+        code: `EMP-A-${ts}`,
         fullName: "علي محمود",
         status: "active" as const,
       };
 
       const worker2 = {
-        code: "EMP-002",
+        code: `EMP-B-${ts}`,
         fullName: "فاطمة أحمد",
         status: "active" as const,
       };
@@ -115,36 +109,38 @@ describe("Duplicate Code Validation", () => {
     });
 
     it("should retrieve worker by code", async () => {
+      const code = `WRK-RET-${ts}`;
       const workerData = {
-        code: "WRK-TEST-001",
+        code,
         fullName: "محمد علي",
         status: "active" as const,
       };
 
       const createdId = await db.createWorker(workerData);
-      const retrieved = await db.getWorkerByCodeDirect("WRK-TEST-001");
+      const retrieved = await db.getWorkerByCodeDirect(code);
 
       expect(retrieved).not.toBeNull();
       expect(retrieved?.id).toBe(createdId);
-      expect(retrieved?.code).toBe("WRK-TEST-001");
+      expect(retrieved?.code).toBe(code);
       expect(retrieved?.fullName).toBe("محمد علي");
     });
 
     it("should return null for non-existent worker code", async () => {
-      const retrieved = await db.getWorkerByCodeDirect("NON-EXISTENT-CODE");
+      const retrieved = await db.getWorkerByCodeDirect("NON-EXISTENT-CODE-999");
       expect(retrieved).toBeNull();
     });
 
     it("should return null for non-existent group code", async () => {
-      const retrieved = await db.getGroupByCode("NON-EXISTENT-GROUP");
+      const retrieved = await db.getGroupByCode("NON-EXISTENT-GROUP-999");
       expect(retrieved).toBeNull();
     });
   });
 
   describe("Error Messages", () => {
     it("should include original group name in error message", async () => {
+      const code = `TEST-GRP-MSG-${ts}`;
       const groupData = {
-        code: "TEST-GRP",
+        code,
         name: "مجموعة الاختبار الخاصة",
         isActive: true,
       };
@@ -160,8 +156,9 @@ describe("Duplicate Code Validation", () => {
     });
 
     it("should include original worker name in error message", async () => {
+      const code = `TEST-WRK-MSG-${ts}`;
       const workerData = {
-        code: "TEST-WRK",
+        code,
         fullName: "سارة محمد علي",
         status: "active" as const,
       };

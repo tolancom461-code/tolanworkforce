@@ -102,6 +102,7 @@ describe('Production Workflow - Complete Payroll Cycle', { timeout: 120000 }, ()
           periodStart,
           periodEnd,
           createdBy: 1,
+          items: [{ workerId: testWorkerId, baseAmount: '300.00', deductions: '0', bonuses: '0', netAmount: '300.00' }],
         });
 
         testBatchId = result.batchId;
@@ -269,6 +270,7 @@ describe('Production Workflow - Complete Payroll Cycle', { timeout: 120000 }, ()
           periodStart: '2026-03-01',
           periodEnd: '2026-03-31',
           createdBy: 1,
+          items: [{ workerId: testWorkerId, baseAmount: '0', deductions: '0', bonuses: '0', netAmount: '0' }],
         });
 
         expect(result.batchId).toBeGreaterThan(0);
@@ -283,6 +285,7 @@ describe('Production Workflow - Complete Payroll Cycle', { timeout: 120000 }, ()
           periodStart,
           periodEnd,
           createdBy: 1,
+          items: [{ workerId: testWorkerId, baseAmount: '300.00', deductions: '0', bonuses: '0', netAmount: '300.00' }],
         });
 
         expect(result.batchId).toBeGreaterThan(0);
@@ -297,6 +300,7 @@ describe('Production Workflow - Complete Payroll Cycle', { timeout: 120000 }, ()
           periodStart,
           periodEnd,
           createdBy: 1,
+          items: [{ workerId: testWorkerId, baseAmount: '99999.99', deductions: '100', bonuses: '50', netAmount: '99949.99' }],
         });
 
         const batch = await db.getPayrollBatchDetails(result.batchId);
@@ -315,6 +319,7 @@ describe('Production Workflow - Complete Payroll Cycle', { timeout: 120000 }, ()
           periodStart,
           periodEnd,
           createdBy: 1,
+          items: [{ workerId: testWorkerId, baseAmount: '300.00', deductions: '0', bonuses: '0', netAmount: '300.00' }],
         });
         expect(createResult.batchId).toBeGreaterThan(0);
 

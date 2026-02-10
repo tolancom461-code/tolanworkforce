@@ -1,0 +1,85 @@
+{
+  "query": "SELECT id, code, full_name FROM workers LIMIT 15;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name FROM workers LIMIT 15;",
+  "rows": [
+    {
+      "id": "120001",
+      "code": "T01",
+      "full_name": "احمد يوسف محمود يوسف"
+    },
+    {
+      "id": "120002",
+      "code": "T02",
+      "full_name": "محمد ابراهيم محمد علي"
+    },
+    {
+      "id": "120003",
+      "code": "T03",
+      "full_name": "محمد ابراهيم علي خلف الله"
+    },
+    {
+      "id": "120004",
+      "code": "T04",
+      "full_name": "محمد الطيب النعيم عمر"
+    },
+    {
+      "id": "120005",
+      "code": "T05",
+      "full_name": "مصطفى الرشيد ابراهيم محمد"
+    },
+    {
+      "id": "120006",
+      "code": "T06",
+      "full_name": "مهيب فيصل"
+    },
+    {
+      "id": "120007",
+      "code": "T07",
+      "full_name": "اسراء حسن"
+    },
+    {
+      "id": "120008",
+      "code": "T08",
+      "full_name": "سماح عادل"
+    },
+    {
+      "id": "150202",
+      "code": "1",
+      "full_name": "اقبال حسين"
+    },
+    {
+      "id": "150203",
+      "code": "2",
+      "full_name": "شفيق الاسلام"
+    },
+    {
+      "id": "150205",
+      "code": "WRK-1-01-1770732202804",
+      "full_name": "حسن الحسني"
+    },
+    {
+      "id": "150206",
+      "code": "WRK-1-02-1770732202804",
+      "full_name": "يوسف الكتبي"
+    },
+    {
+      "id": "150207",
+      "code": "WRK-1-03-1770732202804",
+      "full_name": "يوسف الشمالي"
+    },
+    {
+      "id": "150208",
+      "code": "WRK-1-04-1770732202804",
+      "full_name": "زيد الحسن"
+    },
+    {
+      "id": "150209",
+      "code": "WRK-1-05-1770732202804",
+      "full_name": "علي الشامسي"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\n120001\tT01\tاحمد يوسف محمود يوسف\n120002\tT02\tمحمد ابراهيم محمد علي\n120003\tT03\tمحمد ابراهيم علي خلف الله\n120004\tT04\tمحمد الطيب النعيم عمر\n120005\tT05\tمصطفى الرشيد ابراهيم محمد\n120006\tT06\tمهيب فيصل\n120007\tT07\tاسراء حسن\n120008\tT08\tسماح عادل\n150202\t1\tاقبال حسين\n150203\t2\tشفيق الاسلام\n150205\tWRK-1-01-1770732202804\tحسن الحسني\n150206\tWRK-1-02-1770732202804\tيوسف الكتبي\n150207\tWRK-1-03-1770732202804\tيوسف الشمالي\n150208\tWRK-1-04-1770732202804\tزيد الحسن\n150209\tWRK-1-05-1770732202804\tعلي الشامسي\n",
+  "stderr": "",
+  "execution_time_ms": 1623
+}

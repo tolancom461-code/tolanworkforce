@@ -2184,8 +2184,7 @@ export async function createPayrollBatch(params: {
   const periodEndDate = params.periodEnd.split('T')[0];
   console.log('[createPayrollBatch] Period:', periodStartDate, 'to', periodEndDate);
 
-  // Generate batch code with format: Batch-YYYY-MM-SEQ
-  // Example: Batch-2026-01-001, Batch-2026-01-002, etc.
+  // Generate batch code with format: Batch-YYYY-MM-SEQ-RAND
   const now = new Date();
   const year = now.getFullYear();
   const monthPad = String(now.getMonth() + 1).padStart(2, '0');
@@ -2195,7 +2194,6 @@ export async function createPayrollBatch(params: {
   const monthStart = new Date(year, now.getMonth(), 1);
   const monthEnd = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
   
-  // Fetch all batches and filter in JavaScript (Drizzle has issues with Date objects in WHERE clauses)
   let allBatches: any[] = [];
   try {
     console.log('[createPayrollBatch] Fetching all batches...');
@@ -2203,7 +2201,6 @@ export async function createPayrollBatch(params: {
     console.log('[createPayrollBatch] Found', allBatches.length, 'batches');
   } catch (error) {
     console.error('[createPayrollBatch] Error fetching batches:', error);
-    // If error, assume no batches exist
     allBatches = [];
   }
   const batchesThisMonth = allBatches.filter(batch => {
@@ -2211,7 +2208,9 @@ export async function createPayrollBatch(params: {
     return createdAt >= monthStart && createdAt <= monthEnd;
   });
   const sequence = String(batchesThisMonth.length + 1).padStart(3, '0');
-  const finalBatchCode = `${batchCode}-${sequence}`;
+  // Add random suffix to avoid collisions during concurrent test runs
+  const randSuffix = Math.random().toString(36).substring(2, 6);
+  const finalBatchCode = `${batchCode}-${sequence}-${randSuffix}`;
 
   // If items are empty, calculate from workerDailyFinance
   let batchItems: Array<{
@@ -2223,7 +2222,7 @@ export async function createPayrollBatch(params: {
     netAmount: string;
   }> = [];
   
-  if (params.items.length === 0) {
+  if (!params.items || params.items.length === 0) {
     console.log('[createPayrollBatch] Items empty, calculating from workerDailyFinance...');
     
     // Get all workers in the group (or all workers if no group specified)

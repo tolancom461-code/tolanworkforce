@@ -1,0 +1,70 @@
+{
+  "query": "SELECT DISTINCT code FROM workers ORDER BY code LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT DISTINCT code FROM workers ORDER BY code LIMIT 20;",
+  "rows": [
+    {
+      "code": "1"
+    },
+    {
+      "code": "2"
+    },
+    {
+      "code": "EMP-001"
+    },
+    {
+      "code": "EMP-002"
+    },
+    {
+      "code": "PW1770733086035"
+    },
+    {
+      "code": "T01"
+    },
+    {
+      "code": "T02"
+    },
+    {
+      "code": "T03"
+    },
+    {
+      "code": "T04"
+    },
+    {
+      "code": "T05"
+    },
+    {
+      "code": "T06"
+    },
+    {
+      "code": "T07"
+    },
+    {
+      "code": "T08"
+    },
+    {
+      "code": "TEST-WRK"
+    },
+    {
+      "code": "WRK-1-01-1770732202804"
+    },
+    {
+      "code": "WRK-1-01-1770732809633"
+    },
+    {
+      "code": "WRK-1-01-1770732944883"
+    },
+    {
+      "code": "WRK-1-01-1770733031920"
+    },
+    {
+      "code": "WRK-1-02-1770732202804"
+    },
+    {
+      "code": "WRK-1-02-1770732809633"
+    }
+  ],
+  "messages": [],
+  "stdout": "code\n1\n2\nEMP-001\nEMP-002\nPW1770733086035\nT01\nT02\nT03\nT04\nT05\nT06\nT07\nT08\nTEST-WRK\nWRK-1-01-1770732202804\nWRK-1-01-1770732809633\nWRK-1-01-1770732944883\nWRK-1-01-1770733031920\nWRK-1-02-1770732202804\nWRK-1-02-1770732809633\n",
+  "stderr": "",
+  "execution_time_ms": 1574
+}

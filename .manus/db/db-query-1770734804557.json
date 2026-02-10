@@ -1,0 +1,35 @@
+{
+  "query": "SELECT id, code, full_name FROM workers ORDER BY id LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name FROM workers ORDER BY id LIMIT 5;",
+  "rows": [
+    {
+      "id": "120001",
+      "code": "T01",
+      "full_name": "احمد يوسف محمود يوسف"
+    },
+    {
+      "id": "120002",
+      "code": "T02",
+      "full_name": "محمد ابراهيم محمد علي"
+    },
+    {
+      "id": "120003",
+      "code": "T03",
+      "full_name": "محمد ابراهيم علي خلف الله"
+    },
+    {
+      "id": "120004",
+      "code": "T04",
+      "full_name": "محمد الطيب النعيم عمر"
+    },
+    {
+      "id": "120005",
+      "code": "T05",
+      "full_name": "مصطفى الرشيد ابراهيم محمد"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\n120001\tT01\tاحمد يوسف محمود يوسف\n120002\tT02\tمحمد ابراهيم محمد علي\n120003\tT03\tمحمد ابراهيم علي خلف الله\n120004\tT04\tمحمد الطيب النعيم عمر\n120005\tT05\tمصطفى الرشيد ابراهيم محمد\n",
+  "stderr": "",
+  "execution_time_ms": 1531
+}

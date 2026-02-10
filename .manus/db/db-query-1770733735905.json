@@ -1,0 +1,9 @@
+{
+  "query": "SELECT id, code, full_name FROM workers WHERE code IN ('WRK-001', 'WRK-008', 'WRK-012') LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name FROM workers WHERE code IN ('WRK-001', 'WRK-008', 'WRK-012') LIMIT 10;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2022
+}

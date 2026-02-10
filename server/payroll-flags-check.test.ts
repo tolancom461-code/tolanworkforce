@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
 import { appRouter } from "./routers";
+import * as db from "./db";
 import type { TrpcContext } from "./_core/context";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
@@ -8,13 +9,18 @@ function createAuthContext(): { ctx: TrpcContext } {
   const user: AuthenticatedUser = {
     id: 1,
     openId: "test-admin",
+    username: "testadmin",
     email: "admin@example.com",
-    name: "Test Admin",
+    fullName: "Test Admin",
+    phone: null,
     loginMethod: "manus",
-    role: "admin",
+    role: "super_admin",
+    roleId: 1,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     lastSignedIn: new Date(),
+    passwordHash: null,
   };
 
   const ctx: TrpcContext = {
@@ -25,13 +31,20 @@ function createAuthContext(): { ctx: TrpcContext } {
     } as TrpcContext["req"],
     res: {
       clearCookie: () => {},
-    } as TrpcContext["res"],
+    } as unknown as TrpcContext["res"],
   };
 
   return { ctx };
 }
 
 describe("payroll batch creation with operational flags check", () => {
+  let realWorkerId: number;
+
+  beforeAll(async () => {
+    const workers = await db.getAllWorkers();
+    realWorkerId = workers[0].id;
+  });
+
   it("should block batch creation when pending operational flags exist", async () => {
     const { ctx } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -39,7 +52,7 @@ describe("payroll batch creation with operational flags check", () => {
 
     // First, create a pending operational flag
     await caller.operationalDashboard.createFlag({
-      workerId: 1,
+      workerId: realWorkerId,
       flagDate: today,
       flagType: "confirm_attendance",
       description: "تأكيد حضور للاختبار",
@@ -57,7 +70,7 @@ describe("payroll batch creation with operational flags check", () => {
         costCenterId: 1,
         items: [
           {
-            workerId: 1,
+            workerId: realWorkerId,
             baseAmount: "1000",
             deductions: "0",
             bonuses: "0",
