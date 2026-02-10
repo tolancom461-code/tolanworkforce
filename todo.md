@@ -808,3 +808,10 @@
 - [x] اختبار إنشاء دفعة رواتب جديدة - 6 عمال بإجمالي 610 ر.س
 - [x] كتابة 9 اختبارات vitest - جميعها نجحت
 - [x] حفظ checkpoint
+
+## إصلاح التدفق التلقائي: بصمة → حساب مالي
+- [x] اكتشاف أن recordAttendance تستدعي calculateAndSaveDailyFinance القديمة بدلاً من processAttendanceToFinance
+- [x] إصلاح recordAttendance لاستخدام processAttendanceToFinance عند check_out
+- [x] إضافة processAttendanceToFinance بعد addMissingCheckIn و addMissingCheckOut في مركز المراجعة
+- [x] جميع الاختبارات (25 اختبار) نجحت
+- [x] حفظ checkpoint

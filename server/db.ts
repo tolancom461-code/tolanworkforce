@@ -689,7 +689,8 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
   // 🔥 AUTO-CALCULATE FINANCE ON CHECK_OUT
   if (eventType === 'check_out') {
     try {
-      await calculateAndSaveDailyFinance(workerId, eventTime);
+      const workDate = eventTime.toLocaleDateString('en-CA'); // YYYY-MM-DD
+      await processAttendanceToFinance(workerId, workDate);
     } catch (error) {
       console.error('Error calculating daily finance:', error);
       // Don't throw - we still want to record the attendance even if finance calculation fails

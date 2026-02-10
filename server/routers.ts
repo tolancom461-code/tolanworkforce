@@ -851,6 +851,16 @@ export const appRouter = router({
           });
           
           console.log('[addMissingCheckIn] Success');
+          
+          // Try to recalculate finance if both check_in and check_out exist now
+          try {
+            const workDate = eventTime.toLocaleDateString('en-CA');
+            await db.processAttendanceToFinance(input.workerId, workDate);
+            console.log('[addMissingCheckIn] Finance recalculated for', workDate);
+          } catch (finError) {
+            console.error('[addMissingCheckIn] Finance recalc failed (non-fatal):', finError);
+          }
+          
           return { success: true, message: 'تم إضافة بصمة الحضور بنجاح' };
         } catch (error: any) {
           console.error('[addMissingCheckIn] Error:', error);
@@ -896,6 +906,16 @@ export const appRouter = router({
           });
           
           console.log('[addMissingCheckOut] Success');
+          
+          // Auto-calculate finance after adding check_out
+          try {
+            const workDate = eventTime.toLocaleDateString('en-CA');
+            await db.processAttendanceToFinance(input.workerId, workDate);
+            console.log('[addMissingCheckOut] Finance calculated for', workDate);
+          } catch (finError) {
+            console.error('[addMissingCheckOut] Finance calc failed (non-fatal):', finError);
+          }
+          
           return { success: true, message: 'تم إضافة بصمة الانصراف بنجاح' };
         } catch (error: any) {
           console.error('[addMissingCheckOut] Error:', error);
