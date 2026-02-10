@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { Link } from "wouter";
 
 export default function PayrollBatchCreateSimple() {
   const utils = trpc.useUtils();
@@ -14,6 +15,8 @@ export default function PayrollBatchCreateSimple() {
 
   const { data: costCenters } = trpc.costCenters.list.useQuery();
   const { data: recentChanges } = trpc.groupSchedules.getRecentChanges.useQuery({ hoursThreshold: 24 });
+  const { data: pendingFlagsCount } = trpc.operationalDashboard.getPendingCount.useQuery();
+  const hasPendingFlags = (pendingFlagsCount ?? 0) > 0;
   const aggregateMutation = trpc.payroll.aggregatePayrollDataByCostCenter.useMutation();
   const createBatchMutation = trpc.payroll.createBatch.useMutation();
 
@@ -118,6 +121,45 @@ export default function PayrollBatchCreateSimple() {
       <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px" }}>
         إنشاء دفعة رواتب جديدة
       </h1>
+
+      {hasPendingFlags && (
+        <div
+          style={{
+            padding: "16px",
+            backgroundColor: "#fff3cd",
+            border: "1px solid #ffc107",
+            borderRadius: "8px",
+            marginBottom: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "bold", color: "#856404" }}>
+            ⚠️ تنبيه: يوجد {pendingFlagsCount} ملاحظة تشغيلية معلقة
+          </div>
+          <p style={{ color: "#856404", margin: 0 }}>
+            لا يمكن إنشاء دفعة رواتب قبل معالجة جميع الملاحظات التشغيلية المعلقة. يرجى مراجعتها واعتمادها أولاً.
+          </p>
+          <Link href="/operations/notes-review">
+            <span
+              style={{
+                display: "inline-block",
+                padding: "8px 16px",
+                backgroundColor: "#856404",
+                color: "white",
+                borderRadius: "4px",
+                textDecoration: "none",
+                fontSize: "14px",
+                fontWeight: "500",
+                cursor: "pointer",
+              }}
+            >
+              الانتقال لمعالجات الملاحظات التشغيلية
+            </span>
+          </Link>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         <div>

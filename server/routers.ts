@@ -1900,6 +1900,14 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
         
+        // Check for pending operational flags before creating batch
+        const pendingFlagsCount = await db.getPendingOperationalFlagsCount();
+        if (pendingFlagsCount > 0) {
+          throw new Error(
+            `لا يمكن إنشاء دفعة الرواتب. يوجد ${pendingFlagsCount} ملاحظة تشغيلية معلقة تحتاج للمعالجة.\n\nيرجى مراجعة واعتماد جميع الملاحظات التشغيلية المعلقة في صفحة "معالجات الملاحظات التشغيلية" قبل إنشاء دفعة الرواتب.`
+          );
+        }
+        
         // Check for incomplete attendance records in the period
         const startDate = new Date(input.periodStart);
         const endDate = new Date(input.periodEnd);
