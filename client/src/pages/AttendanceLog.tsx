@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/_core/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,6 +24,9 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function AttendanceLog() {
+  const { user } = useAuth();
+  // المراجع والمدير المالي: استعراض فقط بدون تعديل
+  const canEditAttendance = user?.role !== 'auditor' && user?.role !== 'finance_manager';
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'));
   const [editingRecord, setEditingRecord] = useState<any>(null);
@@ -513,19 +517,21 @@ export default function AttendanceLog() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClick(record)}
-                          disabled={dateLockStatus?.isLocked}
-                          title={dateLockStatus?.isLocked ? `التاريخ مغلق - دفعة ${dateLockStatus.batch?.batchCode}` : 'تعديل سجل الحضور'}
-                        >
-                          {dateLockStatus?.isLocked ? (
-                            <Lock className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Edit className="h-4 w-4" />
-                          )}
-                        </Button>
+                        {canEditAttendance && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditClick(record)}
+                            disabled={dateLockStatus?.isLocked}
+                            title={dateLockStatus?.isLocked ? `التاريخ مغلق - دفعة ${dateLockStatus.batch?.batchCode}` : 'تعديل سجل الحضور'}
+                          >
+                            {dateLockStatus?.isLocked ? (
+                              <Lock className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Edit className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

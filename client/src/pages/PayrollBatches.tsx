@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/_core/hooks/useAuth';
 import { PERMISSIONS } from '../../../shared/permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,7 +40,12 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 
 export default function PayrollBatches() {
   const utils = trpc.useUtils();
-  const hasPermission = () => true; // All users have full permissions
+  const { user } = useAuth();
+  const userRole = user?.role || '';
+  // صلاحيات حسب الدور
+  const canCreateBatch = userRole === 'super_admin' || userRole === 'admin_affairs';
+  const canDeleteBatch = userRole === 'super_admin' || userRole === 'admin_affairs';
+  const hasPermission = () => canCreateBatch; // للتوافق مع الكود القديم
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
@@ -467,7 +473,7 @@ export default function PayrollBatches() {
                             <Eye className="h-4 w-4 ml-1" />
                             التفاصيل
                           </Button>
-                          {batch.status === 'draft' && (
+                          {batch.status === 'draft' && canDeleteBatch && (
                             <Button
                               variant="destructive"
                               size="sm"
@@ -648,7 +654,7 @@ export default function PayrollBatches() {
                   {/* Delete Draft Button (only for draft status) */}
                   {batchDetails.batch.status === 'draft' && (
                     <>
-                      {hasPermission() && (
+                      {canDeleteBatch && (
                         <Button 
                           variant="destructive"
                           onClick={() => handleDeleteDraft(selectedBatchId!)}
@@ -658,7 +664,8 @@ export default function PayrollBatches() {
                           {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
                         </Button>
                       )}
-                     {hasPermission() && (                        <Button 
+                      {canCreateBatch && (
+                        <Button 
                           onClick={() => {
                             setSelectedBatchId(batchDetails.batch.id);
                             setShowSubmitToAccountingDialog(true);

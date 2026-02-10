@@ -11,6 +11,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
   labelAr: string;
   pages: string[];
   canCreateBatch: boolean;
+  canDeleteBatch: boolean;
   canReviewAsAccountant: boolean;
   canReviewAsAuditor: boolean;
   canApproveAsFM: boolean;
@@ -20,15 +21,21 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
   canManageUsers: boolean;
   canViewFinancialReports: boolean;
   canViewAttendanceReports: boolean;
+  canViewAttendanceLog: boolean;
+  canEditAttendanceLog: boolean;
   canViewExecutiveDashboard: boolean;
   canAccessOperations: boolean;
+  canViewDashboard: boolean;
+  canViewDashboardQuickActions: boolean;
   restrictedByCostCenter: boolean;
 }> = {
   guard: {
     label: "Guard",
     labelAr: "حارس",
+    // الحارس: فقط تسجيل الحضور - بدون سجل الحضور وبدون تقارير الحضور
     pages: ["attendance"],
     canCreateBatch: false,
+    canDeleteBatch: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -38,8 +45,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageUsers: false,
     canViewFinancialReports: false,
     canViewAttendanceReports: false,
+    canViewAttendanceLog: false,
+    canEditAttendanceLog: false,
     canViewExecutiveDashboard: false,
     canAccessOperations: false,
+    canViewDashboard: false,
+    canViewDashboardQuickActions: false,
     restrictedByCostCenter: false,
   },
   supervisor_tolan: {
@@ -47,6 +58,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     labelAr: "مشرف تولان",
     pages: ["operations"],
     canCreateBatch: false,
+    canDeleteBatch: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -56,8 +68,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageUsers: false,
     canViewFinancialReports: false,
     canViewAttendanceReports: false,
+    canViewAttendanceLog: false,
+    canEditAttendanceLog: false,
     canViewExecutiveDashboard: false,
     canAccessOperations: true,
+    canViewDashboard: false,
+    canViewDashboardQuickActions: false,
     restrictedByCostCenter: true,
   },
   supervisor_malqa: {
@@ -65,6 +81,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     labelAr: "مشرف الملقا",
     pages: ["operations"],
     canCreateBatch: false,
+    canDeleteBatch: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -74,8 +91,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageUsers: false,
     canViewFinancialReports: false,
     canViewAttendanceReports: false,
+    canViewAttendanceLog: false,
+    canEditAttendanceLog: false,
     canViewExecutiveDashboard: false,
     canAccessOperations: true,
+    canViewDashboard: false,
+    canViewDashboardQuickActions: false,
     restrictedByCostCenter: true,
   },
   admin_affairs: {
@@ -83,6 +104,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     labelAr: "شؤون إدارية",
     pages: ["attendance", "workers", "groups", "costCenters", "payroll", "reports", "settings", "operations", "operationsReview"],
     canCreateBatch: true,
+    canDeleteBatch: true,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -92,15 +114,22 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageUsers: false,
     canViewFinancialReports: true,
     canViewAttendanceReports: true,
+    canViewAttendanceLog: true,
+    canEditAttendanceLog: true,
     canViewExecutiveDashboard: false,
     canAccessOperations: true,
+    canViewDashboard: true,
+    canViewDashboardQuickActions: false,
     restrictedByCostCenter: false,
   },
   accountant: {
     label: "Accountant",
     labelAr: "محاسب مالي",
-    pages: ["attendance", "workers", "groups", "costCenters", "payroll", "reports", "settings", "operations", "operationsReview"],
-    canCreateBatch: true,
+    // المحاسب: إلغاء الحذف، إلغاء سجل الحضور، إلغاء لوحة التحكم، إلغاء إنشاء دفعة
+    // يبقى له: اعتماد/رفض دفعة الراتب
+    pages: ["workers", "groups", "costCenters", "payroll", "reports", "settings", "operations", "operationsReview"],
+    canCreateBatch: false,
+    canDeleteBatch: false,
     canReviewAsAccountant: true,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -109,16 +138,22 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageCostCenters: true,
     canManageUsers: false,
     canViewFinancialReports: true,
-    canViewAttendanceReports: true,
+    canViewAttendanceReports: false,
+    canViewAttendanceLog: false,
+    canEditAttendanceLog: false,
     canViewExecutiveDashboard: false,
     canAccessOperations: true,
+    canViewDashboard: false,
+    canViewDashboardQuickActions: false,
     restrictedByCostCenter: false,
   },
   auditor: {
     label: "Auditor",
     labelAr: "مراجع مالي",
-    pages: ["payroll", "reports", "attendance"],
+    // المراجع: إلغاء حذف وإنشاء دفعات، يبقى اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط)
+    pages: ["payroll", "reports", "attendanceLog"],
     canCreateBatch: false,
+    canDeleteBatch: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: true,
     canApproveAsFM: false,
@@ -128,15 +163,21 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageUsers: false,
     canViewFinancialReports: true,
     canViewAttendanceReports: true,
+    canViewAttendanceLog: true,
+    canEditAttendanceLog: false,
     canViewExecutiveDashboard: false,
     canAccessOperations: false,
+    canViewDashboard: false,
+    canViewDashboardQuickActions: false,
     restrictedByCostCenter: false,
   },
   finance_manager: {
     label: "Finance Manager",
     labelAr: "مدير مالي",
-    pages: ["payroll", "reports", "attendance"],
+    // المدير المالي: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط)
+    pages: ["payroll", "reports", "attendanceLog"],
     canCreateBatch: false,
+    canDeleteBatch: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: true,
@@ -146,8 +187,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageUsers: false,
     canViewFinancialReports: true,
     canViewAttendanceReports: true,
+    canViewAttendanceLog: true,
+    canEditAttendanceLog: false,
     canViewExecutiveDashboard: false,
     canAccessOperations: false,
+    canViewDashboard: false,
+    canViewDashboardQuickActions: false,
     restrictedByCostCenter: false,
   },
   executive: {
@@ -155,6 +200,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     labelAr: "إدارة عليا",
     pages: ["executiveDashboard"],
     canCreateBatch: false,
+    canDeleteBatch: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -164,8 +210,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageUsers: false,
     canViewFinancialReports: false,
     canViewAttendanceReports: false,
+    canViewAttendanceLog: false,
+    canEditAttendanceLog: false,
     canViewExecutiveDashboard: true,
     canAccessOperations: false,
+    canViewDashboard: false,
+    canViewDashboardQuickActions: false,
     restrictedByCostCenter: false,
   },
   super_admin: {
@@ -173,6 +223,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     labelAr: "سوبر أدمن",
     pages: ["all"],
     canCreateBatch: true,
+    canDeleteBatch: true,
     canReviewAsAccountant: true,
     canReviewAsAuditor: true,
     canApproveAsFM: true,
@@ -182,8 +233,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageUsers: true,
     canViewFinancialReports: true,
     canViewAttendanceReports: true,
+    canViewAttendanceLog: true,
+    canEditAttendanceLog: true,
     canViewExecutiveDashboard: true,
     canAccessOperations: true,
+    canViewDashboard: true,
+    canViewDashboardQuickActions: true,
     restrictedByCostCenter: false,
   },
 };
@@ -231,8 +286,8 @@ export function canApproveBatchAtStage(role: UserRole, currentStatus: string): {
   
   switch (currentStatus) {
     case "draft":
-      // Only admin_affairs or accountant can submit draft
-      if (role === "admin_affairs" || role === "accountant") return { allowed: true };
+      // Only admin_affairs can submit draft (accountant no longer creates batches)
+      if (role === "admin_affairs") return { allowed: true };
       return { allowed: false, reason: "فقط الشؤون الإدارية يمكنهم إرسال الدفعة للمراجعة" };
     
     case "under_accountant_review":
@@ -250,7 +305,7 @@ export function canApproveBatchAtStage(role: UserRole, currentStatus: string): {
     case "returned_from_accountant":
     case "returned_from_financial_review":
       // Only admin_affairs can edit and resubmit
-      if (role === "admin_affairs" || role === "accountant") return { allowed: true };
+      if (role === "admin_affairs") return { allowed: true };
       return { allowed: false, reason: "فقط الشؤون الإدارية يمكنهم تعديل وإعادة إرسال الدفعة المرفوضة" };
     
     default:

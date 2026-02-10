@@ -78,18 +78,20 @@ describe("RBAC - Page Access", () => {
     expect(hasPageAccess("super_admin", "anyRandomPage")).toBe(true);
   });
 
-  it("auditor can access payroll, reports, and attendance only", () => {
+  it("auditor can access payroll, reports, and attendanceLog only", () => {
     expect(hasPageAccess("auditor", "payroll")).toBe(true);
     expect(hasPageAccess("auditor", "reports")).toBe(true);
-    expect(hasPageAccess("auditor", "attendance")).toBe(true);
+    expect(hasPageAccess("auditor", "attendanceLog")).toBe(true);
+    expect(hasPageAccess("auditor", "attendance")).toBe(false); // لا يستطيع تسجيل الحضور
     expect(hasPageAccess("auditor", "workers")).toBe(false);
     expect(hasPageAccess("auditor", "operations")).toBe(false);
   });
 
-  it("finance_manager can access payroll, reports, and attendance only", () => {
+  it("finance_manager can access payroll, reports, and attendanceLog only", () => {
     expect(hasPageAccess("finance_manager", "payroll")).toBe(true);
     expect(hasPageAccess("finance_manager", "reports")).toBe(true);
-    expect(hasPageAccess("finance_manager", "attendance")).toBe(true);
+    expect(hasPageAccess("finance_manager", "attendanceLog")).toBe(true);
+    expect(hasPageAccess("finance_manager", "attendance")).toBe(false); // لا يستطيع تسجيل الحضور
     expect(hasPageAccess("finance_manager", "workers")).toBe(false);
     expect(hasPageAccess("finance_manager", "operations")).toBe(false);
   });
@@ -101,9 +103,9 @@ describe("RBAC - Batch Approval Workflow", () => {
     expect(result.allowed).toBe(true);
   });
 
-  it("accountant can submit draft batches", () => {
+  it("accountant cannot submit draft batches (only review)", () => {
     const result = canApproveBatchAtStage("accountant", "draft");
-    expect(result.allowed).toBe(true);
+    expect(result.allowed).toBe(false); // المحاسب لا ينشئ دفعات - فقط يعتمد/يرفض
   });
 
   it("guard cannot submit draft batches", () => {
@@ -181,11 +183,11 @@ describe("RBAC - Self Review Prevention", () => {
 });
 
 describe("RBAC - Role Capabilities", () => {
-  it("only admin_affairs and accountant can create batches", () => {
+  it("only admin_affairs can create batches (accountant no longer creates)", () => {
     const batchCreators = Object.entries(ROLE_PERMISSIONS)
       .filter(([role, perms]) => perms.canCreateBatch && role !== "super_admin")
       .map(([role]) => role);
-    expect(batchCreators.sort()).toEqual(["accountant", "admin_affairs"]);
+    expect(batchCreators.sort()).toEqual(["admin_affairs"]);
   });
 
   it("both supervisor roles are restricted by cost center", () => {

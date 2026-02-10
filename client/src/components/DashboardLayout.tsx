@@ -72,11 +72,13 @@ import { Badge } from "./ui/badge";
 type UserRoleType = 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin';
 
 const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
+  // الحارس: فقط تسجيل الحضور (بدون سجل الحضور وبدون تقارير الحضور)
   guard: ['/attendance', '/profile'],
   supervisor_tolan: ['/operations', '/profile'],
   supervisor_malqa: ['/operations', '/profile'],
+  // الشؤون الإدارية: بدون صفحة المستخدمين
   admin_affairs: [
-    '/dashboard', '/executive', '/users', '/workers', '/groups',
+    '/dashboard', '/executive', '/workers', '/groups',
     '/attendance', '/attendance/log', '/attendance/reports', '/work-days',
     '/payroll/dashboard', '/payroll/batches', '/payroll/batches/create',
     '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
@@ -84,21 +86,23 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/operations', '/operations/notes-review',
     '/cost-centers', '/profile',
   ],
+  // المحاسب: بدون لوحة التحكم، بدون سجل الحضور، بدون المستخدمين
   accountant: [
-    '/dashboard', '/executive', '/users', '/workers', '/groups',
-    '/attendance', '/attendance/log', '/attendance/reports', '/work-days',
-    '/payroll/dashboard', '/payroll/batches', '/payroll/batches/create',
+    '/workers', '/groups',
+    '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
     '/schedules/weekly', '/punches/review',
     '/operations', '/operations/notes-review',
     '/cost-centers', '/profile',
   ],
+  // المراجع: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط)
   auditor: [
     '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/payroll-report', '/finance/reports',
     '/attendance/log', '/attendance/reports',
     '/profile',
   ],
+  // المدير المالي: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط)
   finance_manager: [
     '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/payroll-report', '/finance/reports',

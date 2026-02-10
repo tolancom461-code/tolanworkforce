@@ -1,10 +1,13 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Users, Shield, Key, Briefcase, UserCheck, Building2, Loader2 } from "lucide-react";
 
 export default function Dashboard() {
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
 
   const statCards = [
     {
@@ -73,39 +76,41 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Quick Actions */}
-        <Card className="border-0 shadow-md">
-          <CardHeader>
-            <CardTitle>إجراءات سريعة</CardTitle>
-            <CardDescription>الوصول السريع للمهام الشائعة</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            <a
-              href="/users"
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
-            >
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Users className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-medium">إدارة المستخدمين</p>
-                <p className="text-sm text-muted-foreground">إضافة وتعديل المستخدمين</p>
-              </div>
-            </a>
-            <a
-              href="/permissions"
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
-            >
-              <div className="p-2 rounded-lg bg-chart-2/10">
-                <Key className="h-5 w-5 text-chart-2" />
-              </div>
-              <div>
-                <p className="font-medium">إدارة الصلاحيات</p>
-                <p className="text-sm text-muted-foreground">تعيين صلاحيات المستخدمين</p>
-              </div>
-            </a>
-          </CardContent>
-        </Card>
+        {/* Quick Actions - Only for Super Admin */}
+        {isSuperAdmin && (
+          <Card className="border-0 shadow-md">
+            <CardHeader>
+              <CardTitle>إجراءات سريعة</CardTitle>
+              <CardDescription>الوصول السريع للمهام الشائعة</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              <a
+                href="/users"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+              >
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">إدارة المستخدمين</p>
+                  <p className="text-sm text-muted-foreground">إضافة وتعديل المستخدمين</p>
+                </div>
+              </a>
+              <a
+                href="/permissions"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+              >
+                <div className="p-2 rounded-lg bg-chart-2/10">
+                  <Key className="h-5 w-5 text-chart-2" />
+                </div>
+                <div>
+                  <p className="font-medium">إدارة الصلاحيات</p>
+                  <p className="text-sm text-muted-foreground">تعيين صلاحيات المستخدمين</p>
+                </div>
+              </a>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   );
