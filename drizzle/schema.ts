@@ -329,7 +329,13 @@ export const operationalFlags = mysqlTable("operational_flags", {
   id: int("id").autoincrement().primaryKey(),
   workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   groupId: int("group_id").references(() => groups.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  costCenterId: int("cost_center_id").references(() => costCenters.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   flagDate: date("flag_date").notNull(), // تاريخ البلاغ
+  flagType: mysqlEnum("flag_type", [
+    "confirm_attendance",  // تأكيد حضور
+    "confirm_absence",     // تأكيد غياب
+    "other"                // أخرى
+  ]).default("other").notNull(),
   description: text("description").notNull(), // وصف الاستثناء/التعديل
   status: mysqlEnum("status", [
     "pending",   // بانتظار الموافقة
@@ -339,10 +345,15 @@ export const operationalFlags = mysqlTable("operational_flags", {
   approvedBy: int("approved_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }), // من اعتمد البلاغ
   approvedAt: timestamp("approved_at"), // متى تم الاعتماد
   approvalNotes: text("approval_notes"), // ملاحظات الاعتماد/الرفض
-  createdBy: int("created_by").notNull().references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }), // من أنشأ البلاغ
+  createdBy: int("created_by").notNull().references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }), // من أنشأ البلاغ (المشرف)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  workerIdIdx: index("idx_op_flags_worker_id").on(table.workerId),
+  flagDateIdx: index("idx_op_flags_flag_date").on(table.flagDate),
+  statusIdx: index("idx_op_flags_status").on(table.status),
+  flagTypeIdx: index("idx_op_flags_flag_type").on(table.flagType),
+}));
 
 export type OperationalFlag = typeof operationalFlags.$inferSelect;
 export type InsertOperationalFlag = typeof operationalFlags.$inferInsert;

@@ -6228,3 +6228,361 @@ export async function getExecutiveFinanceSummary(
     })),
   };
 }
+
+
+// ============================================
+// Operational Dashboard (العمليات التشغيلية)
+// ============================================
+
+/**
+ * Get present workers for a specific date with optional filters
+ */
+export async function getPresentWorkers(workDateStr: string, groupId?: number, costCenterId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startOfDay = new Date(workDateStr + 'T00:00:00');
+  const endOfDay = new Date(workDateStr + 'T23:59:59.999');
+
+  // Get all check-in events for this date
+  const checkIns = await db
+    .select({
+      workerId: attendanceEvents.workerId,
+      eventTime: attendanceEvents.eventTime,
+    })
+    .from(attendanceEvents)
+    .where(and(
+      gte(attendanceEvents.eventTime, startOfDay),
+      lt(attendanceEvents.eventTime, endOfDay),
+      eq(attendanceEvents.eventType, 'check_in')
+    ));
+
+  if (checkIns.length === 0) return [];
+
+  const workerIds = Array.from(new Set(checkIns.map(c => c.workerId)));
+  
+  // Get worker details
+  const workerConditions: any[] = [inArray(workers.id, workerIds), eq(workers.status, 'active')];
+  if (groupId) workerConditions.push(eq(workers.groupId, groupId));
+
+  let workersList = await db
+    .select({
+      workerId: workers.id,
+      workerCode: workers.code,
+      workerName: workers.fullName,
+      groupId: workers.groupId,
+      groupName: groups.name,
+      costCenterId: groups.costCenterId,
+      costCenterName: costCenters.name,
+    })
+    .from(workers)
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .leftJoin(costCenters, eq(groups.costCenterId, costCenters.id))
+    .where(and(...workerConditions));
+
+  if (costCenterId) {
+    workersList = workersList.filter(w => w.costCenterId === costCenterId);
+  }
+
+  // Map check-in times
+  const checkInMap = new Map<number, Date>();
+  for (const ci of checkIns) {
+    if (!checkInMap.has(ci.workerId) || ci.eventTime < checkInMap.get(ci.workerId)!) {
+      checkInMap.set(ci.workerId, ci.eventTime);
+    }
+  }
+
+  return workersList.map(w => ({
+    ...w,
+    checkInTime: checkInMap.get(w.workerId) || null,
+  }));
+}
+
+/**
+ * Get late workers for a specific date (workers who checked in after their scheduled start time)
+ */
+export async function getLateWorkers(workDateStr: string, groupId?: number, costCenterId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startOfDay = new Date(workDateStr + 'T00:00:00');
+  const endOfDay = new Date(workDateStr + 'T23:59:59.999');
+  const dayOfWeek = new Date(workDateStr).getDay(); // 0=Sunday
+
+  // Get all check-in events for this date
+  const checkIns = await db
+    .select({
+      workerId: attendanceEvents.workerId,
+      eventTime: attendanceEvents.eventTime,
+    })
+    .from(attendanceEvents)
+    .where(and(
+      gte(attendanceEvents.eventTime, startOfDay),
+      lt(attendanceEvents.eventTime, endOfDay),
+      eq(attendanceEvents.eventType, 'check_in')
+    ));
+
+  if (checkIns.length === 0) return [];
+
+  // Get first check-in per worker
+  const firstCheckIn = new Map<number, Date>();
+  for (const ci of checkIns) {
+    if (!firstCheckIn.has(ci.workerId) || ci.eventTime < firstCheckIn.get(ci.workerId)!) {
+      firstCheckIn.set(ci.workerId, ci.eventTime);
+    }
+  }
+
+  const workerIds = Array.from(firstCheckIn.keys());
+
+  // Get worker details with group info
+  const workerConditions: any[] = [inArray(workers.id, workerIds), eq(workers.status, 'active')];
+  if (groupId) workerConditions.push(eq(workers.groupId, groupId));
+
+  let workersList = await db
+    .select({
+      workerId: workers.id,
+      workerCode: workers.code,
+      workerName: workers.fullName,
+      groupId: workers.groupId,
+      groupName: groups.name,
+      costCenterId: groups.costCenterId,
+      costCenterName: costCenters.name,
+    })
+    .from(workers)
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .leftJoin(costCenters, eq(groups.costCenterId, costCenters.id))
+    .where(and(...workerConditions));
+
+  if (costCenterId) {
+    workersList = workersList.filter(w => w.costCenterId === costCenterId);
+  }
+
+  // Get schedules for all groups
+  const groupIds = Array.from(new Set(workersList.map(w => w.groupId).filter(Boolean))) as number[];
+  let schedules: any[] = [];
+  if (groupIds.length > 0) {
+    schedules = await db
+      .select()
+      .from(groupSchedules)
+      .where(and(
+        inArray(groupSchedules.groupId, groupIds),
+        eq(groupSchedules.dayOfWeek, dayOfWeek),
+        eq(groupSchedules.isActive, true)
+      ));
+  }
+
+  const scheduleMap = new Map<number, string>();
+  for (const s of schedules) {
+    scheduleMap.set(s.groupId, s.startTime);
+  }
+
+  // Filter late workers
+  const lateWorkers: any[] = [];
+  for (const w of workersList) {
+    const scheduledStart = w.groupId ? scheduleMap.get(w.groupId) : null;
+    if (!scheduledStart) continue;
+
+    const checkInTime = firstCheckIn.get(w.workerId);
+    if (!checkInTime) continue;
+
+    // Parse scheduled start time
+    const [hours, minutes] = scheduledStart.split(':').map(Number);
+    const scheduledDate = new Date(workDateStr + 'T00:00:00');
+    scheduledDate.setHours(hours, minutes, 0, 0);
+
+    // Check if late (more than 5 minutes grace)
+    const diffMinutes = (checkInTime.getTime() - scheduledDate.getTime()) / (1000 * 60);
+    if (diffMinutes > 5) {
+      lateWorkers.push({
+        ...w,
+        checkInTime,
+        scheduledStart,
+        lateMinutes: Math.round(diffMinutes),
+      });
+    }
+  }
+
+  return lateWorkers;
+}
+
+/**
+ * Get absent workers with cost center info
+ */
+export async function getAbsentWorkersWithDetails(workDateStr: string, groupId?: number, costCenterId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startOfDay = new Date(workDateStr + 'T00:00:00');
+  const endOfDay = new Date(workDateStr + 'T23:59:59.999');
+
+  // Get all active workers
+  const workerConditions: any[] = [eq(workers.status, 'active')];
+  if (groupId) workerConditions.push(eq(workers.groupId, groupId));
+
+  let allWorkers = await db
+    .select({
+      workerId: workers.id,
+      workerCode: workers.code,
+      workerName: workers.fullName,
+      groupId: workers.groupId,
+      groupName: groups.name,
+      costCenterId: groups.costCenterId,
+      costCenterName: costCenters.name,
+    })
+    .from(workers)
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .leftJoin(costCenters, eq(groups.costCenterId, costCenters.id))
+    .where(and(...workerConditions));
+
+  if (costCenterId) {
+    allWorkers = allWorkers.filter(w => w.costCenterId === costCenterId);
+  }
+
+  // Get workers who checked in
+  const checkIns = await db
+    .select({ workerId: attendanceEvents.workerId })
+    .from(attendanceEvents)
+    .where(and(
+      gte(attendanceEvents.eventTime, startOfDay),
+      lt(attendanceEvents.eventTime, endOfDay),
+      eq(attendanceEvents.eventType, 'check_in')
+    ))
+    .groupBy(attendanceEvents.workerId);
+
+  const presentIds = new Set(checkIns.map(c => c.workerId));
+
+  return allWorkers.filter(w => !presentIds.has(w.workerId));
+}
+
+/**
+ * Get operational dashboard stats for a specific date
+ */
+export async function getOperationalDashboardStats(workDateStr: string, groupId?: number, costCenterId?: number) {
+  const [present, absent, late] = await Promise.all([
+    getPresentWorkers(workDateStr, groupId, costCenterId),
+    getAbsentWorkersWithDetails(workDateStr, groupId, costCenterId),
+    getLateWorkers(workDateStr, groupId, costCenterId),
+  ]);
+
+  return {
+    presentCount: present.length,
+    absentCount: absent.length,
+    lateCount: late.length,
+  };
+}
+
+/**
+ * Create operational flag from supervisor action
+ */
+export async function createOperationalFlagFromAction(data: {
+  workerId: number;
+  groupId?: number;
+  costCenterId?: number;
+  flagDate: string;
+  flagType: 'confirm_attendance' | 'confirm_absence';
+  description: string;
+  createdBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const result = await db.insert(operationalFlags).values({
+    workerId: data.workerId,
+    groupId: data.groupId || null,
+    costCenterId: data.costCenterId || null,
+    flagDate: sql`${data.flagDate}`,
+    flagType: data.flagType,
+    description: data.description,
+    status: 'pending',
+    createdBy: data.createdBy,
+  });
+
+  return result[0].insertId;
+}
+
+/**
+ * Get operational flags with filters for the review page
+ */
+export async function getOperationalFlagsForReview(filters?: {
+  status?: string;
+  flagType?: string;
+  groupId?: number;
+  costCenterId?: number;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [];
+
+  if (filters?.status) {
+    conditions.push(eq(operationalFlags.status, filters.status as any));
+  }
+
+  if (filters?.flagType) {
+    conditions.push(eq(operationalFlags.flagType, filters.flagType as any));
+  }
+
+  if (filters?.groupId) {
+    conditions.push(eq(operationalFlags.groupId, filters.groupId));
+  }
+
+  if (filters?.costCenterId) {
+    conditions.push(eq(operationalFlags.costCenterId, filters.costCenterId));
+  }
+
+  if (filters?.startDate) {
+    conditions.push(sql`${operationalFlags.flagDate} >= ${filters.startDate}`);
+  }
+
+  if (filters?.endDate) {
+    conditions.push(sql`${operationalFlags.flagDate} <= ${filters.endDate}`);
+  }
+
+  const results = await db
+    .select({
+      id: operationalFlags.id,
+      workerId: operationalFlags.workerId,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      groupId: operationalFlags.groupId,
+      groupName: groups.name,
+      costCenterId: operationalFlags.costCenterId,
+      costCenterName: costCenters.name,
+      flagDate: operationalFlags.flagDate,
+      flagType: operationalFlags.flagType,
+      description: operationalFlags.description,
+      status: operationalFlags.status,
+      createdBy: operationalFlags.createdBy,
+      createdByName: users.fullName,
+      approvedBy: operationalFlags.approvedBy,
+      approvedAt: operationalFlags.approvedAt,
+      approvalNotes: operationalFlags.approvalNotes,
+      createdAt: operationalFlags.createdAt,
+    })
+    .from(operationalFlags)
+    .leftJoin(workers, eq(operationalFlags.workerId, workers.id))
+    .leftJoin(groups, eq(operationalFlags.groupId, groups.id))
+    .leftJoin(costCenters, eq(operationalFlags.costCenterId, costCenters.id))
+    .leftJoin(users, eq(operationalFlags.createdBy, users.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(operationalFlags.createdAt));
+
+  return results;
+}
+
+/**
+ * Get count of pending operational flags
+ */
+export async function getPendingOperationalFlagsCount() {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(operationalFlags)
+    .where(eq(operationalFlags.status, 'pending'));
+
+  return result[0]?.count || 0;
+}

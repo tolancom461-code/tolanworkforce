@@ -121,6 +121,13 @@ const menuSections = [
     ]
   },
   {
+    label: "⚙️ العمليات التشغيلية",
+    items: [
+      { icon: AlertCircle, label: "لوحة العمليات", path: "/operations", color: "text-blue-600" },
+      { icon: ClipboardCheck, label: "معالجات الملاحظات", path: "/operations/notes-review", color: "text-amber-600" },
+    ]
+  },
+  {
     label: "📋 البيانات المرجعية",
     items: [
       { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },

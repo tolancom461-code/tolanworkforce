@@ -3115,6 +3115,116 @@ export const appRouter = router({
         );
       }),
   }),
+
+  // ============================================
+  // Operational Dashboard (العمليات التشغيلية)
+  // ============================================
+  operationalDashboard: router({
+    // Get stats (present, absent, late counts)
+    getStats: protectedProcedure
+      .input(z.object({
+        workDateStr: z.string(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getOperationalDashboardStats(input.workDateStr, input.groupId, input.costCenterId);
+      }),
+
+    // Get present workers
+    getPresentWorkers: protectedProcedure
+      .input(z.object({
+        workDateStr: z.string(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getPresentWorkers(input.workDateStr, input.groupId, input.costCenterId);
+      }),
+
+    // Get absent workers
+    getAbsentWorkers: protectedProcedure
+      .input(z.object({
+        workDateStr: z.string(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getAbsentWorkersWithDetails(input.workDateStr, input.groupId, input.costCenterId);
+      }),
+
+    // Get late workers
+    getLateWorkers: protectedProcedure
+      .input(z.object({
+        workDateStr: z.string(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getLateWorkers(input.workDateStr, input.groupId, input.costCenterId);
+      }),
+
+    // Create operational flag (supervisor action)
+    createFlag: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+        flagDate: z.string(),
+        flagType: z.enum(['confirm_attendance', 'confirm_absence']),
+        description: z.string().min(1),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        const flagId = await db.createOperationalFlagFromAction({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+        return { success: true, flagId };
+      }),
+
+    // Get flags for review page
+    getFlags: protectedProcedure
+      .input(z.object({
+        status: z.string().optional(),
+        flagType: z.string().optional(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await db.getOperationalFlagsForReview(input);
+      }),
+
+    // Approve flag
+    approveFlag: protectedProcedure
+      .input(z.object({
+        flagId: z.number(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        return await db.approveOperationalFlag(input.flagId, ctx.user.id, input.notes);
+      }),
+
+    // Reject flag
+    rejectFlag: protectedProcedure
+      .input(z.object({
+        flagId: z.number(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        return await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
+      }),
+
+    // Get pending count
+    getPendingCount: protectedProcedure
+      .query(async () => {
+        return await db.getPendingOperationalFlagsCount();
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

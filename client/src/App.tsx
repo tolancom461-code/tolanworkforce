@@ -42,6 +42,8 @@ import FinancialReports from "./pages/reports/FinancialReports";
 import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
 import OperationalFlagsSimple from "./pages/OperationalFlagsSimple";
+import OperationalDashboard from "./pages/OperationalDashboard";
+import OperationalNotesReview from "./pages/OperationalNotesReview";
 import { PayrollDashboard } from "./pages/PayrollDashboard";
 
 import WeeklyShifts from "./pages/WeeklyShifts";
@@ -208,6 +210,16 @@ function Router() {
       <Route path="/backfill">
         <ProtectedRoute>
           <Backfill />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/operations">
+        <ProtectedRoute>
+          <OperationalDashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/operations/notes-review">
+        <ProtectedRoute>
+          <OperationalNotesReview />
         </ProtectedRoute>
       </Route>
       <Route path="/test-button" component={TestButton} />
