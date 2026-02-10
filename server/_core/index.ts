@@ -10,6 +10,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { getSecurityHeaders, apiRateLimiter, loginRateLimiter } from "./security";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -33,11 +34,46 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // ==========================================
+  // SECURITY MIDDLEWARE
+  // ==========================================
+
+  // 1. Security Headers (CSP, HSTS, X-Frame-Options, etc.)
+  app.use((req, res, next) => {
+    const headers = getSecurityHeaders();
+    for (const [key, value] of Object.entries(headers)) {
+      res.setHeader(key, value);
+    }
+    next();
+  });
+
+  // 2. Rate Limiting for API endpoints
+  app.use("/api/trpc", (req, res, next) => {
+    const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+    
+    // Stricter rate limit for auth-related endpoints
+    const isAuthEndpoint = req.url?.includes('auth.localLogin') || req.url?.includes('auth.logout');
+    const limiter = isAuthEndpoint ? loginRateLimiter : apiRateLimiter;
+    
+    if (!limiter.isAllowed(clientIP)) {
+      res.status(429).json({
+        error: 'Too Many Requests',
+        message: 'تم تجاوز الحد الأقصى للطلبات. يرجى المحاولة لاحقاً.',
+        retryAfter: isAuthEndpoint ? 900 : 60,
+      });
+      return;
+    }
+    next();
+  });
+
+  // 3. Body size limits - reduced from 50MB to 10MB (still allows Excel imports)
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
   // tRPC API
   app.use(
     "/api/trpc",
@@ -46,6 +82,7 @@ async function startServer() {
       createContext,
     })
   );
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

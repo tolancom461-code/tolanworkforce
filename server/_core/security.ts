@@ -34,11 +34,15 @@ export class CSRFTokenManager {
       return false;
     }
     
-    // Check if token matches
-    return crypto.timingSafeEqual(
-      Buffer.from(stored.token),
-      Buffer.from(token)
-    );
+    // Length check first - timingSafeEqual requires same length buffers
+    const storedBuf = Buffer.from(stored.token);
+    const tokenBuf = Buffer.from(token);
+    if (storedBuf.length !== tokenBuf.length) {
+      return false;
+    }
+    
+    // Constant-time comparison to prevent timing attacks
+    return crypto.timingSafeEqual(storedBuf, tokenBuf);
   }
   
   invalidateToken(sessionId: string): void {
@@ -234,16 +238,16 @@ export const CSPHeaders = {
   'Content-Security-Policy': [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self' data:",
-    "connect-src 'self'",
-    "frame-ancestors 'none'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: https: blob:",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "connect-src 'self' https://*.manus.im https://*.manus.computer https://api.manus.im",
+    "frame-ancestors 'self' https://*.manus.im https://*.manus.computer",
     "base-uri 'self'",
     "form-action 'self'",
   ].join('; '),
   'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
+  'X-Frame-Options': 'SAMEORIGIN',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 };

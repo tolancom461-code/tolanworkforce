@@ -206,9 +206,14 @@ class SDKServer {
     }
 
     try {
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        console.error('[SECURITY] JWT_SECRET is not configured!');
+        return null;
+      }
       const decoded = jwt.verify(
         cookieValue,
-        process.env.JWT_SECRET || 'fallback-secret'
+        jwtSecret
       ) as any;
 
       if (decoded.userId && decoded.username) {

@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import jwt from "jsonwebtoken";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router, requireRole, requirePermissionFlag } from "./_core/trpc";
 import * as db from "./db";
 import { sql } from "drizzle-orm";
 import { attendanceEvents, type UserRole } from "../drizzle/schema";
@@ -70,11 +70,16 @@ export const appRouter = router({
           });
         }
         
-        // Create session
+        // Create session - MUST have JWT_SECRET configured
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+          console.error('[SECURITY] JWT_SECRET is not configured!');
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'خطأ في إعدادات النظام' });
+        }
         const expiresIn = input.rememberMe ? '30d' : '1d';
         const token = jwt.sign(
           { userId: user.id, username: user.username },
-          process.env.JWT_SECRET || 'fallback-secret',
+          jwtSecret,
           { expiresIn }
         );
         
@@ -181,7 +186,12 @@ export const appRouter = router({
         isActive: z.boolean().optional(),
         password: z.string().min(6).optional(),
       }))
-      .mutation(async ({ input }) => {
+      .use(requireRole('super_admin', 'admin_affairs'))
+      .mutation(async ({ input, ctx }) => {
+        // Prevent user from deactivating themselves
+        if (input.id === ctx.user.id && input.isActive === false) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك تعطيل حسابك الخاص' });
+        }
         const { id, password, phoneNumber, ...data } = input;
         const updateData: any = { ...data };
         if (phoneNumber !== undefined) {
@@ -200,7 +210,12 @@ export const appRouter = router({
     
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
+      .use(requireRole('super_admin'))
+      .mutation(async ({ input, ctx }) => {
+        // Prevent user from deleting themselves
+        if (input.id === ctx.user.id) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك حذف حسابك الخاص' });
+        }
         await db.deleteUser(input.id);
         return { success: true };
       }),
@@ -212,12 +227,11 @@ export const appRouter = router({
         userId: z.number(),
         role: z.enum(['guard', 'supervisor_tolan', 'supervisor_malqa', 'admin_affairs', 'accountant', 'auditor', 'finance_manager', 'executive', 'super_admin']),
       }))
+      .use(requireRole('super_admin'))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-        // Only super_admin can change roles
-        const userRole = ctx.user.role as UserRole;
-        if (userRole !== 'super_admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط السوبر أدمن يمكنه تغيير الأدوار' });
+        // Prevent changing own role
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك تغيير دورك الخاص' });
         }
         await db.updateUserRole(input.userId, input.role);
         return { success: true };
@@ -322,6 +336,7 @@ export const appRouter = router({
         earlyLeavePenaltyRate: z.string().optional().nullable(),
         isActive: z.boolean().default(true),
       }))
+      .use(requirePermissionFlag('canManageGroups'))
       .mutation(async ({ input }) => {
         try {
           const id = await db.createGroup({
@@ -359,6 +374,7 @@ export const appRouter = router({
         earlyLeavePenaltyRate: z.string().optional().nullable(),
         isActive: z.boolean().optional(),
       }))
+      .use(requirePermissionFlag('canManageGroups'))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         const updateData: any = {};
@@ -380,6 +396,7 @@ export const appRouter = router({
     
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
+      .use(requirePermissionFlag('canManageGroups'))
       .mutation(async ({ input }) => {
         await db.deleteGroup(input.id);
         return { success: true };
@@ -446,6 +463,7 @@ export const appRouter = router({
         hireDate: z.string().optional().nullable(),
         status: z.enum(["active", "inactive", "archived"]).default("active"),
       }))
+      .use(requirePermissionFlag('canManageWorkers'))
       .mutation(async ({ input }) => {
         try {
           // Generate QR token
@@ -480,6 +498,7 @@ export const appRouter = router({
         photoUrl: z.string().optional().nullable(),
         status: z.enum(["active", "inactive", "archived"]).optional(),
       }))
+      .use(requirePermissionFlag('canManageWorkers'))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         await db.updateWorker(id, data);
@@ -488,6 +507,7 @@ export const appRouter = router({
     
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
+      .use(requirePermissionFlag('canManageWorkers'))
       .mutation(async ({ input }) => {
         await db.deleteWorker(input.id);
         return { success: true };
@@ -666,6 +686,7 @@ export const appRouter = router({
         name: z.string().min(1),
         description: z.string().optional(),
       }))
+      .use(requirePermissionFlag('canManageCostCenters'))
       .mutation(async ({ input }) => {
         return await db.createCostCenter(input);
       }),
@@ -678,6 +699,7 @@ export const appRouter = router({
         description: z.string().optional(),
         isActive: z.boolean().optional(),
       }))
+      .use(requirePermissionFlag('canManageCostCenters'))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         return await db.updateCostCenter(id, data);
@@ -685,6 +707,7 @@ export const appRouter = router({
     
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
+      .use(requirePermissionFlag('canManageCostCenters'))
       .mutation(async ({ input }) => {
         return await db.deleteCostCenter(input.id);
       }),
@@ -867,6 +890,7 @@ export const appRouter = router({
         checkInTime: z.string(), // ISO string
         note: z.string().optional(),
       }))
+      .use(requirePermissionFlag('canEditAttendanceLog'))
       .mutation(async ({ input, ctx }) => {
         try {
           if (!ctx.user) throw new Error("Not authenticated");
@@ -922,6 +946,7 @@ export const appRouter = router({
         checkOutTime: z.string(), // ISO string
         note: z.string().optional(),
       }))
+      .use(requirePermissionFlag('canEditAttendanceLog'))
       .mutation(async ({ input, ctx }) => {
         try {
           if (!ctx.user) throw new Error("Not authenticated");
@@ -976,6 +1001,7 @@ export const appRouter = router({
         eventId: z.number(),
         reason: z.string().optional(),
       }))
+      .use(requirePermissionFlag('canEditAttendanceLog'))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
         
@@ -1138,6 +1164,7 @@ export const appRouter = router({
         adjustmentMinutes: z.number(),
         internalNote: z.string().optional(),
       }))
+      .use(requirePermissionFlag('canEditAttendanceLog'))
       .mutation(async ({ input }) => {
         const results = [];
         for (const eventId of input.eventIds) {
@@ -1350,6 +1377,7 @@ export const appRouter = router({
         dayType: z.enum(['normal', 'holiday', 'weekend']),
         notes: z.string().optional(),
       }))
+      .use(requireRole('super_admin', 'admin_affairs'))
       .mutation(async ({ input }) => {
         return await db.upsertWorkDay(input.workDate, input.dayType, input.notes);
       }),
@@ -1363,6 +1391,7 @@ export const appRouter = router({
         workerId: z.number(),
         workDate: z.string(),
       }))
+      .use(requireRole('super_admin', 'admin_affairs', 'accountant'))
       .mutation(async ({ input }) => {
         return await db.processAttendanceToFinance(input.workerId, input.workDate);
       }),
@@ -1387,6 +1416,7 @@ export const appRouter = router({
         amount: z.number().positive(),
         reason: z.string().optional(),
       }))
+      .use(requireRole('super_admin', 'admin_affairs', 'accountant'))
       .mutation(async ({ input }) => {
         // Check if payroll batch exists for this date
         const batch = await db.checkPayrollBatchForDate(input.workDate);
@@ -1415,6 +1445,7 @@ export const appRouter = router({
         earlyLeaveMinutes: z.number().optional(),
         notes: z.string().optional(),
       }))
+      .use(requireRole('super_admin', 'admin_affairs', 'accountant'))
       .mutation(async ({ input }) => {
         return await db.createOrUpdateDailyFinance(input.workerId, input.workDate, {
           baseAmount: input.baseAmount,
@@ -1434,6 +1465,7 @@ export const appRouter = router({
         override: z.boolean(),
         reason: z.string().optional(),
       }))
+      .use(requireRole('super_admin', 'admin_affairs', 'accountant'))
       .mutation(async ({ input, ctx }) => {
         // Check is already done in db.setFullDayOverride
         // No need to duplicate here
@@ -1477,6 +1509,7 @@ export const appRouter = router({
         newTime: z.string(), // ISO string
         internalNote: z.string(),
       }))
+      .use(requirePermissionFlag('canEditAttendanceLog'))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
         
@@ -2071,6 +2104,7 @@ export const appRouter = router({
         totalBonuses: z.string().optional(),
         notes: z.string().optional(),
       }))
+      .use(requireRole('super_admin', 'admin_affairs'))
       .mutation(async ({ input }) => {
         return await db.updateBatchItem(input);
       }),
@@ -2244,32 +2278,22 @@ export const appRouter = router({
         };
       }),
     
-    // Force unlock payroll batch (requires FORCE_UNLOCK_PAYROLL permission)
+    // Force unlock payroll batch (super_admin only)
     forceUnlock: protectedProcedure
       .input(z.object({
         batchId: z.number(),
         reason: z.string().min(10, 'يجب إدخال سبب واضح (10 أحرف على الأقل)'),
       }))
+      .use(requireRole('super_admin'))
       .mutation(async ({ input, ctx }) => {
-        // Check permission
-        const hasPermission = await db.checkUserPermission(ctx.user.id, 'FORCE_UNLOCK_PAYROLL');
-        if (!hasPermission) {
-          throw new Error('ليس لديك صلاحية إلغاء قفل دفعات الرواتب');
-        }
-        
         return await db.forceUnlockPayroll(input.batchId, input.reason, ctx.user.id);
       }),
     
-    // Re-lock payroll batch
+    // Re-lock payroll batch (super_admin only)
     relock: protectedProcedure
       .input(z.object({ batchId: z.number() }))
+      .use(requireRole('super_admin'))
       .mutation(async ({ input, ctx }) => {
-        // Check permission
-        const hasPermission = await db.checkUserPermission(ctx.user.id, 'FORCE_UNLOCK_PAYROLL');
-        if (!hasPermission) {
-          throw new Error('ليس لديك صلاحية إعادة قفل دفعات الرواتب');
-        }
-        
         return await db.relockPayroll(input.batchId, ctx.user.id);
       }),
     
@@ -2684,12 +2708,8 @@ export const appRouter = router({
         flagId: z.number(),
         notes: z.string().optional(),
       }))
+      .use(requirePermissionFlag('canProcessNotes'))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Not authenticated");
-        // المشرفون لا يستطيعون معالجة الملاحظات
-        if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'المشرفون لا يملكون صلاحية معالجة الملاحظات' });
-        }
         return await db.approveOperationalFlag(input.flagId, ctx.user.id, input.notes);
       }),
 
@@ -2699,12 +2719,8 @@ export const appRouter = router({
         flagId: z.number(),
         notes: z.string().optional(),
       }))
+      .use(requirePermissionFlag('canProcessNotes'))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new Error("Not authenticated");
-        // المشرفون لا يستطيعون معالجة الملاحظات
-        if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'المشرفون لا يملكون صلاحية معالجة الملاحظات' });
-        }
         return await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
       }),
 
@@ -2911,6 +2927,7 @@ export const appRouter = router({
         requiredHours: z.number().optional(),
         effectiveDate: z.string().optional(),
       }))
+      .use(requirePermissionFlag('canManageGroups'))
       .mutation(async ({ input }) => {
         try {
           const updated = await db.updateGroupSchedule(
@@ -2942,6 +2959,7 @@ export const appRouter = router({
         })),
         effectiveDate: z.string().optional(),
       }))
+      .use(requirePermissionFlag('canManageGroups'))
       .mutation(async ({ input }) => {
         try {
           const result = await db.saveWeeklySchedules(
@@ -3059,6 +3077,7 @@ export const appRouter = router({
       .input(z.object({
         fileData: z.string(), // base64 encoded
       }))
+      .use(requirePermissionFlag('canManageGroups'))
       .mutation(async ({ input }) => {
         try {
           const buffer = Buffer.from(input.fileData, 'base64');
@@ -3101,6 +3120,7 @@ export const appRouter = router({
       .input(z.object({
         fileData: z.string(), // base64 encoded
       }))
+      .use(requirePermissionFlag('canManageWorkers'))
       .mutation(async ({ input }) => {
         try {
           const buffer = Buffer.from(input.fileData, 'base64');
