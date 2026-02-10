@@ -22,6 +22,8 @@ import {
   Briefcase
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import QRScanner from '@/components/QRScanner';
 
 export default function AttendanceScanner() {
@@ -37,6 +39,8 @@ export default function AttendanceScanner() {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
+  const [cardDialog, setCardDialog] = useState<'present' | 'absent' | 'late' | null>(null);
+  const [cardFilterGroupId, setCardFilterGroupId] = useState<number | undefined>();
   
   // Play success beep sound
   const playSuccessBeep = () => {
@@ -66,6 +70,25 @@ export default function AttendanceScanner() {
   
   const confirmAttendanceMutation = trpc.attendance.confirmAttendance.useMutation();
   const { data: stats, refetch: refetchStats } = trpc.attendance.stats.useQuery({});
+  const { data: groupsData } = trpc.groups.list.useQuery();
+
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const { data: presentWorkers } = trpc.operationalDashboard.getPresentWorkers.useQuery(
+    { workDateStr: todayStr, groupId: cardFilterGroupId },
+    { enabled: cardDialog === 'present' }
+  );
+  const { data: absentWorkers } = trpc.operationalDashboard.getAbsentWorkers.useQuery(
+    { workDateStr: todayStr, groupId: cardFilterGroupId },
+    { enabled: cardDialog === 'absent' }
+  );
+  const { data: lateWorkers } = trpc.operationalDashboard.getLateWorkers.useQuery(
+    { workDateStr: todayStr, groupId: cardFilterGroupId },
+    { enabled: cardDialog === 'late' }
+  );
+
+  const cardWorkers = cardDialog === 'present' ? presentWorkers : cardDialog === 'absent' ? absentWorkers : cardDialog === 'late' ? lateWorkers : [];
+  const cardTitle = cardDialog === 'present' ? 'الحاضرون' : cardDialog === 'absent' ? 'الغائبون' : 'المتأخرون';
+  const cardColor = cardDialog === 'present' ? 'text-green-600' : cardDialog === 'absent' ? 'text-red-600' : 'text-orange-600';
   
   // Focus on input when in manual mode
   useEffect(() => {
@@ -198,19 +221,19 @@ export default function AttendanceScanner() {
               <div className="text-sm text-gray-500">إجمالي العمال</div>
             </CardContent>
           </Card>
-          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur">
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur cursor-pointer hover:shadow-lg transition-shadow" onClick={() => { setCardDialog('present'); setCardFilterGroupId(undefined); }}>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-green-600">{stats?.presentToday || 0}</div>
               <div className="text-sm text-gray-500">حاضرون اليوم</div>
             </CardContent>
           </Card>
-          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur">
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur cursor-pointer hover:shadow-lg transition-shadow" onClick={() => { setCardDialog('absent'); setCardFilterGroupId(undefined); }}>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-red-600">{stats?.absentToday || 0}</div>
               <div className="text-sm text-gray-500">غائبون</div>
             </CardContent>
           </Card>
-          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur">
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur cursor-pointer hover:shadow-lg transition-shadow" onClick={() => { setCardDialog('late'); setCardFilterGroupId(undefined); }}>
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-orange-600">{stats?.lateToday || 0}</div>
               <div className="text-sm text-gray-500">متأخرون</div>
@@ -463,6 +486,55 @@ export default function AttendanceScanner() {
         </DialogContent>
       </Dialog>
       
+      {/* Card Details Dialog */}
+      <Dialog open={!!cardDialog} onOpenChange={(open) => { if (!open) setCardDialog(null); }}>
+        <DialogContent className="sm:max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className={`text-center text-xl ${cardColor}`}>
+              {cardTitle} - {(cardWorkers || []).length} عامل
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Select
+              value={cardFilterGroupId ? String(cardFilterGroupId) : "all"}
+              onValueChange={(v) => setCardFilterGroupId(v === "all" ? undefined : Number(v))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="كل المجموعات" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل المجموعات</SelectItem>
+                {groupsData?.map((g: any) => (
+                  <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <ScrollArea className="h-[350px] rounded-md border p-3">
+              {(cardWorkers || []).length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                  <p>لا يوجد عمال</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {(cardWorkers || []).map((w: any) => (
+                    <div key={w.workerId} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
+                        </div>
+                        <span className="font-medium">{w.workerName}</span>
+                      </div>
+                      <span className="font-mono text-sm text-muted-foreground">{w.workerCode}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Success Dialog */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent className="sm:max-w-md">
