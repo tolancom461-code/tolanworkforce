@@ -2189,7 +2189,12 @@ export const appRouter = router({
     // Delete batch (DRAFT only)
     deleteBatch: protectedProcedure
       .input(z.object({ batchId: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        // فقط سوبر أدمن والشؤون الإدارية يمكنهم حذف الدفعات
+        if (ctx.user.role !== 'super_admin' && ctx.user.role !== 'admin_affairs') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا تملك صلاحية حذف دفعات الرواتب' });
+        }
         return await db.deleteBatch(input.batchId);
       }),
     
