@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, code, full_name, group_id FROM workers WHERE code LIKE 'WRK%' LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, group_id FROM workers WHERE code LIKE 'WRK%' LIMIT 10;",
+  "rows": [
+    {
+      "id": "150104",
+      "code": "WRK-1-01-1770713318320",
+      "full_name": "مريم الجابري",
+      "group_id": "120020"
+    },
+    {
+      "id": "150105",
+      "code": "WRK-1-02-1770713318320",
+      "full_name": "محمد الخالدي",
+      "group_id": "120020"
+    },
+    {
+      "id": "150106",
+      "code": "WRK-1-03-1770713318320",
+      "full_name": "نور الفلاحي",
+      "group_id": "120020"
+    },
+    {
+      "id": "150107",
+      "code": "WRK-1-04-1770713318320",
+      "full_name": "سارة السعيد",
+      "group_id": "120020"
+    },
+    {
+      "id": "150108",
+      "code": "WRK-1-05-1770713318320",
+      "full_name": "سارة الجابري",
+      "group_id": "120020"
+    },
+    {
+      "id": "150109",
+      "code": "WRK-1-06-1770713318320",
+      "full_name": "يوسف الفلاحي",
+      "group_id": "120020"
+    },
+    {
+      "id": "150110",
+      "code": "WRK-1-07-1770713318320",
+      "full_name": "إبراهيم الخالدي",
+      "group_id": "120020"
+    },
+    {
+      "id": "150111",
+      "code": "WRK-1-08-1770713318320",
+      "full_name": "حسين الراشدي",
+      "group_id": "120020"
+    },
+    {
+      "id": "150112",
+      "code": "WRK-1-09-1770713318320",
+      "full_name": "فاطمة السعيد",
+      "group_id": "120020"
+    },
+    {
+      "id": "150192",
+      "code": "WRK-10-01-1770713318320",
+      "full_name": "سارة الجابري",
+      "group_id": "120029"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tgroup_id\n150104\tWRK-1-01-1770713318320\tمريم الجابري\t120020\n150105\tWRK-1-02-1770713318320\tمحمد الخالدي\t120020\n150106\tWRK-1-03-1770713318320\tنور الفلاحي\t120020\n150107\tWRK-1-04-1770713318320\tسارة السعيد\t120020\n150108\tWRK-1-05-1770713318320\tسارة الجابري\t120020\n150109\tWRK-1-06-1770713318320\tيوسف الفلاحي\t120020\n150110\tWRK-1-07-1770713318320\tإبراهيم الخالدي\t120020\n150111\tWRK-1-08-1770713318320\tحسين الراشدي\t120020\n150112\tWRK-1-09-1770713318320\tفاطمة السعيد\t120020\n150192\tWRK-10-01-1770713318320\tسارة الجابري\t120029\n",
+  "stderr": "",
+  "execution_time_ms": 1514
+}

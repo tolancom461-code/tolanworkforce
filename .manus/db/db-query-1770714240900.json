@@ -1,0 +1,85 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "attendance_events"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "audit_log"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "cost_centers"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "deduction_rules"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "devices"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "group_schedules"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "groups"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "jobs"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "pay_overrides"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "payroll_batch_corrections"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "payroll_batch_items"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "payroll_batch_notes"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "payroll_batches"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "permissions"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "role_permissions"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "roles"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "settings"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "user_permissions"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "user_roles"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "users"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "work_days"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "worker_archive"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "worker_daily_finance"
+    },
+    {
+      "Tables_in_BmzBEddPNYVc6c68xYfpnY": "workers"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_BmzBEddPNYVc6c68xYfpnY\n__drizzle_migrations\nattendance_events\naudit_log\ncost_centers\ndeduction_rules\ndevices\ngroup_schedules\ngroups\njobs\npay_overrides\npayroll_batch_corrections\npayroll_batch_items\npayroll_batch_notes\npayroll_batches\npermissions\nrole_permissions\nroles\nsettings\nuser_permissions\nuser_roles\nusers\nwork_days\nworker_archive\nworker_daily_finance\nworkers\n",
+  "stderr": "",
+  "execution_time_ms": 1500
+}
