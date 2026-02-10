@@ -970,6 +970,73 @@ export async function getMonthlyAttendanceReport(year: number, month: number, gr
   return report;
 }
 
+export async function getDateRangeAttendanceReport(startDateStr: string, endDateStr: string, groupId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents, workers, groups } = await import('../drizzle/schema');
+  
+  const startDate = new Date(startDateStr + 'T00:00:00');
+  const endDate = new Date(endDateStr + 'T23:59:59');
+  
+  // Get all active workers
+  const allWorkers = await db.select().from(workers).where(eq(workers.status, 'active'));
+  
+  // Filter by group if specified
+  const filteredWorkers = groupId ? allWorkers.filter(w => w.groupId === groupId) : allWorkers;
+  
+  // Get attendance events for the date range
+  const events = await db
+    .select()
+    .from(attendanceEvents)
+    .where(and(
+      gte(attendanceEvents.eventTime, startDate),
+      lte(attendanceEvents.eventTime, endDate)
+    ));
+  
+  // Calculate statistics for each worker
+  const report = filteredWorkers.map(worker => {
+    const workerEvents = events.filter((e: any) => e.workerId === worker.id);
+    
+    // Group events by date
+    const eventsByDate = workerEvents.reduce((acc, event) => {
+      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
+      if (!acc[dateKey]) acc[dateKey] = [];
+      acc[dateKey].push(event);
+      return acc;
+    }, {} as Record<string, typeof workerEvents>);
+    
+    const daysPresent = Object.keys(eventsByDate).length;
+    const totalCheckIns = workerEvents.filter((e: any) => e.eventType === 'check_in').length;
+    const totalCheckOuts = workerEvents.filter((e: any) => e.eventType === 'check_out').length;
+    
+    // Calculate total work hours
+    let totalHours = 0;
+    Object.values(eventsByDate).forEach((dayEvents: any) => {
+      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
+      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
+      if (checkIn && checkOut) {
+        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+        totalHours += hours;
+      }
+    });
+    
+    return {
+      workerId: worker.id,
+      workerName: worker.fullName,
+      workerCode: worker.code,
+      groupId: worker.groupId,
+      daysPresent,
+      totalCheckIns,
+      totalCheckOuts,
+      totalHours: Math.round(totalHours * 100) / 100,
+      avgHoursPerDay: daysPresent > 0 ? Math.round((totalHours / daysPresent) * 100) / 100 : 0,
+    };
+  });
+  
+  return report;
+}
+
 // Work Days Management
 export async function getWorkDays(year: number, month: number) {
   const db = await getDb();

@@ -1059,6 +1059,17 @@ export const appRouter = router({
         return await db.getMonthlyAttendanceReport(input.year, input.month, input.groupId);
       }),
     
+    // Get date range report
+    dateRangeReport: protectedProcedure
+      .input(z.object({
+        startDate: z.string(), // YYYY-MM-DD
+        endDate: z.string(), // YYYY-MM-DD
+        groupId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getDateRangeAttendanceReport(input.startDate, input.endDate, input.groupId);
+      }),
+    
     // Get attendance stats
     stats: protectedProcedure
       .input(z.object({ 

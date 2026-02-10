@@ -815,3 +815,11 @@
 - [x] إضافة processAttendanceToFinance بعد addMissingCheckIn و addMissingCheckOut في مركز المراجعة
 - [x] جميع الاختبارات (25 اختبار) نجحت
 - [x] حفظ checkpoint
+
+## إضافة فلترة نطاق التاريخ في تقارير الحضور
+- [x] فحص كود تقارير الحضور الحالي (فرونت + باك)
+- [x] إضافة دالة getDateRangeAttendanceReport في db.ts
+- [x] إضافة procedure dateRangeReport في routers.ts
+- [x] تعديل الفرونت إند: تبويبان (فلترة شهرية + فلترة حسب التاريخ) مع حقول من/إلى تاريخ وفلتر المجموعة
+- [x] كتابة 14 اختبار vitest - جميعها نجحت
+- [x] حفظ checkpoint

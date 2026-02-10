@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
-import { PERMISSIONS } from '../../../shared/permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,14 +13,12 @@ import {
   Calendar,
   TrendingUp,
   Printer,
-  CheckCircle
 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { printPage } from '@/lib/exportUtils';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const MONTHS = [
   'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
@@ -29,23 +26,48 @@ const MONTHS = [
 ];
 
 export default function AttendanceReports() {
-  const hasPermission = () => true; // All users have full permissions
   const currentDate = new Date();
+  const todayStr = currentDate.toLocaleDateString('en-CA');
+  
+  // Filter mode: 'monthly' or 'dateRange'
+  const [filterMode, setFilterMode] = useState<'monthly' | 'dateRange'>('monthly');
+  
+  // Monthly filter state
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  
+  // Date range filter state
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
+  
+  // Common filter
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
-  const [overrideDialog, setOverrideDialog] = useState<{ workerId: number; workerName: string; date: string } | null>(null);
-  const [overrideReason, setOverrideReason] = useState('');
   
   const { data: allGroups } = trpc.groups.list.useQuery();
-  
-  // No filtering needed - backend handles permissions
   const groups = allGroups;
-  const { data: report, isLoading, refetch } = trpc.attendance.monthlyReport.useQuery({
+  
+  // Monthly report query
+  const { data: monthlyReport, isLoading: monthlyLoading, refetch: refetchMonthly } = trpc.attendance.monthlyReport.useQuery({
     year: selectedYear,
     month: selectedMonth,
     groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+  }, {
+    enabled: filterMode === 'monthly',
   });
+
+  // Date range report query
+  const { data: dateRangeReport, isLoading: dateRangeLoading, refetch: refetchDateRange } = trpc.attendance.dateRangeReport.useQuery({
+    startDate,
+    endDate,
+    groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined
+  }, {
+    enabled: filterMode === 'dateRange',
+  });
+
+  // Active report data
+  const report = filterMode === 'monthly' ? monthlyReport : dateRangeReport;
+  const isLoading = filterMode === 'monthly' ? monthlyLoading : dateRangeLoading;
+  const refetch = filterMode === 'monthly' ? refetchMonthly : refetchDateRange;
 
   // Calculate summary statistics
   const summary = useMemo(() => {
@@ -70,7 +92,6 @@ export default function AttendanceReports() {
 
   const exportExcelMutation = trpc.export.attendanceReport.useMutation({
     onSuccess: (data) => {
-      // Convert base64 to blob
       const byteCharacters = atob(data.data);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -79,7 +100,6 @@ export default function AttendanceReports() {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       
-      // Download file
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = data.filename;
@@ -94,46 +114,6 @@ export default function AttendanceReports() {
     },
   });
 
-  const setOverrideMutation = trpc.dailyFinance.setFullDayOverride.useMutation({
-    onSuccess: () => {
-      toast.success('تم اعتماد الحضور الكامل بنجاح');
-      refetch();
-      setOverrideDialog(null);
-      setOverrideReason('');
-    },
-    onError: (error) => {
-      toast.error('فشل اعتماد الحضور: ' + error.message);
-    },
-  });
-
-  const handleOverrideToggle = (workerId: number, workerName: string, date: string, currentOverride: boolean) => {
-    if (currentOverride) {
-      // Disable override
-      setOverrideMutation.mutate({
-        workerId,
-        workDate: date,
-        override: false,
-      });
-    } else {
-      // Show dialog to get reason
-      setOverrideDialog({ workerId, workerName, date });
-    }
-  };
-
-  const handleOverrideConfirm = () => {
-    if (!overrideDialog || !overrideReason.trim()) {
-      toast.error('يرجى إدخال سبب الاعتماد');
-      return;
-    }
-
-    setOverrideMutation.mutate({
-      workerId: overrideDialog.workerId,
-      workDate: overrideDialog.date,
-      override: true,
-      reason: overrideReason,
-    });
-  };
-
   const exportToExcel = () => {
     if (!report?.length) {
       toast.error('لا توجد بيانات للتصدير');
@@ -141,7 +121,7 @@ export default function AttendanceReports() {
     }
 
     exportExcelMutation.mutate({
-      month: MONTHS[selectedMonth - 1],
+      month: filterMode === 'monthly' ? MONTHS[selectedMonth - 1] : `${startDate} - ${endDate}`,
       year: selectedYear,
       groupId: selectedGroup !== 'all' ? parseInt(selectedGroup) : undefined,
     });
@@ -170,11 +150,19 @@ export default function AttendanceReports() {
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `attendance-report-${selectedYear}-${selectedMonth}.csv`;
+    const filename = filterMode === 'monthly' 
+      ? `attendance-report-${selectedYear}-${selectedMonth}.csv`
+      : `attendance-report-${startDate}-to-${endDate}.csv`;
+    link.download = filename;
     link.click();
     
     toast.success('تم تصدير التقرير بنجاح');
   };
+
+  // Report title
+  const reportTitle = filterMode === 'monthly' 
+    ? `تقرير ${MONTHS[selectedMonth - 1]} ${selectedYear}`
+    : `تقرير من ${startDate} إلى ${endDate}`;
 
   return (
     <div className="space-y-6" id="attendance-report-content">
@@ -183,71 +171,138 @@ export default function AttendanceReports() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <BarChart3 className="h-6 w-6" />
-            تقارير الحضور الشهرية
+            تقارير الحضور
           </h1>
           <p className="text-muted-foreground">
             عرض وتحليل بيانات الحضور للعمال
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((month, index) => (
-                <SelectItem key={index} value={(index + 1).toString()}>
-                  {month}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="جميع المجموعات" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">جميع المجموعات</SelectItem>
-              {groups?.map((group) => (
-                <SelectItem key={group.id} value={group.id.toString()}>
-                  {group.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          {true && (
-            <>
-              <Button onClick={exportToExcel} disabled={exportExcelMutation.isPending}>
-                <Download className="h-4 w-4 ml-2" />
-                {exportExcelMutation.isPending ? 'جاري التصدير...' : 'تصدير Excel'}
-              </Button>
-              <Button variant="outline" onClick={exportToCSV}>
-                <Download className="h-4 w-4 ml-2" />
-                تصدير CSV
-              </Button>
-              <Button variant="outline" onClick={() => printPage('attendance-report-content')}>
-                <Printer className="h-4 w-4 ml-2" />
-                طباعة
-              </Button>
-            </>
-          )}
+          <Button onClick={exportToExcel} disabled={exportExcelMutation.isPending}>
+            <Download className="h-4 w-4 ml-2" />
+            {exportExcelMutation.isPending ? 'جاري التصدير...' : 'تصدير Excel'}
+          </Button>
+          <Button variant="outline" onClick={exportToCSV}>
+            <Download className="h-4 w-4 ml-2" />
+            تصدير CSV
+          </Button>
+          <Button variant="outline" onClick={() => printPage('attendance-report-content')}>
+            <Printer className="h-4 w-4 ml-2" />
+            طباعة
+          </Button>
         </div>
       </div>
+
+      {/* Filter Section */}
+      <Card>
+        <CardContent className="pt-6">
+          <Tabs value={filterMode} onValueChange={(v) => setFilterMode(v as 'monthly' | 'dateRange')}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="monthly">
+                <Calendar className="h-4 w-4 ml-2" />
+                فلترة شهرية
+              </TabsTrigger>
+              <TabsTrigger value="dateRange">
+                <Calendar className="h-4 w-4 ml-2" />
+                فلترة حسب التاريخ
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="monthly">
+              <div className="flex flex-wrap items-end gap-4">
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-1 block">السنة</Label>
+                  <Select value={selectedYear.toString()} onValueChange={(v) => setSelectedYear(parseInt(v))}>
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-1 block">الشهر</Label>
+                  <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MONTHS.map((month, index) => (
+                        <SelectItem key={index} value={(index + 1).toString()}>
+                          {month}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-1 block">المجموعة</Label>
+                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="جميع المجموعات" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع المجموعات</SelectItem>
+                      {groups?.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="dateRange">
+              <div className="flex flex-wrap items-end gap-4">
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-1 block">من تاريخ</Label>
+                  <Input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-44"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-1 block">إلى تاريخ</Label>
+                  <Input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-44"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground mb-1 block">المجموعة</Label>
+                  <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="جميع المجموعات" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع المجموعات</SelectItem>
+                      {groups?.map((group) => (
+                        <SelectItem key={group.id} value={group.id.toString()}>
+                          {group.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
       {summary && (
@@ -323,8 +378,8 @@ export default function AttendanceReports() {
       {/* Report Table */}
       <Card>
         <CardHeader>
-          <CardTitle>تقرير {MONTHS[selectedMonth - 1]} {selectedYear}</CardTitle>
-          <CardDescription>تفاصيل حضور العمال للشهر المحدد</CardDescription>
+          <CardTitle>{reportTitle}</CardTitle>
+          <CardDescription>تفاصيل حضور العمال للفترة المحددة</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
