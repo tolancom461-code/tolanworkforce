@@ -45,6 +45,10 @@ export default function PayrollBatches() {
   // صلاحيات حسب الدور
   const canCreateBatch = userRole === 'super_admin' || userRole === 'admin_affairs';
   const canDeleteBatch = userRole === 'super_admin' || userRole === 'admin_affairs';
+  const canSubmitDraft = userRole === 'super_admin' || userRole === 'admin_affairs'; // إرسال المسودة للمحاسب
+  const canReviewAsAccountant = userRole === 'super_admin' || userRole === 'accountant'; // المحاسب يعتمد/يرفض
+  const canReviewAsAuditor = userRole === 'super_admin' || userRole === 'auditor'; // المراجع يعتمد/يرفض
+  const canApproveAsFM = userRole === 'super_admin' || userRole === 'finance_manager'; // المدير المالي يعتمد/يرفض
   const hasPermission = () => canCreateBatch; // للتوافق مع الكود القديم
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -223,7 +227,7 @@ export default function PayrollBatches() {
   
   const rejectBatchMutation = trpc.payroll.rejectBatchFinal.useMutation({
     onSuccess: () => {
-      toast.success('تم رفض الدفعة وإرجاعها للمراجع');
+      toast.success('تم رفض الدفعة وإرجاعها كمسودة للشؤون الإدارية');
       refetch();
       setShowRejectDialog(false);
       setWorkflowReason('');
@@ -651,7 +655,7 @@ export default function PayrollBatches() {
               {/* Action Buttons */}
               <div className="flex justify-between items-center gap-2">
                 <div className="flex gap-2 flex-wrap">
-                  {/* Delete Draft Button (only for draft status) */}
+                  {/* Draft Stage: الشؤون الإدارية فقط - حذف + إرسال للمحاسب */}
                   {batchDetails.batch.status === 'draft' && (
                     <>
                       {canDeleteBatch && (
@@ -664,7 +668,7 @@ export default function PayrollBatches() {
                           {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف المسودة'}
                         </Button>
                       )}
-                      {canCreateBatch && (
+                      {canSubmitDraft && (
                         <Button 
                           onClick={() => {
                             setSelectedBatchId(batchDetails.batch.id);
@@ -677,41 +681,17 @@ export default function PayrollBatches() {
                     </>
                   )}
                   
-                  {/* Accountant Review Stage */}
-                  {batchDetails.batch.status === 'under_accountant_review' && (
-                    <Button 
-                      onClick={() => {
-                        setSelectedBatchId(batchDetails.batch.id);
-                        setShowSubmitToFinalReviewDialog(true);
-                      }}
-                    >
-                      إرسال للمراجع
-                    </Button>
-                  )}
-                  
-                  {/* Final Review Stage */}
-                  {batchDetails.batch.status === 'under_financial_review' && (
-                    <Button 
-                      onClick={() => {
-                        setSelectedBatchId(batchDetails.batch.id);
-                        setShowSubmitForApprovalDialog(true);
-                      }}
-                    >
-                      إرسال للمدير
-                    </Button>
-                  )}
-                  
-                  {/* Manager Approval Stage */}
-                  {batchDetails.batch.status === 'under_accounts_manager_review' && true && (
+                  {/* Accountant Review Stage: المحاسب فقط - اعتماد (إرسال للمراجع) + رفض (تعود draft) */}
+                  {batchDetails.batch.status === 'under_accountant_review' && canReviewAsAccountant && (
                     <>
                       <Button 
                         onClick={() => {
                           setSelectedBatchId(batchDetails.batch.id);
-                          setShowApproveDialog(true);
+                          setShowSubmitToFinalReviewDialog(true);
                         }}
                         className="bg-green-600 hover:bg-green-700"
                       >
-                        اعتماد
+                        اعتماد وإرسال للمراجع
                       </Button>
                       <Button 
                         variant="destructive"
@@ -720,7 +700,55 @@ export default function PayrollBatches() {
                           setShowRejectDialog(true);
                         }}
                       >
-                        رفض
+                        رفض (إرجاع للشؤون الإدارية)
+                      </Button>
+                    </>
+                  )}
+                  
+                  {/* Financial Review Stage: المراجع فقط - اعتماد (إرسال للمدير المالي) + رفض (تعود draft) */}
+                  {batchDetails.batch.status === 'under_financial_review' && canReviewAsAuditor && (
+                    <>
+                      <Button 
+                        onClick={() => {
+                          setSelectedBatchId(batchDetails.batch.id);
+                          setShowSubmitForApprovalDialog(true);
+                        }}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        اعتماد وإرسال للمدير المالي
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedBatchId(batchDetails.batch.id);
+                          setShowRejectDialog(true);
+                        }}
+                      >
+                        رفض (إرجاع للشؤون الإدارية)
+                      </Button>
+                    </>
+                  )}
+                  
+                  {/* Manager Approval Stage: المدير المالي فقط - اعتماد نهائي + رفض (تعود draft) */}
+                  {batchDetails.batch.status === 'under_accounts_manager_review' && canApproveAsFM && (
+                    <>
+                      <Button 
+                        onClick={() => {
+                          setSelectedBatchId(batchDetails.batch.id);
+                          setShowApproveDialog(true);
+                        }}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        اعتماد نهائي
+                      </Button>
+                      <Button 
+                        variant="destructive"
+                        onClick={() => {
+                          setSelectedBatchId(batchDetails.batch.id);
+                          setShowRejectDialog(true);
+                        }}
+                      >
+                        رفض (إرجاع للشؤون الإدارية)
                       </Button>
                     </>
                   )}
@@ -895,7 +923,7 @@ export default function PayrollBatches() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              سيتم إرسال الدفعة للمراجع للمراجعة النهائية.
+              سيتم اعتماد الدفعة من المحاسب وإرسالها للمراجع المالي.
             </p>
             <div>
               <Label>ملاحظات المحاسب (اختياري)</Label>
@@ -938,7 +966,7 @@ export default function PayrollBatches() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              سيتم إرسال الدفعة للمدير المالي للاعتماد النهائي.
+              سيتم اعتماد الدفعة من المراجع وإرسالها للمدير المالي للاعتماد النهائي.
             </p>
             <div>
               <Label>ملاحظات المراجع (اختياري)</Label>
@@ -1011,7 +1039,7 @@ export default function PayrollBatches() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              سيتم إرجاع الدفعة للمراجع لإعادة المراجعة.
+              سيتم إرجاع الدفعة كمسودة للشؤون الإدارية لإعادة التعديل والإرسال من جديد.
             </p>
             <div>
               <Label>سبب الرفض *</Label>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ROLE_PERMISSIONS, hasPageAccess, canApproveBatchAtStage, cannotSelfReview, getRoleLabel, getAllRoles, isSupervisorRole } from "./permissions";
+import { ROLE_PERMISSIONS, hasPageAccess, canApproveBatchAtStage, canRejectBatchAtStage, cannotSelfReview, getRoleLabel, getAllRoles, isSupervisorRole } from "./permissions";
 import type { UserRole } from "../drizzle/schema";
 import { userRoleEnum } from "../drizzle/schema";
 
@@ -82,7 +82,7 @@ describe("RBAC - Page Access", () => {
     expect(hasPageAccess("auditor", "payroll")).toBe(true);
     expect(hasPageAccess("auditor", "reports")).toBe(true);
     expect(hasPageAccess("auditor", "attendanceLog")).toBe(true);
-    expect(hasPageAccess("auditor", "attendance")).toBe(false); // لا يستطيع تسجيل الحضور
+    expect(hasPageAccess("auditor", "attendance")).toBe(false);
     expect(hasPageAccess("auditor", "workers")).toBe(false);
     expect(hasPageAccess("auditor", "operations")).toBe(false);
   });
@@ -91,76 +91,186 @@ describe("RBAC - Page Access", () => {
     expect(hasPageAccess("finance_manager", "payroll")).toBe(true);
     expect(hasPageAccess("finance_manager", "reports")).toBe(true);
     expect(hasPageAccess("finance_manager", "attendanceLog")).toBe(true);
-    expect(hasPageAccess("finance_manager", "attendance")).toBe(false); // لا يستطيع تسجيل الحضور
+    expect(hasPageAccess("finance_manager", "attendance")).toBe(false);
     expect(hasPageAccess("finance_manager", "workers")).toBe(false);
     expect(hasPageAccess("finance_manager", "operations")).toBe(false);
   });
 });
 
-describe("RBAC - Batch Approval Workflow", () => {
-  it("admin_affairs can submit draft batches", () => {
-    const result = canApproveBatchAtStage("admin_affairs", "draft");
-    expect(result.allowed).toBe(true);
+// ============================================
+// دورة اعتماد الرواتب - التسلسل الصحيح
+// ============================================
+// 1. الشؤون الإدارية (admin_affairs) تنشئ المسودة (draft) وترسلها للمحاسب
+// 2. المحاسب (accountant) يراجع → يعتمد (ترسل للمراجع) أو يرفض (تعود draft)
+// 3. المراجع (auditor) يراجع → يعتمد (ترسل للمدير المالي) أو يرفض (تعود draft)
+// 4. المدير المالي (finance_manager) يعتمد نهائياً أو يرفض (تعود draft)
+
+describe("RBAC - Batch Approval Workflow (New Sequential Flow)", () => {
+  // === المرحلة 1: المسودة (draft) ===
+  describe("Stage 1: Draft → Submit to Accountant", () => {
+    it("admin_affairs can submit draft batches", () => {
+      expect(canApproveBatchAtStage("admin_affairs", "draft").allowed).toBe(true);
+    });
+
+    it("accountant CANNOT submit draft batches", () => {
+      expect(canApproveBatchAtStage("accountant", "draft").allowed).toBe(false);
+    });
+
+    it("auditor CANNOT submit draft batches", () => {
+      expect(canApproveBatchAtStage("auditor", "draft").allowed).toBe(false);
+    });
+
+    it("finance_manager CANNOT submit draft batches", () => {
+      expect(canApproveBatchAtStage("finance_manager", "draft").allowed).toBe(false);
+    });
+
+    it("guard CANNOT submit draft batches", () => {
+      expect(canApproveBatchAtStage("guard", "draft").allowed).toBe(false);
+    });
+
+    it("executive CANNOT submit draft batches", () => {
+      expect(canApproveBatchAtStage("executive", "draft").allowed).toBe(false);
+    });
+
+    it("supervisor_tolan CANNOT submit draft batches", () => {
+      expect(canApproveBatchAtStage("supervisor_tolan", "draft").allowed).toBe(false);
+    });
   });
 
-  it("accountant cannot submit draft batches (only review)", () => {
-    const result = canApproveBatchAtStage("accountant", "draft");
-    expect(result.allowed).toBe(false); // المحاسب لا ينشئ دفعات - فقط يعتمد/يرفض
+  // === المرحلة 2: مراجعة المحاسب ===
+  describe("Stage 2: Accountant Review", () => {
+    it("accountant can approve/reject at accountant review stage", () => {
+      expect(canApproveBatchAtStage("accountant", "under_accountant_review").allowed).toBe(true);
+      expect(canRejectBatchAtStage("accountant", "under_accountant_review").allowed).toBe(true);
+    });
+
+    it("auditor CANNOT act at accountant review stage", () => {
+      expect(canApproveBatchAtStage("auditor", "under_accountant_review").allowed).toBe(false);
+      expect(canRejectBatchAtStage("auditor", "under_accountant_review").allowed).toBe(false);
+    });
+
+    it("finance_manager CANNOT act at accountant review stage", () => {
+      expect(canApproveBatchAtStage("finance_manager", "under_accountant_review").allowed).toBe(false);
+      expect(canRejectBatchAtStage("finance_manager", "under_accountant_review").allowed).toBe(false);
+    });
+
+    it("admin_affairs CANNOT act at accountant review stage", () => {
+      expect(canApproveBatchAtStage("admin_affairs", "under_accountant_review").allowed).toBe(false);
+      expect(canRejectBatchAtStage("admin_affairs", "under_accountant_review").allowed).toBe(false);
+    });
   });
 
-  it("guard cannot submit draft batches", () => {
-    const result = canApproveBatchAtStage("guard", "draft");
-    expect(result.allowed).toBe(false);
+  // === المرحلة 3: مراجعة المراجع المالي ===
+  describe("Stage 3: Auditor (Financial Reviewer) Review", () => {
+    it("auditor can approve/reject at financial review stage", () => {
+      expect(canApproveBatchAtStage("auditor", "under_financial_review").allowed).toBe(true);
+      expect(canRejectBatchAtStage("auditor", "under_financial_review").allowed).toBe(true);
+    });
+
+    it("accountant CANNOT act at financial review stage", () => {
+      expect(canApproveBatchAtStage("accountant", "under_financial_review").allowed).toBe(false);
+      expect(canRejectBatchAtStage("accountant", "under_financial_review").allowed).toBe(false);
+    });
+
+    it("finance_manager CANNOT act at financial review stage", () => {
+      expect(canApproveBatchAtStage("finance_manager", "under_financial_review").allowed).toBe(false);
+      expect(canRejectBatchAtStage("finance_manager", "under_financial_review").allowed).toBe(false);
+    });
+
+    it("admin_affairs CANNOT act at financial review stage", () => {
+      expect(canApproveBatchAtStage("admin_affairs", "under_financial_review").allowed).toBe(false);
+      expect(canRejectBatchAtStage("admin_affairs", "under_financial_review").allowed).toBe(false);
+    });
   });
 
-  it("accountant can review at accountant stage", () => {
-    const result = canApproveBatchAtStage("accountant", "under_accountant_review");
-    expect(result.allowed).toBe(true);
+  // === المرحلة 4: اعتماد المدير المالي ===
+  describe("Stage 4: Finance Manager Final Approval", () => {
+    it("finance_manager can approve/reject at final stage", () => {
+      expect(canApproveBatchAtStage("finance_manager", "under_accounts_manager_review").allowed).toBe(true);
+      expect(canRejectBatchAtStage("finance_manager", "under_accounts_manager_review").allowed).toBe(true);
+    });
+
+    it("auditor CANNOT act at final stage", () => {
+      expect(canApproveBatchAtStage("auditor", "under_accounts_manager_review").allowed).toBe(false);
+      expect(canRejectBatchAtStage("auditor", "under_accounts_manager_review").allowed).toBe(false);
+    });
+
+    it("accountant CANNOT act at final stage", () => {
+      expect(canApproveBatchAtStage("accountant", "under_accounts_manager_review").allowed).toBe(false);
+      expect(canRejectBatchAtStage("accountant", "under_accounts_manager_review").allowed).toBe(false);
+    });
+
+    it("admin_affairs CANNOT act at final stage", () => {
+      expect(canApproveBatchAtStage("admin_affairs", "under_accounts_manager_review").allowed).toBe(false);
+      expect(canRejectBatchAtStage("admin_affairs", "under_accounts_manager_review").allowed).toBe(false);
+    });
   });
 
-  it("auditor cannot review at accountant stage", () => {
-    const result = canApproveBatchAtStage("auditor", "under_accountant_review");
-    expect(result.allowed).toBe(false);
+  // === Super Admin ===
+  describe("Super Admin Override", () => {
+    it("super_admin can act at any stage", () => {
+      expect(canApproveBatchAtStage("super_admin", "draft").allowed).toBe(true);
+      expect(canApproveBatchAtStage("super_admin", "under_accountant_review").allowed).toBe(true);
+      expect(canApproveBatchAtStage("super_admin", "under_financial_review").allowed).toBe(true);
+      expect(canApproveBatchAtStage("super_admin", "under_accounts_manager_review").allowed).toBe(true);
+      expect(canRejectBatchAtStage("super_admin", "under_accountant_review").allowed).toBe(true);
+      expect(canRejectBatchAtStage("super_admin", "under_financial_review").allowed).toBe(true);
+      expect(canRejectBatchAtStage("super_admin", "under_accounts_manager_review").allowed).toBe(true);
+    });
+  });
+});
+
+describe("RBAC - Delete Permissions", () => {
+  it("auditor CANNOT delete batches", () => {
+    expect(ROLE_PERMISSIONS.auditor.canDeleteBatch).toBe(false);
   });
 
-  it("auditor can review at financial review stage", () => {
-    const result = canApproveBatchAtStage("auditor", "under_financial_review");
-    expect(result.allowed).toBe(true);
+  it("finance_manager CANNOT delete batches", () => {
+    expect(ROLE_PERMISSIONS.finance_manager.canDeleteBatch).toBe(false);
   });
 
-  it("accountant cannot review at financial review stage", () => {
-    const result = canApproveBatchAtStage("accountant", "under_financial_review");
-    expect(result.allowed).toBe(false);
+  it("admin_affairs CAN delete batches", () => {
+    expect(ROLE_PERMISSIONS.admin_affairs.canDeleteBatch).toBe(true);
   });
 
-  it("finance_manager can approve at final stage", () => {
-    const result = canApproveBatchAtStage("finance_manager", "under_accounts_manager_review");
-    expect(result.allowed).toBe(true);
+  it("super_admin CAN delete batches", () => {
+    expect(ROLE_PERMISSIONS.super_admin.canDeleteBatch).toBe(true);
   });
 
-  it("auditor cannot approve at final stage", () => {
-    const result = canApproveBatchAtStage("auditor", "under_accounts_manager_review");
-    expect(result.allowed).toBe(false);
+  it("accountant CANNOT delete batches", () => {
+    expect(ROLE_PERMISSIONS.accountant.canDeleteBatch).toBe(false);
+  });
+});
+
+describe("RBAC - Draft Submission Permissions", () => {
+  it("only admin_affairs and super_admin can submit drafts", () => {
+    const draftSubmitters = Object.entries(ROLE_PERMISSIONS)
+      .filter(([_, perms]) => perms.canSubmitDraft)
+      .map(([role]) => role)
+      .sort();
+    expect(draftSubmitters).toEqual(["admin_affairs", "super_admin"]);
   });
 
-  it("admin_affairs can edit returned batches", () => {
-    expect(canApproveBatchAtStage("admin_affairs", "returned_from_accountant").allowed).toBe(true);
-    expect(canApproveBatchAtStage("admin_affairs", "returned_from_financial_review").allowed).toBe(true);
+  it("auditor CANNOT submit drafts", () => {
+    expect(ROLE_PERMISSIONS.auditor.canSubmitDraft).toBe(false);
   });
 
-  it("super_admin can do everything at any stage", () => {
-    expect(canApproveBatchAtStage("super_admin", "draft").allowed).toBe(true);
-    expect(canApproveBatchAtStage("super_admin", "under_accountant_review").allowed).toBe(true);
-    expect(canApproveBatchAtStage("super_admin", "under_financial_review").allowed).toBe(true);
-    expect(canApproveBatchAtStage("super_admin", "under_accounts_manager_review").allowed).toBe(true);
-    expect(canApproveBatchAtStage("super_admin", "returned_from_accountant").allowed).toBe(true);
+  it("accountant CANNOT submit drafts", () => {
+    expect(ROLE_PERMISSIONS.accountant.canSubmitDraft).toBe(false);
   });
 
-  it("executive cannot approve at any stage", () => {
-    expect(canApproveBatchAtStage("executive", "draft").allowed).toBe(false);
-    expect(canApproveBatchAtStage("executive", "under_accountant_review").allowed).toBe(false);
-    expect(canApproveBatchAtStage("executive", "under_financial_review").allowed).toBe(false);
-    expect(canApproveBatchAtStage("executive", "under_accounts_manager_review").allowed).toBe(false);
+  it("finance_manager CANNOT submit drafts", () => {
+    expect(ROLE_PERMISSIONS.finance_manager.canSubmitDraft).toBe(false);
+  });
+});
+
+describe("RBAC - Supervisor Tolan: No Operations Review", () => {
+  it("supervisor_tolan does NOT have operationsReview page access", () => {
+    expect(hasPageAccess("supervisor_tolan", "operationsReview")).toBe(false);
+  });
+
+  it("supervisor_malqa does NOT have operationsReview page access", () => {
+    expect(hasPageAccess("supervisor_malqa", "operationsReview")).toBe(false);
   });
 });
 

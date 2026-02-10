@@ -20,9 +20,9 @@ const ROLES = [
   { value: 'supervisor_tolan', label: 'مشرف تولان', description: 'العمليات التشغيلية - مراكز تكلفة تولان (CC001-CC005)', color: 'bg-blue-500' },
   { value: 'supervisor_malqa', label: 'مشرف الملقا', description: 'العمليات التشغيلية - مراكز تكلفة الملقا (CC006-CC010)', color: 'bg-cyan-500' },
   { value: 'admin_affairs', label: 'شؤون إدارية', description: 'كل الصلاحيات ما عدا لوحة الإدارة العليا', color: 'bg-emerald-500' },
-  { value: 'accountant', label: 'محاسب مالي', description: 'نفس الشؤون الإدارية + مراجعة الدفعات (المرحلة 1)', color: 'bg-teal-500' },
-  { value: 'auditor', label: 'مراجع مالي', description: 'التقارير المالية + اعتماد أولي للدفعات (المرحلة 2)', color: 'bg-amber-500' },
-  { value: 'finance_manager', label: 'مدير مالي', description: 'التقارير المالية + الاعتماد النهائي للدفعات (المرحلة 3)', color: 'bg-purple-500' },
+  { value: 'accountant', label: 'محاسب مالي', description: 'اعتماد/رفض الدفعات من الشؤون الإدارية (المرحلة 1)', color: 'bg-teal-500' },
+  { value: 'auditor', label: 'مراجع مالي', description: 'اعتماد/رفض الدفعات من المحاسب (المرحلة 2) - بدون حذف', color: 'bg-amber-500' },
+  { value: 'finance_manager', label: 'مدير مالي', description: 'الاعتماد النهائي/رفض الدفعات من المراجع (المرحلة 3) - بدون حذف', color: 'bg-purple-500' },
   { value: 'executive', label: 'إدارة عليا', description: 'لوحات التحكم فقط (استعراض)', color: 'bg-indigo-500' },
   { value: 'super_admin', label: 'سوبر أدمن', description: 'جميع الصلاحيات بدون استثناء', color: 'bg-red-500' },
 ] as const;

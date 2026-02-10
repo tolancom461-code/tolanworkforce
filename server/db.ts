@@ -2516,8 +2516,8 @@ export async function updateBatchItem(params: {
     .from(payrollBatches)
     .where(eq(payrollBatches.id, item.batchId));
 
-  if (batch.status !== 'draft' && batch.status !== 'returned_from_accountant' && batch.status !== 'returned_from_financial_review') {
-    throw new Error("Can only edit items in draft or returned batches");
+  if (batch.status !== 'draft') {
+    throw new Error("يمكن تعديل العناصر فقط في المسودات");
   }
 
   // Calculate new net amount
@@ -2587,8 +2587,8 @@ export async function submitBatchForReview(batchId: number, userId: number) {
     throw new Error("Batch not found");
   }
 
-  if (batch.status !== 'draft' && batch.status !== 'returned_from_accountant' && batch.status !== 'returned_from_financial_review') {
-    throw new Error("Can only submit draft or returned batches");
+  if (batch.status !== 'draft') {
+    throw new Error("يمكن إرسال المسودات فقط للمراجعة");
   }
 
   await db

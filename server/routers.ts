@@ -2076,10 +2076,16 @@ export const appRouter = router({
       }),
     
     // Submit for accountant review
+    // إرسال المسودة للمحاسب (الشؤون الإدارية فقط)
     submitForReview: protectedProcedure
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        const userRole = ctx.user.role as UserRole;
+        // فقط الشؤون الإدارية والسوبر أدمن يمكنهم إرسال المسودة
+        if (!ROLE_PERMISSIONS[userRole]?.canSubmitDraft) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط الشؤون الإدارية يمكنهم إرسال الدفعة للمراجعة' });
+        }
         return await db.submitBatchForReview(input.batchId, ctx.user.id);
       }),
     
@@ -2267,73 +2273,63 @@ export const appRouter = router({
         return await db.relockPayroll(input.batchId, ctx.user.id);
       }),
     
-    // Workflow: Submit to accounting
+    // Workflow: Submit to accounting (الشؤون الإدارية ترسل المسودة للمحاسب)
     submitToAccounting: protectedProcedure
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        
-        const hasPermission = await db.checkUserPermission(ctx.user.id, 'CREATE_PAYROLL');
-        if (!hasPermission) {
-          throw new Error('ليس لديك صلاحية إرسال دفعات الرواتب');
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canSubmitDraft) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط الشؤون الإدارية يمكنهم إرسال الدفعة للمحاسب' });
         }
-        
         return await db.submitBatchToAccounting(input.batchId, ctx.user.id);
       }),
     
-    // Workflow: Submit to final review
+    // Workflow: Submit to final review (المحاسب يعتمد ويرسل للمراجع)
     submitToFinalReview: protectedProcedure
       .input(z.object({ batchId: z.number(), reason: z.string().optional() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        
-        const hasPermission = await db.checkUserPermission(ctx.user.id, 'REVIEW_PAYROLL_ACCOUNTING');
-        if (!hasPermission) {
-          throw new Error('ليس لديك صلاحية مراجعة دفعات الرواتب');
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAccountant) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المحاسب المالي يمكنه إرسال الدفعة للمراجع' });
         }
-        
         return await db.submitBatchToFinalReview(input.batchId, ctx.user.id, input.reason);
       }),
     
-    // Workflow: Submit for approval
+    // Workflow: Submit for approval (المراجع يعتمد ويرسل للمدير المالي)
     submitForApproval: protectedProcedure
       .input(z.object({ batchId: z.number(), reason: z.string().optional() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        
-        const hasPermission = await db.checkUserPermission(ctx.user.id, 'REVIEW_PAYROLL_FINAL');
-        if (!hasPermission) {
-          throw new Error('ليس لديك صلاحية مراجعة دفعات الرواتب');
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAuditor) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المراجع المالي يمكنه إرسال الدفعة للمدير المالي' });
         }
-        
         return await db.submitBatchForApproval(input.batchId, ctx.user.id, input.reason);
       }),
     
-    // Workflow: Approve batch (Manager only)
+    // Workflow: Approve batch (المدير المالي فقط)
     approveBatchFinal: protectedProcedure
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        
-        const hasPermission = await db.checkUserPermission(ctx.user.id, 'APPROVE_PAYROLL');
-        if (!hasPermission) {
-          throw new Error('ليس لديك صلاحية اعتماد دفعات الرواتب');
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canApproveAsFM) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المدير المالي يمكنه الاعتماد النهائي للدفعة' });
         }
-        
         return await db.approveBatch(input.batchId, ctx.user.id);
       }),
     
-    // Workflow: Reject batch (Manager only)
+    // Workflow: Reject batch (المدير المالي يرفض → تعود draft للشؤون الإدارية)
     rejectBatchFinal: protectedProcedure
       .input(z.object({ batchId: z.number(), reason: z.string() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        
-        const hasPermission = await db.checkUserPermission(ctx.user.id, 'REJECT_PAYROLL');
-        if (!hasPermission) {
-          throw new Error('ليس لديك صلاحية رفض دفعات الرواتب');
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canApproveAsFM) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المدير المالي يمكنه رفض الدفعة في هذه المرحلة' });
         }
-        
         return await db.rejectBatch(input.batchId, ctx.user.id, input.reason);
       }),
     

@@ -1,6 +1,18 @@
 /**
  * Role-Based Access Control (RBAC) System
  * 9 roles with specific page/feature access
+ * 
+ * دورة اعتماد الرواتب:
+ * 1. الشؤون الإدارية (admin_affairs) تنشئ الدفعة (draft) وترسلها للمحاسب
+ * 2. المحاسب (accountant) يراجع → يعتمد (ترسل للمراجع) أو يرفض (تعود draft للشؤون الإدارية)
+ * 3. المراجع (auditor) يراجع → يعتمد (ترسل للمدير المالي) أو يرفض (تعود draft للشؤون الإدارية)
+ * 4. المدير المالي (finance_manager) يعتمد نهائياً أو يرفض (تعود draft للشؤون الإدارية)
+ * 
+ * ملاحظات مهمة:
+ * - المراجع لا يتدخل إلا بعد أن تصله الدفعة من المحاسب
+ * - المدير المالي لا يتدخل إلا بعد أن تصله الدفعة من المراجع
+ * - أي رفض من أي مرحلة يعيد الدفعة إلى draft لدى الشؤون الإدارية
+ * - المراجع والمدير المالي لا يملكان صلاحية الحذف
  */
 
 import type { UserRole } from "../drizzle/schema";
@@ -12,6 +24,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
   pages: string[];
   canCreateBatch: boolean;
   canDeleteBatch: boolean;
+  canSubmitDraft: boolean; // إرسال المسودة للمحاسب (الشؤون الإدارية فقط)
   canReviewAsAccountant: boolean;
   canReviewAsAuditor: boolean;
   canApproveAsFM: boolean;
@@ -36,6 +49,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     pages: ["attendance"],
     canCreateBatch: false,
     canDeleteBatch: false,
+    canSubmitDraft: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -60,6 +74,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     pages: ["operations"],
     canCreateBatch: false,
     canDeleteBatch: false,
+    canSubmitDraft: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -84,6 +99,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     pages: ["operations"],
     canCreateBatch: false,
     canDeleteBatch: false,
+    canSubmitDraft: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -107,6 +123,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     pages: ["attendance", "workers", "groups", "costCenters", "payroll", "reports", "settings", "operations", "operationsReview"],
     canCreateBatch: true,
     canDeleteBatch: true,
+    canSubmitDraft: true, // الشؤون الإدارية ترسل المسودة للمحاسب
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -127,11 +144,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
   accountant: {
     label: "Accountant",
     labelAr: "محاسب مالي",
-    // المحاسب: إلغاء الحذف، إلغاء سجل الحضور، إلغاء لوحة التحكم، إلغاء إنشاء دفعة
-    // يبقى له: اعتماد/رفض دفعة الراتب
+    // المحاسب: يستلم المسودة من الشؤون الإدارية ويعتمد أو يرفض
+    // لا يملك: حذف، سجل حضور، لوحة تحكم، إنشاء دفعة، إرسال مسودة
     pages: ["workers", "groups", "costCenters", "payroll", "reports", "settings", "operations", "operationsReview"],
     canCreateBatch: false,
     canDeleteBatch: false,
+    canSubmitDraft: false, // لا يرسل المسودة - يستلمها فقط
     canReviewAsAccountant: true,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -152,10 +170,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
   auditor: {
     label: "Auditor",
     labelAr: "مراجع مالي",
-    // المراجع: إلغاء حذف وإنشاء دفعات، يبقى اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط)
+    // المراجع: لا يتدخل إلا بعد أن تصله الدفعة من المحاسب
+    // لا يملك: حذف، إنشاء دفعات، إرسال مسودة
     pages: ["payroll", "reports", "attendanceLog"],
     canCreateBatch: false,
     canDeleteBatch: false,
+    canSubmitDraft: false, // لا يتعامل مع المسودة نهائياً
     canReviewAsAccountant: false,
     canReviewAsAuditor: true,
     canApproveAsFM: false,
@@ -176,10 +196,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
   finance_manager: {
     label: "Finance Manager",
     labelAr: "مدير مالي",
-    // المدير المالي: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط)
+    // المدير المالي: اعتماد نهائي أو رفض (تعود draft للشؤون الإدارية)
+    // لا يملك: حذف، إنشاء دفعات، إرسال مسودة
     pages: ["payroll", "reports", "attendanceLog"],
     canCreateBatch: false,
     canDeleteBatch: false,
+    canSubmitDraft: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: true,
@@ -203,6 +225,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     pages: ["executiveDashboard"],
     canCreateBatch: false,
     canDeleteBatch: false,
+    canSubmitDraft: false,
     canReviewAsAccountant: false,
     canReviewAsAuditor: false,
     canApproveAsFM: false,
@@ -226,6 +249,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     pages: ["all"],
     canCreateBatch: true,
     canDeleteBatch: true,
+    canSubmitDraft: true,
     canReviewAsAccountant: true,
     canReviewAsAuditor: true,
     canApproveAsFM: true,
@@ -278,7 +302,18 @@ export function getAllRoles(): { value: UserRole; label: string; labelAr: string
   }));
 }
 
-// Batch approval stage validation
+/**
+ * Batch approval stage validation
+ * 
+ * التسلسل الصحيح:
+ * draft → (admin_affairs يرسل) → under_accountant_review
+ * under_accountant_review → (accountant يعتمد) → under_financial_review
+ * under_accountant_review → (accountant يرفض) → draft
+ * under_financial_review → (auditor يعتمد) → under_accounts_manager_review
+ * under_financial_review → (auditor يرفض) → draft
+ * under_accounts_manager_review → (finance_manager يعتمد) → approved
+ * under_accounts_manager_review → (finance_manager يرفض) → draft
+ */
 export function canApproveBatchAtStage(role: UserRole, currentStatus: string): { allowed: boolean; reason?: string } {
   const perms = ROLE_PERMISSIONS[role];
   if (!perms) return { allowed: false, reason: "دور غير معروف" };
@@ -288,30 +323,55 @@ export function canApproveBatchAtStage(role: UserRole, currentStatus: string): {
   
   switch (currentStatus) {
     case "draft":
-      // Only admin_affairs can submit draft (accountant no longer creates batches)
-      if (role === "admin_affairs") return { allowed: true };
+      // فقط الشؤون الإدارية يمكنها إرسال المسودة للمحاسب
+      if (perms.canSubmitDraft) return { allowed: true };
       return { allowed: false, reason: "فقط الشؤون الإدارية يمكنهم إرسال الدفعة للمراجعة" };
     
     case "under_accountant_review":
+      // فقط المحاسب يمكنه مراجعة الدفعة في هذه المرحلة
       if (perms.canReviewAsAccountant) return { allowed: true };
       return { allowed: false, reason: "فقط المحاسب المالي يمكنه مراجعة الدفعة في هذه المرحلة" };
     
     case "under_financial_review":
+      // فقط المراجع يمكنه مراجعة الدفعة في هذه المرحلة (بعد اعتماد المحاسب)
       if (perms.canReviewAsAuditor) return { allowed: true };
       return { allowed: false, reason: "فقط المراجع المالي يمكنه مراجعة الدفعة في هذه المرحلة" };
     
     case "under_accounts_manager_review":
+      // فقط المدير المالي يمكنه الاعتماد النهائي (بعد اعتماد المراجع)
       if (perms.canApproveAsFM) return { allowed: true };
       return { allowed: false, reason: "فقط المدير المالي يمكنه الاعتماد النهائي للدفعة" };
     
-    case "returned_from_accountant":
-    case "returned_from_financial_review":
-      // Only admin_affairs can edit and resubmit
-      if (role === "admin_affairs") return { allowed: true };
-      return { allowed: false, reason: "فقط الشؤون الإدارية يمكنهم تعديل وإعادة إرسال الدفعة المرفوضة" };
-    
     default:
       return { allowed: false, reason: "حالة الدفعة لا تسمح بهذا الإجراء" };
+  }
+}
+
+/**
+ * التحقق من أن الدور يمكنه رفض الدفعة في المرحلة الحالية
+ */
+export function canRejectBatchAtStage(role: UserRole, currentStatus: string): { allowed: boolean; reason?: string } {
+  const perms = ROLE_PERMISSIONS[role];
+  if (!perms) return { allowed: false, reason: "دور غير معروف" };
+  
+  // Super admin can do everything
+  if (role === "super_admin") return { allowed: true };
+  
+  switch (currentStatus) {
+    case "under_accountant_review":
+      if (perms.canReviewAsAccountant) return { allowed: true };
+      return { allowed: false, reason: "فقط المحاسب المالي يمكنه رفض الدفعة في هذه المرحلة" };
+    
+    case "under_financial_review":
+      if (perms.canReviewAsAuditor) return { allowed: true };
+      return { allowed: false, reason: "فقط المراجع المالي يمكنه رفض الدفعة في هذه المرحلة" };
+    
+    case "under_accounts_manager_review":
+      if (perms.canApproveAsFM) return { allowed: true };
+      return { allowed: false, reason: "فقط المدير المالي يمكنه رفض الدفعة في هذه المرحلة" };
+    
+    default:
+      return { allowed: false, reason: "حالة الدفعة لا تسمح بالرفض" };
   }
 }
 

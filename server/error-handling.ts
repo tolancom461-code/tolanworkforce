@@ -156,13 +156,12 @@ export function validateBatchStatusTransition(
   currentStatus: string,
   newStatus: string
 ): void {
+  // التسلسل الجديد: أي رفض من أي مرحلة يعيد الدفعة إلى draft
   const validTransitions: Record<string, string[]> = {
     draft: ['under_accountant_review'],
-    under_accountant_review: ['under_financial_review', 'returned_from_accountant'],
-    under_financial_review: ['under_accounts_manager_review', 'returned_from_financial_review'],
-    under_accounts_manager_review: ['approved', 'rejected_final'],
-    returned_from_accountant: ['under_accountant_review'],
-    returned_from_financial_review: ['under_financial_review'],
+    under_accountant_review: ['under_financial_review', 'draft'], // المحاسب: اعتماد → مراجع | رفض → draft
+    under_financial_review: ['under_accounts_manager_review', 'draft'], // المراجع: اعتماد → مدير مالي | رفض → draft
+    under_accounts_manager_review: ['approved', 'draft'], // المدير المالي: اعتماد → approved | رفض → draft
     approved: [],
     rejected_final: [],
   };
