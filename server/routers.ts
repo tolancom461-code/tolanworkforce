@@ -2685,6 +2685,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        // المشرفون لا يستطيعون معالجة الملاحظات
+        if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'المشرفون لا يملكون صلاحية معالجة الملاحظات' });
+        }
         return await db.approveOperationalFlag(input.flagId, ctx.user.id, input.notes);
       }),
 
@@ -2696,6 +2700,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        // المشرفون لا يستطيعون معالجة الملاحظات
+        if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'المشرفون لا يملكون صلاحية معالجة الملاحظات' });
+        }
         return await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
       }),
 
@@ -3296,6 +3304,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        // المشرفون لا يستطيعون معالجة الملاحظات
+        if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'المشرفون لا يملكون صلاحية معالجة الملاحظات' });
+        }
         return await db.approveOperationalFlag(input.flagId, ctx.user.id, input.notes);
       }),
 
@@ -3307,6 +3319,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        // المشرفون لا يستطيعون معالجة الملاحظات
+        if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'المشرفون لا يملكون صلاحية معالجة الملاحظات' });
+        }
         return await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
       }),
 

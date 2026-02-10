@@ -74,8 +74,8 @@ type UserRoleType = 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_a
 const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
   // الحارس: فقط تسجيل الحضور (بدون سجل الحضور وبدون تقارير الحضور)
   guard: ['/attendance', '/profile'],
-  supervisor_tolan: ['/operations', '/profile'],
-  supervisor_malqa: ['/operations', '/profile'],
+  supervisor_tolan: ['/operations', '/profile'],  // بدون معالجة الملاحظات
+  supervisor_malqa: ['/operations', '/profile'],  // بدون معالجة الملاحظات
   // الشؤون الإدارية: بدون صفحة المستخدمين
   admin_affairs: [
     '/dashboard', '/executive', '/workers', '/groups',
@@ -116,7 +116,18 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
 function isPathAllowed(role: UserRoleType, path: string): boolean {
   const allowed = ROLE_ALLOWED_PATHS[role];
   if (allowed === 'all') return true;
-  return allowed.some(p => path === p || path.startsWith(p + '/'));
+  // تحقق دقيق: إذا كان المسار موجود بالضبط في القائمة أو يبدأ بمسار مسموح
+  // لكن يجب التأكد أن المسار الفرعي موجود أيضاً في القائمة
+  if (allowed.includes(path)) return true;
+  // للمسارات الفرعية: السماح فقط إذا كان المسار الأب موجود والمسار الفرعي ليس محظوراً صراحة
+  return allowed.some(p => {
+    if (path.startsWith(p + '/')) {
+      // المسارات الفرعية مسموحة فقط إذا كان المسار الفرعي نفسه موجود في القائمة
+      // هذا يمنع المشرفين من الوصول لـ /operations/notes-review عندما يكون لديهم فقط /operations
+      return allowed.includes(path);
+    }
+    return false;
+  });
 }
 
 // تصنيف القوائم حسب الأدوار والوظائف

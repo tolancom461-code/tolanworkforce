@@ -56,6 +56,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
   supervisor_tolan: {
     label: "Supervisor Tolan",
     labelAr: "مشرف تولان",
+    // بدون معالجة الملاحظات (operationsReview)
     pages: ["operations"],
     canCreateBatch: false,
     canDeleteBatch: false,
@@ -79,6 +80,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
   supervisor_malqa: {
     label: "Supervisor Malqa",
     labelAr: "مشرف الملقا",
+    // بدون معالجة الملاحظات (operationsReview)
     pages: ["operations"],
     canCreateBatch: false,
     canDeleteBatch: false,
