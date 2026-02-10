@@ -1,0 +1,58 @@
+{
+  "query": "SELECT id, username, full_name, role FROM users ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, username, full_name, role FROM users ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "username": "fQvX5e3Eytk42QF5qSXDcP",
+      "full_name": "anem2031",
+      "role": "super_admin"
+    },
+    {
+      "id": "30004",
+      "username": "admin",
+      "full_name": "مدير النظام",
+      "role": "super_admin"
+    },
+    {
+      "id": "450176",
+      "username": "test_user_1770708936270",
+      "full_name": "Test User",
+      "role": "super_admin"
+    },
+    {
+      "id": "450178",
+      "username": "inactive_user_1770708941850",
+      "full_name": "Inactive User",
+      "role": "super_admin"
+    },
+    {
+      "id": "450179",
+      "username": "admin_test_1770708951560",
+      "full_name": "Admin Test User",
+      "role": "super_admin"
+    },
+    {
+      "id": "450357",
+      "username": "test_user_1770713336389",
+      "full_name": "Test User",
+      "role": "super_admin"
+    },
+    {
+      "id": "450358",
+      "username": "inactive_user_1770713342412",
+      "full_name": "Inactive User",
+      "role": "super_admin"
+    },
+    {
+      "id": "450359",
+      "username": "admin_test_1770713347538",
+      "full_name": "Admin Test User",
+      "role": "super_admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tfull_name\trole\n1\tfQvX5e3Eytk42QF5qSXDcP\tanem2031\tsuper_admin\n30004\tadmin\tمدير النظام\tsuper_admin\n450176\ttest_user_1770708936270\tTest User\tsuper_admin\n450178\tinactive_user_1770708941850\tInactive User\tsuper_admin\n450179\tadmin_test_1770708951560\tAdmin Test User\tsuper_admin\n450357\ttest_user_1770713336389\tTest User\tsuper_admin\n450358\tinactive_user_1770713342412\tInactive User\tsuper_admin\n450359\tadmin_test_1770713347538\tAdmin Test User\tsuper_admin\n",
+  "stderr": "",
+  "execution_time_ms": 1721
+}

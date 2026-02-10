@@ -68,10 +68,56 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 
+// تعريف الصفحات المسموحة لكل دور
+type UserRoleType = 'guard' | 'supervisor' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin';
+
+const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
+  guard: ['/attendance', '/profile'],
+  supervisor: ['/operations', '/profile'],
+  admin_affairs: [
+    '/dashboard', '/executive', '/users', '/workers', '/groups',
+    '/attendance', '/attendance/log', '/attendance/reports', '/work-days',
+    '/payroll/dashboard', '/payroll/batches', '/payroll/batches/create',
+    '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
+    '/schedules/weekly', '/punches/review',
+    '/operations', '/operations/notes-review',
+    '/cost-centers', '/profile',
+  ],
+  accountant: [
+    '/dashboard', '/executive', '/users', '/workers', '/groups',
+    '/attendance', '/attendance/log', '/attendance/reports', '/work-days',
+    '/payroll/dashboard', '/payroll/batches', '/payroll/batches/create',
+    '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
+    '/schedules/weekly', '/punches/review',
+    '/operations', '/operations/notes-review',
+    '/cost-centers', '/profile',
+  ],
+  auditor: [
+    '/payroll/dashboard', '/payroll/batches',
+    '/finance/payroll/history', '/payroll-report', '/finance/reports',
+    '/attendance/log', '/attendance/reports',
+    '/profile',
+  ],
+  finance_manager: [
+    '/payroll/dashboard', '/payroll/batches',
+    '/finance/payroll/history', '/payroll-report', '/finance/reports',
+    '/attendance/log', '/attendance/reports',
+    '/profile',
+  ],
+  executive: ['/executive/finance', '/profile'],
+  super_admin: 'all',
+};
+
+function isPathAllowed(role: UserRoleType, path: string): boolean {
+  const allowed = ROLE_ALLOWED_PATHS[role];
+  if (allowed === 'all') return true;
+  return allowed.some(p => path === p || path.startsWith(p + '/'));
+}
+
 // تصنيف القوائم حسب الأدوار والوظائف
 const menuSections = [
   {
-    label: "📊 لوحات التحكم",
+    label: "\u{1F4CA} لوحات التحكم",
     items: [
       { icon: LayoutDashboard, label: "الرئيسية", path: "/dashboard" },
       { icon: TrendingUp, label: "لوحة المدير", path: "/executive" },
@@ -79,7 +125,7 @@ const menuSections = [
     ]
   },
   {
-    label: "👥 إدارة الموارد البشرية",
+    label: "\u{1F465} إدارة الموارد البشرية",
     items: [
       { icon: Users, label: "المستخدمين", path: "/users" },
       { icon: UsersRound, label: "العمال", path: "/workers" },
@@ -87,7 +133,7 @@ const menuSections = [
     ]
   },
   {
-    label: "⏰ إدارة الحضور والانصراف",
+    label: "\u23F0 إدارة الحضور والانصراف",
     items: [
       { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },
       { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log" },
@@ -96,11 +142,10 @@ const menuSections = [
     ]
   },
   {
-    label: "💰 إدارة الرواتب والمالية",
+    label: "\u{1F4B0} إدارة الرواتب والمالية",
     items: [
       { icon: Banknote, label: "لوحة تحكم الرواتب", path: "/payroll/dashboard", color: "text-green-600" },
       { icon: DollarSign, label: "دفعات الرواتب", path: "/payroll/batches" },
-      // { icon: PlusCircle, label: "إنشاء دفعة رواتب", path: "/payroll/batches/create" }, // مخفي
       { icon: FileText, label: "سجل دفعات الرواتب", path: "/finance/payroll/history" },
       { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
       { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
@@ -108,35 +153,32 @@ const menuSections = [
     ]
   },
   {
-    label: "⏳ إدارة الورديات والجداول",
+    label: "\u23F3 إدارة الورديات والجداول",
     items: [
-
       { icon: Clock, label: "الورديات الأسبوعية", path: "/schedules/weekly", color: "text-purple-600" },
     ]
   },
   {
-    label: "✓ مراجعة البصمات",
+    label: "\u2713 مراجعة البصمات",
     items: [
       { icon: ClipboardCheck, label: "مركز مراجعة البصمات", path: "/punches/review", color: "text-orange-600" },
     ]
   },
   {
-    label: "⚙️ العمليات التشغيلية",
+    label: "\u2699\uFE0F العمليات التشغيلية",
     items: [
       { icon: AlertCircle, label: "لوحة العمليات", path: "/operations", color: "text-blue-600" },
       { icon: ClipboardCheck, label: "معالجات الملاحظات", path: "/operations/notes-review", color: "text-amber-600" },
     ]
   },
   {
-    label: "📋 البيانات المرجعية",
+    label: "\u{1F4CB} البيانات المرجعية",
     items: [
       { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
-      // { icon: Flag, label: "الأعلام التشغيلية", path: "/operational-flags" },
-      // { icon: CheckCircle, label: "الأعلام المعلقة", path: "/pending-flags" },
     ]
   },
   {
-    label: "⚙️ إعدادات النظام",
+    label: "\u2699\uFE0F إعدادات النظام",
     items: [
       { icon: Settings, label: "الملف الشخصي", path: "/profile" },
     ]
@@ -258,17 +300,21 @@ function DashboardLayoutContent({
     }));
   };
   
-  // جميع المستخدمين لديهم وصول كامل - لا توجد فحوصات صلاحيات
-  const filteredMenuSections = menuSections.map(section => ({
-    ...section,
-    items: section.items.map(item => {
-      // إضافة Badge للبصمات المعلقة
-      if (item.path === "/punches/review") {
-        return { ...item, badge: pendingPunchesCount };
-      }
-      return item;
-    })
-  }));
+  // تصفية القائمة حسب دور المستخدم
+  const userRole = (user?.role || 'guard') as UserRoleType;
+  const filteredMenuSections = menuSections
+    .map(section => ({
+      ...section,
+      items: section.items
+        .filter(item => isPathAllowed(userRole, item.path))
+        .map(item => {
+          if (item.path === "/punches/review") {
+            return { ...item, badge: pendingPunchesCount };
+          }
+          return item;
+        })
+    }))
+    .filter(section => section.items.length > 0);
 
   const isMobile = useIsMobile();
 

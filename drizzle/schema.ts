@@ -19,8 +19,9 @@ export const costCenters = mysqlTable("cost_centers", {
 // ============================================
 // Users & Permissions (المستخدمين والصلاحيات)
 // ============================================
-// NOTE: Roles and Permissions system has been removed.
-// All users are now Admin with full access.
+// Role-Based Access Control (RBAC) - 8 roles
+export const userRoleEnum = ["guard", "supervisor", "admin_affairs", "accountant", "auditor", "finance_manager", "executive", "super_admin"] as const;
+export type UserRole = typeof userRoleEnum[number];
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -32,14 +33,19 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 20 }),
   isActive: boolean("is_active").default(true),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: mysqlEnum("role", ["guard", "supervisor", "admin_affairs", "accountant", "auditor", "finance_manager", "executive", "super_admin"]).default("guard").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
-// NOTE: userRoles and userPermissions tables have been removed.
-// All users are now Admin with full access.
+// User-CostCenter mapping for supervisor role restrictions
+export const userCostCenters = mysqlTable("user_cost_centers", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  costCenterId: int("cost_center_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 // ============================================
 // Groups & Workers (المجموعات والعمال)
@@ -222,8 +228,23 @@ export const payrollBatches = mysqlTable("payroll_batches", {
   ]).default("draft"),
   rejectionCount: int("rejection_count").default(0),
   notes: text("notes"),
+  // Accountant review (المحاسب المالي - المرحلة 1)
+  accountantApprovedBy: int("accountant_approved_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  accountantApprovedAt: timestamp("accountant_approved_at"),
+  // Auditor review (المراجع المالي - المرحلة 2)
+  auditorApprovedBy: int("auditor_approved_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  auditorApprovedAt: timestamp("auditor_approved_at"),
+  // Finance Manager final approval (المدير المالي - المرحلة 3)
+  financeApprovedBy: int("finance_approved_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  financeApprovedAt: timestamp("finance_approved_at"),
+  // General approval (legacy)
   approvedBy: int("approved_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   approvedAt: timestamp("approved_at"),
+  // Rejection tracking
+  rejectedBy: int("rejected_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  rejectionStage: varchar("rejection_stage", { length: 50 }),
   createdBy: int("created_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
@@ -306,9 +327,6 @@ export const auditLog = mysqlTable("audit_log", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
-// Role and Permission types removed - tables no longer exist
-export type Role = any;
-export type Permission = any;
 
 export type CostCenter = typeof costCenters.$inferSelect;
 export type Group = typeof groups.$inferSelect;

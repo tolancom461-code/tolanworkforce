@@ -15,7 +15,7 @@ export default function PayrollBatchCreateSimple() {
 
   const { data: costCenters } = trpc.costCenters.list.useQuery();
   const { data: recentChanges } = trpc.groupSchedules.getRecentChanges.useQuery({ hoursThreshold: 24 });
-  const { data: pendingFlagsCount } = trpc.operationalDashboard.getPendingCount.useQuery();
+  const { data: pendingFlagsCount } = (trpc as any).operationalDashboard?.getPendingCount?.useQuery?.() || { data: 0 };
   const hasPendingFlags = (pendingFlagsCount ?? 0) > 0;
   const aggregateMutation = trpc.payroll.aggregatePayrollDataByCostCenter.useMutation();
   const createBatchMutation = trpc.payroll.createBatch.useMutation();

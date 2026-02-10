@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/payroll/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download, Calendar } from "lucide-react";
+import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download, Calendar, CheckCircle, Clock, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PayrollBatchDetails() {
@@ -276,6 +276,86 @@ export default function PayrollBatchDetails() {
         </div>
         <StatusBadge status={batch.batch.status as any} />
       </div>
+
+      {/* Approval Pipeline */}
+      <Card className="mb-6">
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            {/* Step 1: Draft/Created */}
+            {(() => {
+              const status = batch.batch.status || "draft";
+              const steps = [
+                {
+                  label: "إنشاء الدفعة",
+                  sublabel: "الشؤون الإدارية",
+                  done: status !== "draft",
+                  active: status === "draft" || status === "returned_from_accountant" || status === "returned_from_financial_review",
+                  rejected: status === "returned_from_accountant" || status === "returned_from_financial_review",
+                },
+                {
+                  label: "مراجعة المحاسب",
+                  sublabel: "المحاسب المالي",
+                  done: ["under_financial_review", "under_accounts_manager_review", "approved", "paid"].includes(status),
+                  active: status === "under_accountant_review",
+                  rejected: false,
+                },
+                {
+                  label: "المراجع المالي",
+                  sublabel: "اعتماد أولي",
+                  done: ["under_accounts_manager_review", "approved", "paid"].includes(status),
+                  active: status === "under_financial_review",
+                  rejected: false,
+                },
+                {
+                  label: "المدير المالي",
+                  sublabel: "اعتماد نهائي",
+                  done: ["approved", "paid"].includes(status),
+                  active: status === "under_accounts_manager_review",
+                  rejected: false,
+                },
+              ];
+              return steps.map((step, i) => (
+                <div key={i} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                      step.done ? "bg-green-100 border-green-500 text-green-600" :
+                      step.active && step.rejected ? "bg-red-100 border-red-500 text-red-600" :
+                      step.active ? "bg-blue-100 border-blue-500 text-blue-600 animate-pulse" :
+                      "bg-muted border-muted-foreground/30 text-muted-foreground"
+                    }`}>
+                      {step.done ? <CheckCircle className="h-5 w-5" /> :
+                       step.active && step.rejected ? <XCircle className="h-5 w-5" /> :
+                       step.active ? <Clock className="h-5 w-5" /> :
+                       <span className="text-sm font-bold">{i + 1}</span>}
+                    </div>
+                    <span className={`text-xs mt-1 font-medium ${
+                      step.done ? "text-green-600" :
+                      step.active ? (step.rejected ? "text-red-600" : "text-blue-600") :
+                      "text-muted-foreground"
+                    }`}>{step.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{step.sublabel}</span>
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-2 ${
+                      step.done ? "bg-green-500" : "bg-muted-foreground/20"
+                    }`} />
+                  )}
+                </div>
+              ));
+            })()}
+          </div>
+          {batch.batch.status === "rejected_final" && (
+            <div className="mt-3 p-3 bg-red-50 dark:bg-red-950 rounded-lg text-center">
+              <span className="text-red-600 font-medium">تم رفض الدفعة نهائيًا</span>
+            </div>
+          )}
+          {batch.batch.status === "approved" && (
+            <div className="mt-3 p-3 bg-green-50 dark:bg-green-950 rounded-lg text-center">
+              <span className="text-green-600 font-medium">تم اعتماد الدفعة بنجاح من جميع المراحل</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">

@@ -14,7 +14,8 @@ import {
   payrollBatchItems,
   payrollBatchNotes,
   payrollBatchCorrections,
-  operationalFlags
+  operationalFlags,
+  userCostCenters
 } from "../drizzle/schema";
 import { inArray, isNull, isNotNull, between } from "drizzle-orm";
 
@@ -118,8 +119,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
+      values.role = 'super_admin';
+      updateSet.role = 'super_admin';
     }
 
     if (!values.lastSignedIn) {
@@ -3174,7 +3175,7 @@ export async function createLocalUser(data: {
   email?: string;
   phone?: string;
   isActive?: boolean;
-  role?: 'admin' | 'user';
+  role?: 'guard' | 'supervisor' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin';
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -3189,7 +3190,7 @@ export async function createLocalUser(data: {
     phone: data.phone,
     isActive: data.isActive ?? true,
     loginMethod: 'local',
-    role: data.role ?? 'user',
+    role: data.role ?? 'guard',
   }]);
   
   return { userId: result.insertId };
@@ -3994,7 +3995,7 @@ export async function checkUnresolvedFlags(workerId?: number, groupId?: number, 
  * NOTE: All users have full permissions now.
  */
 
-export async function updateUserRole(userId: number, role: 'user' | 'admin') {
+export async function updateUserRole(userId: number, role: 'guard' | 'supervisor' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin') {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   await db
@@ -6585,4 +6586,59 @@ export async function getPendingOperationalFlagsCount() {
     .where(eq(operationalFlags.status, 'pending'));
 
   return result[0]?.count || 0;
+}
+
+
+// ============================================
+// User Cost Centers (RBAC)
+// ============================================
+
+export async function assignUserCostCenters(userId: number, costCenterIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  // Delete existing assignments
+  await db.delete(userCostCenters).where(eq(userCostCenters.userId, userId));
+  
+  // Insert new assignments
+  if (costCenterIds.length > 0) {
+    await db.insert(userCostCenters).values(
+      costCenterIds.map(ccId => ({
+        userId,
+        costCenterId: ccId,
+      }))
+    );
+  }
+  
+  return { success: true };
+}
+
+export async function getUserCostCenters(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const results = await db
+    .select({
+      id: userCostCenters.id,
+      costCenterId: userCostCenters.costCenterId,
+      costCenterCode: costCenters.code,
+      costCenterName: costCenters.name,
+    })
+    .from(userCostCenters)
+    .innerJoin(costCenters, eq(userCostCenters.costCenterId, costCenters.id))
+    .where(eq(userCostCenters.userId, userId));
+  
+  return results;
+}
+
+export async function getUserCostCenterIds(userId: number): Promise<number[]> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const results = await db
+    .select({ costCenterId: userCostCenters.costCenterId })
+    .from(userCostCenters)
+    .where(eq(userCostCenters.userId, userId));
+  
+  return results.map(r => r.costCenterId);
 }

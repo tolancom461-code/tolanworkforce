@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS user_cost_centers (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  user_id INT NOT NULL,\n  cost_center_id INT NOT NULL,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX idx_user_cc_user_id (user_id),\n  INDEX idx_user_cc_cost_center_id (cost_center_id),\n  INDEX idx_user_cc_unique (user_id, cost_center_id),\n  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (cost_center_id) REFERENCES cost_centers(id) ON DELETE CASCADE ON UPDATE CASCADE\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute CREATE TABLE IF NOT EXISTS user_cost_centers (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  user_id INT NOT NULL,\n  cost_center_id INT NOT NULL,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  INDEX idx_user_cc_user_id (user_id),\n  INDEX idx_user_cc_cost_center_id (cost_center_id),\n  INDEX idx_user_cc_unique (user_id, cost_center_id),\n  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (cost_center_id) REFERENCES cost_centers(id) ON DELETE CASCADE ON UPDATE CASCADE\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2352
+}

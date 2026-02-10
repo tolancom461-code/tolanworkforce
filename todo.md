@@ -865,3 +865,18 @@
 - [x] إضافة نافذة منبثقة عند الضغط على بطاقة المتأخرون (فلتر مجموعة + كود واسم العامل)
 - [x] اختبار في المتصفح
 - [x] حفظ checkpoint
+
+## نظام الصلاحيات (8 أدوار)
+- [x] تعديل schema: إضافة 8 أدوار (guard, supervisor, admin_affairs, accountant, auditor, finance_manager, executive, super_admin)
+- [x] إنشاء جدول user_cost_centers لربط المشرف بمراكز التكلفة
+- [x] تعديل جدول payroll_batches: إضافة حالات اعتماد (draft, pending_accountant, pending_auditor, pending_finance, approved, rejected)
+- [x] إنشاء middleware للصلاحيات في الباك إند
+- [x] تعديل procedures المشرف لتصفية حسب مراكز التكلفة
+- [x] إضافة procedures اعتماد/رفض الدفعة (3 مراحل)
+- [x] تعديل القائمة الجانبية لإخفاء/إظهار حسب الدور
+- [x] إنشاء صفحة إدارة المستخدمين (سوبر أدمن)
+- [x] تعديل صفحة الدفعات: أزرار اعتماد/رفض + شريط حالة
+- [x] إنشاء مستخدم تجريبي لكل دور
+- [x] تعيين حساب admin كـ super_admin
+- [x] كتابة اختبارات vitest - 34 اختبار نجحت
+- [ ] حفظ checkpoint

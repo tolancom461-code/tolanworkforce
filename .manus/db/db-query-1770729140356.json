@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, username, role FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, username, role FROM users;",
+  "rows": [
+    {
+      "id": "1",
+      "username": "fQvX5e3Eytk42QF5qSXDcP",
+      "role": "user"
+    },
+    {
+      "id": "30004",
+      "username": "admin",
+      "role": "user"
+    },
+    {
+      "id": "450176",
+      "username": "test_user_1770708936270",
+      "role": "user"
+    },
+    {
+      "id": "450178",
+      "username": "inactive_user_1770708941850",
+      "role": "user"
+    },
+    {
+      "id": "450179",
+      "username": "admin_test_1770708951560",
+      "role": "user"
+    },
+    {
+      "id": "450357",
+      "username": "test_user_1770713336389",
+      "role": "user"
+    },
+    {
+      "id": "450358",
+      "username": "inactive_user_1770713342412",
+      "role": "user"
+    },
+    {
+      "id": "450359",
+      "username": "admin_test_1770713347538",
+      "role": "user"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\trole\n1\tfQvX5e3Eytk42QF5qSXDcP\tuser\n30004\tadmin\tuser\n450176\ttest_user_1770708936270\tuser\n450178\tinactive_user_1770708941850\tuser\n450179\tadmin_test_1770708951560\tuser\n450357\ttest_user_1770713336389\tuser\n450358\tinactive_user_1770713342412\tuser\n450359\tadmin_test_1770713347538\tuser\n",
+  "stderr": "",
+  "execution_time_ms": 1523
+}

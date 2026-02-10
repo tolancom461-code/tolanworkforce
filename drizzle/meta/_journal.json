@@ -36,6 +36,13 @@
       "when": 1770725223513,
       "tag": "0004_wandering_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1770729478240,
+      "tag": "0005_warm_loki",
+      "breakpoints": true
     }
   ]
 }

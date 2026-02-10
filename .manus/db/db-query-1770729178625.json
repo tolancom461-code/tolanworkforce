@@ -1,0 +1,50 @@
+{
+  "query": "SELECT id, username, role FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, username, role FROM users;",
+  "rows": [
+    {
+      "id": "1",
+      "username": "fQvX5e3Eytk42QF5qSXDcP",
+      "role": "super_admin"
+    },
+    {
+      "id": "30004",
+      "username": "admin",
+      "role": "guard"
+    },
+    {
+      "id": "450176",
+      "username": "test_user_1770708936270",
+      "role": "guard"
+    },
+    {
+      "id": "450178",
+      "username": "inactive_user_1770708941850",
+      "role": "guard"
+    },
+    {
+      "id": "450179",
+      "username": "admin_test_1770708951560",
+      "role": "guard"
+    },
+    {
+      "id": "450357",
+      "username": "test_user_1770713336389",
+      "role": "guard"
+    },
+    {
+      "id": "450358",
+      "username": "inactive_user_1770713342412",
+      "role": "guard"
+    },
+    {
+      "id": "450359",
+      "username": "admin_test_1770713347538",
+      "role": "guard"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\trole\n1\tfQvX5e3Eytk42QF5qSXDcP\tsuper_admin\n30004\tadmin\tguard\n450176\ttest_user_1770708936270\tguard\n450178\tinactive_user_1770708941850\tguard\n450179\tadmin_test_1770708951560\tguard\n450357\ttest_user_1770713336389\tguard\n450358\tinactive_user_1770713342412\tguard\n450359\tadmin_test_1770713347538\tguard\n",
+  "stderr": "",
+  "execution_time_ms": 1588
+}

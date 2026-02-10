@@ -1,0 +1,28 @@
+{
+  "query": "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'role';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'role';",
+  "rows": [
+    {
+      "COLUMN_TYPE": "enum('guard','supervisor','admin_affairs','accountant','auditor','finance_manager','executive','super_admin')"
+    },
+    {
+      "COLUMN_TYPE": "enum('user','admin')"
+    },
+    {
+      "COLUMN_TYPE": "enum('user','admin')"
+    },
+    {
+      "COLUMN_TYPE": "enum('user','admin')"
+    },
+    {
+      "COLUMN_TYPE": "enum('user','admin')"
+    },
+    {
+      "COLUMN_TYPE": "enum('user','admin')"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_TYPE\nenum('guard','supervisor','admin_affairs','accountant','auditor','finance_manager','executive','super_admin')\nenum('user','admin')\nenum('user','admin')\nenum('user','admin')\nenum('user','admin')\nenum('user','admin')\n",
+  "stderr": "",
+  "execution_time_ms": 1610
+}

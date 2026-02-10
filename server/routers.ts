@@ -7,7 +7,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { sql } from "drizzle-orm";
-import { attendanceEvents } from "../drizzle/schema";
+import { attendanceEvents, type UserRole } from "../drizzle/schema";
+import { ROLE_PERMISSIONS, hasPageAccess, canApproveBatchAtStage, cannotSelfReview } from "./permissions";
 import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow, type PayrollReportRow } from "./excelExport";
 import { parseGroupsFromExcel, parseWorkersFromExcel, generateGroupsExcelTemplate, generateWorkersExcelTemplate, generateGroupsExcelExport, generateWorkersExcelExport } from "./excelImportExport";
 import * as analytics from "./analytics";
@@ -138,36 +139,34 @@ export const appRouter = router({
     
     create: protectedProcedure
       .input(z.object({
-        code: z.string().min(1),
-        name: z.string().min(2),
-        costCenterId: z.number().optional().nullable(),
-        supervisorId: z.number().optional().nullable(),
-        dailyRate: z.string().optional(),
-        dailyWage: z.string().optional().nullable(),
-        workMinutes: z.string().optional().nullable(),
-        latePenaltyRate: z.string().optional().nullable(),
-        earlyLeavePenaltyRate: z.string().optional().nullable(),
+        username: z.string().min(3),
+        password: z.string().min(6),
+        fullName: z.string().min(2),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        phoneNumber: z.string().optional(),
         isActive: z.boolean().default(true),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        const userRole = ctx.user.role as UserRole;
+        if (userRole !== 'super_admin' && userRole !== 'admin_affairs') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية إنشاء مستخدمين' });
+        }
         try {
-          const id = await db.createGroup({
-            code: input.code,
-            name: input.name,
-            costCenterId: input.costCenterId,
-            supervisorId: input.supervisorId,
-            dailyRate: input.dailyRate ? input.dailyRate : undefined,
-            dailyWage: input.dailyWage ? parseFloat(input.dailyWage) : null,
-            workMinutes: input.workMinutes ? parseInt(input.workMinutes) : null,
-            latePenaltyRate: input.latePenaltyRate ? parseFloat(input.latePenaltyRate) : null,
-            earlyLeavePenaltyRate: input.earlyLeavePenaltyRate ? parseFloat(input.earlyLeavePenaltyRate) : null,
+          const id = await db.createLocalUser({
+            username: input.username,
+            password: input.password,
+            fullName: input.fullName,
+            email: input.email,
+            phone: input.phoneNumber || input.phone,
             isActive: input.isActive,
-          } as any);
+          });
           return { id, success: true };
         } catch (error: any) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: error.message || 'فشل إنشاء المجموعة',
+            message: error.message || 'فشل إنشاء المستخدم',
           });
         }
       }),
@@ -178,19 +177,23 @@ export const appRouter = router({
         fullName: z.string().min(2).optional(),
         email: z.string().email().optional().nullable(),
         phone: z.string().optional().nullable(),
+        phoneNumber: z.string().optional().nullable(),
         isActive: z.boolean().optional(),
         password: z.string().min(6).optional(),
       }))
       .mutation(async ({ input }) => {
-        const { id, password, ...data } = input;
-        
+        const { id, password, phoneNumber, ...data } = input;
+        const updateData: any = { ...data };
+        if (phoneNumber !== undefined) {
+          updateData.phone = phoneNumber;
+        }
         // Hash password if provided
         if (password) {
           const bcrypt = await import('bcryptjs');
           const passwordHash = await bcrypt.hash(password, 10);
-          await db.updateUser(id, { ...data, passwordHash });
+          await db.updateUser(id, { ...updateData, passwordHash });
         } else {
-          await db.updateUser(id, data);
+          await db.updateUser(id, updateData);
         }
         return { success: true };
       }),
@@ -207,13 +210,57 @@ export const appRouter = router({
     updateRole: protectedProcedure
       .input(z.object({
         userId: z.number(),
-        role: z.enum(['admin', 'user', 'accountant', 'financial_reviewer', 'accounts_manager', 'hr_manager', 'security_guard']),
+        role: z.enum(['guard', 'supervisor', 'admin_affairs', 'accountant', 'auditor', 'finance_manager', 'executive', 'super_admin']),
       }))
       .mutation(async ({ input, ctx }) => {
-        // All users have permission to change roles (no role system)
-        const allowedRole = input.role === 'admin' ? 'admin' : 'user';
-        await db.updateUserRole(input.userId, allowedRole);
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        // Only super_admin can change roles
+        const userRole = ctx.user.role as UserRole;
+        if (userRole !== 'super_admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط السوبر أدمن يمكنه تغيير الأدوار' });
+        }
+        await db.updateUserRole(input.userId, input.role);
         return { success: true };
+      }),
+    
+    // Get available roles
+    getRoles: protectedProcedure.query(async () => {
+      return Object.entries(ROLE_PERMISSIONS).map(([value, perms]) => ({
+        value,
+        label: perms.label,
+        labelAr: perms.labelAr,
+      }));
+    }),
+    
+    // Get user's permissions based on role
+    getRolePermissions: protectedProcedure
+      .input(z.object({ role: z.string().optional() }))
+      .query(async ({ input, ctx }) => {
+        const role = (input.role || ctx.user?.role || 'guard') as UserRole;
+        return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.guard;
+      }),
+    
+    // Assign cost centers to supervisor
+    assignCostCenters: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        costCenterIds: z.array(z.number()),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        const userRole = ctx.user.role as UserRole;
+        if (userRole !== 'super_admin' && userRole !== 'admin_affairs') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية تعيين مراكز التكلفة' });
+        }
+        await db.assignUserCostCenters(input.userId, input.costCenterIds);
+        return { success: true };
+      }),
+    
+    // Get user's assigned cost centers
+    getUserCostCenters: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getUserCostCenters(input.userId);
       }),
     
     // NOTE: assignRole removed - role system no longer exists
@@ -1900,6 +1947,13 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
         
+        // Role check: only admin_affairs, accountant, super_admin can create batches
+        const userRole = ctx.user.role as UserRole;
+        const perms = ROLE_PERMISSIONS[userRole];
+        if (!perms?.canCreateBatch) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية إنشاء دفعات الرواتب' });
+        }
+        
         // Check for pending operational flags before creating batch
         const pendingFlagsCount = await db.getPendingOperationalFlagsCount();
         if (pendingFlagsCount > 0) {
@@ -2034,6 +2088,15 @@ export const appRouter = router({
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAccountant) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المحاسب المالي يمكنه اعتماد الدفعة في هذه المرحلة' });
+        }
+        // Check self-review prevention
+        const batch = await db.getPayrollBatchDetails(input.batchId);
+        if (batch?.batch && batch.batch.createdBy && cannotSelfReview(batch.batch.createdBy, ctx.user.id, userRole)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكنك مراجعة دفعة قمت بإنشائها بنفسك' });
+        }
         return await db.accountantApproveBatch(input.batchId, ctx.user.id);
       }),
     
@@ -2049,17 +2112,25 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAccountant) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المحاسب المالي يمكنه رفض الدفعة في هذه المرحلة' });
+        }
         return await db.accountantRejectBatch({
           ...input,
           reviewerId: ctx.user.id,
         });
       }),
     
-    // Financial reviewer approve
+    // Financial reviewer approve (Auditor)
     financialReviewerApprove: protectedProcedure
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAuditor) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المراجع المالي يمكنه اعتماد الدفعة في هذه المرحلة' });
+        }
         return await db.financialReviewerApproveBatch(input.batchId, ctx.user.id);
       }),
     
@@ -2075,17 +2146,25 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAuditor) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المراجع المالي يمكنه رفض الدفعة في هذه المرحلة' });
+        }
         return await db.financialReviewerRejectBatch({
           ...input,
           reviewerId: ctx.user.id,
         });
       }),
     
-    // Accounts manager final approve
+    // Finance Manager final approve
     accountsManagerApprove: protectedProcedure
       .input(z.object({ batchId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canApproveAsFM) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المدير المالي يمكنه الاعتماد النهائي للدفعة' });
+        }
         return await db.accountsManagerApproveBatch(input.batchId, ctx.user.id);
       }),
     
@@ -2097,6 +2176,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        const userRole = ctx.user.role as UserRole;
+        if (!ROLE_PERMISSIONS[userRole]?.canApproveAsFM) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المدير المالي يمكنه رفض الدفعة في هذه المرحلة' });
+        }
         return await db.accountsManagerRejectBatch({
           ...input,
           reviewerId: ctx.user.id,
@@ -2524,7 +2607,7 @@ export const appRouter = router({
         return await addBatchNote({
           ...input,
           userId: ctx.user.id,
-          userRole: ctx.user.role || 'user',
+          userRole: ctx.user.role || 'guard',
         });
       }),
     
