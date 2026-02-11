@@ -3433,6 +3433,7 @@ export async function getPayrollReportByGroup(
   const startDate = new Date(periodStart);
   const endDate = new Date(periodEnd);
 
+  // 1) Get daily finance records
   const conditions = [
     gte(workerDailyFinance.workDate, startDate),
     lte(workerDailyFinance.workDate, endDate),
@@ -3459,7 +3460,44 @@ export async function getPayrollReportByGroup(
     .innerJoin(groups, eq(workers.groupId, groups.id))
     .where(whereConditions);
 
-  // Group by group and calculate totals
+  // 2) Get approved pay overrides for the same period
+  const overrideConditions = [
+    gte(payOverrides.overrideDate, startDate),
+    lte(payOverrides.overrideDate, endDate),
+    eq(payOverrides.status, 'approved'),
+  ];
+
+  const overrideResults = await db
+    .select({
+      workerId: payOverrides.workerId,
+      overrideType: payOverrides.overrideType,
+      amount: payOverrides.amount,
+      groupId: groups.id,
+    })
+    .from(payOverrides)
+    .innerJoin(workers, eq(payOverrides.workerId, workers.id))
+    .innerJoin(groups, eq(workers.groupId, groups.id))
+    .where(and(...overrideConditions));
+
+  // 3) Build per-worker override totals keyed by groupId
+  const overrideByGroup = new Map<number, { bonuses: number; deductions: number }>();
+  overrideResults.forEach((row) => {
+    // Apply same group/costCenter filters
+    if (groupId && row.groupId !== groupId) return;
+    if (costCenterId) {
+      // costCenter filter already applied via join, but double-check
+    }
+    const existing = overrideByGroup.get(row.groupId) || { bonuses: 0, deductions: 0 };
+    const amount = parseFloat(row.amount || '0');
+    if (row.overrideType === 'bonus') {
+      existing.bonuses += amount;
+    } else if (row.overrideType === 'deduction') {
+      existing.deductions += amount;
+    }
+    overrideByGroup.set(row.groupId, existing);
+  });
+
+  // 4) Group daily finance by group and calculate totals
   const groupMap = new Map<number, {
     groupName: string;
     groupCode: string;
@@ -3495,7 +3533,17 @@ export async function getPayrollReportByGroup(
     }
   });
 
-  // Count unique workers per group
+  // 5) Add pay overrides to group totals
+  overrideByGroup.forEach((overrides, gId) => {
+    const group = groupMap.get(gId);
+    if (group) {
+      group.totalBonuses += overrides.bonuses;
+      group.totalDeductions += overrides.deductions;
+      group.totalNet += overrides.bonuses - overrides.deductions;
+    }
+  });
+
+  // 6) Count unique workers per group
   const workerCountMap = new Map<number, Set<number>>();
   results.forEach((row) => {
     if (!workerCountMap.has(row.groupId)) {
@@ -3505,15 +3553,15 @@ export async function getPayrollReportByGroup(
   });
 
   // Update worker counts
-  workerCountMap.forEach((workerSet, groupId) => {
-    const group = groupMap.get(groupId);
+  workerCountMap.forEach((workerSet, gId) => {
+    const group = groupMap.get(gId);
     if (group) {
       group.workerCount = workerSet.size;
     }
   });
 
-  return Array.from(groupMap.entries()).map(([groupId, data]) => ({
-    groupId,
+  return Array.from(groupMap.entries()).map(([gId, data]) => ({
+    groupId: gId,
     groupName: data.groupName,
     groupCode: data.groupCode,
     workerCount: data.workerCount,
@@ -3539,6 +3587,7 @@ export async function getPayrollReportByWorker(
   const startDate = new Date(periodStart);
   const endDate = new Date(periodEnd);
 
+  // 1) Get daily finance records
   const whereConditions = workerId
     ? and(
         gte(workerDailyFinance.workDate, startDate),
@@ -3560,7 +3609,6 @@ export async function getPayrollReportByWorker(
       baseAmount: workerDailyFinance.baseAmount,
       deductions: workerDailyFinance.deductions,
       bonuses: workerDailyFinance.bonuses,
-
       workDate: workerDailyFinance.workDate,
     })
     .from(workerDailyFinance)
@@ -3568,7 +3616,45 @@ export async function getPayrollReportByWorker(
     .leftJoin(groups, eq(workers.groupId, groups.id))
     .where(whereConditions);
 
-  // Group by worker and calculate totals
+  // 2) Get approved pay overrides for the same period
+  const overrideWhereConditions = workerId
+    ? and(
+        gte(payOverrides.overrideDate, startDate),
+        lte(payOverrides.overrideDate, endDate),
+        eq(payOverrides.status, 'approved'),
+        eq(payOverrides.workerId, workerId)
+      )
+    : and(
+        gte(payOverrides.overrideDate, startDate),
+        lte(payOverrides.overrideDate, endDate),
+        eq(payOverrides.status, 'approved')
+      );
+
+  const overrideResults = await db
+    .select({
+      workerId: payOverrides.workerId,
+      overrideType: payOverrides.overrideType,
+      amount: payOverrides.amount,
+      reason: payOverrides.reason,
+    })
+    .from(payOverrides)
+    .where(overrideWhereConditions);
+
+  // 3) Build per-worker override totals
+  const overrideByWorker = new Map<number, { bonuses: number; deductions: number; notes: string[] }>();
+  overrideResults.forEach((row) => {
+    const existing = overrideByWorker.get(row.workerId) || { bonuses: 0, deductions: 0, notes: [] };
+    const amount = parseFloat(row.amount || '0');
+    if (row.overrideType === 'bonus') {
+      existing.bonuses += amount;
+    } else if (row.overrideType === 'deduction') {
+      existing.deductions += amount;
+    }
+    if (row.reason) existing.notes.push(`${row.overrideType}: ${amount} - ${row.reason}`);
+    overrideByWorker.set(row.workerId, existing);
+  });
+
+  // 4) Group daily finance by worker and calculate totals
   const workerMap = new Map<number, {
     workerName: string;
     workerCode: string;
@@ -3588,15 +3674,11 @@ export async function getPayrollReportByWorker(
     const bonuses = parseFloat(row.bonuses || '0');
     const netAmount = baseAmount - deductions + bonuses;
 
-    // Collect override notes
-    const overrideNote = null;
-
     if (existing) {
       existing.totalSalary += baseAmount;
       existing.totalDeductions += deductions;
       existing.totalBonuses += bonuses;
       existing.totalNet += netAmount;
-      if (overrideNote) existing.overrideNotes.push(overrideNote);
     } else {
       workerMap.set(row.workerId, {
         workerName: row.workerName,
@@ -3607,13 +3689,24 @@ export async function getPayrollReportByWorker(
         totalDeductions: deductions,
         totalBonuses: bonuses,
         totalNet: netAmount,
-        overrideNotes: overrideNote ? [overrideNote] : [],
+        overrideNotes: [],
       });
     }
   });
 
-  return Array.from(workerMap.entries()).map(([workerId, data]) => ({
-    workerId,
+  // 5) Add pay overrides to worker totals
+  overrideByWorker.forEach((overrides, wId) => {
+    const worker = workerMap.get(wId);
+    if (worker) {
+      worker.totalBonuses += overrides.bonuses;
+      worker.totalDeductions += overrides.deductions;
+      worker.totalNet += overrides.bonuses - overrides.deductions;
+      worker.overrideNotes.push(...overrides.notes);
+    }
+  });
+
+  return Array.from(workerMap.entries()).map(([wId, data]) => ({
+    workerId: wId,
     workerName: data.workerName,
     workerCode: data.workerCode,
     groupName: data.groupName || '-',
