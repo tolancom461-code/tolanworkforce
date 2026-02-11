@@ -49,6 +49,129 @@ export function safeParseInt(value: unknown): number {
   return isNaN(parsed) ? 0 : parsed;
 }
 
+/**
+ * Group attendance events by WORK DATE (check_in date) instead of calendar date.
+ * This correctly handles night shifts where check_out crosses midnight.
+ * 
+ * Algorithm:
+ * 1. Sort events by time
+ * 2. For each check_in, the work date = check_in's calendar date
+ * 3. For each check_out, find the most recent unmatched check_in for the same worker
+ *    and assign the check_out to that check_in's work date
+ * 4. Orphan check_outs (no matching check_in) use their own calendar date
+ */
+export function groupEventsByWorkDate(
+  events: Array<{ workerId: number; eventType: string; eventTime: Date; id?: number; [key: string]: any }>
+): Record<string, Record<number, { checkIn?: any; checkOut?: any; events: any[] }>> {
+  // Sort by time ascending
+  const sorted = [...events].sort((a, b) => new Date(a.eventTime).getTime() - new Date(b.eventTime).getTime());
+  
+  // Track: workDate -> workerId -> { checkIn, checkOut, events }
+  const result: Record<string, Record<number, { checkIn?: any; checkOut?: any; events: any[] }>> = {};
+  
+  // Track unmatched check_ins per worker (stack: last check_in is most recent)
+  const unmatchedCheckIns: Map<number, Array<{ event: any; workDate: string }>> = new Map();
+  
+  for (const event of sorted) {
+    const eventDate = new Date(event.eventTime).toLocaleDateString('en-CA');
+    
+    if (event.eventType === 'check_in') {
+      // Work date = check_in's calendar date (always)
+      const workDate = eventDate;
+      
+      if (!result[workDate]) result[workDate] = {};
+      if (!result[workDate][event.workerId]) {
+        result[workDate][event.workerId] = { events: [] };
+      }
+      result[workDate][event.workerId].checkIn = event;
+      result[workDate][event.workerId].events.push(event);
+      
+      // Track as unmatched
+      if (!unmatchedCheckIns.has(event.workerId)) {
+        unmatchedCheckIns.set(event.workerId, []);
+      }
+      unmatchedCheckIns.get(event.workerId)!.push({ event, workDate });
+      
+    } else if (event.eventType === 'check_out') {
+      // Find most recent unmatched check_in for this worker
+      const workerUnmatched = unmatchedCheckIns.get(event.workerId);
+      
+      if (workerUnmatched && workerUnmatched.length > 0) {
+        // Pop the most recent unmatched check_in
+        const matched = workerUnmatched.pop()!;
+        const workDate = matched.workDate;
+        
+        if (!result[workDate]) result[workDate] = {};
+        if (!result[workDate][event.workerId]) {
+          result[workDate][event.workerId] = { events: [] };
+        }
+        result[workDate][event.workerId].checkOut = event;
+        result[workDate][event.workerId].events.push(event);
+      } else {
+        // Orphan check_out: use its own calendar date
+        const workDate = eventDate;
+        if (!result[workDate]) result[workDate] = {};
+        if (!result[workDate][event.workerId]) {
+          result[workDate][event.workerId] = { events: [] };
+        }
+        result[workDate][event.workerId].checkOut = event;
+        result[workDate][event.workerId].events.push(event);
+      }
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Get the work date for a check_out event by finding its matching check_in.
+ * Returns the check_in's calendar date, or the check_out's date if no match found.
+ */
+export async function getWorkDateForCheckOut(workerId: number, checkOutTime: Date): Promise<string> {
+  const db = await getDb();
+  if (!db) return checkOutTime.toLocaleDateString('en-CA');
+  
+  const { attendanceEvents } = await import('../drizzle/schema');
+  
+  // Look back up to 24 hours for a matching check_in
+  const lookbackTime = new Date(checkOutTime.getTime() - 24 * 60 * 60 * 1000);
+  
+  const checkInEvents = await db
+    .select()
+    .from(attendanceEvents)
+    .where(
+      and(
+        eq(attendanceEvents.workerId, workerId),
+        eq(attendanceEvents.eventType, 'check_in'),
+        gte(attendanceEvents.eventTime, lookbackTime),
+        lte(attendanceEvents.eventTime, checkOutTime)
+      )
+    )
+    .orderBy(desc(attendanceEvents.eventTime))
+    .limit(1);
+  
+  if (checkInEvents.length > 0) {
+    return new Date(checkInEvents[0].eventTime).toLocaleDateString('en-CA');
+  }
+  
+  // No matching check_in found, use check_out's date
+  return checkOutTime.toLocaleDateString('en-CA');
+}
+
+/**
+ * Expand date range to include next-day check_outs for night shifts.
+ * For a given date range, extends the end time to 10:00 AM the next day
+ * to capture check_outs from night shifts that started on the last day.
+ */
+export function getExpandedDateRange(dateStr: string): { startOfDay: Date; endOfSearch: Date } {
+  const startOfDay = new Date(dateStr + 'T00:00:00');
+  // Extend to 10 AM next day to capture night shift check_outs
+  const endOfSearch = new Date(startOfDay);
+  endOfSearch.setDate(endOfSearch.getDate() + 1);
+  endOfSearch.setHours(10, 0, 0, 0);
+  return { startOfDay, endOfSearch };
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -690,7 +813,8 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
   // 🔥 AUTO-CALCULATE FINANCE ON CHECK_OUT
   if (eventType === 'check_out') {
     try {
-      const workDate = eventTime.toLocaleDateString('en-CA'); // YYYY-MM-DD
+      // Use check_in's date as work date (handles night shifts crossing midnight)
+      const workDate = await getWorkDateForCheckOut(workerId, eventTime);
       await processAttendanceToFinance(workerId, workDate);
     } catch (error) {
       console.error('Error calculating daily finance:', error);
@@ -739,21 +863,22 @@ export async function getTodayAttendanceWithPagination(groupId?: number, dateStr
   const { attendanceEvents, workers } = await import('../drizzle/schema');
   
   // Use provided date or default to today (local time Asia/Riyadh)
-  const today = dateStr ? new Date(dateStr + 'T00:00:00') : new Date(new Date().toLocaleDateString('en-CA') + 'T00:00:00');
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const targetDate = dateStr || new Date().toLocaleDateString('en-CA');
+  
+  // Expanded range to capture night shift check_outs from previous day
+  const { startOfDay, endOfSearch } = getExpandedDateRange(targetDate);
   
   // Build where conditions
-  const whereConditions = [
-    gte(attendanceEvents.eventTime, today),
-    lt(attendanceEvents.eventTime, tomorrow)
+  const whereConditions: any[] = [
+    gte(attendanceEvents.eventTime, startOfDay),
+    lt(attendanceEvents.eventTime, endOfSearch)
   ];
   
   if (groupId) {
     whereConditions.push(eq(workers.groupId, groupId));
   }
   
-  // Get all events for today with pagination
+  // Get all events for expanded range
   const events = await db
     .select({
       id: attendanceEvents.id,
@@ -770,35 +895,34 @@ export async function getTodayAttendanceWithPagination(groupId?: number, dateStr
     .where(and(...whereConditions))
     .orderBy(attendanceEvents.workerId, attendanceEvents.eventTime);
   
-  // Group by worker and merge check_in/check_out
+  // Use groupEventsByWorkDate to correctly pair check_in/check_out across midnight
+  const grouped = groupEventsByWorkDate(events);
+  const dayData = grouped[targetDate] || {};
+  
+  // Build worker map from grouped data
   const workerMap = new Map();
   
-  for (const event of events) {
-    if (!workerMap.has(event.workerId)) {
-      workerMap.set(event.workerId, {
-        workerId: event.workerId,
-        workerName: event.workerName,
-        workerCode: event.workerCode,
-        groupId: event.groupId,
-        checkInId: null,
-        checkInTime: null,
-        checkInMethod: null,
-        checkOutId: null,
-        checkOutTime: null,
-        checkOutMethod: null,
-      });
-    }
+  // First, add workers from grouped data for the target date
+  for (const [workerIdStr, data] of Object.entries(dayData)) {
+    const wId = Number(workerIdStr);
+    const checkInEvt = data.checkIn;
+    const checkOutEvt = data.checkOut;
+    // Find worker info from events
+    const workerEvent = events.find(e => e.workerId === wId);
+    if (!workerEvent) continue;
     
-    const record = workerMap.get(event.workerId);
-    if (event.eventType === 'check_in') {
-      record.checkInId = event.id;
-      record.checkInTime = event.eventTime;
-      record.checkInMethod = event.method;
-    } else if (event.eventType === 'check_out') {
-      record.checkOutId = event.id;
-      record.checkOutTime = event.eventTime;
-      record.checkOutMethod = event.method;
-    }
+    workerMap.set(wId, {
+      workerId: wId,
+      workerName: workerEvent.workerName,
+      workerCode: workerEvent.workerCode,
+      groupId: workerEvent.groupId,
+      checkInId: checkInEvt?.id || null,
+      checkInTime: checkInEvt?.eventTime || null,
+      checkInMethod: checkInEvt?.method || null,
+      checkOutId: checkOutEvt?.id || null,
+      checkOutTime: checkOutEvt?.eventTime || null,
+      checkOutMethod: checkOutEvt?.method || null,
+    });
   }
   
   const allResults = Array.from(workerMap.values());
@@ -818,11 +942,12 @@ export async function getTodayAttendance(groupId?: number, dateStr?: string) {
   const { attendanceEvents, workers } = await import('../drizzle/schema');
   
   // Use provided date or default to today (local time Asia/Riyadh)
-  const today = dateStr ? new Date(dateStr + 'T00:00:00') : new Date(new Date().toLocaleDateString('en-CA') + 'T00:00:00');
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const targetDate = dateStr || new Date().toLocaleDateString('en-CA');
   
-  // Get all events for today
+  // Expanded range to capture night shift check_outs
+  const { startOfDay, endOfSearch } = getExpandedDateRange(targetDate);
+  
+  // Get all events for expanded range
   const events = await db
     .select({
       id: attendanceEvents.id,
@@ -837,40 +962,36 @@ export async function getTodayAttendance(groupId?: number, dateStr?: string) {
     .from(attendanceEvents)
     .innerJoin(workers, eq(attendanceEvents.workerId, workers.id))
     .where(and(
-      gte(attendanceEvents.eventTime, today),
-      lt(attendanceEvents.eventTime, tomorrow)
+      gte(attendanceEvents.eventTime, startOfDay),
+      lt(attendanceEvents.eventTime, endOfSearch)
     ))
     .orderBy(attendanceEvents.workerId, attendanceEvents.eventTime);
   
-  // Group by worker and merge check_in/check_out
+  // Use groupEventsByWorkDate to correctly pair check_in/check_out across midnight
+  const grouped = groupEventsByWorkDate(events);
+  const dayData = grouped[targetDate] || {};
+  
   const workerMap = new Map();
   
-  for (const event of events) {
-    if (!workerMap.has(event.workerId)) {
-      workerMap.set(event.workerId, {
-        workerId: event.workerId,
-        workerName: event.workerName,
-        workerCode: event.workerCode,
-        groupId: event.groupId,
-        checkInId: null,
-        checkInTime: null,
-        checkInMethod: null,
-        checkOutId: null,
-        checkOutTime: null,
-        checkOutMethod: null,
-      });
-    }
+  for (const [workerIdStr, data] of Object.entries(dayData)) {
+    const wId = Number(workerIdStr);
+    const checkInEvt = data.checkIn;
+    const checkOutEvt = data.checkOut;
+    const workerEvent = events.find(e => e.workerId === wId);
+    if (!workerEvent) continue;
     
-    const record = workerMap.get(event.workerId);
-    if (event.eventType === 'check_in') {
-      record.checkInId = event.id;
-      record.checkInTime = event.eventTime;
-      record.checkInMethod = event.method;
-    } else if (event.eventType === 'check_out') {
-      record.checkOutId = event.id;
-      record.checkOutTime = event.eventTime;
-      record.checkOutMethod = event.method;
-    }
+    workerMap.set(wId, {
+      workerId: wId,
+      workerName: workerEvent.workerName,
+      workerCode: workerEvent.workerCode,
+      groupId: workerEvent.groupId,
+      checkInId: checkInEvt?.id || null,
+      checkInTime: checkInEvt?.eventTime || null,
+      checkInMethod: checkInEvt?.method || null,
+      checkOutId: checkOutEvt?.id || null,
+      checkOutTime: checkOutEvt?.eventTime || null,
+      checkOutMethod: checkOutEvt?.method || null,
+    });
   }
   
   let results = Array.from(workerMap.values());
@@ -910,7 +1031,10 @@ export async function getMonthlyAttendanceReport(year: number, month: number, gr
   const { attendanceEvents, workers, groups } = await import('../drizzle/schema');
   
   const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0, 23, 59, 59);
+  // Extend end date to capture night shift check_outs on last day of month
+  const lastDayOfMonth = new Date(year, month, 0);
+  const endDateStr = lastDayOfMonth.toLocaleDateString('en-CA');
+  const { endOfSearch: endDate } = getExpandedDateRange(endDateStr);
   
   // Get all workers
   let workersQuery = db.select().from(workers).where(eq(workers.status, 'active'));
@@ -919,7 +1043,7 @@ export async function getMonthlyAttendanceReport(year: number, month: number, gr
   // Filter by group if specified
   const filteredWorkers = groupId ? allWorkers.filter(w => w.groupId === groupId) : allWorkers;
   
-  // Get attendance events for the month
+  // Get attendance events for the month (expanded range)
   const events = await db
     .select()
     .from(attendanceEvents)
@@ -928,32 +1052,33 @@ export async function getMonthlyAttendanceReport(year: number, month: number, gr
       lte(attendanceEvents.eventTime, endDate)
     ));
   
+  // Use groupEventsByWorkDate for correct night shift handling
+  const grouped = groupEventsByWorkDate(events);
+  
   // Calculate statistics for each worker
   const report = filteredWorkers.map(worker => {
-    const workerEvents = events.filter((e: any) => e.workerId === worker.id);
-    
-    // Group events by date
-    const eventsByDate = workerEvents.reduce((acc, event) => {
-      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
-      if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(event);
-      return acc;
-    }, {} as Record<string, typeof workerEvents>);
-    
-    const daysPresent = Object.keys(eventsByDate).length;
-    const totalCheckIns = workerEvents.filter((e: any) => e.eventType === 'check_in').length;
-    const totalCheckOuts = workerEvents.filter((e: any) => e.eventType === 'check_out').length;
-    
-    // Calculate total work hours
+    let daysPresent = 0;
+    let totalCheckIns = 0;
+    let totalCheckOuts = 0;
     let totalHours = 0;
-    Object.values(eventsByDate).forEach((dayEvents: any) => {
-      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
-      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
-      if (checkIn && checkOut) {
-        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+    
+    // Iterate over all work dates in the grouped data
+    for (const [workDate, workerData] of Object.entries(grouped)) {
+      // Only count dates within the month
+      if (workDate < startDate.toLocaleDateString('en-CA') || workDate > endDateStr) continue;
+      
+      const wd = workerData[worker.id];
+      if (!wd) continue;
+      
+      daysPresent++;
+      if (wd.checkIn) totalCheckIns++;
+      if (wd.checkOut) totalCheckOuts++;
+      
+      if (wd.checkIn && wd.checkOut) {
+        const hours = (new Date(wd.checkOut.eventTime).getTime() - new Date(wd.checkIn.eventTime).getTime()) / (1000 * 60 * 60);
         totalHours += hours;
       }
-    });
+    }
     
     return {
       workerId: worker.id,
@@ -978,7 +1103,8 @@ export async function getDateRangeAttendanceReport(startDateStr: string, endDate
   const { attendanceEvents, workers, groups } = await import('../drizzle/schema');
   
   const startDate = new Date(startDateStr + 'T00:00:00');
-  const endDate = new Date(endDateStr + 'T23:59:59');
+  // Extend end date to capture night shift check_outs
+  const { endOfSearch: endDate } = getExpandedDateRange(endDateStr);
   
   // Get all active workers
   const allWorkers = await db.select().from(workers).where(eq(workers.status, 'active'));
@@ -986,7 +1112,7 @@ export async function getDateRangeAttendanceReport(startDateStr: string, endDate
   // Filter by group if specified
   const filteredWorkers = groupId ? allWorkers.filter(w => w.groupId === groupId) : allWorkers;
   
-  // Get attendance events for the date range
+  // Get attendance events for the date range (expanded)
   const events = await db
     .select()
     .from(attendanceEvents)
@@ -995,32 +1121,31 @@ export async function getDateRangeAttendanceReport(startDateStr: string, endDate
       lte(attendanceEvents.eventTime, endDate)
     ));
   
+  // Use groupEventsByWorkDate for correct night shift handling
+  const grouped = groupEventsByWorkDate(events);
+  
   // Calculate statistics for each worker
   const report = filteredWorkers.map(worker => {
-    const workerEvents = events.filter((e: any) => e.workerId === worker.id);
-    
-    // Group events by date
-    const eventsByDate = workerEvents.reduce((acc, event) => {
-      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
-      if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(event);
-      return acc;
-    }, {} as Record<string, typeof workerEvents>);
-    
-    const daysPresent = Object.keys(eventsByDate).length;
-    const totalCheckIns = workerEvents.filter((e: any) => e.eventType === 'check_in').length;
-    const totalCheckOuts = workerEvents.filter((e: any) => e.eventType === 'check_out').length;
-    
-    // Calculate total work hours
+    let daysPresent = 0;
+    let totalCheckIns = 0;
+    let totalCheckOuts = 0;
     let totalHours = 0;
-    Object.values(eventsByDate).forEach((dayEvents: any) => {
-      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
-      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
-      if (checkIn && checkOut) {
-        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+    
+    for (const [workDate, workerData] of Object.entries(grouped)) {
+      if (workDate < startDateStr || workDate > endDateStr) continue;
+      
+      const wd = workerData[worker.id];
+      if (!wd) continue;
+      
+      daysPresent++;
+      if (wd.checkIn) totalCheckIns++;
+      if (wd.checkOut) totalCheckOuts++;
+      
+      if (wd.checkIn && wd.checkOut) {
+        const hours = (new Date(wd.checkOut.eventTime).getTime() - new Date(wd.checkIn.eventTime).getTime()) / (1000 * 60 * 60);
         totalHours += hours;
       }
-    });
+    }
     
     return {
       workerId: worker.id,
@@ -1266,11 +1391,11 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     return { baseAmount: 0, deductions: 0, bonuses: 0, lateMinutes: 0, earlyLeaveMinutes: 0, actualWorkMinutes: 0 };
   }
   
-  // Get attendance events for the day (local time Asia/Riyadh)
-  const dateStart = new Date(workDate + 'T00:00:00');
-  const dateEnd = new Date(workDate + 'T23:59:59.999');
+  // Get attendance events - expanded range to handle night shifts crossing midnight
+  // Search from start of work date to 10 AM next day (covers check_outs up to early morning)
+  const { startOfDay: dateStart, endOfSearch: dateEnd } = getExpandedDateRange(workDate);
   
-  const events = await db
+  const allEvents = await db
     .select()
     .from(attendanceEvents)
     .where(and(
@@ -1280,8 +1405,12 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     ))
     .orderBy(attendanceEvents.eventTime);
   
-  const checkIn = events.find(e => e.eventType === 'check_in');
-  const checkOut = events.find(e => e.eventType === 'check_out');
+  // Use groupEventsByWorkDate to correctly pair check_in/check_out
+  const grouped = groupEventsByWorkDate(allEvents.map(e => ({ ...e, workerId })));
+  const dayData = grouped[workDate]?.[workerId];
+  
+  const checkIn = dayData?.checkIn || null;
+  const checkOut = dayData?.checkOut || null;
   
   let lateMinutes = 0;
   let earlyLeaveMinutes = 0;
@@ -1314,8 +1443,13 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       const shiftStart = new Date(shiftDateBase);
       shiftStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
       
-      const shiftEnd = new Date(shiftDateBase);
+      let shiftEnd = new Date(shiftDateBase);
       shiftEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
+      
+      // Handle night shifts: if shift end <= shift start, it crosses midnight
+      if (shiftEnd <= shiftStart) {
+        shiftEnd.setDate(shiftEnd.getDate() + 1);
+      }
       
       // Financial check-in: capped to shift start (early arrival not counted)
       const financialCheckIn = checkInTime < shiftStart ? shiftStart : checkInTime;
@@ -1400,14 +1534,13 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
 export async function processAttendanceToFinance(workerId: number, workDate: string) {
   const financeData = await calculateDailyFinanceFromAttendance(workerId, workDate);
   
-  // Get check-in and check-out times for the record
+  // Get check-in and check-out times for the record (expanded range for night shifts)
   const db = await getDb();
   let checkInTime: Date | null = null;
   let checkOutTime: Date | null = null;
   if (db) {
     const { attendanceEvents } = await import('../drizzle/schema');
-    const dateStart = new Date(workDate + 'T00:00:00');
-    const dateEnd = new Date(workDate + 'T23:59:59.999');
+    const { startOfDay: dateStart, endOfSearch: dateEnd } = getExpandedDateRange(workDate);
     const events = await db.select().from(attendanceEvents)
       .where(and(
         eq(attendanceEvents.workerId, workerId),
@@ -1415,10 +1548,11 @@ export async function processAttendanceToFinance(workerId: number, workDate: str
         lte(attendanceEvents.eventTime, dateEnd)
       ))
       .orderBy(attendanceEvents.eventTime);
-    const checkInEvent = events.find(e => e.eventType === 'check_in');
-    const checkOutEvent = events.find(e => e.eventType === 'check_out');
-    if (checkInEvent) checkInTime = new Date(checkInEvent.eventTime);
-    if (checkOutEvent) checkOutTime = new Date(checkOutEvent.eventTime);
+    // Use groupEventsByWorkDate to correctly pair check_in/check_out
+    const grouped = groupEventsByWorkDate(events.map(e => ({ ...e, workerId })));
+    const dayData = grouped[workDate]?.[workerId];
+    if (dayData?.checkIn) checkInTime = new Date(dayData.checkIn.eventTime);
+    if (dayData?.checkOut) checkOutTime = new Date(dayData.checkOut.eventTime);
   }
   
   return await createOrUpdateDailyFinance(workerId, workDate, {
@@ -3793,7 +3927,8 @@ export async function getAttendanceForWorkerPeriod(
   const { attendanceEvents } = await import('../drizzle/schema');
   
   const startDate = new Date(`${periodStart}T00:00:00`);
-  const endDate = new Date(`${periodEnd}T23:59:59`);
+  // Extend end date to capture night shift check_outs
+  const { endOfSearch: endDate } = getExpandedDateRange(periodEnd);
   
   const events = await db
     .select()
@@ -3805,39 +3940,35 @@ export async function getAttendanceForWorkerPeriod(
     ))
     .orderBy(attendanceEvents.eventTime);
   
-  // Group events by date
-  const groupedByDate: { [date: string]: { checkIn?: any; checkOut?: any } } = {};
-  
-  events.forEach(event => {
-    const dateStr = event.eventTime.toLocaleDateString('en-CA');
-    if (!groupedByDate[dateStr]) {
-      groupedByDate[dateStr] = {};
-    }
-    if (event.eventType === 'check_in') {
-      groupedByDate[dateStr].checkIn = event;
-    } else if (event.eventType === 'check_out') {
-      groupedByDate[dateStr].checkOut = event;
-    }
-  });
+  // Use groupEventsByWorkDate for correct night shift handling
+  const grouped = groupEventsByWorkDate(events.map(e => ({ ...e, workerId })));
   
   // Convert to array and calculate actualWorkMinutes
-  return Object.entries(groupedByDate).map(([date, data]) => {
-    let actualWorkMinutes = 0;
+  const results: Array<{ date: string; checkIn: any; checkOut: any; actualWorkMinutes: number }> = [];
+  
+  for (const [workDate, workerData] of Object.entries(grouped)) {
+    // Only include dates within the requested period
+    if (workDate < periodStart || workDate > periodEnd) continue;
     
-    if (data.checkIn && data.checkOut) {
-      // Calculate actual work minutes
-      const checkInTime = new Date(data.checkIn.eventTime);
-      const checkOutTime = new Date(data.checkOut.eventTime);
+    const wd = workerData[workerId];
+    if (!wd) continue;
+    
+    let actualWorkMinutes = 0;
+    if (wd.checkIn && wd.checkOut) {
+      const checkInTime = new Date(wd.checkIn.eventTime);
+      const checkOutTime = new Date(wd.checkOut.eventTime);
       actualWorkMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
     }
     
-    return {
-      date,
-      checkIn: data.checkIn || null,
-      checkOut: data.checkOut || null,
+    results.push({
+      date: workDate,
+      checkIn: wd.checkIn || null,
+      checkOut: wd.checkOut || null,
       actualWorkMinutes,
-    };
-  }).sort((a, b) => a.date.localeCompare(b.date));
+    });
+  }
+  
+  return results.sort((a, b) => a.date.localeCompare(b.date));
 }
 
 // updateFullDayOverride function removed - feature deprecated
@@ -4665,8 +4796,8 @@ export async function getAttendanceSummaryByWorker(
   const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
   
   const start = new Date(startDate);
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
+  // Extend end date to capture night shift check_outs
+  const { endOfSearch: end } = getExpandedDateRange(endDate);
   
   // Get all workers
   let workersQuery = db.select().from(workers) as any;
@@ -4675,8 +4806,8 @@ export async function getAttendanceSummaryByWorker(
   }
   const allWorkers = await workersQuery;
   
-  // Get attendance events
-  let eventsQuery = db
+  // Get attendance events (expanded range)
+  const events = await db
     .select()
     .from(attendanceEvents)
     .where(and(
@@ -4684,46 +4815,41 @@ export async function getAttendanceSummaryByWorker(
       lte(attendanceEvents.eventTime, end)
     ));
   
-  const events = await eventsQuery;
-  
   // Get groups and cost centers for joining
   const groupsData = await db.select().from(groups);
   const costCentersData = await db.select().from(costCenters);
+  
+  // Use groupEventsByWorkDate for correct night shift handling
+  const grouped = groupEventsByWorkDate(events);
   
   // Calculate summary for each worker
   const summary = allWorkers.map((worker: any) => {
     const workerGroup = groupsData.find(g => g.id === worker.groupId);
     const costCenter = workerGroup ? costCentersData.find(c => c.id === workerGroup.costCenterId) : null;
     
-    // Apply cost center filter if specified
     if (costCenterId && workerGroup?.costCenterId !== costCenterId) {
       return null;
     }
     
-    const workerEvents = events.filter((e: any) => e.workerId === worker.id);
-    
-    // Group events by date
-    const eventsByDate: Record<string, any[]> = {};
-    workerEvents.forEach(event => {
-      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
-      if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
-      eventsByDate[dateKey].push(event);
-    });
-    
-    const daysPresent = Object.keys(eventsByDate).length;
-    const totalCheckIns = workerEvents.filter((e: any) => e.eventType === 'check_in').length;
-    const totalCheckOuts = workerEvents.filter((e: any) => e.eventType === 'check_out').length;
-    
-    // Calculate total work hours
+    let daysPresent = 0;
+    let totalCheckIns = 0;
+    let totalCheckOuts = 0;
     let totalHours = 0;
-    Object.values(eventsByDate).forEach((dayEvents: any) => {
-      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
-      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
-      if (checkIn && checkOut) {
-        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+    
+    for (const [workDate, workerData] of Object.entries(grouped)) {
+      if (workDate < startDate || workDate > endDate) continue;
+      const wd = workerData[worker.id];
+      if (!wd) continue;
+      
+      daysPresent++;
+      if (wd.checkIn) totalCheckIns++;
+      if (wd.checkOut) totalCheckOuts++;
+      
+      if (wd.checkIn && wd.checkOut) {
+        const hours = (new Date(wd.checkOut.eventTime).getTime() - new Date(wd.checkIn.eventTime).getTime()) / (1000 * 60 * 60);
         totalHours += hours;
       }
-    });
+    }
     
     return {
       workerId: worker.id,
@@ -4755,8 +4881,8 @@ export async function getAttendanceSummaryByGroup(
   const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
   
   const start = new Date(startDate);
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
+  // Extend end date to capture night shift check_outs
+  const { endOfSearch: end } = getExpandedDateRange(endDate);
   
   // Get all groups
   let groupsQuery = db.select().from(groups) as any;
@@ -4768,7 +4894,7 @@ export async function getAttendanceSummaryByGroup(
   // Get all workers
   const allWorkers = await db.select().from(workers);
   
-  // Get attendance events
+  // Get attendance events (expanded range)
   const events = await db
     .select()
     .from(attendanceEvents)
@@ -4780,39 +4906,39 @@ export async function getAttendanceSummaryByGroup(
   // Get cost centers
   const costCentersData = await db.select().from(costCenters);
   
+  // Use groupEventsByWorkDate for correct night shift handling
+  const grouped = groupEventsByWorkDate(events);
+  
   // Calculate summary for each group
   const summary = allGroups.map((group: any) => {
     const groupWorkers = allWorkers.filter(w => w.groupId === group.id);
-    const groupEvents = events.filter(e => groupWorkers.some(w => w.id === e.workerId));
+    const groupWorkerIds = new Set(groupWorkers.map(w => w.id));
     
     const costCenter = costCentersData.find(c => c.id === group.costCenterId);
     
-    // Calculate totals
-    const totalCheckIns = groupEvents.filter(e => e.eventType === 'check_in').length;
-    const totalCheckOuts = groupEvents.filter(e => e.eventType === 'check_out').length;
-    
-    // Get unique days with attendance
-    const daysWithAttendance = new Set(
-      groupEvents.map(e => new Date(e.eventTime).toLocaleDateString('en-CA'))
-    ).size;
-    
-    // Calculate total work hours
+    let totalCheckIns = 0;
+    let totalCheckOuts = 0;
     let totalHours = 0;
-    const eventsByDate: Record<string, any[]> = {};
-    groupEvents.forEach(event => {
-      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
-      if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
-      eventsByDate[dateKey].push(event);
-    });
+    const daysSet = new Set<string>();
     
-    Object.values(eventsByDate).forEach((dayEvents: any) => {
-      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
-      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
-      if (checkIn && checkOut) {
-        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
-        totalHours += hours;
+    for (const [workDate, workerData] of Object.entries(grouped)) {
+      if (workDate < startDate || workDate > endDate) continue;
+      
+      for (const [workerIdStr, wd] of Object.entries(workerData)) {
+        if (!groupWorkerIds.has(Number(workerIdStr))) continue;
+        
+        daysSet.add(workDate);
+        if (wd.checkIn) totalCheckIns++;
+        if (wd.checkOut) totalCheckOuts++;
+        
+        if (wd.checkIn && wd.checkOut) {
+          const hours = (new Date(wd.checkOut.eventTime).getTime() - new Date(wd.checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+          totalHours += hours;
+        }
       }
-    });
+    }
+    
+    const daysWithAttendance = daysSet.size;
     
     return {
       groupId: group.id,
@@ -4841,8 +4967,8 @@ export async function getAttendanceSummaryByCostCenter(
   const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
   
   const start = new Date(startDate);
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
+  // Extend end date to capture night shift check_outs
+  const { endOfSearch: end } = getExpandedDateRange(endDate);
   
   // Get all cost centers
   const allCostCenters = await db.select().from(costCenters);
@@ -4853,7 +4979,7 @@ export async function getAttendanceSummaryByCostCenter(
   // Get all workers
   const allWorkers = await db.select().from(workers);
   
-  // Get attendance events
+  // Get attendance events (expanded range)
   const events = await db
     .select()
     .from(attendanceEvents)
@@ -4862,43 +4988,45 @@ export async function getAttendanceSummaryByCostCenter(
       lte(attendanceEvents.eventTime, end)
     ));
   
+  // Use groupEventsByWorkDate for correct night shift handling
+  const grouped = groupEventsByWorkDate(events);
+  
   // Calculate summary for each cost center
   const summary = allCostCenters.map((costCenter: any) => {
     const costCenterGroups = allGroups.filter(g => g.costCenterId === costCenter.id);
-    const costCenterWorkers = allWorkers.filter(w => costCenterGroups.some(g => g.id === w.groupId));
-    const costCenterEvents = events.filter(e => costCenterWorkers.some(w => w.id === e.workerId));
+    const costCenterWorkerIds = new Set(
+      allWorkers.filter(w => costCenterGroups.some(g => g.id === w.groupId)).map(w => w.id)
+    );
     
-    const totalCheckIns = costCenterEvents.filter(e => e.eventType === 'check_in').length;
-    const totalCheckOuts = costCenterEvents.filter(e => e.eventType === 'check_out').length;
-    
-    // Get unique days with attendance
-    const daysWithAttendance = new Set(
-      costCenterEvents.map(e => new Date(e.eventTime).toLocaleDateString('en-CA'))
-    ).size;
-    
-    // Calculate total work hours
+    let totalCheckIns = 0;
+    let totalCheckOuts = 0;
     let totalHours = 0;
-    const eventsByDate: Record<string, any[]> = {};
-    costCenterEvents.forEach(event => {
-      const dateKey = new Date(event.eventTime).toLocaleDateString('en-CA');
-      if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
-      eventsByDate[dateKey].push(event);
-    });
+    const daysSet = new Set<string>();
     
-    Object.values(eventsByDate).forEach((dayEvents: any) => {
-      const checkIn = dayEvents.find((e: any) => e.eventType === 'check_in');
-      const checkOut = dayEvents.find((e: any) => e.eventType === 'check_out');
-      if (checkIn && checkOut) {
-        const hours = (new Date(checkOut.eventTime).getTime() - new Date(checkIn.eventTime).getTime()) / (1000 * 60 * 60);
-        totalHours += hours;
+    for (const [workDate, workerData] of Object.entries(grouped)) {
+      if (workDate < startDate || workDate > endDate) continue;
+      
+      for (const [workerIdStr, wd] of Object.entries(workerData)) {
+        if (!costCenterWorkerIds.has(Number(workerIdStr))) continue;
+        
+        daysSet.add(workDate);
+        if (wd.checkIn) totalCheckIns++;
+        if (wd.checkOut) totalCheckOuts++;
+        
+        if (wd.checkIn && wd.checkOut) {
+          const hours = (new Date(wd.checkOut.eventTime).getTime() - new Date(wd.checkIn.eventTime).getTime()) / (1000 * 60 * 60);
+          totalHours += hours;
+        }
       }
-    });
+    }
+    
+    const daysWithAttendance = daysSet.size;
     
     return {
       costCenterId: costCenter.id,
       costCenterName: costCenter.name,
       totalGroups: costCenterGroups.length,
-      totalWorkers: costCenterWorkers.length,
+      totalWorkers: costCenterWorkerIds.size,
       totalCheckIns,
       totalCheckOuts,
       daysWithAttendance,
@@ -5301,12 +5429,8 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
 
   const { workers, groups, attendanceEvents, workerDailyFinance } = await import('../drizzle/schema');
   
-  const workDate = new Date(checkOutTime);
-  workDate.setHours(0, 0, 0, 0); // Start of day (local time)
-  
-  // Get check_in time - look back up to 48 hours to support night shifts
-  const lookbackTime = new Date(checkOutTime);
-  lookbackTime.setHours(lookbackTime.getHours() - 48);
+  // Get check_in time - look back up to 24 hours to support night shifts
+  const lookbackTime = new Date(checkOutTime.getTime() - 24 * 60 * 60 * 1000);
   
   const checkInEvents = await db
     .select()
@@ -5328,6 +5452,11 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   }
   
   const checkInTime = checkInEvents[0].eventTime;
+  
+  // Work date = check_in's calendar date (NOT check_out's date)
+  // This correctly handles night shifts where check_out crosses midnight
+  const workDate = new Date(checkInTime);
+  workDate.setHours(0, 0, 0, 0);
   
   // Get worker and group data
   const [workerData] = await db
@@ -5951,12 +6080,11 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
   
   const { attendanceEvents, workers, groups } = await import('../drizzle/schema');
   
-  // Get date range for the work date
+  // Get date range for the work date - expanded for night shifts
   const dateStr = workDate.toLocaleDateString('en-CA');
-  const startOfDay = new Date(`${dateStr}T00:00:00`);
-  const endOfDay = new Date(`${dateStr}T23:59:59`);
+  const { startOfDay, endOfSearch } = getExpandedDateRange(dateStr);
   
-  // Get all attendance events for the day
+  // Get all attendance events for the expanded range
   const events = await db
     .select({
       id: attendanceEvents.id,
@@ -5974,44 +6102,16 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
     .where(
       and(
         gte(attendanceEvents.eventTime, startOfDay),
-        lte(attendanceEvents.eventTime, endOfDay)
+        lte(attendanceEvents.eventTime, endOfSearch)
       )
     )
     .orderBy(attendanceEvents.workerId, attendanceEvents.eventTime);
   
-  // Group events by worker
-  const workerEvents = new Map<number, {
-    workerId: number;
-    workerCode: string;
-    workerName: string;
-    groupId: number | null;
-    groupName: string;
-    checkIns: Array<{ id: number; time: Date }>;
-    checkOuts: Array<{ id: number; time: Date }>;
-  }>();
+  // Use groupEventsByWorkDate for correct night shift handling
+  const grouped = groupEventsByWorkDate(events);
+  const dayData = grouped[dateStr] || {};
   
-  for (const event of events) {
-    if (!workerEvents.has(event.workerId)) {
-      workerEvents.set(event.workerId, {
-        workerId: event.workerId,
-        workerCode: event.workerCode,
-        workerName: event.workerName,
-        groupId: event.groupId,
-        groupName: event.groupName || 'N/A',
-        checkIns: [],
-        checkOuts: [],
-      });
-    }
-    
-    const workerData = workerEvents.get(event.workerId)!;
-    if (event.eventType === 'check_in') {
-      workerData.checkIns.push({ id: event.id, time: event.eventTime });
-    } else {
-      workerData.checkOuts.push({ id: event.id, time: event.eventTime });
-    }
-  }
-  
-  // Find incomplete records
+  // Find incomplete records using the correctly grouped data
   const incompleteRecords: Array<{
     workerId: number;
     workerCode: string;
@@ -6025,82 +6125,44 @@ export async function getIncompleteAttendance(workDate: Date): Promise<Array<{
     incompleteType: 'missing_check_out' | 'missing_check_in';
   }> = [];
   
-  for (const [workerId, data] of Array.from(workerEvents)) {
-    const checkInCount = data.checkIns.length;
-    const checkOutCount = data.checkOuts.length;
+  for (const [workerIdStr, wd] of Object.entries(dayData)) {
+    const wId = Number(workerIdStr);
+    const workerEvent = events.find(e => e.workerId === wId);
+    if (!workerEvent) continue;
     
-    // Case 1: Has check-in(s) but NO check-out at all
-    if (checkInCount > 0 && checkOutCount === 0) {
-      // Report only the LAST check-in as incomplete (one record per worker)
-      const lastCheckIn = data.checkIns[data.checkIns.length - 1];
+    const hasCheckIn = !!wd.checkIn;
+    const hasCheckOut = !!wd.checkOut;
+    
+    if (hasCheckIn && !hasCheckOut) {
+      // Has check-in but no check-out
       incompleteRecords.push({
-        workerId: data.workerId,
-        workerCode: data.workerCode,
-        workerName: data.workerName,
-        groupId: data.groupId,
-        groupName: data.groupName,
-        checkInId: lastCheckIn.id,
-        checkInTime: lastCheckIn.time,
+        workerId: wId,
+        workerCode: workerEvent.workerCode,
+        workerName: workerEvent.workerName,
+        groupId: workerEvent.groupId,
+        groupName: workerEvent.groupName || 'N/A',
+        checkInId: wd.checkIn.id,
+        checkInTime: wd.checkIn.eventTime,
         checkOutId: null,
         checkOutTime: null,
         incompleteType: 'missing_check_out',
       });
-    }
-    // Case 2: Has check-out(s) but NO check-in at all
-    else if (checkOutCount > 0 && checkInCount === 0) {
-      // Report only the FIRST check-out as incomplete (one record per worker)
-      const firstCheckOut = data.checkOuts[0];
+    } else if (!hasCheckIn && hasCheckOut) {
+      // Has check-out but no check-in (orphan check-out)
       incompleteRecords.push({
-        workerId: data.workerId,
-        workerCode: data.workerCode,
-        workerName: data.workerName,
-        groupId: data.groupId,
-        groupName: data.groupName,
+        workerId: wId,
+        workerCode: workerEvent.workerCode,
+        workerName: workerEvent.workerName,
+        groupId: workerEvent.groupId,
+        groupName: workerEvent.groupName || 'N/A',
         checkInId: null,
         checkInTime: null,
-        checkOutId: firstCheckOut.id,
-        checkOutTime: firstCheckOut.time,
+        checkOutId: wd.checkOut.id,
+        checkOutTime: wd.checkOut.eventTime,
         incompleteType: 'missing_check_in',
       });
     }
-    // Case 3: Both exist but counts don't match (e.g., 2 check-ins + 1 check-out)
-    // If counts are equal (e.g., 1 check-in + 1 check-out), consider it complete
-    else if (checkInCount > 0 && checkOutCount > 0 && checkInCount !== checkOutCount) {
-      if (checkInCount > checkOutCount) {
-        // Has more check-ins than check-outs
-        // Report the LAST unmatched check-in as incomplete
-        const lastCheckIn = data.checkIns[data.checkIns.length - 1];
-        incompleteRecords.push({
-          workerId: data.workerId,
-          workerCode: data.workerCode,
-          workerName: data.workerName,
-          groupId: data.groupId,
-          groupName: data.groupName,
-          checkInId: lastCheckIn.id,
-          checkInTime: lastCheckIn.time,
-          checkOutId: null,
-          checkOutTime: null,
-          incompleteType: 'missing_check_out',
-        });
-      } else {
-        // Has more check-outs than check-ins
-        // Report the FIRST unmatched check-out as incomplete
-        const firstCheckOut = data.checkOuts[0];
-        incompleteRecords.push({
-          workerId: data.workerId,
-          workerCode: data.workerCode,
-          workerName: data.workerName,
-          groupId: data.groupId,
-          groupName: data.groupName,
-          checkInId: null,
-          checkInTime: null,
-          checkOutId: firstCheckOut.id,
-          checkOutTime: firstCheckOut.time,
-          incompleteType: 'missing_check_in',
-        });
-      }
-    }
-    // Case 4: Equal counts (checkInCount === checkOutCount) → complete, skip
+    // Workers with both checkIn and checkOut are complete, skip
   }
   
   return incompleteRecords;
@@ -6171,6 +6233,8 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
     : String(workDate).split('T')[0];
   const startOfDay = new Date(dateStr + 'T00:00:00');
   const endOfDay = new Date(dateStr + 'T23:59:59.999');
+  // Note: For absent workers, we only check check_in events which always
+  // fall on the correct calendar date, so no expanded range needed here.
 
   // Get all workers (optionally filtered by group)
   const workerConditions = [eq(workers.status, 'active')];
@@ -6343,6 +6407,8 @@ export async function getPresentWorkers(workDateStr: string, groupId?: number, c
 
   const startOfDay = new Date(workDateStr + 'T00:00:00');
   const endOfDay = new Date(workDateStr + 'T23:59:59.999');
+  // Note: For present workers, we only check check_in events which always
+  // fall on the correct calendar date, so no expanded range needed here.
 
   // Get all check-in events for this date
   const checkIns = await db

@@ -1020,3 +1020,20 @@
 - [x] إضافة صلاحية super_admin في نظام الأدوار
 - [x] إخفاء زر الحذف النهائي عن جميع المستخدمين ما عدا super_admin
 - [x] إضافة رسالة تأكيد قبل الحذف النهائي
+
+## إصلاح مشكلة الورديات الليلية (بعد منتصف الليل)
+- [x] إنشاء دالة مساعدة groupEventsByWorkDate + getExpandedDateRange + getWorkDateForCheckOut
+- [x] إصلاح calculateFinancialData - معالجة الوردية العابرة لمنتصف الليل + توسيع نطاق البحث
+- [x] إصلاح calculateAndSaveDailyFinance - تحديد workDate من check_in بدل check_out
+- [x] إصلاح recordAttendance - استخدام getWorkDateForCheckOut عند check_out
+- [x] إصلاح getAttendanceRecords + getTodayAttendance - استخدام groupEventsByWorkDate
+- [x] إصلاح getMonthlyAttendanceReport - استخدام groupEventsByWorkDate
+- [x] إصلاح getDateRangeAttendanceReport - استخدام groupEventsByWorkDate
+- [x] إصلاح getAttendanceSummaryByWorker - استخدام groupEventsByWorkDate
+- [x] إصلاح getAttendanceSummaryByGroup - استخدام groupEventsByWorkDate
+- [x] إصلاح getAttendanceSummaryByCostCenter - استخدام groupEventsByWorkDate
+- [x] إصلاح getAttendanceForWorkerPeriod - استخدام groupEventsByWorkDate
+- [x] إصلاح getIncompleteAttendance - استخدام groupEventsByWorkDate
+- [x] إصلاح processAttendanceToFinance - توسيع نطاق البحث
+- [x] كتابة 8 اختبارات vitest ناجحة للسيناريوهات المختلفة
+- [ ] حفظ checkpoint
