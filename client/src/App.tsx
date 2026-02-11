@@ -49,7 +49,6 @@ import { PayrollDashboard } from "./pages/PayrollDashboard";
 import WeeklyShifts from "./pages/WeeklyShifts";
 import PunchesReviewCenter from "./pages/PunchesReviewCenter";
 import Backfill from "./pages/Backfill";
-import TestButton from "./pages/TestButton";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { lazy } from "react";
@@ -222,7 +221,6 @@ function Router() {
           <OperationalNotesReview />
         </ProtectedRoute>
       </Route>
-      <Route path="/test-button" component={TestButton} />
       <Route path="/punches/review">
         <ProtectedRoute>
           <PunchesReviewCenter />

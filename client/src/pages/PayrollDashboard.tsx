@@ -78,7 +78,6 @@ export function PayrollDashboard() {
     setError(null);
 
     try {
-      console.log('Approving payroll for group:', groupId);
     } catch (err) {
       setError(`Failed to approve payroll: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {

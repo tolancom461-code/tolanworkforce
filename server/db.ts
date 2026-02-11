@@ -2317,16 +2317,12 @@ export async function createPayrollBatch(params: {
     netAmount: string;
   }>;
 }) {
-  console.log('[createPayrollBatch] ========== START ==========');
-  console.log('[createPayrollBatch] Params:', JSON.stringify(params, null, 2));
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   // ✅ 1. توحيد التواريخ - تحويل إلى YYYY-MM-DD فقط
   const periodStartDate = params.periodStart.split('T')[0];
   const periodEndDate = params.periodEnd.split('T')[0];
-  console.log('[createPayrollBatch] Period:', periodStartDate, 'to', periodEndDate);
-
   // Generate batch code with format: Batch-YYYY-MM-SEQ-RAND
   const now = new Date();
   const year = now.getFullYear();
@@ -2339,9 +2335,7 @@ export async function createPayrollBatch(params: {
   
   let allBatches: any[] = [];
   try {
-    console.log('[createPayrollBatch] Fetching all batches...');
     allBatches = await db.select().from(payrollBatches);
-    console.log('[createPayrollBatch] Found', allBatches.length, 'batches');
   } catch (error) {
     console.error('[createPayrollBatch] Error fetching batches:', error);
     allBatches = [];
@@ -2366,8 +2360,6 @@ export async function createPayrollBatch(params: {
   }> = [];
   
   if (!params.items || params.items.length === 0) {
-    console.log('[createPayrollBatch] Items empty, calculating from workerDailyFinance...');
-    
     // Get all workers in the group (or all workers if no group specified)
     let workersToInclude: any[] = [];
     if (params.groupId) {
@@ -2375,9 +2367,6 @@ export async function createPayrollBatch(params: {
     } else {
       workersToInclude = await db.select().from(workers);
     }
-    
-    console.log('[createPayrollBatch] Found', workersToInclude.length, 'workers to include');
-    
     // Calculate finance for each worker
     for (const worker of workersToInclude) {
       const finance = await getDailyFinanceRecords(
@@ -2401,10 +2390,7 @@ export async function createPayrollBatch(params: {
         netAmount: netAmount.toFixed(2),
       });
     }
-    
-    console.log('[createPayrollBatch] Calculated', batchItems.length, 'batch items');
   } else {
-    console.log('[createPayrollBatch] Using items from parameters:', params.items.length, 'items');
     batchItems = params.items.map(item => ({
       workerId: item.workerId,
       daysWorked: 0, // Not provided in items
@@ -2421,8 +2407,6 @@ export async function createPayrollBatch(params: {
   const totalBonuses = batchItems.reduce((sum, item) => sum + parseFloat(item.totalBonuses), 0);
 
   // Insert batch
-  console.log('[createPayrollBatch] Inserting batch with code:', finalBatchCode);
-  console.log('[createPayrollBatch] Batch totals:', { totalAmount, totalDeductions, totalBonuses, totalWorkers: batchItems.length });
   const insertValues = {
     batchCode: finalBatchCode,
     periodStart: params.periodStart,
@@ -5206,7 +5190,6 @@ export async function aggregatePayrollData(
   const { workerDailyFinance, payOverrides } = await import('../drizzle/schema');
 
   // Get daily finances (unlocked only)
-  console.log(`[aggregatePayrollData] Querying for worker ${workerId}, period ${periodStart} to ${periodEnd}`);
   const dailyFinances = await db
     .select()
     .from(workerDailyFinance)
@@ -5218,9 +5201,7 @@ export async function aggregatePayrollData(
         isNull(workerDailyFinance.lockedBatchId)
       )
     );
-  console.log(`[aggregatePayrollData] Found ${dailyFinances.length} daily finance records`);
   if (dailyFinances.length > 0) {
-    console.log(`[aggregatePayrollData] First record:`, dailyFinances[0]);
   }
 
   // Get pay overrides (approved only)
@@ -5452,7 +5433,6 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
     .limit(1);
   
   if (checkInEvents.length === 0) {
-    console.log('No check_in found for this check_out');
     return;
   }
   
@@ -5659,7 +5639,6 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
     });
   }
   
-  console.log(`✅ Daily finance calculated for worker ${workerId} on ${workDate.toLocaleDateString('en-CA')}`);
 }
 
 
@@ -5716,17 +5695,11 @@ export async function aggregatePayrollDataByCostCenter(
     .select()
     .from(groups)
     .where(eq(groups.costCenterId, costCenterId));
-
-  console.log(`[aggregatePayrollDataByCostCenter] Found ${groupsInCostCenter.length} groups in cost center ${costCenterId}`);
-
   // Then, get all workers in these groups
   const groupIds = groupsInCostCenter.map(g => g.id);
   const workersInCostCenter = groupIds.length > 0
     ? await db.select().from(workers).where(inArray(workers.groupId, groupIds))
     : [];
-
-  console.log(`[aggregatePayrollDataByCostCenter] Found ${workersInCostCenter.length} workers in cost center ${costCenterId}`);
-
   // Aggregate data for each worker
   const results = [];
   for (const worker of workersInCostCenter) {
@@ -5745,8 +5718,6 @@ export async function aggregatePayrollDataByCostCenter(
       });
     }
   }
-
-  console.log(`[aggregatePayrollDataByCostCenter] Aggregated data for ${results.length} workers with payroll data`);
   return results;
 }
 

@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM users WHERE username LIKE 'test_user_%' OR username LIKE 'admin_test_%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute DELETE FROM users WHERE username LIKE 'test_user_%' OR username LIKE 'admin_test_%'",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1548
+}

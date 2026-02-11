@@ -1,0 +1,8 @@
+{
+  "query": "SELECT 'workers' as tbl, COUNT(*) as cnt FROM workers\nUNION ALL SELECT 'worker_groups', COUNT(*) FROM worker_groups\nUNION ALL SELECT 'attendance_events', COUNT(*) FROM attendance_events\nUNION ALL SELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance\nUNION ALL SELECT 'payroll_batches', COUNT(*) FROM payroll_batches\nUNION ALL SELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items\nUNION ALL SELECT 'users', COUNT(*) FROM users\nUNION ALL SELECT 'roles', COUNT(*) FROM roles\nUNION ALL SELECT 'role_permissions', COUNT(*) FROM role_permissions\nUNION ALL SELECT 'cost_centers', COUNT(*) FROM cost_centers",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT 'workers' as tbl, COUNT(*) as cnt FROM workers\nUNION ALL SELECT 'worker_groups', COUNT(*) FROM worker_groups\nUNION ALL SELECT 'attendance_events', COUNT(*) FROM attendance_events\nUNION ALL SELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance\nUNION ALL SELECT 'payroll_batches', COUNT(*) FROM payroll_batches\nUNION ALL SELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items\nUNION ALL SELECT 'users', COUNT(*) FROM users\nUNION ALL SELECT 'roles', COUNT(*) FROM roles\nUNION ALL SELECT 'role_permissions', COUNT(*) FROM role_permissions\nUNION ALL SELECT 'cost_centers', COUNT(*) FROM cost_centers",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table 'bmzbeddpnyvc6c68xyfpny.worker_groups' doesn't exist"
+  ]
+}

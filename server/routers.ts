@@ -868,7 +868,6 @@ export const appRouter = router({
         note: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        console.log('Approving punch:', input.id);
         return { success: true, message: 'تم الموافقة على البصمة' };
       }),
     
@@ -879,7 +878,6 @@ export const appRouter = router({
         note: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        console.log('Rejecting punch:', input.id);
         return { success: true, message: 'تم رفض البصمة' };
       }),
     
@@ -905,13 +903,6 @@ export const appRouter = router({
             throw new Error('تاريخ غير صالح');
           }
           
-          console.log('[addMissingCheckIn] Inserting:', {
-            workerId: input.workerId,
-            eventType: 'check_in',
-            eventTime: eventTime.toISOString(),
-            method: 'manual',
-          });
-          
           // Insert check-in event
           await database.insert(attendanceEvents).values({
             workerId: input.workerId,
@@ -921,13 +912,10 @@ export const appRouter = router({
             note: input.note || 'تم إضافة الحضور يدوياً لمعالجة بصمة ناقصة',
           });
           
-          console.log('[addMissingCheckIn] Success');
-          
           // Try to recalculate finance if both check_in and check_out exist now
           try {
             const workDate = eventTime.toLocaleDateString('en-CA');
             await db.processAttendanceToFinance(input.workerId, workDate);
-            console.log('[addMissingCheckIn] Finance recalculated for', workDate);
           } catch (finError) {
             console.error('[addMissingCheckIn] Finance recalc failed (non-fatal):', finError);
           }
@@ -961,13 +949,6 @@ export const appRouter = router({
             throw new Error('تاريخ غير صالح');
           }
           
-          console.log('[addMissingCheckOut] Inserting:', {
-            workerId: input.workerId,
-            eventType: 'check_out',
-            eventTime: eventTime.toISOString(),
-            method: 'manual',
-          });
-          
           // Insert check-out event
           await database.insert(attendanceEvents).values({
             workerId: input.workerId,
@@ -977,14 +958,11 @@ export const appRouter = router({
             note: input.note || 'تم إضافة الانصراف يدوياً لمعالجة بصمة ناقصة',
           });
           
-          console.log('[addMissingCheckOut] Success');
-          
           // Auto-calculate finance after adding check_out
           // Use check_in's date as work date (handles night shifts crossing midnight)
           try {
             const workDate = await db.getWorkDateForCheckOut(input.workerId, eventTime);
             await db.processAttendanceToFinance(input.workerId, workDate);
-            console.log('[addMissingCheckOut] Finance calculated for', workDate);
           } catch (finError) {
             console.error('[addMissingCheckOut] Finance calc failed (non-fatal):', finError);
           }

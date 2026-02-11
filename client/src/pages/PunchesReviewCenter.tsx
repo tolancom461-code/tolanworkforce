@@ -80,7 +80,6 @@ export default function PunchesReviewCenter() {
   };
 
   const handleConfirmAction = () => {
-    console.log('handleConfirmAction called', { selectedRecord, timeInput });
     if (!selectedRecord) return;
 
     const workDate = new Date(selectedDate);

@@ -1,0 +1,46 @@
+{
+  "query": "SELECT 'workers' as tbl, COUNT(*) as cnt FROM workers\nUNION ALL SELECT 'groups', COUNT(*) FROM `groups`\nUNION ALL SELECT 'attendance_events', COUNT(*) FROM attendance_events\nUNION ALL SELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance\nUNION ALL SELECT 'payroll_batches', COUNT(*) FROM payroll_batches\nUNION ALL SELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items\nUNION ALL SELECT 'users', COUNT(*) FROM users\nUNION ALL SELECT 'roles', COUNT(*) FROM roles\nUNION ALL SELECT 'cost_centers', COUNT(*) FROM cost_centers",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT 'workers' as tbl, COUNT(*) as cnt FROM workers\nUNION ALL SELECT 'groups', COUNT(*) FROM `groups`\nUNION ALL SELECT 'attendance_events', COUNT(*) FROM attendance_events\nUNION ALL SELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance\nUNION ALL SELECT 'payroll_batches', COUNT(*) FROM payroll_batches\nUNION ALL SELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items\nUNION ALL SELECT 'users', COUNT(*) FROM users\nUNION ALL SELECT 'roles', COUNT(*) FROM roles\nUNION ALL SELECT 'cost_centers', COUNT(*) FROM cost_centers",
+  "rows": [
+    {
+      "tbl": "attendance_events",
+      "cnt": "2"
+    },
+    {
+      "tbl": "worker_daily_finance",
+      "cnt": "2"
+    },
+    {
+      "tbl": "workers",
+      "cnt": "1"
+    },
+    {
+      "tbl": "groups",
+      "cnt": "1"
+    },
+    {
+      "tbl": "payroll_batches",
+      "cnt": "0"
+    },
+    {
+      "tbl": "users",
+      "cnt": "5"
+    },
+    {
+      "tbl": "cost_centers",
+      "cnt": "2"
+    },
+    {
+      "tbl": "roles",
+      "cnt": "0"
+    },
+    {
+      "tbl": "payroll_batch_items",
+      "cnt": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\nattendance_events\t2\nworker_daily_finance\t2\nworkers\t1\ngroups\t1\npayroll_batches\t0\nusers\t5\ncost_centers\t2\nroles\t0\npayroll_batch_items\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1619
+}

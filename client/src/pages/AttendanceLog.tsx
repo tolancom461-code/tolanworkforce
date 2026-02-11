@@ -236,13 +236,6 @@ export default function AttendanceLog() {
       const [checkInHours, checkInMinutes] = prepareCheckInTime.split(':');
       const checkInTime = new Date(baseDate);
       checkInTime.setHours(parseInt(checkInHours), parseInt(checkInMinutes), 0, 0);
-
-      console.log('Adding check-in:', {
-        workerId: selectedAbsentWorker.workerId,
-        checkInTime: checkInTime.toISOString(),
-        note: prepareNote || 'تحضير يدوي'
-      });
-
       await addCheckInMutation.mutateAsync({
         workerId: selectedAbsentWorker.workerId,
         checkInTime: checkInTime.toISOString(),
@@ -258,13 +251,6 @@ export default function AttendanceLog() {
       if (checkOutTime <= checkInTime) {
         checkOutTime.setDate(checkOutTime.getDate() + 1);
       }
-
-      console.log('Adding check-out:', {
-        workerId: selectedAbsentWorker.workerId,
-        checkOutTime: checkOutTime.toISOString(),
-        note: prepareNote || 'تحضير يدوي'
-      });
-
       await addCheckOutMutation.mutateAsync({
         workerId: selectedAbsentWorker.workerId,
         checkOutTime: checkOutTime.toISOString(),
