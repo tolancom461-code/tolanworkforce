@@ -1036,4 +1036,8 @@
 - [x] إصلاح getIncompleteAttendance - استخدام groupEventsByWorkDate
 - [x] إصلاح processAttendanceToFinance - توسيع نطاق البحث
 - [x] كتابة 8 اختبارات vitest ناجحة للسيناريوهات المختلفة
-- [ ] حفظ checkpoint
+- [x] حفظ checkpoint - 2716db12
+
+## تنظيف وتصحيح PayrollBatches
+- [x] حذف بقايا متغير statusFilter من الكود
+- [x] تغيير عنوان العمود من "توقيع الاستلام" إلى "توقيع المستلم"

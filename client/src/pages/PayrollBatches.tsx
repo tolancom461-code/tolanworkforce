@@ -55,7 +55,6 @@ export default function PayrollBatches() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [unlockReason, setUnlockReason] = useState('');
   
   // Workflow dialogs state
@@ -841,7 +840,7 @@ export default function PayrollBatches() {
                                   <th>الخصومات</th>
                                   <th>المكافآت</th>
                                   <th>الصافي</th>
-                                  <th>توقيع الاستلام</th>
+                                  <th>توقيع المستلم</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -896,7 +895,7 @@ export default function PayrollBatches() {
                     <TableHead className="text-right">الخصومات</TableHead>
                     <TableHead className="text-right">المكافآت</TableHead>
                     <TableHead className="text-right">الصافي</TableHead>
-                    <TableHead className="text-right w-[120px]">توقيع الاستلام</TableHead>
+                    <TableHead className="text-right w-[120px]">توقيع المستلم</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
