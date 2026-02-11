@@ -20,11 +20,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Printer, Eye, AlertCircle } from 'lucide-react';
+import { useAuth } from '@/_core/hooks/useAuth';
 import { toast } from 'sonner';
 import { useReactToPrint } from 'react-to-print';
 
 export default function PayrollReport() {
   const printRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   // Filter states
   const [periodStart, setPeriodStart] = useState('');
@@ -368,14 +370,6 @@ export default function PayrollReport() {
                 </Table>
               </div>
 
-              {/* Report Footer */}
-              <div className="text-center text-sm text-gray-600 border-t pt-4 space-y-1">
-                <p>تم إنشاء هذا التقرير بواسطة نظام إدارة العمالة اليومية</p>
-                <p>
-                  تاريخ الطباعة: {new Date().toLocaleDateString('en-CA')}
-                </p>
-              </div>
-
               {/* Signatures Section */}
               <div className="signatures-section mt-16 pt-8">
                 <div className="grid grid-cols-6 gap-4 text-center" dir="rtl">
@@ -433,6 +427,11 @@ export default function PayrollReport() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Report Footer - بعد التواقيع */}
+              <div className="text-center text-xs text-gray-500 border-t pt-4 mt-12">
+                <p>تم إنشاء هذا التقرير بواسطة نظام إدارة العمالة اليومية — تاريخ الطباعة: {new Date().toLocaleDateString('en-CA')} — تمت الطباعة بواسطة: {user?.fullName || user?.username || 'غير معروف'}</p>
               </div>
             </CardContent>
           </Card>
