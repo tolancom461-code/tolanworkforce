@@ -15,17 +15,19 @@ describe('Night Shift Utilities', () => {
   // so it's tested indirectly through groupEventsByWorkDate which is pure logic
 
   describe('getExpandedDateRange', () => {
-    it('should extend end date to next day 8 AM for night shift coverage', () => {
+    it('should extend search range to cover night shifts', () => {
       const result = getExpandedDateRange('2026-02-10');
-      expect(result.startOfDay).toEqual(new Date('2026-02-10T00:00:00'));
-      // endOfSearch should be extended beyond midnight to catch night shift check_outs
-      expect(result.endOfSearch.getTime()).toBeGreaterThan(new Date('2026-02-10T23:59:59').getTime());
+      // startOfDay should go back 24 hours to capture previous day check_ins
+      expect(result.startOfDay.toISOString()).toBe('2026-02-09T00:00:00.000Z');
+      // endOfSearch should extend to next day 10 AM UTC to catch night shift check_outs
+      expect(result.endOfSearch.toISOString()).toBe('2026-02-11T10:00:00.000Z');
     });
 
-    it('should include startOfDay at midnight', () => {
+    it('should use UTC explicitly to avoid timezone issues', () => {
       const result = getExpandedDateRange('2026-02-10');
-      expect(result.startOfDay.getHours()).toBe(0);
-      expect(result.startOfDay.getMinutes()).toBe(0);
+      // startOfDay is previous day midnight UTC
+      expect(result.startOfDay.getUTCHours()).toBe(0);
+      expect(result.startOfDay.getUTCMinutes()).toBe(0);
     });
   });
 

@@ -164,12 +164,17 @@ export async function getWorkDateForCheckOut(workerId: number, checkOutTime: Dat
  * to capture check_outs from night shifts that started on the last day.
  */
 export function getExpandedDateRange(dateStr: string): { startOfDay: Date; endOfSearch: Date } {
-  const startOfDay = new Date(dateStr + 'T00:00:00');
-  // Extend to 10 AM next day to capture night shift check_outs
+  // Use UTC explicitly to avoid timezone issues
+  const startOfDay = new Date(dateStr + 'T00:00:00Z');
+  // Expand backwards: previous day at 00:00 UTC to capture check_ins from previous evening shifts
+  // This ensures groupEventsByWorkDate can find the matching check_in for orphan check_outs
+  // (e.g., check_in at 3 PM UTC = 6 PM local on prev day)
+  const expandedStart = new Date(startOfDay);
+  expandedStart.setTime(expandedStart.getTime() - 24 * 60 * 60 * 1000); // Go back 24 hours
+  // Extend forward to 10 AM UTC next day to capture night shift check_outs
   const endOfSearch = new Date(startOfDay);
-  endOfSearch.setDate(endOfSearch.getDate() + 1);
-  endOfSearch.setHours(10, 0, 0, 0);
-  return { startOfDay, endOfSearch };
+  endOfSearch.setTime(endOfSearch.getTime() + 34 * 60 * 60 * 1000); // +34 hours = next day 10 AM
+  return { startOfDay: expandedStart, endOfSearch };
 }
 
 export async function getDb() {
