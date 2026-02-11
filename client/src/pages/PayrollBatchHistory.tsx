@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -142,10 +142,71 @@ export default function PayrollBatchHistory() {
     // Print will be triggered from the details dialog
   };
 
+  // Helper: group items by group name
+  const groupItemsByGroup = (items: any[]) => {
+    const grouped: Record<string, { groupName: string; items: any[] }> = {};
+    items.forEach((item: any) => {
+      const gName = item.groupName || 'بدون مجموعة';
+      if (!grouped[gName]) {
+        grouped[gName] = { groupName: gName, items: [] };
+      }
+      grouped[gName].items.push(item);
+    });
+    return Object.values(grouped);
+  };
+
+  // Memoized grouped items for details dialog
+  const groupedItems = useMemo(() => {
+    if (!batchDetails?.items) return [];
+    return groupItemsByGroup(batchDetails.items);
+  }, [batchDetails?.items]);
+
   const handlePrintFromDetails = () => {
     if (!batchDetails) return;
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+
+    const groups = groupItemsByGroup(batchDetails.items || []);
+    let counter = 0;
+
+    const groupsHtml = groups.map(group => {
+      const groupRows = group.items.map((item: any) => {
+        counter++;
+        return `
+          <tr>
+            <td>${counter}</td>
+            <td>${item.workerName}</td>
+            <td>${item.workerCode}</td>
+            <td style="text-align:center">${item.daysWorked}</td>
+            <td>${parseFloat(item.baseAmount?.toString() || '0').toFixed(2)}</td>
+            <td style="color:red">${parseFloat(item.totalDeductions?.toString() || '0').toFixed(2)}</td>
+            <td style="color:green">${parseFloat(item.totalBonuses?.toString() || '0').toFixed(2)}</td>
+            <td style="font-weight:bold">${parseFloat(item.netAmount?.toString() || '0').toFixed(2)}</td>
+            <td class="signature-col"></td>
+          </tr>
+        `;
+      }).join('');
+
+      const groupBase = group.items.reduce((s: number, i: any) => s + parseFloat(i.baseAmount?.toString() || '0'), 0);
+      const groupDed = group.items.reduce((s: number, i: any) => s + parseFloat(i.totalDeductions?.toString() || '0'), 0);
+      const groupBon = group.items.reduce((s: number, i: any) => s + parseFloat(i.totalBonuses?.toString() || '0'), 0);
+      const groupNet = group.items.reduce((s: number, i: any) => s + parseFloat(i.netAmount?.toString() || '0'), 0);
+
+      return `
+        <tr class="group-header">
+          <td colspan="9">${group.groupName} (${group.items.length} عامل)</td>
+        </tr>
+        ${groupRows}
+        <tr class="group-total">
+          <td colspan="4">إجمالي ${group.groupName}</td>
+          <td>${groupBase.toFixed(2)}</td>
+          <td style="color:red">${groupDed.toFixed(2)}</td>
+          <td style="color:green">${groupBon.toFixed(2)}</td>
+          <td style="font-weight:bold">${groupNet.toFixed(2)}</td>
+          <td></td>
+        </tr>
+      `;
+    }).join('');
 
     printWindow.document.write(`
       <html dir="rtl" lang="ar">
@@ -159,7 +220,9 @@ export default function PayrollBatchHistory() {
           .header { text-align: center; margin-bottom: 20px; }
           .header h2 { margin: 5px 0; }
           .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
-          .total-row { font-weight: bold; background-color: #f9f9f9; }
+          .total-row { font-weight: bold; background-color: #e8e8e8; }
+          .group-header { background-color: #d4e6f1; font-weight: bold; font-size: 14px; }
+          .group-total { background-color: #eaf2f8; font-weight: bold; font-size: 12px; }
           .signature-col { width: 120px; min-height: 40px; }
           .footer { text-align: center; font-size: 11px; color: #666; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; }
           @media print { body { padding: 0; } }
@@ -189,21 +252,9 @@ export default function PayrollBatchHistory() {
             </tr>
           </thead>
           <tbody>
-            ${batchDetails.items?.map((item: any, idx: number) => `
-              <tr>
-                <td>${idx + 1}</td>
-                <td>${item.workerName}</td>
-                <td>${item.workerCode}</td>
-                <td style="text-align:center">${item.daysWorked}</td>
-                <td>${parseFloat(item.baseAmount?.toString() || '0').toFixed(2)}</td>
-                <td style="color:red">${parseFloat(item.totalDeductions?.toString() || '0').toFixed(2)}</td>
-                <td style="color:green">${parseFloat(item.totalBonuses?.toString() || '0').toFixed(2)}</td>
-                <td style="font-weight:bold">${parseFloat(item.netAmount?.toString() || '0').toFixed(2)}</td>
-                <td class="signature-col"></td>
-              </tr>
-            `).join('') || ''}
+            ${groupsHtml}
             <tr class="total-row">
-              <td colspan="4">الإجمالي</td>
+              <td colspan="4">الإجمالي الكلي</td>
               <td>${parseFloat(batchDetails.batch.totalAmount?.toString() || '0').toFixed(2)}</td>
               <td>${parseFloat(batchDetails.batch.totalDeductions?.toString() || '0').toFixed(2)}</td>
               <td>${parseFloat(batchDetails.batch.totalBonuses?.toString() || '0').toFixed(2)}</td>
@@ -576,7 +627,7 @@ export default function PayrollBatchHistory() {
                 </Button>
               </div>
 
-              {/* Items Table */}
+              {/* Items Table - Grouped by Group */}
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -590,31 +641,60 @@ export default function PayrollBatchHistory() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {batchDetails.items?.map((item: any) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{item.workerName}</p>
-                          <p className="text-sm text-muted-foreground">{item.workerCode}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">{item.daysWorked}</TableCell>
-                      <TableCell className="font-mono">
-                        {parseFloat(item.baseAmount?.toString() || '0').toFixed(2)}
-                      </TableCell>
-                      <TableCell className="font-mono text-red-600">
-                        {parseFloat(item.totalDeductions?.toString() || '0').toFixed(2)}
-                      </TableCell>
-                      <TableCell className="font-mono text-green-600">
-                        {parseFloat(item.totalBonuses?.toString() || '0').toFixed(2)}
-                      </TableCell>
-                      <TableCell className="font-mono font-semibold">
-                        {parseFloat(item.netAmount?.toString() || '0').toFixed(2)}
-                      </TableCell>
-                      <TableCell className="w-[120px]">
-                        {/* عمود فارغ للتوقيع اليدوي */}
-                      </TableCell>
-                    </TableRow>
+                  {groupedItems.map((group) => (
+                    <>
+                      {/* Group Header */}
+                      <TableRow key={`group-${group.groupName}`} className="bg-blue-50 hover:bg-blue-50">
+                        <TableCell colSpan={7} className="font-bold text-blue-800">
+                          {group.groupName} ({group.items.length} عامل)
+                        </TableCell>
+                      </TableRow>
+                      {/* Group Workers */}
+                      {group.items.map((item: any) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{item.workerName}</p>
+                              <p className="text-sm text-muted-foreground">{item.workerCode}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">{item.daysWorked}</TableCell>
+                          <TableCell className="font-mono">
+                            {parseFloat(item.baseAmount?.toString() || '0').toFixed(2)}
+                          </TableCell>
+                          <TableCell className="font-mono text-red-600">
+                            {parseFloat(item.totalDeductions?.toString() || '0').toFixed(2)}
+                          </TableCell>
+                          <TableCell className="font-mono text-green-600">
+                            {parseFloat(item.totalBonuses?.toString() || '0').toFixed(2)}
+                          </TableCell>
+                          <TableCell className="font-mono font-semibold">
+                            {parseFloat(item.netAmount?.toString() || '0').toFixed(2)}
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            {/* عمود فارغ للتوقيع اليدوي */}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {/* Group Subtotal */}
+                      <TableRow key={`subtotal-${group.groupName}`} className="bg-gray-50 hover:bg-gray-50">
+                        <TableCell className="font-semibold text-sm">إجمالي {group.groupName}</TableCell>
+                        <TableCell></TableCell>
+                        <TableCell className="font-mono font-semibold text-sm">
+                          {group.items.reduce((s: number, i: any) => s + parseFloat(i.baseAmount?.toString() || '0'), 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="font-mono font-semibold text-sm text-red-600">
+                          {group.items.reduce((s: number, i: any) => s + parseFloat(i.totalDeductions?.toString() || '0'), 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="font-mono font-semibold text-sm text-green-600">
+                          {group.items.reduce((s: number, i: any) => s + parseFloat(i.totalBonuses?.toString() || '0'), 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell className="font-mono font-semibold text-sm">
+                          {group.items.reduce((s: number, i: any) => s + parseFloat(i.netAmount?.toString() || '0'), 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </>
                   ))}
                 </TableBody>
               </Table>
