@@ -1816,6 +1816,10 @@ export async function getWorkerFinancialReport(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Convert to YYYY-MM-DD strings to avoid timezone issues
+  const startDateStr = startDate.toISOString().split('T')[0];
+  const endDateStr = endDate.toISOString().split('T')[0];
+
   // Get worker info
   const worker = await db
     .select()
@@ -1825,15 +1829,15 @@ export async function getWorkerFinancialReport(
 
   if (!worker.length) throw new Error("Worker not found");
 
-  // Get daily finance records
+  // Get daily finance records - use DATE() cast to avoid timezone issues
   const financeRecords = await db
     .select()
     .from(workerDailyFinance)
     .where(
       and(
         eq(workerDailyFinance.workerId, workerId),
-        gte(workerDailyFinance.workDate, startDate),
-        lte(workerDailyFinance.workDate, endDate)
+        sql`DATE(${workerDailyFinance.workDate}) >= ${startDateStr}`,
+        sql`DATE(${workerDailyFinance.workDate}) <= ${endDateStr}`
       )
     )
     .orderBy(workerDailyFinance.workDate);
@@ -1846,8 +1850,8 @@ export async function getWorkerFinancialReport(
       and(
         eq(payOverrides.workerId, workerId),
         eq(payOverrides.status, 'approved'),
-        gte(payOverrides.overrideDate, startDate),
-        lte(payOverrides.overrideDate, endDate)
+        sql`DATE(${payOverrides.overrideDate}) >= ${startDateStr}`,
+        sql`DATE(${payOverrides.overrideDate}) <= ${endDateStr}`
       )
     );
 
@@ -3430,13 +3434,15 @@ export async function getPayrollReportByGroup(
   const db = await getDb();
   if (!db) return [];
 
-  const startDate = new Date(periodStart);
-  const endDate = new Date(periodEnd);
+  // Use string-based date comparison to avoid timezone issues
+  // periodStart and periodEnd are YYYY-MM-DD strings
+  const startDateStr = periodStart.split('T')[0];
+  const endDateStr = periodEnd.split('T')[0];
 
-  // 1) Get daily finance records
-  const conditions = [
-    gte(workerDailyFinance.workDate, startDate),
-    lte(workerDailyFinance.workDate, endDate),
+  // 1) Get daily finance records - use DATE() cast to avoid timezone issues
+  const conditions: any[] = [
+    sql`DATE(${workerDailyFinance.workDate}) >= ${startDateStr}`,
+    sql`DATE(${workerDailyFinance.workDate}) <= ${endDateStr}`,
   ];
   if (groupId) conditions.push(eq(workers.groupId, groupId));
   if (costCenterId) conditions.push(eq(groups.costCenterId, costCenterId));
@@ -3462,8 +3468,8 @@ export async function getPayrollReportByGroup(
 
   // 2) Get approved pay overrides for the same period
   const overrideConditions = [
-    gte(payOverrides.overrideDate, startDate),
-    lte(payOverrides.overrideDate, endDate),
+    sql`DATE(${payOverrides.overrideDate}) >= ${startDateStr}`,
+    sql`DATE(${payOverrides.overrideDate}) <= ${endDateStr}`,
     eq(payOverrides.status, 'approved'),
   ];
 
@@ -3584,19 +3590,20 @@ export async function getPayrollReportByWorker(
   const db = await getDb();
   if (!db) return [];
 
-  const startDate = new Date(periodStart);
-  const endDate = new Date(periodEnd);
+  // Use string-based date comparison to avoid timezone issues
+  const startDateStr = periodStart.split('T')[0];
+  const endDateStr = periodEnd.split('T')[0];
 
-  // 1) Get daily finance records
+  // 1) Get daily finance records - use DATE() cast to avoid timezone issues
   const whereConditions = workerId
     ? and(
-        gte(workerDailyFinance.workDate, startDate),
-        lte(workerDailyFinance.workDate, endDate),
+        sql`DATE(${workerDailyFinance.workDate}) >= ${startDateStr}`,
+        sql`DATE(${workerDailyFinance.workDate}) <= ${endDateStr}`,
         eq(workers.id, workerId)
       )
     : and(
-        gte(workerDailyFinance.workDate, startDate),
-        lte(workerDailyFinance.workDate, endDate)
+        sql`DATE(${workerDailyFinance.workDate}) >= ${startDateStr}`,
+        sql`DATE(${workerDailyFinance.workDate}) <= ${endDateStr}`
       );
 
   const results = await db
@@ -3619,14 +3626,14 @@ export async function getPayrollReportByWorker(
   // 2) Get approved pay overrides for the same period
   const overrideWhereConditions = workerId
     ? and(
-        gte(payOverrides.overrideDate, startDate),
-        lte(payOverrides.overrideDate, endDate),
+        sql`DATE(${payOverrides.overrideDate}) >= ${startDateStr}`,
+        sql`DATE(${payOverrides.overrideDate}) <= ${endDateStr}`,
         eq(payOverrides.status, 'approved'),
         eq(payOverrides.workerId, workerId)
       )
     : and(
-        gte(payOverrides.overrideDate, startDate),
-        lte(payOverrides.overrideDate, endDate),
+        sql`DATE(${payOverrides.overrideDate}) >= ${startDateStr}`,
+        sql`DATE(${payOverrides.overrideDate}) <= ${endDateStr}`,
         eq(payOverrides.status, 'approved')
       );
 

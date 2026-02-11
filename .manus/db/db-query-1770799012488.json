@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, \"batchCode\", \"periodStart\", \"periodEnd\", \"totalAmount\", \"totalWorkers\", \"totalDeductions\", \"totalBonuses\", status, \"costCenterId\" FROM payroll_batches ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, \"batchCode\", \"periodStart\", \"periodEnd\", \"totalAmount\", \"totalWorkers\", \"totalDeductions\", \"totalBonuses\", status, \"costCenterId\" FROM payroll_batches ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "240002",
+      "batchCode": "batchCode",
+      "periodStart": "periodStart",
+      "periodEnd": "periodEnd",
+      "totalAmount": "totalAmount",
+      "totalWorkers": "totalWorkers",
+      "totalDeductions": "totalDeductions",
+      "totalBonuses": "totalBonuses",
+      "status": "approved",
+      "costCenterId": "costCenterId"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tbatchCode\tperiodStart\tperiodEnd\ttotalAmount\ttotalWorkers\ttotalDeductions\ttotalBonuses\tstatus\tcostCenterId\n240002\tbatchCode\tperiodStart\tperiodEnd\ttotalAmount\ttotalWorkers\ttotalDeductions\ttotalBonuses\tapproved\tcostCenterId\n",
+  "stderr": "",
+  "execution_time_ms": 1690
+}
