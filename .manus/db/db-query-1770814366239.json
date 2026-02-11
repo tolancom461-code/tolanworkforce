@@ -1,0 +1,91 @@
+{
+  "query": "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() ORDER BY table_name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() ORDER BY table_name;",
+  "rows": [
+    {
+      "table_name": "__drizzle_migrations"
+    },
+    {
+      "table_name": "attendance_events"
+    },
+    {
+      "table_name": "audit_log"
+    },
+    {
+      "table_name": "cost_centers"
+    },
+    {
+      "table_name": "deduction_rules"
+    },
+    {
+      "table_name": "devices"
+    },
+    {
+      "table_name": "group_schedules"
+    },
+    {
+      "table_name": "groups"
+    },
+    {
+      "table_name": "jobs"
+    },
+    {
+      "table_name": "operational_flags"
+    },
+    {
+      "table_name": "pay_overrides"
+    },
+    {
+      "table_name": "payroll_batch_corrections"
+    },
+    {
+      "table_name": "payroll_batch_items"
+    },
+    {
+      "table_name": "payroll_batch_notes"
+    },
+    {
+      "table_name": "payroll_batches"
+    },
+    {
+      "table_name": "permissions"
+    },
+    {
+      "table_name": "role_permissions"
+    },
+    {
+      "table_name": "roles"
+    },
+    {
+      "table_name": "settings"
+    },
+    {
+      "table_name": "user_cost_centers"
+    },
+    {
+      "table_name": "user_permissions"
+    },
+    {
+      "table_name": "user_roles"
+    },
+    {
+      "table_name": "users"
+    },
+    {
+      "table_name": "work_days"
+    },
+    {
+      "table_name": "worker_archive"
+    },
+    {
+      "table_name": "worker_daily_finance"
+    },
+    {
+      "table_name": "workers"
+    }
+  ],
+  "messages": [],
+  "stdout": "table_name\n__drizzle_migrations\nattendance_events\naudit_log\ncost_centers\ndeduction_rules\ndevices\ngroup_schedules\ngroups\njobs\noperational_flags\npay_overrides\npayroll_batch_corrections\npayroll_batch_items\npayroll_batch_notes\npayroll_batches\npermissions\nrole_permissions\nroles\nsettings\nuser_cost_centers\nuser_permissions\nuser_roles\nusers\nwork_days\nworker_archive\nworker_daily_finance\nworkers\n",
+  "stderr": "",
+  "execution_time_ms": 1620
+}

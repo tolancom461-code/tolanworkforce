@@ -1,0 +1,34 @@
+{
+  "query": "\nSELECT 'workers' as tbl, COUNT(*) as cnt FROM workers\nUNION ALL SELECT 'groups', COUNT(*) FROM `groups`\nUNION ALL SELECT 'attendance_events', COUNT(*) FROM attendance_events\nUNION ALL SELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance\nUNION ALL SELECT 'payroll_batches', COUNT(*) FROM payroll_batches\nUNION ALL SELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute \nSELECT 'workers' as tbl, COUNT(*) as cnt FROM workers\nUNION ALL SELECT 'groups', COUNT(*) FROM `groups`\nUNION ALL SELECT 'attendance_events', COUNT(*) FROM attendance_events\nUNION ALL SELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance\nUNION ALL SELECT 'payroll_batches', COUNT(*) FROM payroll_batches\nUNION ALL SELECT 'payroll_batch_items', COUNT(*) FROM payroll_batch_items;\n",
+  "rows": [
+    {
+      "tbl": "attendance_events",
+      "cnt": "0"
+    },
+    {
+      "tbl": "groups",
+      "cnt": "0"
+    },
+    {
+      "tbl": "worker_daily_finance",
+      "cnt": "0"
+    },
+    {
+      "tbl": "payroll_batches",
+      "cnt": "0"
+    },
+    {
+      "tbl": "workers",
+      "cnt": "0"
+    },
+    {
+      "tbl": "payroll_batch_items",
+      "cnt": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\nattendance_events\t0\ngroups\t0\nworker_daily_finance\t0\npayroll_batches\t0\nworkers\t0\npayroll_batch_items\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1562
+}

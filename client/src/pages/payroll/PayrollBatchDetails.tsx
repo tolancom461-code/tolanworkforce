@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/payroll/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download, Calendar, CheckCircle, Clock, XCircle } from "lucide-react";
+import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download, Calendar, CheckCircle, Clock, XCircle, Printer } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PayrollBatchDetails() {
@@ -57,6 +57,91 @@ export default function PayrollBatchDetails() {
 
   const utils = trpc.useUtils();
   const { data: batch, isLoading } = trpc.payroll.getDetails.useQuery({ batchId });
+
+  // Print handler
+  const handlePrint = () => {
+    if (!batch) return;
+    const groupedForPrint = batch.items?.reduce((acc: any, item: any) => {
+      const groupKey = item.groupId || 'unknown';
+      if (!acc[groupKey]) {
+        acc[groupKey] = {
+          groupName: item.groupName || 'مجموعة غير محددة',
+          workers: [],
+          totals: { base: 0, deductions: 0, bonuses: 0, net: 0 },
+        };
+      }
+      acc[groupKey].workers.push(item);
+      acc[groupKey].totals.base += parseFloat(item.baseAmount || '0');
+      acc[groupKey].totals.deductions += parseFloat(item.totalDeductions || '0');
+      acc[groupKey].totals.bonuses += parseFloat(item.totalBonuses || '0');
+      acc[groupKey].totals.net += parseFloat(item.netAmount || '0');
+      return acc;
+    }, {});
+    const printGroups = Object.values(groupedForPrint || {}) as any[];
+    let workerNum = 0;
+    const grandTotal = { base: 0, deductions: 0, bonuses: 0, net: 0 };
+    printGroups.forEach((g: any) => {
+      grandTotal.base += g.totals.base;
+      grandTotal.deductions += g.totals.deductions;
+      grandTotal.bonuses += g.totals.bonuses;
+      grandTotal.net += g.totals.net;
+    });
+    const fmt = (n: number) => n.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let tableRows = '';
+    printGroups.forEach((group: any) => {
+      tableRows += `<tr class="group-header"><td colspan="7">${group.groupName} (${group.workers.length} عامل)</td></tr>`;
+      group.workers.forEach((w: any) => {
+        workerNum++;
+        tableRows += `<tr>
+          <td>${workerNum}</td>
+          <td>${w.workerName}</td>
+          <td>${fmt(parseFloat(w.baseAmount || '0'))}</td>
+          <td>${fmt(parseFloat(w.totalDeductions || '0'))}</td>
+          <td>${fmt(parseFloat(w.totalBonuses || '0'))}</td>
+          <td>${fmt(parseFloat(w.netAmount || '0'))}</td>
+          <td>${w.notes || '-'}</td>
+        </tr>`;
+      });
+      tableRows += `<tr class="group-total"><td colspan="2">إجمالي ${group.groupName}</td><td>${fmt(group.totals.base)}</td><td>${fmt(group.totals.deductions)}</td><td>${fmt(group.totals.bonuses)}</td><td>${fmt(group.totals.net)}</td><td></td></tr>`;
+    });
+    tableRows += `<tr class="grand-total"><td colspan="2">الإجمالي الكلي</td><td>${fmt(grandTotal.base)}</td><td>${fmt(grandTotal.deductions)}</td><td>${fmt(grandTotal.bonuses)}</td><td>${fmt(grandTotal.net)}</td><td></td></tr>`;
+    const periodStart = new Date(batch.batch.periodStart).toLocaleDateString('ar-SA');
+    const periodEnd = new Date(batch.batch.periodEnd).toLocaleDateString('ar-SA');
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) { toast.error('يرجى السماح بالنوافذ المنبثقة'); return; }
+    printWindow.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف رواتب - ${batch.batch.batchCode}</title><style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding: 20px; direction: rtl; color: #333; }
+      .header { text-align: center; margin-bottom: 20px; }
+      .header h1 { font-size: 22px; margin-bottom: 5px; }
+      .header p { font-size: 13px; color: #666; }
+      .meta { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 13px; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; }
+      th { background: #f5f5f5; font-weight: 600; }
+      .group-header td { background: #e8f4fd; font-weight: 700; font-size: 14px; color: #1a5276; }
+      .group-total td { background: #f0f0f0; font-weight: 600; }
+      .grand-total td { background: #d4edda; font-weight: 700; font-size: 14px; }
+      .footer { margin-top: 20px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
+      @media print { body { padding: 10px; } }
+    </style></head><body>
+      <div class="header">
+        <h1>كشف رواتب العمال اليومية</h1>
+        <p>رمز الدفعة: ${batch.batch.batchCode}</p>
+      </div>
+      <div class="meta">
+        <span>الفترة: ${periodStart} إلى ${periodEnd}</span>
+        <span>الحالة: ${batch.batch.status === 'approved' ? 'موافق عليها' : batch.batch.status}</span>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>العامل</th><th>الراتب الأساسي</th><th>الخصومات</th><th>المكافآت</th><th>الصافي</th><th>ملاحظات</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      <div class="footer">تم إنشاء هذا الكشف بواسطة نظام إدارة العمالة اليومية — تاريخ الطباعة: ${new Date().toLocaleDateString('ar-SA')} | وقت الطباعة: ${new Date().toLocaleTimeString('ar-SA')}</div>
+    </body></html>`);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.print(); }, 500);
+  };
 
   const updateItemMutation = trpc.payroll.updateItem.useMutation({
     onSuccess: () => {
@@ -419,6 +504,13 @@ export default function PayrollBatchDetails() {
           <div className="flex justify-between items-center">
             <CardTitle>تفاصيل العمال حسب المجموعات</CardTitle>
             <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handlePrint}
+              >
+                <Printer className="h-4 w-4 ml-2" />
+                طباعة الكشف
+              </Button>
               <Button 
                 variant="outline" 
                 onClick={() => exportMutation.mutate({ batchId })} 
