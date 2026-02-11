@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, UNIX_TIMESTAMP(check_in_time) as cin_ts, UNIX_TIMESTAMP(check_out_time) as cout_ts, worked_minutes, (UNIX_TIMESTAMP(check_out_time) - UNIX_TIMESTAMP(check_in_time))/60 as calc_minutes FROM worker_daily_finance WHERE id = 210068;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, UNIX_TIMESTAMP(check_in_time) as cin_ts, UNIX_TIMESTAMP(check_out_time) as cout_ts, worked_minutes, (UNIX_TIMESTAMP(check_out_time) - UNIX_TIMESTAMP(check_in_time))/60 as calc_minutes FROM worker_daily_finance WHERE id = 210068;",
+  "rows": [
+    {
+      "id": "210068",
+      "cin_ts": "1770724800",
+      "cout_ts": "1770679800",
+      "worked_minutes": "0",
+      "calc_minutes": "-750.0000"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcin_ts\tcout_ts\tworked_minutes\tcalc_minutes\n210068\t1770724800\t1770679800\t0\t-750.0000\n",
+  "stderr": "",
+  "execution_time_ms": 1573
+}

@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, check_in_time, check_out_time, worked_minutes FROM worker_daily_finance WHERE id = 210067;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, check_in_time, check_out_time, worked_minutes FROM worker_daily_finance WHERE id = 210067;",
+  "rows": [
+    {
+      "id": "210067",
+      "check_in_time": "2026-02-05 11:55:00",
+      "check_out_time": "2026-02-04 21:30:00",
+      "worked_minutes": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcheck_in_time\tcheck_out_time\tworked_minutes\n210067\t2026-02-05 11:55:00\t2026-02-04 21:30:00\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1585
+}

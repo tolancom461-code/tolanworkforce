@@ -1,0 +1,28 @@
+{
+  "query": "SELECT \n  DATE_FORMAT(work_date, '%Y-%m-%d') as wd,\n  DATE_FORMAT(check_in_time, '%m-%d %H:%i') as cin,\n  DATE_FORMAT(check_out_time, '%m-%d %H:%i') as cout,\n  worked_minutes as wm,\n  financial_minutes as fm,\n  late_minutes as lm,\n  early_leave_minutes as elm\nFROM worker_daily_finance \nWHERE worker_id = 180104\nORDER BY work_date;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  DATE_FORMAT(work_date, '%Y-%m-%d') as wd,\n  DATE_FORMAT(check_in_time, '%m-%d %H:%i') as cin,\n  DATE_FORMAT(check_out_time, '%m-%d %H:%i') as cout,\n  worked_minutes as wm,\n  financial_minutes as fm,\n  late_minutes as lm,\n  early_leave_minutes as elm\nFROM worker_daily_finance \nWHERE worker_id = 180104\nORDER BY work_date;",
+  "rows": [
+    {
+      "wd": "2026-02-05",
+      "cin": "02-05 11:55",
+      "cout": "02-04 21:30",
+      "wm": "0",
+      "fm": "0",
+      "lm": "0",
+      "elm": "1380"
+    },
+    {
+      "wd": "2026-02-10",
+      "cin": "02-10 12:00",
+      "cout": "02-09 23:30",
+      "wm": "0",
+      "fm": "0",
+      "lm": "0",
+      "elm": "1290"
+    }
+  ],
+  "messages": [],
+  "stdout": "wd\tcin\tcout\twm\tfm\tlm\telm\n2026-02-05\t02-05 11:55\t02-04 21:30\t0\t0\t0\t1380\n2026-02-10\t02-10 12:00\t02-09 23:30\t0\t0\t0\t1290\n",
+  "stderr": "",
+  "execution_time_ms": 1586
+}

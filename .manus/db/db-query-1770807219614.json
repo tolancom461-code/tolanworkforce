@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, \n  CAST(UNIX_TIMESTAMP(check_in_time) AS CHAR) as cin_unix,\n  CAST(UNIX_TIMESTAMP(check_out_time) AS CHAR) as cout_unix,\n  CAST(worked_minutes AS CHAR) as wm,\n  CAST((UNIX_TIMESTAMP(check_out_time) - UNIX_TIMESTAMP(check_in_time))/60 AS CHAR) as calc_diff_min,\n  CAST(check_in_time AS CHAR) as cin_str,\n  CAST(check_out_time AS CHAR) as cout_str\nFROM worker_daily_finance WHERE id = 210068;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, \n  CAST(UNIX_TIMESTAMP(check_in_time) AS CHAR) as cin_unix,\n  CAST(UNIX_TIMESTAMP(check_out_time) AS CHAR) as cout_unix,\n  CAST(worked_minutes AS CHAR) as wm,\n  CAST((UNIX_TIMESTAMP(check_out_time) - UNIX_TIMESTAMP(check_in_time))/60 AS CHAR) as calc_diff_min,\n  CAST(check_in_time AS CHAR) as cin_str,\n  CAST(check_out_time AS CHAR) as cout_str\nFROM worker_daily_finance WHERE id = 210068;",
+  "rows": [
+    {
+      "id": "210068",
+      "cin_unix": "1770724800",
+      "cout_unix": "1770679800",
+      "wm": "0",
+      "calc_diff_min": "-750.000000000",
+      "cin_str": "2026-02-10 12:00:00",
+      "cout_str": "2026-02-09 23:30:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcin_unix\tcout_unix\twm\tcalc_diff_min\tcin_str\tcout_str\n210068\t1770724800\t1770679800\t0\t-750.000000000\t2026-02-10 12:00:00\t2026-02-09 23:30:00\n",
+  "stderr": "",
+  "execution_time_ms": 1600
+}

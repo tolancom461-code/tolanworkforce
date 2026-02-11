@@ -1,0 +1,17 @@
+{
+  "query": "SELECT \n  CONCAT('ID: ', CAST(id AS CHAR)) as line1,\n  CONCAT('CheckIn: ', CAST(check_in_time AS CHAR)) as line2,\n  CONCAT('CheckOut: ', CAST(check_out_time AS CHAR)) as line3,\n  CONCAT('WorkedMin: ', CAST(worked_minutes AS CHAR)) as line4,\n  CONCAT('CalcDiff: ', CAST(TIMESTAMPDIFF(MINUTE, check_in_time, check_out_time) AS CHAR)) as line5\nFROM worker_daily_finance WHERE id = 210068;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT \n  CONCAT('ID: ', CAST(id AS CHAR)) as line1,\n  CONCAT('CheckIn: ', CAST(check_in_time AS CHAR)) as line2,\n  CONCAT('CheckOut: ', CAST(check_out_time AS CHAR)) as line3,\n  CONCAT('WorkedMin: ', CAST(worked_minutes AS CHAR)) as line4,\n  CONCAT('CalcDiff: ', CAST(TIMESTAMPDIFF(MINUTE, check_in_time, check_out_time) AS CHAR)) as line5\nFROM worker_daily_finance WHERE id = 210068;",
+  "rows": [
+    {
+      "line1": "ID: 210068",
+      "line2": "CheckIn: 2026-02-10 12:00:00",
+      "line3": "CheckOut: 2026-02-09 23:30:00",
+      "line4": "WorkedMin: 0",
+      "line5": "CalcDiff: -750"
+    }
+  ],
+  "messages": [],
+  "stdout": "line1\tline2\tline3\tline4\tline5\nID: 210068\tCheckIn: 2026-02-10 12:00:00\tCheckOut: 2026-02-09 23:30:00\tWorkedMin: 0\tCalcDiff: -750\n",
+  "stderr": "",
+  "execution_time_ms": 1583
+}

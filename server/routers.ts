@@ -980,8 +980,9 @@ export const appRouter = router({
           console.log('[addMissingCheckOut] Success');
           
           // Auto-calculate finance after adding check_out
+          // Use check_in's date as work date (handles night shifts crossing midnight)
           try {
-            const workDate = eventTime.toLocaleDateString('en-CA');
+            const workDate = await db.getWorkDateForCheckOut(input.workerId, eventTime);
             await db.processAttendanceToFinance(input.workerId, workDate);
             console.log('[addMissingCheckOut] Finance calculated for', workDate);
           } catch (finError) {

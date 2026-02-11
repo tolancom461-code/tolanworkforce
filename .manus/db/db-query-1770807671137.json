@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, worker_id, event_type, CAST(event_time AS CHAR) as event_time_str\nFROM attendance_events \nWHERE worker_id = 180104 \nAND event_time >= '2026-02-04 00:00:00' \nAND event_time <= '2026-02-06 00:00:00'\nORDER BY event_time;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, worker_id, event_type, CAST(event_time AS CHAR) as event_time_str\nFROM attendance_events \nWHERE worker_id = 180104 \nAND event_time >= '2026-02-04 00:00:00' \nAND event_time <= '2026-02-06 00:00:00'\nORDER BY event_time;",
+  "rows": [
+    {
+      "id": "330063",
+      "worker_id": "180104",
+      "event_type": "check_out",
+      "event_time_str": "2026-02-04 21:30:00"
+    },
+    {
+      "id": "330062",
+      "worker_id": "180104",
+      "event_type": "check_in",
+      "event_time_str": "2026-02-05 11:55:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tevent_type\tevent_time_str\n330063\t180104\tcheck_out\t2026-02-04 21:30:00\n330062\t180104\tcheck_in\t2026-02-05 11:55:00\n",
+  "stderr": "",
+  "execution_time_ms": 1544
+}

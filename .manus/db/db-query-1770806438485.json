@@ -1,0 +1,30 @@
+{
+  "query": "SELECT ae.id, ae.worker_id, ae.event_type, ae.event_time, ae.method, ae.note, w.full_name as worker_name, w.code as worker_code\nFROM attendance_events ae\nJOIN workers w ON w.id = ae.worker_id\nWHERE w.code = 'W01'\nAND ae.event_time >= '2026-02-09 00:00:00'\nAND ae.event_time <= '2026-02-11 23:59:59'\nORDER BY ae.event_time ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT ae.id, ae.worker_id, ae.event_type, ae.event_time, ae.method, ae.note, w.full_name as worker_name, w.code as worker_code\nFROM attendance_events ae\nJOIN workers w ON w.id = ae.worker_id\nWHERE w.code = 'W01'\nAND ae.event_time >= '2026-02-09 00:00:00'\nAND ae.event_time <= '2026-02-11 23:59:59'\nORDER BY ae.event_time ASC;",
+  "rows": [
+    {
+      "id": "330065",
+      "worker_id": "180104",
+      "event_type": "check_out",
+      "event_time": "2026-02-09 23:30:00",
+      "method": "manual",
+      "note": "تحضير يدوي",
+      "worker_name": "محمد الطيب النعيم عمر",
+      "worker_code": "W01"
+    },
+    {
+      "id": "330064",
+      "worker_id": "180104",
+      "event_type": "check_in",
+      "event_time": "2026-02-10 12:00:00",
+      "method": "manual",
+      "note": "تحضير يدوي",
+      "worker_name": "محمد الطيب النعيم عمر",
+      "worker_code": "W01"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tevent_type\tevent_time\tmethod\tnote\tworker_name\tworker_code\n330065\t180104\tcheck_out\t2026-02-09 23:30:00\tmanual\tتحضير يدوي\tمحمد الطيب النعيم عمر\tW01\n330064\t180104\tcheck_in\t2026-02-10 12:00:00\tmanual\tتحضير يدوي\tمحمد الطيب النعيم عمر\tW01\n",
+  "stderr": "",
+  "execution_time_ms": 1642
+}

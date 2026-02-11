@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, code, full_name FROM workers ORDER BY code;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name FROM workers ORDER BY code;",
+  "rows": [
+    {
+      "id": "180104",
+      "code": "W01",
+      "full_name": "محمد الطيب النعيم عمر"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\n180104\tW01\tمحمد الطيب النعيم عمر\n",
+  "stderr": "",
+  "execution_time_ms": 1602
+}

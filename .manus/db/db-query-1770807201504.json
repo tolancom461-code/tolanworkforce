@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, DATE_FORMAT(work_date, '%Y-%m-%d') as wd FROM worker_daily_finance WHERE worker_id = 180104;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, DATE_FORMAT(work_date, '%Y-%m-%d') as wd FROM worker_daily_finance WHERE worker_id = 180104;",
+  "rows": [
+    {
+      "id": "210067",
+      "wd": "2026-02-05"
+    },
+    {
+      "id": "210068",
+      "wd": "2026-02-10"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\twd\n210067\t2026-02-05\n210068\t2026-02-10\n",
+  "stderr": "",
+  "execution_time_ms": 1674
+}

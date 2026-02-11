@@ -1,0 +1,16 @@
+{
+  "query": "SELECT CONCAT(\n  'WorkDate:', DATE_FORMAT(work_date, '%Y-%m-%d'),\n  ' | CheckIn:', DATE_FORMAT(check_in_time, '%Y-%m-%d %H:%i'),\n  ' | CheckOut:', DATE_FORMAT(check_out_time, '%Y-%m-%d %H:%i'),\n  ' | WorkedMins:', worked_minutes,\n  ' | FinMins:', financial_minutes,\n  ' | Base:', base_salary,\n  ' | LatePen:', late_penalty,\n  ' | Net:', net_salary,\n  ' | LateMins:', late_minutes,\n  ' | EarlyMins:', early_leave_minutes\n) as info\nFROM worker_daily_finance \nWHERE worker_id = 180104\nORDER BY work_date;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT CONCAT(\n  'WorkDate:', DATE_FORMAT(work_date, '%Y-%m-%d'),\n  ' | CheckIn:', DATE_FORMAT(check_in_time, '%Y-%m-%d %H:%i'),\n  ' | CheckOut:', DATE_FORMAT(check_out_time, '%Y-%m-%d %H:%i'),\n  ' | WorkedMins:', worked_minutes,\n  ' | FinMins:', financial_minutes,\n  ' | Base:', base_salary,\n  ' | LatePen:', late_penalty,\n  ' | Net:', net_salary,\n  ' | LateMins:', late_minutes,\n  ' | EarlyMins:', early_leave_minutes\n) as info\nFROM worker_daily_finance \nWHERE worker_id = 180104\nORDER BY work_date;",
+  "rows": [
+    {
+      "info": "WorkDate:2026-02-05 | CheckIn:2026-02-05 11:55 | CheckOut:2026-02-04 21:30 | WorkedMins:0 | FinMins:0 | Base:80.00 | LatePen:80.00 | Net:0.00 | LateMins:0 | EarlyMins:1380"
+    },
+    {
+      "info": "WorkDate:2026-02-10 | CheckIn:2026-02-10 12:00 | CheckOut:2026-02-09 23:30 | WorkedMins:0 | FinMins:0 | Base:80.00 | LatePen:80.00 | Net:0.00 | LateMins:0 | EarlyMins:1290"
+    }
+  ],
+  "messages": [],
+  "stdout": "info\nWorkDate:2026-02-05 | CheckIn:2026-02-05 11:55 | CheckOut:2026-02-04 21:30 | WorkedMins:0 | FinMins:0 | Base:80.00 | LatePen:80.00 | Net:0.00 | LateMins:0 | EarlyMins:1380\nWorkDate:2026-02-10 | CheckIn:2026-02-10 12:00 | CheckOut:2026-02-09 23:30 | WorkedMins:0 | FinMins:0 | Base:80.00 | LatePen:80.00 | Net:0.00 | LateMins:0 | EarlyMins:1290\n",
+  "stderr": "",
+  "execution_time_ms": 1574
+}

@@ -1,0 +1,23 @@
+{
+  "query": "SELECT w.id, w.code, w.full_name, w.group_id, g.code as group_code, g.name as group_name, g.daily_wage, g.work_minutes, g.minute_cost, g.late_penalty_rate, g.early_leave_penalty_rate\nFROM workers w\nLEFT JOIN `groups` g ON g.id = w.group_id\nWHERE w.id = 180104;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT w.id, w.code, w.full_name, w.group_id, g.code as group_code, g.name as group_name, g.daily_wage, g.work_minutes, g.minute_cost, g.late_penalty_rate, g.early_leave_penalty_rate\nFROM workers w\nLEFT JOIN `groups` g ON g.id = w.group_id\nWHERE w.id = 180104;",
+  "rows": [
+    {
+      "id": "180104",
+      "code": "W01",
+      "full_name": "محمد الطيب النعيم عمر",
+      "group_id": "150020",
+      "group_code": "GRP01",
+      "group_name": "مجموعة السودانيين",
+      "daily_wage": "80.00",
+      "work_minutes": "510",
+      "minute_cost": "NULL",
+      "late_penalty_rate": "150.00",
+      "early_leave_penalty_rate": "100.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcode\tfull_name\tgroup_id\tgroup_code\tgroup_name\tdaily_wage\twork_minutes\tminute_cost\tlate_penalty_rate\tearly_leave_penalty_rate\n180104\tW01\tمحمد الطيب النعيم عمر\t150020\tGRP01\tمجموعة السودانيين\t80.00\t510\tNULL\t150.00\t100.00\n",
+  "stderr": "",
+  "execution_time_ms": 1602
+}

@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id, code, full_name FROM workers;\nSELECT ae.id, ae.worker_id, ae.event_type, DATE_FORMAT(ae.event_time, '%Y-%m-%d %H:%i:%s') as event_time, ae.method, ae.note FROM attendance_events ae ORDER BY ae.event_time ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name FROM workers;\nSELECT ae.id, ae.worker_id, ae.event_type, DATE_FORMAT(ae.event_time, '%Y-%m-%d %H:%i:%s') as event_time, ae.method, ae.note FROM attendance_events ae ORDER BY ae.event_time ASC;",
+  "rows": [
+    {
+      "id": "180104",
+      "code": "W01",
+      "full_name": "محمد الطيب النعيم عمر"
+    }
+  ],
+  "messages": [
+    "id\tworker_id\tevent_type\tevent_time\tmethod\tnote",
+    "330063\t180104\tcheck_out\t2026-02-04 21:30:00\tmanual\tتحضير يدوي",
+    "330062\t180104\tcheck_in\t2026-02-05 11:55:00\tmanual\tتحضير يدوي",
+    "330065\t180104\tcheck_out\t2026-02-09 23:30:00\tmanual\tتحضير يدوي",
+    "330064\t180104\tcheck_in\t2026-02-10 12:00:00\tmanual\tتحضير يدوي"
+  ],
+  "stdout": "id\tcode\tfull_name\n180104\tW01\tمحمد الطيب النعيم عمر\nid\tworker_id\tevent_type\tevent_time\tmethod\tnote\n330063\t180104\tcheck_out\t2026-02-04 21:30:00\tmanual\tتحضير يدوي\n330062\t180104\tcheck_in\t2026-02-05 11:55:00\tmanual\tتحضير يدوي\n330065\t180104\tcheck_out\t2026-02-09 23:30:00\tmanual\tتحضير يدوي\n330064\t180104\tcheck_in\t2026-02-10 12:00:00\tmanual\tتحضير يدوي\n",
+  "stderr": "",
+  "execution_time_ms": 1857
+}

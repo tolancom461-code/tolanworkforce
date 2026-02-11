@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE attendance_events \nSET event_time = DATE_ADD(event_time, INTERVAL 1 DAY) \nWHERE id = 330065 AND worker_id = 180104 AND event_type = 'check_out';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute UPDATE attendance_events \nSET event_time = DATE_ADD(event_time, INTERVAL 1 DAY) \nWHERE id = 330065 AND worker_id = 180104 AND event_type = 'check_out';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1653
+}

@@ -1,0 +1,20 @@
+{
+  "query": "SELECT w.id as worker_id, w.code as worker_code, w.full_name, w.group_id, \n  COALESCE(g.code, 'N/A') as group_code, \n  COALESCE(g.name, 'N/A') as group_name, \n  COALESCE(g.daily_wage, 0) as daily_wage, \n  COALESCE(g.work_minutes, 0) as work_minutes\nFROM workers w\nLEFT JOIN `groups` g ON g.id = w.group_id\nWHERE w.id = 180104;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT w.id as worker_id, w.code as worker_code, w.full_name, w.group_id, \n  COALESCE(g.code, 'N/A') as group_code, \n  COALESCE(g.name, 'N/A') as group_name, \n  COALESCE(g.daily_wage, 0) as daily_wage, \n  COALESCE(g.work_minutes, 0) as work_minutes\nFROM workers w\nLEFT JOIN `groups` g ON g.id = w.group_id\nWHERE w.id = 180104;",
+  "rows": [
+    {
+      "worker_id": "180104",
+      "worker_code": "W01",
+      "full_name": "محمد الطيب النعيم عمر",
+      "group_id": "150020",
+      "group_code": "GRP01",
+      "group_name": "مجموعة السودانيين",
+      "daily_wage": "80.00",
+      "work_minutes": "510"
+    }
+  ],
+  "messages": [],
+  "stdout": "worker_id\tworker_code\tfull_name\tgroup_id\tgroup_code\tgroup_name\tdaily_wage\twork_minutes\n180104\tW01\tمحمد الطيب النعيم عمر\t150020\tGRP01\tمجموعة السودانيين\t80.00\t510\n",
+  "stderr": "",
+  "execution_time_ms": 1584
+}

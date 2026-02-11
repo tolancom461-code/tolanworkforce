@@ -1,0 +1,50 @@
+{
+  "query": "SELECT ae.id, ae.worker_id, ae.event_type, \n  DATE_FORMAT(ae.event_time, '%Y-%m-%d %H:%i:%s') as event_time_utc,\n  ae.method, ae.note, w.full_name, w.code\nFROM attendance_events ae\nJOIN workers w ON w.id = ae.worker_id\nWHERE w.code = 'W01'\nORDER BY ae.event_time ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT ae.id, ae.worker_id, ae.event_type, \n  DATE_FORMAT(ae.event_time, '%Y-%m-%d %H:%i:%s') as event_time_utc,\n  ae.method, ae.note, w.full_name, w.code\nFROM attendance_events ae\nJOIN workers w ON w.id = ae.worker_id\nWHERE w.code = 'W01'\nORDER BY ae.event_time ASC;",
+  "rows": [
+    {
+      "id": "330063",
+      "worker_id": "180104",
+      "event_type": "check_out",
+      "event_time_utc": "2026-02-04 21:30:00",
+      "method": "manual",
+      "note": "تحضير يدوي",
+      "full_name": "محمد الطيب النعيم عمر",
+      "code": "W01"
+    },
+    {
+      "id": "330062",
+      "worker_id": "180104",
+      "event_type": "check_in",
+      "event_time_utc": "2026-02-05 11:55:00",
+      "method": "manual",
+      "note": "تحضير يدوي",
+      "full_name": "محمد الطيب النعيم عمر",
+      "code": "W01"
+    },
+    {
+      "id": "330065",
+      "worker_id": "180104",
+      "event_type": "check_out",
+      "event_time_utc": "2026-02-09 23:30:00",
+      "method": "manual",
+      "note": "تحضير يدوي",
+      "full_name": "محمد الطيب النعيم عمر",
+      "code": "W01"
+    },
+    {
+      "id": "330064",
+      "worker_id": "180104",
+      "event_type": "check_in",
+      "event_time_utc": "2026-02-10 12:00:00",
+      "method": "manual",
+      "note": "تحضير يدوي",
+      "full_name": "محمد الطيب النعيم عمر",
+      "code": "W01"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\tevent_type\tevent_time_utc\tmethod\tnote\tfull_name\tcode\n330063\t180104\tcheck_out\t2026-02-04 21:30:00\tmanual\tتحضير يدوي\tمحمد الطيب النعيم عمر\tW01\n330062\t180104\tcheck_in\t2026-02-05 11:55:00\tmanual\tتحضير يدوي\tمحمد الطيب النعيم عمر\tW01\n330065\t180104\tcheck_out\t2026-02-09 23:30:00\tmanual\tتحضير يدوي\tمحمد الطيب النعيم عمر\tW01\n330064\t180104\tcheck_in\t2026-02-10 12:00:00\tmanual\tتحضير يدوي\tمحمد الطيب النعيم عمر\tW01\n",
+  "stderr": "",
+  "execution_time_ms": 1614
+}

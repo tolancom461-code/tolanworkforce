@@ -1,0 +1,19 @@
+{
+  "query": "SELECT CONCAT(w.code, ' | ', w.full_name, ' | group:', COALESCE(CAST(w.group_id AS CHAR), 'NULL')) as worker_info FROM workers w WHERE w.id = 180104;\nSELECT CONCAT(g.id, ' | ', g.code, ' | ', g.name, ' | wage:', COALESCE(CAST(g.daily_wage AS CHAR), 'NULL'), ' | mins:', COALESCE(CAST(g.work_minutes AS CHAR), 'NULL')) as group_info FROM `groups` g;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT CONCAT(w.code, ' | ', w.full_name, ' | group:', COALESCE(CAST(w.group_id AS CHAR), 'NULL')) as worker_info FROM workers w WHERE w.id = 180104;\nSELECT CONCAT(g.id, ' | ', g.code, ' | ', g.name, ' | wage:', COALESCE(CAST(g.daily_wage AS CHAR), 'NULL'), ' | mins:', COALESCE(CAST(g.work_minutes AS CHAR), 'NULL')) as group_info FROM `groups` g;",
+  "rows": [
+    {
+      "worker_info": "W01 | محمد الطيب النعيم عمر | group:150020"
+    },
+    {
+      "worker_info": "group_info"
+    },
+    {
+      "worker_info": "150020 | GRP01 | مجموعة السودانيين | wage:80.00 | mins:510"
+    }
+  ],
+  "messages": [],
+  "stdout": "worker_info\nW01 | محمد الطيب النعيم عمر | group:150020\ngroup_info\n150020 | GRP01 | مجموعة السودانيين | wage:80.00 | mins:510\n",
+  "stderr": "",
+  "execution_time_ms": 1900
+}

@@ -1,0 +1,74 @@
+{
+  "query": "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'workers' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'workers' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "code",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "full_name",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "national_id",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "phone",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "group_id",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "job_id",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "daily_rate",
+      "DATA_TYPE": "decimal"
+    },
+    {
+      "COLUMN_NAME": "photo_url",
+      "DATA_TYPE": "text"
+    },
+    {
+      "COLUMN_NAME": "qr_token",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "manual_code",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "status",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "last_attendance_at",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "hire_date",
+      "DATA_TYPE": "date"
+    },
+    {
+      "COLUMN_NAME": "created_at",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "updated_at",
+      "DATA_TYPE": "timestamp"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tDATA_TYPE\nid\tint\ncode\tvarchar\nfull_name\tvarchar\nnational_id\tvarchar\nphone\tvarchar\ngroup_id\tint\njob_id\tint\ndaily_rate\tdecimal\nphoto_url\ttext\nqr_token\tvarchar\nmanual_code\tvarchar\nstatus\tenum\nlast_attendance_at\ttimestamp\nhire_date\tdate\ncreated_at\ttimestamp\nupdated_at\ttimestamp\n",
+  "stderr": "",
+  "execution_time_ms": 1632
+}

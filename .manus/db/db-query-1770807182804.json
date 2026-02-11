@@ -1,0 +1,38 @@
+{
+  "query": "SELECT id, worker_id, \n  DATE_FORMAT(work_date, '%Y-%m-%d') as work_date,\n  DATE_FORMAT(check_in_time, '%Y-%m-%d %H:%i:%s') as check_in_time,\n  DATE_FORMAT(check_out_time, '%Y-%m-%d %H:%i:%s') as check_out_time,\n  worked_minutes, financial_minutes, base_salary, late_penalty, net_salary, late_minutes, early_leave_minutes\nFROM worker_daily_finance \nWHERE worker_id = 180104\nORDER BY work_date;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, worker_id, \n  DATE_FORMAT(work_date, '%Y-%m-%d') as work_date,\n  DATE_FORMAT(check_in_time, '%Y-%m-%d %H:%i:%s') as check_in_time,\n  DATE_FORMAT(check_out_time, '%Y-%m-%d %H:%i:%s') as check_out_time,\n  worked_minutes, financial_minutes, base_salary, late_penalty, net_salary, late_minutes, early_leave_minutes\nFROM worker_daily_finance \nWHERE worker_id = 180104\nORDER BY work_date;",
+  "rows": [
+    {
+      "id": "210067",
+      "worker_id": "180104",
+      "work_date": "2026-02-05",
+      "check_in_time": "2026-02-05 11:55:00",
+      "check_out_time": "2026-02-04 21:30:00",
+      "worked_minutes": "0",
+      "financial_minutes": "0",
+      "base_salary": "80.00",
+      "late_penalty": "80.00",
+      "net_salary": "0.00",
+      "late_minutes": "0",
+      "early_leave_minutes": "1380"
+    },
+    {
+      "id": "210068",
+      "worker_id": "180104",
+      "work_date": "2026-02-10",
+      "check_in_time": "2026-02-10 12:00:00",
+      "check_out_time": "2026-02-09 23:30:00",
+      "worked_minutes": "0",
+      "financial_minutes": "0",
+      "base_salary": "80.00",
+      "late_penalty": "80.00",
+      "net_salary": "0.00",
+      "late_minutes": "0",
+      "early_leave_minutes": "1290"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tworker_id\twork_date\tcheck_in_time\tcheck_out_time\tworked_minutes\tfinancial_minutes\tbase_salary\tlate_penalty\tnet_salary\tlate_minutes\tearly_leave_minutes\n210067\t180104\t2026-02-05\t2026-02-05 11:55:00\t2026-02-04 21:30:00\t0\t0\t80.00\t80.00\t0.00\t0\t1380\n210068\t180104\t2026-02-10\t2026-02-10 12:00:00\t2026-02-09 23:30:00\t0\t0\t80.00\t80.00\t0.00\t0\t1290\n",
+  "stderr": "",
+  "execution_time_ms": 1640
+}

@@ -195,6 +195,16 @@ export default function AttendanceLog() {
       const [hours, minutes] = editCheckOutTime.split(':');
       const newCheckOutTime = new Date(baseDate);
       newCheckOutTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      // Handle overnight shifts: if check-out time is before check-in time, add one day
+      if (editCheckInTime) {
+        const [cinH, cinM] = editCheckInTime.split(':');
+        const checkInRef = new Date(baseDate);
+        checkInRef.setHours(parseInt(cinH), parseInt(cinM), 0, 0);
+        if (newCheckOutTime <= checkInRef) {
+          newCheckOutTime.setDate(newCheckOutTime.getDate() + 1);
+        }
+      }
 
       updateEventMutation.mutate({
         eventId: editingRecord.checkOutId,
@@ -243,6 +253,11 @@ export default function AttendanceLog() {
       const [checkOutHours, checkOutMinutes] = prepareCheckOutTime.split(':');
       const checkOutTime = new Date(baseDate);
       checkOutTime.setHours(parseInt(checkOutHours), parseInt(checkOutMinutes), 0, 0);
+      
+      // Handle overnight shifts: if check-out time is before check-in time, add one day
+      if (checkOutTime <= checkInTime) {
+        checkOutTime.setDate(checkOutTime.getDate() + 1);
+      }
 
       console.log('Adding check-out:', {
         workerId: selectedAbsentWorker.workerId,
@@ -510,7 +525,12 @@ export default function AttendanceLog() {
                         {record.checkInTime && record.checkOutTime ? (
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-blue-600" />
-                            {Math.round((new Date(record.checkOutTime).getTime() - new Date(record.checkInTime).getTime()) / 60000)} دقيقة
+                            {(() => {
+                              let mins = Math.round((new Date(record.checkOutTime).getTime() - new Date(record.checkInTime).getTime()) / 60000);
+                              // Handle overnight shifts: if checkout appears before checkin, add 24 hours
+                              if (mins < 0) mins += 1440;
+                              return mins;
+                            })()} دقيقة
                           </div>
                         ) : (
                           <span className="text-muted-foreground">-</span>

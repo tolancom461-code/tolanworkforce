@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, code, full_name, status FROM workers WHERE id = 180104;\nSELECT * FROM worker_daily_finance WHERE worker_id = 180104 ORDER BY work_date ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, code, full_name, status FROM workers WHERE id = 180104;\nSELECT * FROM worker_daily_finance WHERE worker_id = 180104 ORDER BY work_date ASC;",
+  "rows": [
+    {
+      "id": "180104",
+      "code": "W01",
+      "full_name": "محمد الطيب النعيم عمر",
+      "status": "active"
+    }
+  ],
+  "messages": [
+    "id\tworker_id\twork_date\tcheck_in_time\tcheck_out_time\tworked_minutes\tfinancial_minutes\tbase_salary\tlate_penalty\tearly_leave_penalty\tnet_salary\tbase_amount\tdeductions\tbonuses\tnet_amount\tlate_minutes\tearly_leave_minutes\tnotes\tlocked_batch_id\tcreated_at\tupdated_at",
+    "210067\t180104\t2026-02-05\t2026-02-05 11:55:00\t2026-02-04 21:30:00\t0\t0\t80.00\t80.00\t0.00\t0.00\t80.00\t80.00\t0.00\t0.00\t0\t1380\tNULL\tNULL\t2026-02-11 10:25:39\t2026-02-11 10:25:39",
+    "210068\t180104\t2026-02-10\t2026-02-10 12:00:00\t2026-02-09 23:30:00\t0\t0\t80.00\t80.00\t0.00\t0.00\t80.00\t80.00\t0.00\t0.00\t0\t1290\tNULL\tNULL\t2026-02-11 10:38:36\t2026-02-11 10:38:37"
+  ],
+  "stdout": "id\tcode\tfull_name\tstatus\n180104\tW01\tمحمد الطيب النعيم عمر\tactive\nid\tworker_id\twork_date\tcheck_in_time\tcheck_out_time\tworked_minutes\tfinancial_minutes\tbase_salary\tlate_penalty\tearly_leave_penalty\tnet_salary\tbase_amount\tdeductions\tbonuses\tnet_amount\tlate_minutes\tearly_leave_minutes\tnotes\tlocked_batch_id\tcreated_at\tupdated_at\n210067\t180104\t2026-02-05\t2026-02-05 11:55:00\t2026-02-04 21:30:00\t0\t0\t80.00\t80.00\t0.00\t0.00\t80.00\t80.00\t0.00\t0.00\t0\t1380\tNULL\tNULL\t2026-02-11 10:25:39\t2026-02-11 10:25:39\n210068\t180104\t2026-02-10\t2026-02-10 12:00:00\t2026-02-09 23:30:00\t0\t0\t80.00\t80.00\t0.00\t0.00\t80.00\t80.00\t0.00\t0.00\t0\t1290\tNULL\tNULL\t2026-02-11 10:38:36\t2026-02-11 10:38:37\n",
+  "stderr": "",
+  "execution_time_ms": 1790
+}
