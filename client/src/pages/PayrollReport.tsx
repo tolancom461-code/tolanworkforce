@@ -431,7 +431,7 @@ export default function PayrollReport() {
 
               {/* Report Footer - بعد التواقيع */}
               <div className="text-center text-xs text-gray-500 border-t pt-4 mt-12">
-                <p>تم إنشاء هذا التقرير بواسطة نظام إدارة العمالة اليومية — تاريخ الطباعة: {new Date().toLocaleDateString('en-CA')} — تمت الطباعة بواسطة: {user?.fullName || user?.username || 'غير معروف'}</p>
+                <p>تم إنشاء هذا التقرير بواسطة نظام إدارة العمالة اليومية — تاريخ الطباعة: {new Date().toLocaleDateString('en-GB').replace(/\//g, '-')} | وقت الطباعة: {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} — تمت الطباعة بواسطة: {user?.fullName || user?.username || 'غير معروف'}</p>
               </div>
             </CardContent>
           </Card>

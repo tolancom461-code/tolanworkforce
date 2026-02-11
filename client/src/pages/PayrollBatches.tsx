@@ -23,7 +23,8 @@ import {
   Download,
   Trash2,
   Unlock,
-  Lock
+  Lock,
+  Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmptyGroupsMessage } from '@/components/EmptyGroupsMessage';
@@ -305,8 +306,11 @@ export default function PayrollBatches() {
     setShowDetailsDialog(true);
   };
 
-  const handleDeleteBatch = (batchId: number) => {
+  const [isForceDelete, setIsForceDelete] = useState(false);
+
+  const handleDeleteBatch = (batchId: number, force: boolean = false) => {
     setBatchToDelete(batchId);
+    setIsForceDelete(force);
     setShowDeleteDialog(true);
   };
 
@@ -324,7 +328,7 @@ export default function PayrollBatches() {
 
   const confirmDelete = () => {
     if (batchToDelete) {
-      deleteBatchMutation.mutate({ batchId: batchToDelete });
+      deleteBatchMutation.mutate({ batchId: batchToDelete, forceDelete: isForceDelete || undefined });
     }
   };
 
@@ -351,18 +355,6 @@ export default function PayrollBatches() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="جميع الحالات" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">جميع الحالات</SelectItem>
-              <SelectItem value="draft">مسودة</SelectItem>
-              <SelectItem value="pending">قيد المراجعة</SelectItem>
-              <SelectItem value="approved">معتمد</SelectItem>
-              <SelectItem value="paid">مدفوع</SelectItem>
-            </SelectContent>
-          </Select>
           {hasPermission() && (
             <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 ml-2" />
@@ -475,7 +467,7 @@ export default function PayrollBatches() {
                             onClick={() => handleViewDetails(batch.id)}
                           >
                             <Eye className="h-4 w-4 ml-1" />
-                            التفاصيل
+                            استعراض
                           </Button>
                           {batch.status === 'draft' && canDeleteBatch && (
                             <Button
@@ -485,6 +477,16 @@ export default function PayrollBatches() {
                             >
                               <Trash2 className="h-4 w-4 ml-1" />
                               حذف
+                            </Button>
+                          )}
+                          {batch.status !== 'draft' && userRole === 'super_admin' && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteBatch(batch.id, true)}
+                            >
+                              <Trash2 className="h-4 w-4 ml-1" />
+                              حذف نهائي
                             </Button>
                           )}
                         </div>
@@ -792,7 +794,99 @@ export default function PayrollBatches() {
                 )}
               </div>
 
+              {/* Print Button */}
+              <div className="flex justify-end print:hidden">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const printContent = document.getElementById('batch-details-print');
+                    if (printContent) {
+                      const printWindow = window.open('', '_blank');
+                      if (printWindow) {
+                        printWindow.document.write(`
+                          <html dir="rtl" lang="ar">
+                          <head>
+                            <title>كشف رواتب - ${batchDetails.batch.batchCode}</title>
+                            <style>
+                              body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding: 20px; direction: rtl; }
+                              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                              th, td { border: 1px solid #333; padding: 8px; text-align: right; font-size: 13px; }
+                              th { background-color: #f0f0f0; font-weight: bold; }
+                              .header { text-align: center; margin-bottom: 20px; }
+                              .header h2 { margin: 5px 0; }
+                              .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+                              .total-row { font-weight: bold; background-color: #f9f9f9; }
+                              .signature-col { width: 120px; min-height: 40px; }
+                              .footer { text-align: center; font-size: 11px; color: #666; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; }
+                              @media print { body { padding: 0; } }
+                            </style>
+                          </head>
+                          <body>
+                            <div class="header">
+                              <h2>كشف رواتب العمال اليومية</h2>
+                              <p>رمز الدفعة: ${batchDetails.batch.batchCode}</p>
+                            </div>
+                            <div class="info-row">
+                              <span>الفترة: ${new Date(batchDetails.batch.periodStart).toLocaleDateString('en-GB').replace(/\//g, '-')} إلى ${new Date(batchDetails.batch.periodEnd).toLocaleDateString('en-GB').replace(/\//g, '-')}</span>
+                              <span>الحالة: ${STATUS_LABELS[batchDetails.batch.status || 'draft']?.label || batchDetails.batch.status}</span>
+                            </div>
+                            <table>
+                              <thead>
+                                <tr>
+                                  <th>#</th>
+                                  <th>العامل</th>
+                                  <th>الرمز</th>
+                                  <th>أيام العمل</th>
+                                  <th>المستحق</th>
+                                  <th>الخصومات</th>
+                                  <th>المكافآت</th>
+                                  <th>الصافي</th>
+                                  <th>توقيع الاستلام</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                ${batchDetails.items?.map((item, idx) => `
+                                  <tr>
+                                    <td>${idx + 1}</td>
+                                    <td>${item.workerName}</td>
+                                    <td>${item.workerCode}</td>
+                                    <td style="text-align:center">${item.daysWorked}</td>
+                                    <td>${parseFloat(item.baseAmount?.toString() || '0').toFixed(2)}</td>
+                                    <td style="color:red">${parseFloat(item.totalDeductions?.toString() || '0').toFixed(2)}</td>
+                                    <td style="color:green">${parseFloat(item.totalBonuses?.toString() || '0').toFixed(2)}</td>
+                                    <td style="font-weight:bold">${parseFloat(item.netAmount?.toString() || '0').toFixed(2)}</td>
+                                    <td class="signature-col"></td>
+                                  </tr>
+                                `).join('') || ''}
+                                <tr class="total-row">
+                                  <td colspan="4">الإجمالي</td>
+                                  <td>${parseFloat(batchDetails.batch.totalAmount?.toString() || '0').toFixed(2)}</td>
+                                  <td>${parseFloat(batchDetails.batch.totalDeductions?.toString() || '0').toFixed(2)}</td>
+                                  <td>${parseFloat(batchDetails.batch.totalBonuses?.toString() || '0').toFixed(2)}</td>
+                                  <td>${(parseFloat(batchDetails.batch.totalAmount?.toString() || '0') - parseFloat(batchDetails.batch.totalDeductions?.toString() || '0') + parseFloat(batchDetails.batch.totalBonuses?.toString() || '0')).toFixed(2)}</td>
+                                  <td></td>
+                                </tr>
+                              </tbody>
+                            </table>
+                            <div class="footer">
+                              <p>تم إنشاء هذا الكشف بواسطة نظام إدارة العمالة اليومية — تاريخ الطباعة: ${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')} | وقت الطباعة: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} — تمت الطباعة بواسطة: ${user?.fullName || user?.username || 'غير معروف'}</p>
+                            </div>
+                          </body>
+                          </html>
+                        `);
+                        printWindow.document.close();
+                        printWindow.print();
+                      }
+                    }
+                  }}
+                >
+                  <Printer className="h-4 w-4 ml-2" />
+                  طباعة الكشف
+                </Button>
+              </div>
+
               {/* Items Table */}
+              <div id="batch-details-print">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -802,6 +896,7 @@ export default function PayrollBatches() {
                     <TableHead className="text-right">الخصومات</TableHead>
                     <TableHead className="text-right">المكافآت</TableHead>
                     <TableHead className="text-right">الصافي</TableHead>
+                    <TableHead className="text-right w-[120px]">توقيع الاستلام</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -826,10 +921,14 @@ export default function PayrollBatches() {
                       <TableCell className="font-mono font-semibold">
                         {parseFloat(item.netAmount?.toString() || '0').toFixed(2)}
                       </TableCell>
+                      <TableCell className="w-[120px]">
+                        {/* عمود فارغ للتوقيع اليدوي */}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </DialogContent>
@@ -1089,11 +1188,15 @@ export default function PayrollBatches() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              هل أنت متأكد من حذف هذه الدفعة؟ لن يمكن التراجع عن هذا الإجراء.
+              {isForceDelete 
+                ? 'Are you sure you want to delete this batch? This is a permanent deletion and cannot be undone.'
+                : 'هل أنت متأكد من حذف هذه المسودة؟'}
             </p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-sm text-yellow-800">
-                <strong>ملاحظة:</strong> سيتم حذف الدفعة وجميع البيانات المرتبطة بها بشكل نهائي.
+            <div className={`rounded-lg p-3 ${isForceDelete ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+              <p className={`text-sm ${isForceDelete ? 'text-red-800' : 'text-yellow-800'}`}>
+                <strong>{isForceDelete ? 'تحذير:' : 'ملاحظة:'}</strong> {isForceDelete 
+                  ? 'سيتم حذف الدفعة وجميع البيانات المرتبطة بها بشكل نهائي ولا يمكن استرجاعها. هذا الإجراء متاح فقط للمسؤول الأعلى (Super Admin).'
+                  : 'سيتم حذف المسودة وإلغاء قفل سجلات الحضور المرتبطة.'}
               </p>
             </div>
           </div>

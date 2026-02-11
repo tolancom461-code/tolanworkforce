@@ -2931,7 +2931,7 @@ export async function getBatchesByStatus(
 /**
  * Delete batch (DRAFT only)
  */
-export async function deleteBatch(batchId: number) {
+export async function deleteBatch(batchId: number, forceDelete: boolean = false) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -2944,7 +2944,7 @@ export async function deleteBatch(batchId: number) {
     throw new Error("Batch not found");
   }
 
-  if (batch.status !== 'draft') {
+  if (!forceDelete && batch.status !== 'draft') {
     throw new Error("Can only delete draft batches");
   }
 

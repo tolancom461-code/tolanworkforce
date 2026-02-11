@@ -2226,16 +2226,25 @@ export const appRouter = router({
         });
       }),
     
-    // Delete batch (DRAFT only)
+    // Delete batch (DRAFT: admin_affairs + super_admin, Non-DRAFT: super_admin only)
     deleteBatch: protectedProcedure
-      .input(z.object({ batchId: z.number() }))
+      .input(z.object({ batchId: z.number(), forceDelete: z.boolean().optional() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-        // فقط سوبر أدمن والشؤون الإدارية يمكنهم حذف الدفعات
-        if (ctx.user.role !== 'super_admin' && ctx.user.role !== 'admin_affairs') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا تملك صلاحية حذف دفعات الرواتب' });
+        
+        if (input.forceDelete) {
+          // الحذف النهائي: فقط super_admin
+          if (ctx.user.role !== 'super_admin') {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'الحذف النهائي متاح فقط للمسؤول الأعلى (Super Admin)' });
+          }
+          return await db.deleteBatch(input.batchId, true);
+        } else {
+          // حذف المسودات: super_admin + admin_affairs
+          if (ctx.user.role !== 'super_admin' && ctx.user.role !== 'admin_affairs') {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'لا تملك صلاحية حذف دفعات الرواتب' });
+          }
+          return await db.deleteBatch(input.batchId, false);
         }
-        return await db.deleteBatch(input.batchId);
       }),
     
     // Export batch details to Excel
