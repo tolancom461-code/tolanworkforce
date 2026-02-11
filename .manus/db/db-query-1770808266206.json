@@ -1,0 +1,18 @@
+{
+  "query": "SELECT 'attendance_events' as tbl, COUNT(*) as cnt FROM attendance_events\nUNION ALL\nSELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT 'attendance_events' as tbl, COUNT(*) as cnt FROM attendance_events\nUNION ALL\nSELECT 'worker_daily_finance', COUNT(*) FROM worker_daily_finance;",
+  "rows": [
+    {
+      "tbl": "worker_daily_finance",
+      "cnt": "0"
+    },
+    {
+      "tbl": "attendance_events",
+      "cnt": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\nworker_daily_finance\t0\nattendance_events\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1610
+}

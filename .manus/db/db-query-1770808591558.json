@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, username, full_name, role, openid FROM users ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3UmgapDHiQE9iXi.root --database BmzBEddPNYVc6c68xYfpnY --execute SELECT id, username, full_name, role, openid FROM users ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "username": "fQvX5e3Eytk42QF5qSXDcP",
+      "full_name": "anem2031",
+      "role": "super_admin",
+      "openid": "fQvX5e3Eytk42QF5qSXDcP"
+    },
+    {
+      "id": "30004",
+      "username": "admin",
+      "full_name": "مدير النظام",
+      "role": "super_admin",
+      "openid": "NULL"
+    },
+    {
+      "id": "451009",
+      "username": "accountant",
+      "full_name": "المحاسب المالي",
+      "role": "accountant",
+      "openid": "NULL"
+    },
+    {
+      "id": "480298",
+      "username": "test_user_1770799382761",
+      "full_name": "Test User",
+      "role": "guard",
+      "openid": "NULL"
+    },
+    {
+      "id": "480301",
+      "username": "admin_test_1770799400443",
+      "full_name": "Admin Test User",
+      "role": "super_admin",
+      "openid": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tusername\tfull_name\trole\topenid\n1\tfQvX5e3Eytk42QF5qSXDcP\tanem2031\tsuper_admin\tfQvX5e3Eytk42QF5qSXDcP\n30004\tadmin\tمدير النظام\tsuper_admin\tNULL\n451009\taccountant\tالمحاسب المالي\taccountant\tNULL\n480298\ttest_user_1770799382761\tTest User\tguard\tNULL\n480301\tadmin_test_1770799400443\tAdmin Test User\tsuper_admin\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1596
+}
