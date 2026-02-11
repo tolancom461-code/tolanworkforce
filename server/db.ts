@@ -3424,7 +3424,8 @@ export function calculateEarlyLeavePenalty(
 export async function getPayrollReportByGroup(
   periodStart: string,
   periodEnd: string,
-  groupId?: number
+  groupId?: number,
+  costCenterId?: number
 ) {
   const db = await getDb();
   if (!db) return [];
@@ -3432,16 +3433,14 @@ export async function getPayrollReportByGroup(
   const startDate = new Date(periodStart);
   const endDate = new Date(periodEnd);
 
-  const whereConditions = groupId
-    ? and(
-        gte(workerDailyFinance.workDate, startDate),
-        lte(workerDailyFinance.workDate, endDate),
-        eq(workers.groupId, groupId)
-      )
-    : and(
-        gte(workerDailyFinance.workDate, startDate),
-        lte(workerDailyFinance.workDate, endDate)
-      );
+  const conditions = [
+    gte(workerDailyFinance.workDate, startDate),
+    lte(workerDailyFinance.workDate, endDate),
+  ];
+  if (groupId) conditions.push(eq(workers.groupId, groupId));
+  if (costCenterId) conditions.push(eq(groups.costCenterId, costCenterId));
+
+  const whereConditions = and(...conditions);
 
   const results = await db
     .select({
@@ -3522,6 +3521,7 @@ export async function getPayrollReportByGroup(
     totalDeductions: data.totalDeductions.toFixed(2),
     totalBonuses: data.totalBonuses.toFixed(2),
     totalNet: data.totalNet.toFixed(2),
+    costCenterId: costCenterId,
   }));
 }
 
@@ -3635,9 +3635,7 @@ export async function getPayrollReportByCostCenter(
   periodEnd: string,
   costCenterId?: number
 ) {
-  // For now, return group-based report since workers table doesn't have costCenterId
-  // In the future, if costCenterId is added to workers table, update this function
-  return await getPayrollReportByGroup(periodStart, periodEnd, undefined);
+  return await getPayrollReportByGroup(periodStart, periodEnd, undefined, costCenterId);
 }
 
 /**
@@ -3645,9 +3643,11 @@ export async function getPayrollReportByCostCenter(
  */
 export async function getPayrollReportSummary(
   periodStart: string,
-  periodEnd: string
+  periodEnd: string,
+  costCenterId?: number,
+  groupId?: number
 ) {
-  return await getPayrollReportByGroup(periodStart, periodEnd);
+  return await getPayrollReportByGroup(periodStart, periodEnd, groupId, costCenterId);
 }
 
 

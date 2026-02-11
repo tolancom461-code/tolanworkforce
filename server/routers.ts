@@ -2363,9 +2363,10 @@ export const appRouter = router({
         periodStart: z.string(),
         periodEnd: z.string(),
         groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
       }))
       .query(async ({ input }) => {
-        return await db.getPayrollReportByGroup(input.periodStart, input.periodEnd, input.groupId);
+        return await db.getPayrollReportByGroup(input.periodStart, input.periodEnd, input.groupId, input.costCenterId);
       }),
     
     // Get official payroll report by worker
@@ -2395,9 +2396,11 @@ export const appRouter = router({
       .input(z.object({
         periodStart: z.string(),
         periodEnd: z.string(),
+        costCenterId: z.number().optional(),
+        groupId: z.number().optional(),
       }))
       .query(async ({ input }) => {
-        return await db.getPayrollReportSummary(input.periodStart, input.periodEnd);
+        return await db.getPayrollReportSummary(input.periodStart, input.periodEnd, input.costCenterId, input.groupId);
       }),
     
     // Export batch to Excel
