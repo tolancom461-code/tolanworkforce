@@ -8,6 +8,7 @@ import {
   SwitchCamera,
   AlertCircle
 } from 'lucide-react';
+import jsQR from 'jsqr';
 
 interface QRScannerProps {
   onScan: (result: string) => void;
@@ -34,19 +35,19 @@ export default function QRScanner({
   const mountedRef = useRef(true);
   const initializingRef = useRef(false);
 
-  // Simple QR Code decoder using jsQR library (fallback to manual detection)
-  const decodeQRCode = async (imageData: ImageData): Promise<string | null> => {
+  // QR Code decoder using jsQR library (imported as module)
+  const decodeQRCode = (imageData: ImageData): string | null => {
     try {
-      // Try to use jsQR if available
-      if ((window as any).jsQR) {
-        const code = (window as any).jsQR(
-          imageData.data,
-          imageData.width,
-          imageData.height
-        );
-        if (code) {
-          return code.data;
+      const code = jsQR(
+        imageData.data,
+        imageData.width,
+        imageData.height,
+        {
+          inversionAttempts: 'dontInvert',
         }
+      );
+      if (code) {
+        return code.data;
       }
     } catch (err) {
       console.error('QR decode error:', err);
@@ -56,12 +57,6 @@ export default function QRScanner({
 
   useEffect(() => {
     mountedRef.current = true;
-    
-    // Load jsQR library
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
-    script.async = true;
-    document.head.appendChild(script);
 
     // Initialize camera permission
     initializeCamera();
@@ -72,7 +67,6 @@ export default function QRScanner({
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-      document.head.removeChild(script);
     };
   }, []);
 
@@ -214,7 +208,7 @@ export default function QRScanner({
       clearInterval(scanningIntervalRef.current);
     }
 
-    scanningIntervalRef.current = window.setInterval(async () => {
+    scanningIntervalRef.current = window.setInterval(() => {
       if (!videoRef.current || !canvasRef.current || !mountedRef.current) return;
 
       try {
@@ -222,7 +216,7 @@ export default function QRScanner({
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
 
-        if (!ctx) return;
+        if (!ctx || video.videoWidth === 0 || video.videoHeight === 0) return;
 
         // Set canvas size to match video
         canvas.width = video.videoWidth;
@@ -235,7 +229,7 @@ export default function QRScanner({
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
         // Decode QR code
-        const qrData = await decodeQRCode(imageData);
+        const qrData = decodeQRCode(imageData);
 
         if (qrData) {
           console.log('QR Code detected:', qrData);
@@ -245,7 +239,7 @@ export default function QRScanner({
       } catch (err) {
         console.error('Scanning error:', err);
       }
-    }, 100); // Check every 100ms
+    }, 150); // Check every 150ms for better performance
   };
 
   const stopScanning = () => {
