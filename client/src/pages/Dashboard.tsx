@@ -97,7 +97,7 @@ export default function Dashboard() {
                 </div>
               </a>
               <a
-                href="/permissions"
+                href="/users"
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
               >
                 <div className="p-2 rounded-lg bg-chart-2/10">
