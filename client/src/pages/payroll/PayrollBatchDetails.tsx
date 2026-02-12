@@ -511,23 +511,7 @@ export default function PayrollBatchDetails() {
                 <Printer className="h-4 w-4 ml-2" />
                 طباعة الكشف
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => exportMutation.mutate({ batchId })} 
-                disabled={exportMutation.isPending}
-              >
-                {exportMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    جاري التصدير...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4 ml-2" />
-                    تصدير Excel
-                  </>
-                )}
-              </Button>
+
               {canSubmit && (
                 <Button onClick={handleSubmitForReview} disabled={submitMutation.isPending} className="text-black">
                   {submitMutation.isPending ? (
