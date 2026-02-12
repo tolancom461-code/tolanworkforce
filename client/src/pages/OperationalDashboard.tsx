@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
-import { Users, UserX, Clock, CheckCircle, XCircle, ArrowRight, Filter, CalendarDays } from "lucide-react";
+import { Users, UserX, Clock, CheckCircle, XCircle, ArrowRight, Filter, CalendarDays, ArrowLeftRight } from "lucide-react";
 
 type TabType = 'present' | 'absent' | 'late';
 
@@ -18,6 +18,7 @@ export default function OperationalDashboard() {
   const [filterGroupId, setFilterGroupId] = useState<number | undefined>();
   const [filterCostCenterId, setFilterCostCenterId] = useState<number | undefined>();
   
+  // Action dialog state (confirm attendance / confirm absence)
   const [actionDialog, setActionDialog] = useState<{
     open: boolean;
     workerId: number;
@@ -27,6 +28,18 @@ export default function OperationalDashboard() {
     actionType: 'confirm_attendance' | 'confirm_absence';
   } | null>(null);
   const [actionNote, setActionNote] = useState('');
+
+  // Transfer dialog state
+  const [transferDialog, setTransferDialog] = useState<{
+    open: boolean;
+    workerId: number;
+    workerName: string;
+    groupId?: number;
+    costCenterId?: number;
+    step: 'notes' | 'confirm';
+  } | null>(null);
+  const [transferNote, setTransferNote] = useState('');
+  const [transferNoteError, setTransferNoteError] = useState('');
 
   const { data: groupsData } = trpc.groups.list.useQuery();
   const { data: costCentersData } = trpc.costCenters.list.useQuery();
@@ -52,10 +65,17 @@ export default function OperationalDashboard() {
 
   const utils = trpc.useUtils();
   const createFlagMutation = trpc.operationalDashboard.createFlag.useMutation({
-    onSuccess: () => {
-      toast.success("تم إرسال الملاحظة التشغيلية بنجاح", { description: "ستتم مراجعتها من قبل المسؤول" });
+    onSuccess: (_, variables) => {
+      if (variables.flagType === 'transfer') {
+        toast.success("تم إرسال بلاغ النقل بنجاح", { description: "ستتم مراجعته من قبل المسؤول في معالجة الملاحظات" });
+      } else {
+        toast.success("تم إرسال الملاحظة التشغيلية بنجاح", { description: "ستتم مراجعتها من قبل المسؤول" });
+      }
       setActionDialog(null);
+      setTransferDialog(null);
       setActionNote('');
+      setTransferNote('');
+      setTransferNoteError('');
       utils.operationalDashboard.invalidate();
     },
     onError: (error) => {
@@ -79,6 +99,50 @@ export default function OperationalDashboard() {
       actionType,
     });
     setActionNote('');
+  };
+
+  const handleTransfer = (
+    workerId: number,
+    workerName: string,
+    groupId?: number | null,
+    costCenterId?: number | null
+  ) => {
+    setTransferDialog({
+      open: true,
+      workerId,
+      workerName,
+      groupId: groupId || undefined,
+      costCenterId: costCenterId || undefined,
+      step: 'notes',
+    });
+    setTransferNote('');
+    setTransferNoteError('');
+  };
+
+  const handleTransferSave = () => {
+    if (!transferNote.trim()) {
+      setTransferNoteError('يرجى كتابة ملاحظة توضح من أين تم نقل العامل وإلى أين');
+      return;
+    }
+    setTransferNoteError('');
+    // Move to confirmation step
+    setTransferDialog(prev => prev ? { ...prev, step: 'confirm' } : null);
+  };
+
+  const handleTransferConfirm = () => {
+    if (!transferDialog) return;
+    createFlagMutation.mutate({
+      workerId: transferDialog.workerId,
+      groupId: transferDialog.groupId,
+      costCenterId: transferDialog.costCenterId,
+      flagDate: selectedDate,
+      flagType: 'transfer',
+      description: transferNote.trim(),
+    });
+  };
+
+  const handleTransferBack = () => {
+    setTransferDialog(prev => prev ? { ...prev, step: 'notes' } : null);
   };
 
   const submitAction = () => {
@@ -308,7 +372,7 @@ export default function OperationalDashboard() {
                             </>
                           )}
                           <td className="py-3 px-4">
-                            <div className="flex items-center justify-center gap-2">
+                            <div className="flex items-center justify-center gap-2 flex-wrap">
                               {activeTab === 'absent' ? (
                                 <>
                                   <Button
@@ -377,6 +441,18 @@ export default function OperationalDashboard() {
                                   </Button>
                                 </>
                               )}
+                              {/* Transfer Button - بلون مميز */}
+                              <Button
+                                size="sm"
+                                className="bg-violet-600 hover:bg-violet-700 text-white border-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTransfer(worker.workerId, worker.workerName, worker.groupId, worker.costCenterId);
+                                }}
+                              >
+                                <ArrowLeftRight className="h-4 w-4 ml-1" />
+                                Transfer
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -389,6 +465,7 @@ export default function OperationalDashboard() {
           </Card>
         )}
 
+        {/* Dialog: Confirm Attendance / Absence */}
         <Dialog open={!!actionDialog?.open} onOpenChange={(open) => !open && setActionDialog(null)}>
           <DialogContent className="sm:max-w-md" dir="rtl">
             <DialogHeader>
@@ -431,6 +508,106 @@ export default function OperationalDashboard() {
                 className={actionDialog?.actionType === 'confirm_attendance' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}
               >
                 {createFlagMutation.isPending ? 'جاري الإرسال...' : 'تأكيد وإرسال'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Transfer - Step 1: Notes */}
+        <Dialog
+          open={!!transferDialog?.open && transferDialog?.step === 'notes'}
+          onOpenChange={(open) => !open && setTransferDialog(null)}
+        >
+          <DialogContent className="sm:max-w-md" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>
+                <span className="flex items-center gap-2 text-violet-600">
+                  <ArrowLeftRight className="h-5 w-5" />
+                  نقل العامل | Transfer Worker
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-sm text-muted-foreground">العامل</p>
+                <p className="font-medium">{transferDialog?.workerName}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  ملاحظات <span className="text-red-500">*</span>
+                  <span className="text-xs text-muted-foreground mr-2">(من أين تم نقل العامل وإلى أين)</span>
+                </label>
+                <Textarea
+                  value={transferNote}
+                  onChange={(e) => {
+                    setTransferNote(e.target.value);
+                    if (e.target.value.trim()) setTransferNoteError('');
+                  }}
+                  placeholder="مثال: نقل من تولان إلى الملقا..."
+                  rows={3}
+                  className={transferNoteError ? 'border-red-500' : ''}
+                />
+                {transferNoteError && (
+                  <p className="text-sm text-red-500 mt-1">{transferNoteError}</p>
+                )}
+              </div>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setTransferDialog(null)}>
+                إلغاء
+              </Button>
+              <Button
+                onClick={handleTransferSave}
+                className="bg-violet-600 hover:bg-violet-700"
+              >
+                SAVE
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog: Transfer - Step 2: Confirmation */}
+        <Dialog
+          open={!!transferDialog?.open && transferDialog?.step === 'confirm'}
+          onOpenChange={(open) => !open && setTransferDialog(null)}
+        >
+          <DialogContent className="sm:max-w-md" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>
+                <span className="flex items-center gap-2 text-violet-600">
+                  <ArrowLeftRight className="h-5 w-5" />
+                  تأكيد نقل العامل | Confirm Transfer
+                </span>
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 rounded-lg p-4 text-center">
+                <p className="text-base font-medium text-violet-800 dark:text-violet-300 mb-2">
+                  هل أنت متأكد من رغبتك في تحويل/انتداب هذا العامل؟
+                </p>
+                <p className="text-sm text-violet-600 dark:text-violet-400" dir="ltr">
+                  Are you sure you want to transfer this worker?
+                </p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-sm text-muted-foreground">العامل</p>
+                <p className="font-medium">{transferDialog?.workerName}</p>
+              </div>
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-sm text-muted-foreground">الملاحظات</p>
+                <p className="text-sm">{transferNote}</p>
+              </div>
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={handleTransferBack}>
+                تراجع / Back
+              </Button>
+              <Button
+                onClick={handleTransferConfirm}
+                disabled={createFlagMutation.isPending}
+                className="bg-violet-600 hover:bg-violet-700"
+              >
+                {createFlagMutation.isPending ? 'جاري الإرسال...' : 'تأكيد / Confirm'}
               </Button>
             </DialogFooter>
           </DialogContent>

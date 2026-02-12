@@ -6873,7 +6873,7 @@ export async function createOperationalFlagFromAction(data: {
   groupId?: number;
   costCenterId?: number;
   flagDate: string;
-  flagType: 'confirm_attendance' | 'confirm_absence';
+  flagType: 'confirm_attendance' | 'confirm_absence' | 'transfer';
   description: string;
   createdBy: number;
 }) {
@@ -7415,4 +7415,62 @@ export function calculateAssignmentDays(
   const diffTime = overlapEnd.getTime() - overlapStart.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
   return diffDays;
+}
+
+
+/**
+ * Update a temporary assignment
+ */
+export async function updateTemporaryAssignment(id: number, params: {
+  toCostCenterId?: number;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  // Get current assignment
+  const [current] = await db
+    .select()
+    .from(temporaryAssignments)
+    .where(eq(temporaryAssignments.id, id));
+
+  if (!current) throw new Error('الانتداب غير موجود');
+  if (current.status !== 'active') throw new Error('لا يمكن تعديل انتداب غير نشط');
+
+  const updateData: any = {};
+  if (params.toCostCenterId) updateData.toCostCenterId = params.toCostCenterId;
+  if (params.startDate) updateData.startDate = sql`${params.startDate}`;
+  if (params.endDate) updateData.endDate = sql`${params.endDate}`;
+  if (params.notes !== undefined) updateData.notes = params.notes;
+
+  await db
+    .update(temporaryAssignments)
+    .set(updateData)
+    .where(eq(temporaryAssignments.id, id));
+
+  return { success: true, id };
+}
+
+/**
+ * Delete a temporary assignment permanently
+ */
+export async function deleteTemporaryAssignment(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  // Get current assignment
+  const [current] = await db
+    .select()
+    .from(temporaryAssignments)
+    .where(eq(temporaryAssignments.id, id));
+
+  if (!current) throw new Error('الانتداب غير موجود');
+
+  await db
+    .delete(temporaryAssignments)
+    .where(eq(temporaryAssignments.id, id));
+
+  return { success: true, id };
 }

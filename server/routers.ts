@@ -3452,6 +3452,56 @@ export const appRouter = router({
         return result;
       }),
 
+    // Update a temporary assignment
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        toCostCenterId: z.number().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const result = await db.updateTemporaryAssignment(input.id, {
+          toCostCenterId: input.toCostCenterId,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          notes: input.notes,
+        });
+
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'UPDATE_TEMP_ASSIGNMENT',
+          tableName: 'temporary_assignments',
+          recordId: input.id,
+          newValues: input,
+        });
+
+        return result;
+      }),
+
+    // Delete a temporary assignment
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const result = await db.deleteTemporaryAssignment(input.id);
+
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'DELETE_TEMP_ASSIGNMENT',
+          tableName: 'temporary_assignments',
+          recordId: input.id,
+        });
+
+        return result;
+      }),
+
     // Get assignments for a specific cost center in a period (for payroll preview)
     getForCostCenter: protectedProcedure
       .input(z.object({
@@ -3546,7 +3596,7 @@ export const appRouter = router({
         groupId: z.number().optional(),
         costCenterId: z.number().optional(),
         flagDate: z.string(),
-        flagType: z.enum(['confirm_attendance', 'confirm_absence']),
+        flagType: z.enum(['confirm_attendance', 'confirm_absence', 'transfer']),
         description: z.string().min(1),
       }))
       .mutation(async ({ input, ctx }) => {

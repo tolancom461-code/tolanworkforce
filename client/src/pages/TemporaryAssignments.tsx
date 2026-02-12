@@ -30,14 +30,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeftRight, Plus, X, Filter, RefreshCw } from "lucide-react";
+import { ArrowLeftRight, Plus, X, Filter, RefreshCw, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function TemporaryAssignments() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [filterCostCenter, setFilterCostCenter] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("active");
 
-  // Form state
+  // Form state for create
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>("");
   const [toCostCenterId, setToCostCenterId] = useState<string>("");
@@ -45,6 +46,25 @@ export default function TemporaryAssignments() {
   const [endDate, setEndDate] = useState("");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState("");
+
+  // Edit dialog state
+  const [editDialog, setEditDialog] = useState<{
+    open: boolean;
+    id: number;
+    workerName: string;
+    toCostCenterId: string;
+    startDate: string;
+    endDate: string;
+    notes: string;
+  } | null>(null);
+  const [editError, setEditError] = useState("");
+
+  // Delete confirmation dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    id: number;
+    workerName: string;
+  } | null>(null);
 
   // Queries
   const { data: assignments, refetch, isLoading } = trpc.temporaryAssignments.list.useQuery({
@@ -58,6 +78,7 @@ export default function TemporaryAssignments() {
   // Mutations
   const createMutation = trpc.temporaryAssignments.create.useMutation({
     onSuccess: () => {
+      toast.success("تم إنشاء الانتداب بنجاح");
       setIsCreateOpen(false);
       resetForm();
       refetch();
@@ -69,7 +90,34 @@ export default function TemporaryAssignments() {
 
   const cancelMutation = trpc.temporaryAssignments.cancel.useMutation({
     onSuccess: () => {
+      toast.success("تم إلغاء الانتداب بنجاح");
       refetch();
+    },
+    onError: (err) => {
+      toast.error("خطأ", { description: err.message });
+    },
+  });
+
+  const updateMutation = trpc.temporaryAssignments.update.useMutation({
+    onSuccess: () => {
+      toast.success("تم تعديل الانتداب بنجاح");
+      setEditDialog(null);
+      setEditError("");
+      refetch();
+    },
+    onError: (err) => {
+      setEditError(err.message);
+    },
+  });
+
+  const deleteMutation = trpc.temporaryAssignments.delete.useMutation({
+    onSuccess: () => {
+      toast.success("تم حذف الانتداب بنجاح");
+      setDeleteDialog(null);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error("خطأ في الحذف", { description: err.message });
     },
   });
 
@@ -125,6 +173,54 @@ export default function TemporaryAssignments() {
     if (window.confirm("هل أنت متأكد من إلغاء هذا الانتداب؟")) {
       cancelMutation.mutate({ id });
     }
+  };
+
+  const handleEditOpen = (assignment: any) => {
+    const sd = assignment.startDate ? new Date(assignment.startDate).toLocaleDateString('en-CA') : '';
+    const ed = assignment.endDate ? new Date(assignment.endDate).toLocaleDateString('en-CA') : '';
+    setEditDialog({
+      open: true,
+      id: assignment.id,
+      workerName: assignment.workerName || '',
+      toCostCenterId: assignment.toCostCenterId ? assignment.toCostCenterId.toString() : '',
+      startDate: sd,
+      endDate: ed,
+      notes: assignment.notes || '',
+    });
+    setEditError("");
+  };
+
+  const handleEditSave = () => {
+    if (!editDialog) return;
+    setEditError("");
+    if (!editDialog.toCostCenterId || !editDialog.startDate || !editDialog.endDate) {
+      setEditError("يرجى ملء جميع الحقول المطلوبة");
+      return;
+    }
+    if (new Date(editDialog.endDate) < new Date(editDialog.startDate)) {
+      setEditError("تاريخ النهاية يجب أن يكون بعد تاريخ البداية");
+      return;
+    }
+    updateMutation.mutate({
+      id: editDialog.id,
+      toCostCenterId: parseInt(editDialog.toCostCenterId),
+      startDate: editDialog.startDate,
+      endDate: editDialog.endDate,
+      notes: editDialog.notes || undefined,
+    });
+  };
+
+  const handleDeleteOpen = (assignment: any) => {
+    setDeleteDialog({
+      open: true,
+      id: assignment.id,
+      workerName: assignment.workerName || '',
+    });
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteDialog) return;
+    deleteMutation.mutate({ id: deleteDialog.id });
   };
 
   const formatDate = (date: any) => {
@@ -444,16 +540,39 @@ export default function TemporaryAssignments() {
                       </TableCell>
                       <TableCell>
                         {a.status === "active" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-1"
-                            onClick={() => handleCancel(a.id)}
-                            disabled={cancelMutation.isPending}
-                          >
-                            <X className="h-3 w-3" />
-                            إلغاء
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            {/* Edit Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1 h-8 px-2"
+                              onClick={() => handleEditOpen(a)}
+                            >
+                              <Pencil className="h-3 w-3" />
+                              تعديل
+                            </Button>
+                            {/* Cancel Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 gap-1 h-8 px-2"
+                              onClick={() => handleCancel(a.id)}
+                              disabled={cancelMutation.isPending}
+                            >
+                              <X className="h-3 w-3" />
+                              إلغاء
+                            </Button>
+                            {/* Delete Button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-1 h-8 px-2"
+                              onClick={() => handleDeleteOpen(a)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              حذف
+                            </Button>
+                          </div>
                         )}
                       </TableCell>
                     </TableRow>
@@ -464,6 +583,136 @@ export default function TemporaryAssignments() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editDialog?.open} onOpenChange={(open) => !open && setEditDialog(null)}>
+        <DialogContent className="sm:max-w-[500px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-blue-600" />
+              تعديل الانتداب
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {editError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                {editError}
+              </div>
+            )}
+
+            <div className="bg-muted/50 rounded-lg p-3">
+              <p className="text-sm text-muted-foreground">العامل</p>
+              <p className="font-medium">{editDialog?.workerName}</p>
+            </div>
+
+            {/* To Cost Center */}
+            <div className="space-y-2">
+              <Label>مركز التكلفة المنتدب إليه *</Label>
+              <Select
+                value={editDialog?.toCostCenterId || ""}
+                onValueChange={(val) => setEditDialog(prev => prev ? { ...prev, toCostCenterId: val } : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر مركز التكلفة" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(costCenters || []).map((cc: any) => (
+                    <SelectItem key={cc.id} value={cc.id.toString()}>
+                      {cc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>تاريخ البداية *</Label>
+                <Input
+                  type="date"
+                  value={editDialog?.startDate || ""}
+                  onChange={(e) => setEditDialog(prev => prev ? { ...prev, startDate: e.target.value } : null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>تاريخ النهاية *</Label>
+                <Input
+                  type="date"
+                  value={editDialog?.endDate || ""}
+                  onChange={(e) => setEditDialog(prev => prev ? { ...prev, endDate: e.target.value } : null)}
+                />
+              </div>
+            </div>
+            {editDialog?.startDate && editDialog?.endDate && new Date(editDialog.endDate) >= new Date(editDialog.startDate) && (
+              <p className="text-xs text-blue-600">
+                مدة الانتداب: <strong>{calculateDays(editDialog.startDate, editDialog.endDate)} يوم</strong>
+              </p>
+            )}
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>ملاحظات</Label>
+              <Textarea
+                value={editDialog?.notes || ""}
+                onChange={(e) => setEditDialog(prev => prev ? { ...prev, notes: e.target.value } : null)}
+                placeholder="سبب الانتداب أو أي ملاحظات..."
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditDialog(null)}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={handleEditSave}
+              disabled={updateMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {updateMutation.isPending ? "جاري الحفظ..." : "حفظ التعديلات"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteDialog?.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
+        <DialogContent className="sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              تأكيد حذف الانتداب
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
+              <p className="text-base font-medium text-red-800 dark:text-red-300">
+                هل أنت متأكد من حذف هذا الانتداب نهائياً؟
+              </p>
+              <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                لا يمكن التراجع عن هذا الإجراء
+              </p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3">
+              <p className="text-sm text-muted-foreground">العامل</p>
+              <p className="font-medium">{deleteDialog?.workerName}</p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteDialog(null)}>
+              تراجع
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+              variant="destructive"
+            >
+              {deleteMutation.isPending ? "جاري الحذف..." : "حذف نهائي"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

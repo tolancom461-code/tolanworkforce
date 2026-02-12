@@ -377,6 +377,7 @@ export const operationalFlags = mysqlTable("operational_flags", {
   flagType: mysqlEnum("flag_type", [
     "confirm_attendance",  // تأكيد حضور
     "confirm_absence",     // تأكيد غياب
+    "transfer",            // نقل/انتداب عامل
     "other"                // أخرى
   ]).default("other").notNull(),
   description: text("description").notNull(), // وصف الاستثناء/التعديل
