@@ -93,12 +93,14 @@ export default function PayrollBatchCreateSimple() {
         periodStart,
         periodEnd,
         costCenterId: parseInt(costCenterId),
-        items: aggregateResult.map((item) => ({
+        items: aggregateResult.map((item: any) => ({
           workerId: item.workerId,
           baseAmount: item.baseAmount,
           deductions: item.deductions,
           bonuses: item.bonuses,
           netAmount: item.netAmount,
+          daysWorked: item.daysWorked || 0,
+          notes: item.notes || undefined,
         })),
       });
 

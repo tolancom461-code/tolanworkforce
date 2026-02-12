@@ -60,7 +60,8 @@ import {
   Calendar,
   ClipboardCheck,
   AlertCircle,
-  FileSearch
+  FileSearch,
+  ArrowLeftRight
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -85,7 +86,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
     '/schedules/weekly', '/punches/review',
     '/operations', '/operations/notes-review',
-    '/cost-centers', '/profile',
+    '/cost-centers', '/temporary-assignments', '/profile',
   ],
   // المحاسب: بدون لوحة التحكم، بدون سجل الحضور، بدون المستخدمين
   accountant: [
@@ -94,7 +95,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
     '/schedules/weekly', '/punches/review',
     '/operations', '/operations/notes-review',
-    '/cost-centers', '/profile',
+    '/cost-centers', '/temporary-assignments', '/profile',
   ],
   // المراجع: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط) + سجل التدقيق
   auditor: [
@@ -194,12 +195,7 @@ const menuSections = [
     label: "\u{1F4CB} البيانات المرجعية",
     items: [
       { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
-    ]
-  },
-  {
-    label: "\u{1F50D} \u0627\u0644\u062a\u062f\u0642\u064a\u0642 \u0648\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629",
-    items: [
-      { icon: FileSearch, label: "\u0633\u062c\u0644 \u0627\u0644\u062a\u062f\u0642\u064a\u0642", path: "/audit-log", color: "text-indigo-600" },
+      { icon: ArrowLeftRight, label: "الانتدابات المؤقتة", path: "/temporary-assignments", color: "text-cyan-600" },
     ]
   },
   {

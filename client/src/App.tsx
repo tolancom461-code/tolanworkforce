@@ -49,6 +49,7 @@ import { PayrollDashboard } from "./pages/PayrollDashboard";
 import WeeklyShifts from "./pages/WeeklyShifts";
 import PunchesReviewCenter from "./pages/PunchesReviewCenter";
 import Backfill from "./pages/Backfill";
+import TemporaryAssignments from "./pages/TemporaryAssignments";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { lazy } from "react";
@@ -124,6 +125,11 @@ function Router() {
       <Route path="/audit-log">
         <ProtectedRoute>
           <AuditLog />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/temporary-assignments">
+        <ProtectedRoute>
+          <TemporaryAssignments />
         </ProtectedRoute>
       </Route>
       <Route path="/attendance/reports" component={AttendanceReports} />

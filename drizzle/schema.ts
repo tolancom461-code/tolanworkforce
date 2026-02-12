@@ -305,6 +305,31 @@ export const payrollBatchCorrections = mysqlTable("payroll_batch_corrections", {
 });
 
 // ============================================
+// Temporary Assignments (الانتدابات المؤقتة)
+// ============================================
+
+export const temporaryAssignments = mysqlTable("temporary_assignments", {
+  id: int("id").autoincrement().primaryKey(),
+  workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  fromCostCenterId: int("from_cost_center_id").references(() => costCenters.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  toCostCenterId: int("to_cost_center_id").notNull().references(() => costCenters.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["active", "cancelled"]).default("active"),
+  createdBy: int("created_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  workerIdIdx: index("idx_temp_assign_worker_id").on(table.workerId),
+  toCostCenterIdx: index("idx_temp_assign_to_cost_center").on(table.toCostCenterId),
+  dateRangeIdx: index("idx_temp_assign_dates").on(table.startDate, table.endDate),
+}));
+
+export type TemporaryAssignment = typeof temporaryAssignments.$inferSelect;
+export type InsertTemporaryAssignment = typeof temporaryAssignments.$inferInsert;
+
+// ============================================
 // Audit Log (سجل التدقيق)
 // ============================================
 

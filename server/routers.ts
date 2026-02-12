@@ -2064,6 +2064,8 @@ export const appRouter = router({
           deductions: z.string(),
           bonuses: z.string(),
           netAmount: z.string(),
+          daysWorked: z.number().optional(),
+          notes: z.string().optional(),
         })),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -3382,6 +3384,89 @@ export const appRouter = router({
       .query(async () => {
         const allUsers = await db.getAllUsers();
         return allUsers.map(u => ({ id: u.id, fullName: u.fullName, role: u.role }));
+      }),
+  }),
+
+  // ============================================
+  // Temporary Assignments (الانتدابات المؤقتة)
+  // ============================================
+  temporaryAssignments: router({
+    // List all temporary assignments with filters
+    list: protectedProcedure
+      .input(z.object({
+        workerId: z.number().optional(),
+        costCenterId: z.number().optional(),
+        status: z.string().optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await db.getTemporaryAssignments(input || {});
+      }),
+
+    // Create a new temporary assignment
+    create: protectedProcedure
+      .input(z.object({
+        workerId: z.number(),
+        toCostCenterId: z.number(),
+        startDate: z.string(),
+        endDate: z.string(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const result = await db.createTemporaryAssignment({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'CREATE_TEMP_ASSIGNMENT',
+          tableName: 'temporary_assignments',
+          recordId: result.id,
+          newValues: input,
+        });
+
+        return result;
+      }),
+
+    // Cancel a temporary assignment
+    cancel: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const result = await db.cancelTemporaryAssignment(input.id);
+
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'CANCEL_TEMP_ASSIGNMENT',
+          tableName: 'temporary_assignments',
+          recordId: input.id,
+        });
+
+        return result;
+      }),
+
+    // Get assignments for a specific cost center in a period (for payroll preview)
+    getForCostCenter: protectedProcedure
+      .input(z.object({
+        costCenterId: z.number(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const incoming = await db.getAssignmentsToCostCenter(
+          input.costCenterId, input.periodStart, input.periodEnd
+        );
+        const outgoing = await db.getAssignmentsFromCostCenter(
+          input.costCenterId, input.periodStart, input.periodEnd
+        );
+        return { incoming, outgoing };
       }),
   }),
 

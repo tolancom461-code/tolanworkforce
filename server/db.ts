@@ -15,7 +15,8 @@ import {
   payrollBatchNotes,
   payrollBatchCorrections,
   operationalFlags,
-  userCostCenters
+  userCostCenters,
+  temporaryAssignments
 } from "../drizzle/schema";
 import { inArray, isNull, isNotNull, between } from "drizzle-orm";
 
@@ -2350,6 +2351,8 @@ export async function createPayrollBatch(params: {
     deductions: string;
     bonuses: string;
     netAmount: string;
+    daysWorked?: number;
+    notes?: string;
   }>;
 }) {
   const db = await getDb();
@@ -2428,11 +2431,12 @@ export async function createPayrollBatch(params: {
   } else {
     batchItems = params.items.map(item => ({
       workerId: item.workerId,
-      daysWorked: 0, // Not provided in items
+      daysWorked: item.daysWorked || 0,
       baseAmount: item.baseAmount,
       totalDeductions: item.deductions,
       totalBonuses: item.bonuses,
       netAmount: item.netAmount,
+      notes: item.notes || null,
     }));
   }
 
@@ -2473,6 +2477,7 @@ export async function createPayrollBatch(params: {
       totalDeductions: item.totalDeductions,
       totalBonuses: item.totalBonuses,
       netAmount: item.netAmount,
+      notes: (item as any).notes || null,
     };
       await db.insert(payrollBatchItems).values(itemToInsert as any);
   }
@@ -5735,24 +5740,122 @@ export async function aggregatePayrollDataByCostCenter(
   const workersInCostCenter = groupIds.length > 0
     ? await db.select().from(workers).where(inArray(workers.groupId, groupIds))
     : [];
-  // Aggregate data for each worker
+
+  // === الانتدابات المؤقتة ===
+  // 1. جلب الانتدابات الخارجة من هذا المركز (عمال انتدبوا لمراكز أخرى)
+  const outgoingAssignments = await getAssignmentsFromCostCenter(costCenterId, periodStart, periodEnd);
+  // 2. جلب الانتدابات الواردة إلى هذا المركز (عمال من مراكز أخرى)
+  const incomingAssignments = await getAssignmentsToCostCenter(costCenterId, periodStart, periodEnd);
+
+  // بناء خريطة أيام الانتداب الخارجي لكل عامل أصلي
+  const outgoingDaysMap = new Map<number, number>(); // workerId -> total outgoing days
+  for (const assignment of outgoingAssignments) {
+    const days = calculateAssignmentDays(
+      assignment.startDate, assignment.endDate, periodStart, periodEnd
+    );
+    outgoingDaysMap.set(
+      assignment.workerId,
+      (outgoingDaysMap.get(assignment.workerId) || 0) + days
+    );
+  }
+
+  // Aggregate data for each original worker (minus outgoing assignment days)
   const results = [];
   for (const worker of workersInCostCenter) {
     const workerData = await aggregatePayrollData(worker.id, periodStart, periodEnd);
-    
-    // Only include workers with data
+    const outgoingDays = outgoingDaysMap.get(worker.id) || 0;
+
     if (workerData.daysWorked > 0) {
+      if (outgoingDays > 0 && workerData.daysWorked > outgoingDays) {
+        // خصم أيام الانتداب الخارجي - حساب نسبي
+        const originalDays = workerData.daysWorked;
+        const remainingDays = originalDays - outgoingDays;
+        const ratio = remainingDays / originalDays;
+
+        const adjBaseAmount = (parseFloat(workerData.baseAmount) * ratio).toFixed(2);
+        const adjDeductions = (parseFloat(workerData.deductionsTotal) * ratio).toFixed(2);
+        const adjBonuses = (parseFloat(workerData.bonuses) * ratio).toFixed(2);
+        const adjNet = (parseFloat(adjBaseAmount) - parseFloat(adjDeductions) + parseFloat(adjBonuses)).toFixed(2);
+
+        results.push({
+          workerId: worker.id,
+          workerName: worker.fullName,
+          baseAmount: adjBaseAmount,
+          deductions: adjDeductions,
+          bonuses: adjBonuses,
+          netAmount: adjNet,
+          daysWorked: remainingDays,
+          isPartial: true,
+          outgoingDays,
+          notes: `منتدب ${outgoingDays} يوم لمركز آخر`,
+        });
+      } else if (outgoingDays >= workerData.daysWorked) {
+        // كل أيامه منتدبة - لا يظهر في هذه الدفعة
+        continue;
+      } else {
+        results.push({
+          workerId: worker.id,
+          workerName: worker.fullName,
+          baseAmount: workerData.baseAmount,
+          deductions: workerData.deductionsTotal,
+          bonuses: workerData.bonuses,
+          netAmount: workerData.netAmount,
+          daysWorked: workerData.daysWorked,
+        });
+      }
+    }
+  }
+
+  // 3. إضافة العمال المنتدبين إلى هذا المركز (من مراكز أخرى)
+  for (const assignment of incomingAssignments) {
+    const assignmentDays = calculateAssignmentDays(
+      assignment.startDate, assignment.endDate, periodStart, periodEnd
+    );
+
+    if (assignmentDays <= 0) continue;
+
+    // حساب المبلغ اليومي للعامل المنتدب
+    const workerData = await aggregatePayrollData(assignment.workerId, periodStart, periodEnd);
+    if (workerData.daysWorked <= 0) continue;
+
+    const dailyRate = parseFloat(workerData.baseAmount) / workerData.daysWorked;
+    const dailyDeduction = parseFloat(workerData.deductionsTotal) / workerData.daysWorked;
+    const dailyBonus = parseFloat(workerData.bonuses) / workerData.daysWorked;
+
+    const assignBaseAmount = (dailyRate * assignmentDays).toFixed(2);
+    const assignDeductions = (dailyDeduction * assignmentDays).toFixed(2);
+    const assignBonuses = (dailyBonus * assignmentDays).toFixed(2);
+    const assignNet = (parseFloat(assignBaseAmount) - parseFloat(assignDeductions) + parseFloat(assignBonuses)).toFixed(2);
+
+    // تحقق من عدم تكرار العامل (إذا كان له أكثر من انتداب)
+    const existingIdx = results.findIndex(r => r.workerId === assignment.workerId);
+    if (existingIdx >= 0) {
+      // دمج مع سجل موجود
+      const existing = results[existingIdx];
+      results[existingIdx] = {
+        ...existing,
+        baseAmount: (parseFloat(existing.baseAmount) + parseFloat(assignBaseAmount)).toFixed(2),
+        deductions: (parseFloat(existing.deductions) + parseFloat(assignDeductions)).toFixed(2),
+        bonuses: (parseFloat(existing.bonuses) + parseFloat(assignBonuses)).toFixed(2),
+        netAmount: (parseFloat(existing.netAmount) + parseFloat(assignNet)).toFixed(2),
+        daysWorked: existing.daysWorked + assignmentDays,
+      };
+    } else {
       results.push({
-        workerId: worker.id,
-        workerName: worker.fullName,
-        baseAmount: workerData.baseAmount,
-        deductions: workerData.deductionsTotal,
-        bonuses: workerData.bonuses,
-        netAmount: workerData.netAmount,
-        daysWorked: workerData.daysWorked,
+        workerId: assignment.workerId,
+        workerName: assignment.workerName || 'غير معروف',
+        baseAmount: assignBaseAmount,
+        deductions: assignDeductions,
+        bonuses: assignBonuses,
+        netAmount: assignNet,
+        daysWorked: assignmentDays,
+        isAssigned: true,
+        fromGroupName: assignment.groupName,
+        notes: `منتدب من ${assignment.groupName || 'مجموعة أخرى'} - ${assignmentDays} يوم`,
       });
     }
   }
+
   return results;
 }
 
@@ -7021,4 +7124,295 @@ export async function getUserCostCenterIds(userId: number): Promise<number[]> {
     .where(eq(userCostCenters.userId, userId));
   
   return results.map(r => r.costCenterId);
+}
+
+
+// ============================================
+// Temporary Assignments (الانتدابات المؤقتة)
+// ============================================
+
+/**
+ * Get all temporary assignments with filters
+ */
+export async function getTemporaryAssignments(filters?: {
+  workerId?: number;
+  costCenterId?: number;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const conditions: any[] = [];
+
+  if (filters?.workerId) {
+    conditions.push(eq(temporaryAssignments.workerId, filters.workerId));
+  }
+  if (filters?.costCenterId) {
+    conditions.push(
+      or(
+        eq(temporaryAssignments.fromCostCenterId, filters.costCenterId),
+        eq(temporaryAssignments.toCostCenterId, filters.costCenterId)
+      )
+    );
+  }
+  if (filters?.status) {
+    conditions.push(eq(temporaryAssignments.status, filters.status as any));
+  }
+  if (filters?.startDate) {
+    conditions.push(gte(temporaryAssignments.startDate, new Date(filters.startDate)));
+  }
+  if (filters?.endDate) {
+    conditions.push(lte(temporaryAssignments.endDate, new Date(filters.endDate)));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const results = await db
+    .select({
+      id: temporaryAssignments.id,
+      workerId: temporaryAssignments.workerId,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      fromCostCenterId: temporaryAssignments.fromCostCenterId,
+      fromCostCenterName: sql<string>`fc.name`,
+      toCostCenterId: temporaryAssignments.toCostCenterId,
+      toCostCenterName: sql<string>`tc.name`,
+      groupName: groups.name,
+      startDate: temporaryAssignments.startDate,
+      endDate: temporaryAssignments.endDate,
+      notes: temporaryAssignments.notes,
+      status: temporaryAssignments.status,
+      createdBy: temporaryAssignments.createdBy,
+      createdByName: users.fullName,
+      createdAt: temporaryAssignments.createdAt,
+    })
+    .from(temporaryAssignments)
+    .leftJoin(workers, eq(temporaryAssignments.workerId, workers.id))
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .leftJoin(sql`cost_centers fc`, sql`${temporaryAssignments.fromCostCenterId} = fc.id`)
+    .leftJoin(sql`cost_centers tc`, sql`${temporaryAssignments.toCostCenterId} = tc.id`)
+    .leftJoin(users, eq(temporaryAssignments.createdBy, users.id))
+    .where(whereClause)
+    .orderBy(desc(temporaryAssignments.createdAt));
+
+  return results;
+}
+
+/**
+ * Create a new temporary assignment
+ */
+export async function createTemporaryAssignment(params: {
+  workerId: number;
+  toCostCenterId: number;
+  startDate: string;
+  endDate: string;
+  notes?: string;
+  createdBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get worker's current group and cost center
+  const worker = await db
+    .select({
+      id: workers.id,
+      groupId: workers.groupId,
+      costCenterId: groups.costCenterId,
+    })
+    .from(workers)
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .where(eq(workers.id, params.workerId));
+
+  if (!worker[0]) throw new Error("العامل غير موجود");
+
+  const fromCostCenterId = worker[0].costCenterId;
+
+  if (fromCostCenterId === params.toCostCenterId) {
+    throw new Error("لا يمكن انتداب العامل إلى نفس مركز التكلفة الأصلي");
+  }
+
+  // Check for overlapping assignments
+  const overlapping = await db
+    .select()
+    .from(temporaryAssignments)
+    .where(
+      and(
+        eq(temporaryAssignments.workerId, params.workerId),
+        eq(temporaryAssignments.status, 'active'),
+        // Overlap check: existing.start <= new.end AND existing.end >= new.start
+        lte(temporaryAssignments.startDate, new Date(params.endDate)),
+        gte(temporaryAssignments.endDate, new Date(params.startDate))
+      )
+    );
+
+  if (overlapping.length > 0) {
+    throw new Error("يوجد انتداب متداخل لنفس العامل في نفس الفترة");
+  }
+
+  const result = await db.insert(temporaryAssignments).values({
+    workerId: params.workerId,
+    fromCostCenterId: fromCostCenterId,
+    toCostCenterId: params.toCostCenterId,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    notes: params.notes || null,
+    status: 'active',
+    createdBy: params.createdBy,
+  } as any);
+
+  return { id: result[0].insertId };
+}
+
+/**
+ * Cancel a temporary assignment
+ */
+export async function cancelTemporaryAssignment(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [existing] = await db
+    .select()
+    .from(temporaryAssignments)
+    .where(eq(temporaryAssignments.id, id));
+
+  if (!existing) throw new Error("الانتداب غير موجود");
+  if (existing.status === 'cancelled') throw new Error("الانتداب ملغي مسبقاً");
+
+  await db
+    .update(temporaryAssignments)
+    .set({ status: 'cancelled' })
+    .where(eq(temporaryAssignments.id, id));
+
+  return { success: true };
+}
+
+/**
+ * Get active temporary assignments for a worker in a date range
+ * Used by payroll calculation
+ */
+export async function getWorkerAssignmentsInPeriod(
+  workerId: number,
+  periodStart: string,
+  periodEnd: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const assignments = await db
+    .select()
+    .from(temporaryAssignments)
+    .where(
+      and(
+        eq(temporaryAssignments.workerId, workerId),
+        eq(temporaryAssignments.status, 'active'),
+        lte(temporaryAssignments.startDate, new Date(periodEnd)),
+        gte(temporaryAssignments.endDate, new Date(periodStart))
+      )
+    );
+
+  return assignments;
+}
+
+/**
+ * Get all active assignments TO a specific cost center in a date range
+ * Used to find workers assigned to this cost center from other groups
+ */
+export async function getAssignmentsToCostCenter(
+  costCenterId: number,
+  periodStart: string,
+  periodEnd: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const assignments = await db
+    .select({
+      id: temporaryAssignments.id,
+      workerId: temporaryAssignments.workerId,
+      workerName: workers.fullName,
+      workerCode: workers.code,
+      fromCostCenterId: temporaryAssignments.fromCostCenterId,
+      toCostCenterId: temporaryAssignments.toCostCenterId,
+      startDate: temporaryAssignments.startDate,
+      endDate: temporaryAssignments.endDate,
+      groupName: groups.name,
+      dailyRate: workers.dailyRate,
+      groupDailyWage: groups.dailyWage,
+    })
+    .from(temporaryAssignments)
+    .leftJoin(workers, eq(temporaryAssignments.workerId, workers.id))
+    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .where(
+      and(
+        eq(temporaryAssignments.toCostCenterId, costCenterId),
+        eq(temporaryAssignments.status, 'active'),
+        lte(temporaryAssignments.startDate, new Date(periodEnd)),
+        gte(temporaryAssignments.endDate, new Date(periodStart))
+      )
+    );
+
+  return assignments;
+}
+
+/**
+ * Get assignments FROM a specific cost center in a date range
+ * Used to find workers who left this cost center temporarily
+ */
+export async function getAssignmentsFromCostCenter(
+  costCenterId: number,
+  periodStart: string,
+  periodEnd: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const assignments = await db
+    .select({
+      id: temporaryAssignments.id,
+      workerId: temporaryAssignments.workerId,
+      startDate: temporaryAssignments.startDate,
+      endDate: temporaryAssignments.endDate,
+      toCostCenterId: temporaryAssignments.toCostCenterId,
+    })
+    .from(temporaryAssignments)
+    .where(
+      and(
+        eq(temporaryAssignments.fromCostCenterId, costCenterId),
+        eq(temporaryAssignments.status, 'active'),
+        lte(temporaryAssignments.startDate, new Date(periodEnd)),
+        gte(temporaryAssignments.endDate, new Date(periodStart))
+      )
+    );
+
+  return assignments;
+}
+
+/**
+ * Calculate assignment days overlap with a period
+ * Returns the number of days the assignment overlaps with the given period
+ */
+export function calculateAssignmentDays(
+  assignmentStart: string | Date,
+  assignmentEnd: string | Date,
+  periodStart: string,
+  periodEnd: string
+): number {
+  const aStart = new Date(assignmentStart);
+  const aEnd = new Date(assignmentEnd);
+  const pStart = new Date(periodStart);
+  const pEnd = new Date(periodEnd);
+
+  // Overlap start = max(assignmentStart, periodStart)
+  const overlapStart = aStart > pStart ? aStart : pStart;
+  // Overlap end = min(assignmentEnd, periodEnd)
+  const overlapEnd = aEnd < pEnd ? aEnd : pEnd;
+
+  if (overlapStart > overlapEnd) return 0;
+
+  // Calculate days (inclusive)
+  const diffTime = overlapEnd.getTime() - overlapStart.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  return diffDays;
 }
