@@ -1966,19 +1966,39 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية إنشاء دفعات الرواتب' });
         }
         
-        // Check for pending operational flags before creating batch
-        const pendingFlagsCount = await db.getPendingOperationalFlagsCount();
-        if (pendingFlagsCount > 0) {
+        // === شرط 1: منع تكرار الدفعة لنفس الفترة ومركز التكلفة ===
+        const duplicateCheck = await db.checkDuplicatePayrollBatch(
+          input.periodStart,
+          input.periodEnd,
+          input.costCenterId ?? null
+        );
+        if (duplicateCheck.isDuplicate) {
           throw new Error(
-            `لا يمكن إنشاء دفعة الرواتب. يوجد ${pendingFlagsCount} ملاحظة تشغيلية معلقة تحتاج للمعالجة.\n\nيرجى مراجعة واعتماد جميع الملاحظات التشغيلية المعلقة في صفحة "معالجات الملاحظات التشغيلية" قبل إنشاء دفعة الرواتب.`
+            `لا يمكن إنشاء دفعة الرواتب. توجد دفعة سابقة (${duplicateCheck.existingBatchCode}) لنفس الفترة (${input.periodStart} - ${input.periodEnd}) ونفس مركز التكلفة.\n\nالحالة: ${duplicateCheck.existingStatus}\n\nلا يمكن إنشاء دفعة مكررة لنفس البيانات.`
           );
         }
         
-        // Check for incomplete attendance records in the period
+        // === شرط 2: فحص البلاغات التشغيلية المعلقة لنفس الفترة ومركز التكلفة ===
+        const pendingFlagsCount = await db.getPendingOperationalFlagsForPeriod(
+          input.periodStart,
+          input.periodEnd,
+          input.costCenterId ?? null
+        );
+        if (pendingFlagsCount > 0) {
+          throw new Error(
+            `لا يمكن إنشاء دفعة الرواتب. يوجد ${pendingFlagsCount} ملاحظة تشغيلية معلقة لنفس الفترة ومركز التكلفة تحتاج للمعالجة.\n\nيرجى مراجعة واعتماد جميع الملاحظات التشغيلية المعلقة في صفحة "معالجات الملاحظات التشغيلية" قبل إنشاء دفعة الرواتب.`
+          );
+        }
+        
+        // === شرط 3: فحص البصمات الناقصة لنفس الفترة ومركز التكلفة ===
         const startDate = new Date(input.periodStart);
         const endDate = new Date(input.periodEnd);
         
-        const incompleteCheck = await db.checkIncompleteAttendanceForPeriod(startDate, endDate);
+        const incompleteCheck = await db.checkIncompleteAttendanceForPeriodAndCostCenter(
+          startDate,
+          endDate,
+          input.costCenterId ?? null
+        );
         
         if (incompleteCheck.hasIncomplete) {
           const errorDetails = incompleteCheck.incompleteRecords
@@ -1990,7 +2010,7 @@ export const appRouter = router({
           const moreText = moreCount > 0 ? `\n... و ${moreCount} سجل آخر` : '';
           
           throw new Error(
-            `لا يمكن إنشاء دفعة الرواتب. يوجد ${incompleteCheck.incompleteCount} سجل حضور ناقص يحتاج للمعالجة:\n\n${errorDetails}${moreText}\n\nيرجى مراجعة البصمات الناقصة في "مركز مراجعة البصمات" قبل إنشاء دفعة الرواتب.`
+            `لا يمكن إنشاء دفعة الرواتب. يوجد ${incompleteCheck.incompleteCount} سجل حضور ناقص لنفس الفترة ومركز التكلفة يحتاج للمعالجة:\n\n${errorDetails}${moreText}\n\nيرجى مراجعة البصمات الناقصة في "مركز مراجعة البصمات" قبل إنشاء دفعة الرواتب.`
           );
         }
         

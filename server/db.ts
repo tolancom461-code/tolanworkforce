@@ -6196,6 +6196,77 @@ export async function checkIncompleteAttendanceForPeriod(
     incompleteRecords,
   };
 }
+
+/**
+ * Check if there are any incomplete attendance records for a date range and cost center
+ * Used before creating payroll batches to ensure all attendance for the same period/cost center is complete
+ */
+export async function checkIncompleteAttendanceForPeriodAndCostCenter(
+  startDate: Date,
+  endDate: Date,
+  costCenterId: number | null
+): Promise<{
+  hasIncomplete: boolean;
+  incompleteCount: number;
+  incompleteRecords: Array<{
+    date: string;
+    workerCode: string;
+    workerName: string;
+    incompleteType: string;
+  }>;
+}> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  
+  const incompleteRecords: Array<{
+    date: string;
+    workerCode: string;
+    workerName: string;
+    incompleteType: string;
+  }> = [];
+  
+  // Check each date in the range
+  const currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    const dayIncomplete = await getIncompleteAttendance(currentDate);
+    
+    for (const record of dayIncomplete) {
+      // If costCenterId is specified, filter by workers in groups belonging to that cost center
+      if (costCenterId) {
+        // Get the worker's group to check cost center
+        const { workers: workersTable, groups: groupsTable } = await import('../drizzle/schema');
+        const workerData = await db
+          .select({ costCenterId: groupsTable.costCenterId })
+          .from(workersTable)
+          .leftJoin(groupsTable, eq(workersTable.groupId, groupsTable.id))
+          .where(eq(workersTable.id, record.workerId))
+          .limit(1);
+        
+        if (workerData.length === 0 || workerData[0].costCenterId !== costCenterId) {
+          continue; // Skip workers not in the specified cost center
+        }
+      }
+      
+      incompleteRecords.push({
+        date: currentDate.toLocaleDateString('en-CA'),
+        workerCode: record.workerCode,
+        workerName: record.workerName,
+        incompleteType: record.incompleteType === 'missing_check_out' 
+          ? 'حضور بدون انصراف' 
+          : 'انصراف بدون حضور',
+      });
+    }
+    
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return {
+    hasIncomplete: incompleteRecords.length > 0,
+    incompleteCount: incompleteRecords.length,
+    incompleteRecords,
+  };
+}
+
 // دالة مؤقتة لإضافتها إلى server/db.ts
 export async function getAbsentWorkers(workDate: Date, groupId?: number) {
   const db = await getDb();
@@ -6727,6 +6798,96 @@ export async function getPendingOperationalFlagsCount() {
     .where(eq(operationalFlags.status, 'pending'));
 
   return result[0]?.count || 0;
+}
+
+/**
+ * Get count of pending operational flags filtered by period and cost center
+ * Used before creating payroll batches to ensure all flags for the same period/cost center are resolved
+ */
+export async function getPendingOperationalFlagsForPeriod(
+  periodStart: string,
+  periodEnd: string,
+  costCenterId: number | null
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const startDate = periodStart.split('T')[0];
+  const endDate = periodEnd.split('T')[0];
+
+  const conditions = [
+    eq(operationalFlags.status, 'pending'),
+    gte(operationalFlags.flagDate, startDate),
+    lte(operationalFlags.flagDate, endDate),
+  ];
+
+  // If costCenterId is provided, filter by it
+  if (costCenterId) {
+    conditions.push(eq(operationalFlags.costCenterId, costCenterId));
+  }
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(operationalFlags)
+    .where(and(...conditions));
+
+  return result[0]?.count || 0;
+}
+
+/**
+ * Check for duplicate payroll batch with same period and cost center
+ * Prevents creating duplicate batches for the same data
+ */
+export async function checkDuplicatePayrollBatch(
+  periodStart: string,
+  periodEnd: string,
+  costCenterId: number | null
+): Promise<{ isDuplicate: boolean; existingBatchCode: string | null; existingStatus: string | null }> {
+  const db = await getDb();
+  if (!db) return { isDuplicate: false, existingBatchCode: null, existingStatus: null };
+
+  const startDate = periodStart.split('T')[0];
+  const endDate = periodEnd.split('T')[0];
+
+  const conditions = [
+    eq(payrollBatches.periodStart, startDate),
+    eq(payrollBatches.periodEnd, endDate),
+  ];
+
+  // Match cost center (including null = null)
+  if (costCenterId) {
+    conditions.push(eq(payrollBatches.costCenterId, costCenterId));
+  } else {
+    conditions.push(sql`${payrollBatches.costCenterId} IS NULL`);
+  }
+
+  const existing = await db
+    .select({
+      batchCode: payrollBatches.batchCode,
+      status: payrollBatches.status,
+    })
+    .from(payrollBatches)
+    .where(and(...conditions))
+    .limit(1);
+
+  if (existing.length > 0) {
+    const statusMap: Record<string, string> = {
+      'draft': 'مسودة',
+      'under_accountant_review': 'قيد مراجعة المحاسب',
+      'under_financial_review': 'قيد المراجعة المالية',
+      'under_accounts_manager_review': 'قيد مراجعة المدير المالي',
+      'approved': 'معتمدة',
+      'rejected_final': 'مرفوضة',
+      'paid': 'مدفوعة',
+    };
+    return {
+      isDuplicate: true,
+      existingBatchCode: existing[0].batchCode,
+      existingStatus: statusMap[existing[0].status || ''] || existing[0].status,
+    };
+  }
+
+  return { isDuplicate: false, existingBatchCode: null, existingStatus: null };
 }
 
 
