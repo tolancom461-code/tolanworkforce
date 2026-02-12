@@ -3662,6 +3662,23 @@ export const appRouter = router({
   // ============================================
   // Backup - النسخ الاحتياطي
   // ============================================
+  // تقرير مستحقات العمالة التشغيلية حسب مركز التكلفة
+  // ============================================
+  costCenterReport: router({
+    getData: protectedProcedure
+      .input(z.object({
+        periodStart: z.string(),
+        periodEnd: z.string(),
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager', 'executive']);
+        return await db.getCostCenterPayrollReport(input.periodStart, input.periodEnd, input.costCenterId);
+      }),
+  }),
+
+  // ============================================
   backup: router({
     // Get table info for backup
     getTableInfo: protectedProcedure

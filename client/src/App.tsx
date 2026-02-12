@@ -39,6 +39,7 @@ import CostCenters from "./pages/CostCenters";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 import ExecutiveFinanceDashboard from "./pages/ExecutiveFinanceDashboard";
 import FinancialReports from "./pages/reports/FinancialReports";
+import CostCenterReport from "./pages/reports/CostCenterReport";
 import PayrollReport from "./pages/PayrollReport";
 import LocalLogin from "./pages/LocalLogin";
 import OperationalFlagsSimple from "./pages/OperationalFlagsSimple";
@@ -204,6 +205,11 @@ function Router() {
       <Route path="/finance/reports">
         <ProtectedRoute>
           <FinancialReports />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/finance/cost-center-report">
+        <ProtectedRoute>
+          <CostCenterReport />
         </ProtectedRoute>
       </Route>
       <Route path="/payroll-report" component={PayrollReport} />

@@ -110,12 +110,13 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
   finance_manager: [
     '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/payroll-report', '/finance/reports',
+    '/finance/cost-center-report',
     '/attendance/log', '/attendance/reports',
     '/audit-log',
     '/backup',
     '/profile',
   ],
-  executive: ['/executive/finance', '/profile'],
+  executive: ['/executive/finance', '/finance/cost-center-report', '/profile'],
   super_admin: 'all',
 };
 
@@ -172,6 +173,7 @@ const menuSections = [
       { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
       { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
       { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },
+      { icon: FileSearch, label: "تقرير مستحقات العمالة", path: "/finance/cost-center-report" },
     ]
   },
   {
