@@ -50,6 +50,7 @@ import WeeklyShifts from "./pages/WeeklyShifts";
 import PunchesReviewCenter from "./pages/PunchesReviewCenter";
 import Backfill from "./pages/Backfill";
 import TemporaryAssignments from "./pages/TemporaryAssignments";
+import Backup from "./pages/Backup";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { lazy } from "react";
@@ -130,6 +131,11 @@ function Router() {
       <Route path="/temporary-assignments">
         <ProtectedRoute>
           <TemporaryAssignments />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/backup">
+        <ProtectedRoute>
+          <Backup />
         </ProtectedRoute>
       </Route>
       <Route path="/attendance/reports" component={AttendanceReports} />

@@ -3658,6 +3658,155 @@ export const appRouter = router({
         return await db.getPendingOperationalFlagsCount();
       }),
   }),
+
+  // ============================================
+  // Backup - النسخ الاحتياطي
+  // ============================================
+  backup: router({
+    // Get table info for backup
+    getTableInfo: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
+        return await db.getBackupTableInfo();
+      }),
+
+    // Export selected tables as Excel
+    exportExcel: protectedProcedure
+      .input(z.object({
+        tableNames: z.array(z.string()),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
+        
+        const data = await db.exportTablesData(input.tableNames);
+        
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Tolan Workforce';
+        workbook.created = new Date();
+        
+        const arabicLabels: Record<string, string> = {
+          users: 'المستخدمين', workers: 'العمال', groups: 'المجموعات',
+          cost_centers: 'مراكز التكلفة', attendance_events: 'سجل الحضور',
+          payroll_batches: 'دفعات الرواتب', payroll_batch_items: 'عناصر الرواتب',
+          operational_flags: 'البلاغات التشغيلية', temporary_assignments: 'الانتدابات المؤقتة',
+          audit_log: 'سجل التدقيق', pay_overrides: 'التجاوزات المالية',
+          group_schedules: 'جداول المجموعات', worker_daily_finance: 'المالية اليومية',
+          payroll_batch_notes: 'ملاحظات الرواتب', payroll_batch_corrections: 'تصحيحات الرواتب',
+          work_days: 'أيام العمل', deduction_rules: 'قواعد الخصم',
+          user_cost_centers: 'مراكز تكلفة المستخدمين',
+        };
+        
+        for (const [tableName, rows] of Object.entries(data)) {
+          if (!rows || rows.length === 0) continue;
+          const sheetName = arabicLabels[tableName] || tableName;
+          const sheet = workbook.addWorksheet(sheetName);
+          
+          const columns = Object.keys(rows[0]);
+          sheet.columns = columns.map(col => ({
+            header: col,
+            key: col,
+            width: 20,
+          }));
+          
+          sheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF4472C4' },
+          };
+          sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          
+          for (const row of rows) {
+            const rowData: Record<string, any> = {};
+            for (const col of columns) {
+              const val = (row as any)[col];
+              rowData[col] = val instanceof Date ? val.toISOString() : val;
+            }
+            sheet.addRow(rowData);
+          }
+        }
+        
+        const buffer = await workbook.xlsx.writeBuffer();
+        const base64 = Buffer.from(buffer as ArrayBuffer).toString('base64');
+        
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'نسخ احتياطي Excel',
+          tableName: 'backup',
+          newValues: { type: 'excel', tables: input.tableNames, timestamp: new Date().toISOString() },
+        });
+        
+        return { base64, filename: `tolan_backup_${new Date().toISOString().slice(0,10)}.xlsx` };
+      }),
+
+    // Export full SQL dump
+    exportSql: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
+        
+        const sqlDump = await db.exportFullSqlDump();
+        const base64 = Buffer.from(sqlDump, 'utf-8').toString('base64');
+        
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'نسخ احتياطي SQL',
+          tableName: 'backup',
+          newValues: { type: 'sql', timestamp: new Date().toISOString() },
+        });
+        
+        return { base64, filename: `tolan_backup_${new Date().toISOString().slice(0,10)}.sql` };
+      }),
+
+    // Export selected table as CSV
+    exportCsv: protectedProcedure
+      .input(z.object({
+        tableName: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
+        
+        const data = await db.exportTablesData([input.tableName]);
+        const rows = data[input.tableName] || [];
+        
+        if (rows.length === 0) return { base64: '', filename: '' };
+        
+        const columns = Object.keys(rows[0]);
+        let csv = columns.join(',') + '\n';
+        for (const row of rows) {
+          const values = columns.map(col => {
+            const val = (row as any)[col];
+            if (val === null || val === undefined) return '';
+            const str = val instanceof Date ? val.toISOString() : String(val);
+            return str.includes(',') || str.includes('"') || str.includes('\n')
+              ? `"${str.replace(/"/g, '""')}"`
+              : str;
+          });
+          csv += values.join(',') + '\n';
+        }
+        
+        const base64 = Buffer.from(csv, 'utf-8').toString('base64');
+        
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'نسخ احتياطي CSV',
+          tableName: 'backup',
+          newValues: { type: 'csv', table: input.tableName, timestamp: new Date().toISOString() },
+        });
+        
+        return { base64, filename: `${input.tableName}_${new Date().toISOString().slice(0,10)}.csv` };
+      }),
+
+    // Get backup history
+    getHistory: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
+        return await db.getBackupHistory();
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

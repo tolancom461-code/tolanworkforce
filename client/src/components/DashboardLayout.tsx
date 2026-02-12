@@ -61,7 +61,8 @@ import {
   ClipboardCheck,
   AlertCircle,
   FileSearch,
-  ArrowLeftRight
+  ArrowLeftRight,
+  HardDrive
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -111,6 +112,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/finance/payroll/history', '/payroll-report', '/finance/reports',
     '/attendance/log', '/attendance/reports',
     '/audit-log',
+    '/backup',
     '/profile',
   ],
   executive: ['/executive/finance', '/profile'],
@@ -201,6 +203,7 @@ const menuSections = [
   {
     label: "\u2699\uFE0F \u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645",
     items: [
+      { icon: HardDrive, label: "\u0627\u0644\u0646\u0633\u062e \u0627\u0644\u0627\u062d\u062a\u064a\u0627\u0637\u064a", path: "/backup", color: "text-blue-600" },
       { icon: Settings, label: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a", path: "/profile" },
     ]
   },
