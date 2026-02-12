@@ -26,6 +26,41 @@ import { ENV } from './_core/env';
 let _db: ReturnType<typeof drizzle> | null = null;
 
 // ============================================
+// Audit Log Helper
+// ============================================
+/**
+ * Helper function to log audit trail entries
+ * يسجل كل العمليات المهمة في سجل التدقيق
+ */
+export async function logAudit(params: {
+  userId?: number | null;
+  action: string;
+  tableName: string;
+  recordId?: number | null;
+  oldValues?: any;
+  newValues?: any;
+  ipAddress?: string;
+}) {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const { auditLog } = await import('../drizzle/schema');
+    await db.insert(auditLog).values({
+      userId: params.userId || null,
+      action: params.action,
+      tableName: params.tableName,
+      recordId: params.recordId || null,
+      oldValues: params.oldValues ? JSON.stringify(params.oldValues) : null,
+      newValues: params.newValues ? JSON.stringify(params.newValues) : null,
+      ipAddress: params.ipAddress || null,
+    });
+  } catch (error) {
+    console.error('[logAudit] Error logging audit:', error);
+    // Don't throw - audit logging should never break the main operation
+  }
+}
+
+// ============================================
 // Utility Functions
 // ============================================
 
@@ -5756,45 +5791,22 @@ export async function deleteWorkerDailyFinanceByDate(date: string) {
     .where(eq(workerDailyFinance.workDate, new Date(date)));
 }
 
-// Get audit log entries for attendance events
+// Get comprehensive audit log entries (all operations)
 export async function getAuditLog(filters?: {
-  workerId?: number;
   startDate?: string;
   endDate?: string;
   action?: string;
+  tableName?: string;
+  userId?: number;
   limit?: number;
+  offset?: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const { auditLog, users, workers, attendanceEvents } = await import('../drizzle/schema');
+  const { auditLog, users } = await import('../drizzle/schema');
   
-  let query = db
-    .select({
-      id: auditLog.id,
-      userId: auditLog.userId,
-      userName: users.fullName,
-      action: auditLog.action,
-      tableName: auditLog.tableName,
-      recordId: auditLog.recordId,
-      oldValues: auditLog.oldValues,
-      newValues: auditLog.newValues,
-      createdAt: auditLog.createdAt,
-      workerName: workers.fullName,
-    })
-    .from(auditLog)
-    .leftJoin(users, eq(auditLog.userId, users.id))
-    .leftJoin(attendanceEvents, eq(auditLog.recordId, attendanceEvents.id))
-    .leftJoin(workers, eq(attendanceEvents.workerId, workers.id))
-    .where(eq(auditLog.tableName, 'attendance_events'))
-    .$dynamic();
-  
-  // Apply filters
-  const conditions = [eq(auditLog.tableName, 'attendance_events')];
-  
-  if (filters?.workerId) {
-    conditions.push(eq(attendanceEvents.workerId, filters.workerId));
-  }
+  const conditions: any[] = [];
   
   if (filters?.startDate) {
     const startDate = new Date(filters.startDate);
@@ -5811,26 +5823,92 @@ export async function getAuditLog(filters?: {
     conditions.push(eq(auditLog.action, filters.action));
   }
   
-  if (conditions.length > 0) {
-    query = query.where(and(...conditions));
+  if (filters?.tableName) {
+    conditions.push(eq(auditLog.tableName, filters.tableName));
   }
   
-  // Order by most recent first
-  query = query.orderBy(desc(auditLog.createdAt));
-  
-  // Apply limit
-  if (filters?.limit) {
-    query = query.limit(filters.limit);
+  if (filters?.userId) {
+    conditions.push(eq(auditLog.userId, filters.userId));
   }
+  
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  
+  // Get total count
+  const [countResult] = await db
+    .select({ value: count() })
+    .from(auditLog)
+    .where(whereClause);
+  
+  const total = countResult?.value || 0;
+  
+  // Get paginated results
+  let query = db
+    .select({
+      id: auditLog.id,
+      userId: auditLog.userId,
+      userName: users.fullName,
+      userRole: users.role,
+      action: auditLog.action,
+      tableName: auditLog.tableName,
+      recordId: auditLog.recordId,
+      oldValues: auditLog.oldValues,
+      newValues: auditLog.newValues,
+      ipAddress: auditLog.ipAddress,
+      createdAt: auditLog.createdAt,
+    })
+    .from(auditLog)
+    .leftJoin(users, eq(auditLog.userId, users.id))
+    .where(whereClause)
+    .orderBy(desc(auditLog.createdAt))
+    .limit(filters?.limit || 50)
+    .offset(filters?.offset || 0);
   
   const results = await query;
   
   // Parse JSON strings
-  return results.map(row => ({
+  const logs = results.map(row => ({
     ...row,
-    oldValues: row.oldValues ? JSON.parse(row.oldValues) : null,
-    newValues: row.newValues ? JSON.parse(row.newValues) : null,
+    oldValues: row.oldValues ? (() => { try { return JSON.parse(row.oldValues as string); } catch { return row.oldValues; } })() : null,
+    newValues: row.newValues ? (() => { try { return JSON.parse(row.newValues as string); } catch { return row.newValues; } })() : null,
   }));
+  
+  return { logs, total };
+}
+
+// Get audit log stats (counts by action type)
+export async function getAuditLogStats(filters?: {
+  startDate?: string;
+  endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const { auditLog } = await import('../drizzle/schema');
+  
+  const conditions: any[] = [];
+  
+  if (filters?.startDate) {
+    conditions.push(gte(auditLog.createdAt, new Date(filters.startDate)));
+  }
+  if (filters?.endDate) {
+    const endDate = new Date(filters.endDate);
+    endDate.setHours(23, 59, 59, 999);
+    conditions.push(lte(auditLog.createdAt, endDate));
+  }
+  
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  
+  const results = await db
+    .select({
+      action: auditLog.action,
+      count: count(),
+    })
+    .from(auditLog)
+    .where(whereClause)
+    .groupBy(auditLog.action)
+    .orderBy(desc(count()));
+  
+  return results;
 }
 
 /**

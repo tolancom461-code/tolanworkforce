@@ -59,7 +59,8 @@ import {
   Banknote,
   Calendar,
   ClipboardCheck,
-  AlertCircle
+  AlertCircle,
+  FileSearch
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -95,18 +96,20 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/operations', '/operations/notes-review',
     '/cost-centers', '/profile',
   ],
-  // المراجع: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط)
+  // المراجع: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط) + سجل التدقيق
   auditor: [
     '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/payroll-report', '/finance/reports',
     '/attendance/log', '/attendance/reports',
+    '/audit-log',
     '/profile',
   ],
-  // المدير المالي: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط)
+  // المدير المالي: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط) + سجل التدقيق
   finance_manager: [
     '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/payroll-report', '/finance/reports',
     '/attendance/log', '/attendance/reports',
+    '/audit-log',
     '/profile',
   ],
   executive: ['/executive/finance', '/profile'],
@@ -194,9 +197,15 @@ const menuSections = [
     ]
   },
   {
-    label: "\u2699\uFE0F إعدادات النظام",
+    label: "\u{1F50D} \u0627\u0644\u062a\u062f\u0642\u064a\u0642 \u0648\u0627\u0644\u0645\u0631\u0627\u062c\u0639\u0629",
     items: [
-      { icon: Settings, label: "الملف الشخصي", path: "/profile" },
+      { icon: FileSearch, label: "\u0633\u062c\u0644 \u0627\u0644\u062a\u062f\u0642\u064a\u0642", path: "/audit-log", color: "text-indigo-600" },
+    ]
+  },
+  {
+    label: "\u2699\uFE0F \u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645",
+    items: [
+      { icon: Settings, label: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a", path: "/profile" },
     ]
   },
 ];

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,18 +7,140 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Clock, FileText } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  FileSearch, 
+  Calendar, 
+  User, 
+  Filter, 
+  ChevronRight, 
+  ChevronLeft,
+  BarChart3,
+  Eye,
+  X
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+// ===== Arabic action labels =====
+const ACTION_LABELS: Record<string, string> = {
+  // Workers
+  CREATE_WORKER: 'إضافة عامل',
+  UPDATE_WORKER: 'تعديل عامل',
+  DELETE_WORKER: 'حذف عامل',
+  // Users
+  CREATE_USER: 'إضافة مستخدم',
+  UPDATE_USER: 'تعديل مستخدم',
+  DELETE_USER: 'حذف مستخدم',
+  UPDATE_USER_ROLE: 'تغيير دور مستخدم',
+  // Groups
+  CREATE_GROUP: 'إضافة مجموعة',
+  UPDATE_GROUP: 'تعديل مجموعة',
+  DELETE_GROUP: 'حذف مجموعة',
+  // Attendance
+  UPDATE_ATTENDANCE: 'تعديل حضور',
+  DELETE_ATTENDANCE: 'حذف بصمة',
+  // Payroll
+  CREATE_PAYROLL_BATCH: 'إنشاء دفعة رواتب',
+  SUBMIT_PAYROLL_FOR_REVIEW: 'إرسال دفعة للمراجعة',
+  ACCOUNTANT_APPROVE_PAYROLL: 'اعتماد المحاسب',
+  ACCOUNTANT_REJECT_PAYROLL: 'رفض المحاسب',
+  AUDITOR_APPROVE_PAYROLL: 'اعتماد المراجع',
+  AUDITOR_REJECT_PAYROLL: 'رفض المراجع',
+  FM_APPROVE_PAYROLL: 'اعتماد مدير الحسابات',
+  FM_REJECT_PAYROLL: 'رفض مدير الحسابات',
+  DELETE_PAYROLL_BATCH: 'حذف دفعة رواتب',
+  FORCE_DELETE_PAYROLL_BATCH: 'حذف نهائي لدفعة',
+  FORCE_UNLOCK_PAYROLL: 'إلغاء قفل دفعة',
+  RELOCK_PAYROLL: 'إعادة قفل دفعة',
+  // Pay Overrides
+  CREATE_PAY_OVERRIDE: 'إضافة تجاوز مالي',
+  APPROVE_PAY_OVERRIDE: 'اعتماد تجاوز مالي',
+  REJECT_PAY_OVERRIDE: 'رفض تجاوز مالي',
+};
+
+const TABLE_LABELS: Record<string, string> = {
+  workers: 'العمال',
+  users: 'المستخدمين',
+  groups: 'المجموعات',
+  attendance_events: 'الحضور',
+  payroll_batches: 'الرواتب',
+  pay_overrides: 'التجاوزات المالية',
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  super_admin: 'مدير النظام',
+  admin_affairs: 'الشؤون الإدارية',
+  accountant: 'المحاسب',
+  auditor: 'المراجع المالي',
+  finance_manager: 'مدير الحسابات',
+  guard: 'حارس',
+  executive: 'الإدارة العليا',
+  supervisor_tolan: 'مشرف طولان',
+  supervisor_malqa: 'مشرف ملقا',
+};
+
+// Action category colors
+function getActionColor(action: string): string {
+  if (action.includes('CREATE') || action.includes('APPROVE')) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+  if (action.includes('DELETE') || action.includes('REJECT') || action.includes('FORCE')) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+  if (action.includes('UPDATE') || action.includes('SUBMIT') || action.includes('LOCK')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+  return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+}
+
+// Category filter options
+const TABLE_FILTER_OPTIONS = [
+  { value: 'all', label: 'الكل' },
+  { value: 'workers', label: 'العمال' },
+  { value: 'users', label: 'المستخدمين' },
+  { value: 'groups', label: 'المجموعات' },
+  { value: 'attendance_events', label: 'الحضور' },
+  { value: 'payroll_batches', label: 'الرواتب' },
+  { value: 'pay_overrides', label: 'التجاوزات المالية' },
+];
 
 export default function AuditLog() {
+  const [activeTab, setActiveTab] = useState('logs');
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
-    workerId: undefined as number | undefined,
     action: '',
+    tableName: '',
+    userId: undefined as number | undefined,
+  });
+  const [page, setPage] = useState(0);
+  const pageSize = 30;
+  const [selectedLog, setSelectedLog] = useState<any>(null);
+
+  // Queries
+  const { data: auditData, isLoading, refetch } = trpc.audit.getLog.useQuery({
+    ...filters,
+    tableName: filters.tableName || undefined,
+    action: filters.action || undefined,
+    limit: pageSize,
+    offset: page * pageSize,
   });
 
-  const { data: auditLogs, isLoading, refetch } = trpc.audit.getLog.useQuery(filters);
-  const { data: workers } = trpc.workers.list.useQuery();
+  const { data: stats } = trpc.audit.getStats.useQuery({
+    startDate: filters.startDate || undefined,
+    endDate: filters.endDate || undefined,
+  });
+
+  const { data: auditUsers } = trpc.audit.getUsers.useQuery();
+
+  const logs = auditData?.logs || [];
+  const total = auditData?.total || 0;
+  const totalPages = Math.ceil(total / pageSize);
+
+  // Unique actions for filter dropdown
+  const uniqueActions = useMemo(() => {
+    if (!stats) return [];
+    return stats.map(s => s.action);
+  }, [stats]);
 
   const formatDate = (date: Date | string) => {
     const d = new Date(date);
@@ -28,164 +150,449 @@ export default function AuditLog() {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
     });
   };
 
-  const formatTime = (timeStr: string) => {
-    if (!timeStr) return '-';
-    const date = new Date(timeStr);
-    return date.toLocaleTimeString('ar-SA', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  const handleFilter = () => {
+    setPage(0);
+    refetch();
   };
 
-  const getActionBadge = (action: string) => {
-    switch (action) {
-      case 'UPDATE_ATTENDANCE':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">تعديل حضور</Badge>;
-      default:
-        return <Badge variant="outline">{action}</Badge>;
+  const handleReset = () => {
+    setFilters({ startDate: '', endDate: '', action: '', tableName: '', userId: undefined });
+    setPage(0);
+  };
+
+  // Format values for detail view
+  const formatValue = (key: string, value: any): string => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'boolean') return value ? 'نعم' : 'لا';
+    if (key === 'eventTime' || key === 'createdAt') {
+      try { return formatDate(value); } catch { return String(value); }
     }
+    return String(value);
+  };
+
+  const renderDetailValues = (label: string, values: any) => {
+    if (!values || typeof values !== 'object') return null;
+    const entries = Object.entries(values);
+    if (entries.length === 0) return null;
+    
+    return (
+      <div className="space-y-2">
+        <h4 className="font-semibold text-sm">{label}</h4>
+        <div className="bg-muted/50 rounded-lg p-3 space-y-1">
+          {entries.map(([key, val]) => (
+            <div key={key} className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{key}</span>
+              <span className="font-mono text-xs">{formatValue(key, val)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <FileSearch className="h-7 w-7 text-indigo-600" />
         <div>
-          <h1 className="text-3xl font-bold">سجل التدقيق</h1>
-          <p className="text-muted-foreground">تتبع جميع التعديلات على سجلات الحضور</p>
+          <h1 className="text-2xl font-bold">سجل التدقيق</h1>
+          <p className="text-sm text-muted-foreground">متابعة جميع العمليات والتغييرات في النظام</p>
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            تصفية السجلات
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>من تاريخ</Label>
-              <Input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>إلى تاريخ</Label>
-              <Input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>العامل</Label>
-              <Select
-                value={filters.workerId?.toString() || 'all'}
-                onValueChange={(value) => setFilters({ ...filters, workerId: value === 'all' ? undefined : parseInt(value) })}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="logs" className="gap-2">
+            <FileSearch className="h-4 w-4" />
+            السجلات
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            الإحصائيات
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ===== Logs Tab ===== */}
+        <TabsContent value="logs" className="space-y-4">
+          {/* Filters */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                تصفية السجلات
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">من تاريخ</Label>
+                  <Input
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">إلى تاريخ</Label>
+                  <Input
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">القسم</Label>
+                  <Select
+                    value={filters.tableName || 'all'}
+                    onValueChange={(value) => setFilters({ ...filters, tableName: value === 'all' ? '' : value })}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="الكل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TABLE_FILTER_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">نوع العملية</Label>
+                  <Select
+                    value={filters.action || 'all'}
+                    onValueChange={(value) => setFilters({ ...filters, action: value === 'all' ? '' : value })}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="الكل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">الكل</SelectItem>
+                      {uniqueActions.map(action => (
+                        <SelectItem key={action} value={action}>
+                          {ACTION_LABELS[action] || action}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">المستخدم</Label>
+                  <Select
+                    value={filters.userId?.toString() || 'all'}
+                    onValueChange={(value) => setFilters({ ...filters, userId: value === 'all' ? undefined : parseInt(value) })}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="الكل" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع المستخدمين</SelectItem>
+                      {auditUsers?.map((u) => (
+                        <SelectItem key={u.id} value={u.id.toString()}>
+                          {u.fullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Button onClick={handleFilter} size="sm" className="gap-1">
+                  <Filter className="h-3.5 w-3.5" />
+                  تطبيق
+                </Button>
+                <Button onClick={handleReset} variant="outline" size="sm" className="gap-1">
+                  <X className="h-3.5 w-3.5" />
+                  إعادة تعيين
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Results Count */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              إجمالي السجلات: <span className="font-bold text-foreground">{total}</span>
+            </p>
+            {totalPages > 1 && (
+              <p className="text-sm text-muted-foreground">
+                صفحة {page + 1} من {totalPages}
+              </p>
+            )}
+          </div>
+
+          {/* Table */}
+          <Card>
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="text-center py-12 text-muted-foreground">جاري التحميل...</div>
+              ) : logs.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[180px]">التاريخ والوقت</TableHead>
+                        <TableHead className="w-[140px]">المستخدم</TableHead>
+                        <TableHead className="w-[100px]">القسم</TableHead>
+                        <TableHead className="w-[160px]">العملية</TableHead>
+                        <TableHead className="w-[80px]">رقم السجل</TableHead>
+                        <TableHead className="w-[60px]">تفاصيل</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {logs.map((log) => (
+                        <TableRow key={log.id} className="hover:bg-muted/50">
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                              <span className="text-xs font-mono">{formatDate(log.createdAt)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
+                              <User className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                              <div className="min-w-0">
+                                <span className="text-sm block truncate">{log.userName || 'غير معروف'}</span>
+                                {log.userRole && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {ROLE_LABELS[log.userRole] || log.userRole}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[10px] font-normal">
+                              {TABLE_LABELS[log.tableName || ''] || log.tableName || '-'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`text-[11px] font-normal ${getActionColor(log.action)}`}>
+                              {ACTION_LABELS[log.action] || log.action}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs font-mono text-muted-foreground">
+                              {log.recordId || '-'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => setSelectedLog(log)}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  لا توجد سجلات تدقيق
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="جميع العمال" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع العمال</SelectItem>
-                  {workers?.map((worker) => (
-                    <SelectItem key={worker.id} value={worker.id.toString()}>
-                      {worker.fullName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <Button onClick={() => refetch()} className="w-full">
-                تطبيق التصفية
+                <ChevronRight className="h-4 w-4" />
+                السابق
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i;
+                  } else if (page < 3) {
+                    pageNum = i;
+                  } else if (page > totalPages - 4) {
+                    pageNum = totalPages - 5 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={page === pageNum ? 'default' : 'outline'}
+                      size="sm"
+                      className="w-8 h-8 p-0"
+                      onClick={() => setPage(pageNum)}
+                    >
+                      {pageNum + 1}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+              >
+                التالي
+                <ChevronLeft className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </TabsContent>
 
-      {/* Audit Log Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>السجلات ({auditLogs?.length || 0})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
-          ) : auditLogs && auditLogs.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>التاريخ والوقت</TableHead>
-                    <TableHead>المستخدم</TableHead>
-                    <TableHead>العامل</TableHead>
-                    <TableHead>الإجراء</TableHead>
-                    <TableHead>الوقت القديم</TableHead>
-                    <TableHead>الوقت الجديد</TableHead>
-                    <TableHead>الملاحظة</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {auditLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm">{formatDate(log.createdAt)}</span>
+        {/* ===== Stats Tab ===== */}
+        <TabsContent value="stats" className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">تصفية الإحصائيات</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">من تاريخ</Label>
+                    <Input
+                      type="date"
+                      value={filters.startDate}
+                      onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">إلى تاريخ</Label>
+                    <Input
+                      type="date"
+                      value={filters.endDate}
+                      onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">ملخص</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-indigo-600">
+                  {stats?.reduce((sum, s) => sum + s.count, 0) || 0}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">إجمالي العمليات المسجلة</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Stats Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                إحصائيات حسب نوع العملية
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stats && stats.length > 0 ? (
+                <div className="space-y-2">
+                  {stats.map((stat) => {
+                    const maxCount = Math.max(...stats.map(s => s.count));
+                    const percentage = maxCount > 0 ? (stat.count / maxCount) * 100 : 0;
+                    return (
+                      <div key={stat.action} className="flex items-center gap-3">
+                        <div className="w-[180px] flex-shrink-0">
+                          <Badge className={`text-[11px] font-normal ${getActionColor(stat.action)}`}>
+                            {ACTION_LABELS[stat.action] || stat.action}
+                          </Badge>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm">{log.userName || 'غير معروف'}</span>
+                        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">{log.workerName || '-'}</span>
-                      </TableCell>
-                      <TableCell>{getActionBadge(log.action)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-red-500" />
-                          <span className="text-sm text-red-600 font-mono">
-                            {log.oldValues?.eventTime ? formatTime(log.oldValues.eventTime) : '-'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-green-500" />
-                          <span className="text-sm text-green-600 font-mono">
-                            {log.newValues?.eventTime ? formatTime(log.newValues.eventTime) : '-'}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {log.newValues?.note || '-'}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد سجلات تدقيق
+                        <span className="text-sm font-bold w-12 text-left">{stat.count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  لا توجد إحصائيات
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedLog} onOpenChange={() => setSelectedLog(null)}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              تفاصيل العملية
+            </DialogTitle>
+          </DialogHeader>
+          {selectedLog && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">التاريخ:</span>
+                  <p className="font-mono text-xs mt-0.5">{formatDate(selectedLog.createdAt)}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">المستخدم:</span>
+                  <p className="mt-0.5">{selectedLog.userName || 'غير معروف'}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">العملية:</span>
+                  <div className="mt-0.5">
+                    <Badge className={`text-[11px] ${getActionColor(selectedLog.action)}`}>
+                      {ACTION_LABELS[selectedLog.action] || selectedLog.action}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">القسم:</span>
+                  <p className="mt-0.5">{TABLE_LABELS[selectedLog.tableName || ''] || selectedLog.tableName || '-'}</p>
+                </div>
+                {selectedLog.recordId && (
+                  <div>
+                    <span className="text-muted-foreground">رقم السجل:</span>
+                    <p className="font-mono mt-0.5">{selectedLog.recordId}</p>
+                  </div>
+                )}
+                {selectedLog.ipAddress && (
+                  <div>
+                    <span className="text-muted-foreground">عنوان IP:</span>
+                    <p className="font-mono text-xs mt-0.5">{selectedLog.ipAddress}</p>
+                  </div>
+                )}
+              </div>
+              
+              {renderDetailValues('القيم القديمة', selectedLog.oldValues)}
+              {renderDetailValues('القيم الجديدة', selectedLog.newValues)}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

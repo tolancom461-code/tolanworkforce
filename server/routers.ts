@@ -167,6 +167,14 @@ export const appRouter = router({
             phone: input.phoneNumber || input.phone,
             isActive: input.isActive,
           });
+          // Audit log
+          await db.logAudit({
+            userId: ctx.user.id,
+            action: 'CREATE_USER',
+            tableName: 'users',
+            recordId: (id as any).userId || 0,
+            newValues: { username: input.username, fullName: input.fullName },
+          });
           return { id, success: true };
         } catch (error: any) {
           throw new TRPCError({
@@ -198,6 +206,7 @@ export const appRouter = router({
           updateData.phone = phoneNumber;
         }
         // Hash password if provided
+        const oldUser = await db.getUserById(id);
         if (password) {
           const bcrypt = await import('bcryptjs');
           const passwordHash = await bcrypt.hash(password, 10);
@@ -205,6 +214,15 @@ export const appRouter = router({
         } else {
           await db.updateUser(id, updateData);
         }
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'UPDATE_USER',
+          tableName: 'users',
+          recordId: id,
+          oldValues: oldUser ? { fullName: oldUser.fullName, isActive: oldUser.isActive } : null,
+          newValues: { ...updateData, passwordChanged: !!password },
+        });
         return { success: true };
       }),
     
@@ -216,7 +234,16 @@ export const appRouter = router({
         if (input.id === ctx.user.id) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك حذف حسابك الخاص' });
         }
+        const oldUser = await db.getUserById(input.id);
         await db.deleteUser(input.id);
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'DELETE_USER',
+          tableName: 'users',
+          recordId: input.id,
+          oldValues: oldUser ? { username: oldUser.username, fullName: oldUser.fullName } : null,
+        });
         return { success: true };
       }),
     
@@ -233,7 +260,17 @@ export const appRouter = router({
         if (input.userId === ctx.user.id) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك تغيير دورك الخاص' });
         }
+        const oldUser = await db.getUserById(input.userId);
         await db.updateUserRole(input.userId, input.role);
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'UPDATE_USER_ROLE',
+          tableName: 'users',
+          recordId: input.userId,
+          oldValues: oldUser ? { role: oldUser.role } : null,
+          newValues: { role: input.role },
+        });
         return { success: true };
       }),
     
@@ -337,7 +374,7 @@ export const appRouter = router({
         isActive: z.boolean().default(true),
       }))
       .use(requirePermissionFlag('canManageGroups'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
           const id = await db.createGroup({
             code: input.code,
@@ -351,6 +388,14 @@ export const appRouter = router({
             earlyLeavePenaltyRate: input.earlyLeavePenaltyRate ? parseFloat(input.earlyLeavePenaltyRate) : null,
             isActive: input.isActive,
           } as any);
+          // Audit log
+          await db.logAudit({
+            userId: ctx.user?.id,
+            action: 'CREATE_GROUP',
+            tableName: 'groups',
+            recordId: id,
+            newValues: { code: input.code, name: input.name },
+          });
           return { id, success: true };
         } catch (error: any) {
           throw new TRPCError({
@@ -375,7 +420,7 @@ export const appRouter = router({
         isActive: z.boolean().optional(),
       }))
       .use(requirePermissionFlag('canManageGroups'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
         const updateData: any = {};
         
@@ -390,15 +435,34 @@ export const appRouter = router({
         if (data.earlyLeavePenaltyRate !== undefined) updateData.earlyLeavePenaltyRate = data.earlyLeavePenaltyRate ? parseFloat(data.earlyLeavePenaltyRate) : null;
         if (data.isActive !== undefined) updateData.isActive = data.isActive;
         
+        const oldGroup = await db.getGroupById(id);
         await db.updateGroup(id, updateData);
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user?.id,
+          action: 'UPDATE_GROUP',
+          tableName: 'groups',
+          recordId: id,
+          oldValues: oldGroup ? { code: oldGroup.code, name: oldGroup.name } : null,
+          newValues: updateData,
+        });
         return { success: true };
       }),
     
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .use(requirePermissionFlag('canManageGroups'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        const oldGroup = await db.getGroupById(input.id);
         await db.deleteGroup(input.id);
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user?.id,
+          action: 'DELETE_GROUP',
+          tableName: 'groups',
+          recordId: input.id,
+          oldValues: oldGroup ? { code: oldGroup.code, name: oldGroup.name } : null,
+        });
         return { success: true };
       }),
     
@@ -464,7 +528,7 @@ export const appRouter = router({
         status: z.enum(["active", "inactive", "archived"]).default("active"),
       }))
       .use(requirePermissionFlag('canManageWorkers'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
           // Generate QR token
           const qrToken = `WRK-${input.code}-${Date.now()}`;
@@ -475,6 +539,14 @@ export const appRouter = router({
             qrToken,
             manualCode,
             hireDate: input.hireDate ? new Date(input.hireDate) : null,
+          });
+          // Audit log
+          await db.logAudit({
+            userId: ctx.user?.id,
+            action: 'CREATE_WORKER',
+            tableName: 'workers',
+            recordId: id,
+            newValues: { code: input.code, fullName: input.fullName, groupId: input.groupId },
           });
           return { id, qrToken, success: true };
         } catch (error: any) {
@@ -499,17 +571,36 @@ export const appRouter = router({
         status: z.enum(["active", "inactive", "archived"]).optional(),
       }))
       .use(requirePermissionFlag('canManageWorkers'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
+        const oldWorker = await db.getWorkerById(id);
         await db.updateWorker(id, data);
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user?.id,
+          action: 'UPDATE_WORKER',
+          tableName: 'workers',
+          recordId: id,
+          oldValues: oldWorker ? { code: oldWorker.code, fullName: oldWorker.fullName, status: oldWorker.status } : null,
+          newValues: data,
+        });
         return { success: true };
       }),
     
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .use(requirePermissionFlag('canManageWorkers'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        const oldWorker = await db.getWorkerById(input.id);
         await db.deleteWorker(input.id);
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user?.id,
+          action: 'DELETE_WORKER',
+          tableName: 'workers',
+          recordId: input.id,
+          oldValues: oldWorker ? { code: oldWorker.code, fullName: oldWorker.fullName } : null,
+        });
         return { success: true };
       }),
     
@@ -988,9 +1079,22 @@ export const appRouter = router({
         const database = await db.getDb();
         if (!database) throw new Error('Database not available');
         
-        // Delete the event
+        // Get event before deleting for audit
         const { eq } = await import('drizzle-orm');
+        const [oldEvent] = await database.select().from(attendanceEvents).where(eq(attendanceEvents.id, input.eventId)).limit(1);
+        
+        // Delete the event
         await database.delete(attendanceEvents).where(eq(attendanceEvents.id, input.eventId));
+        
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'DELETE_ATTENDANCE',
+          tableName: 'attendance_events',
+          recordId: input.eventId,
+          oldValues: oldEvent ? { workerId: oldEvent.workerId, eventType: oldEvent.eventType, eventTime: oldEvent.eventTime } : null,
+          newValues: input.reason ? { reason: input.reason } : null,
+        });
         
         return { success: true, message: 'تم حذف البصمة بنجاح' };
       }),
@@ -1532,10 +1636,12 @@ export const appRouter = router({
           throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
         }
         
-        return await db.createPayOverride({
+        const result = await db.createPayOverride({
           ...input,
           createdBy: ctx.user.id,
         });
+        await db.logAudit({ userId: ctx.user.id, action: 'CREATE_PAY_OVERRIDE', tableName: 'pay_overrides', newValues: { workerId: input.workerId, overrideType: input.overrideType, amount: input.amount, reason: input.reason } });
+        return result;
       }),
     
     // Get pending overrides
@@ -1550,7 +1656,9 @@ export const appRouter = router({
       .input(z.object({ overrideId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        return await db.approveOverride(input.overrideId, ctx.user.id);
+        const approveResult = await db.approveOverride(input.overrideId, ctx.user.id);
+        await db.logAudit({ userId: ctx.user.id, action: 'APPROVE_PAY_OVERRIDE', tableName: 'pay_overrides', recordId: input.overrideId });
+        return approveResult;
       }),
     
     // Reject override
@@ -1558,7 +1666,9 @@ export const appRouter = router({
       .input(z.object({ overrideId: z.number() }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        return await db.rejectOverride(input.overrideId, ctx.user.id);
+        const rejectResult = await db.rejectOverride(input.overrideId, ctx.user.id);
+        await db.logAudit({ userId: ctx.user.id, action: 'REJECT_PAY_OVERRIDE', tableName: 'pay_overrides', recordId: input.overrideId });
+        return rejectResult;
       }),
   }),
 
@@ -2014,10 +2124,19 @@ export const appRouter = router({
           );
         }
         
-        return await db.createPayrollBatch({
+        const result = await db.createPayrollBatch({
           ...input,
           createdBy: ctx.user.id,
         });
+        // Audit log
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'CREATE_PAYROLL_BATCH',
+          tableName: 'payroll_batches',
+          recordId: result.batchId,
+          newValues: { periodStart: input.periodStart, periodEnd: input.periodEnd, costCenterId: input.costCenterId, itemsCount: input.items.length },
+        });
+        return result;
       }),
     
     // Get payroll batches with search and filtering
@@ -2119,7 +2238,9 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canSubmitDraft) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط الشؤون الإدارية يمكنهم إرسال الدفعة للمراجعة' });
         }
-        return await db.submitBatchForReview(input.batchId, ctx.user.id);
+        const result = await db.submitBatchForReview(input.batchId, ctx.user.id);
+        await db.logAudit({ userId: ctx.user.id, action: 'SUBMIT_PAYROLL_FOR_REVIEW', tableName: 'payroll_batches', recordId: input.batchId });
+        return result;
       }),
     
     // Accountant approve
@@ -2136,7 +2257,9 @@ export const appRouter = router({
         if (batch?.batch && batch.batch.createdBy && cannotSelfReview(batch.batch.createdBy, ctx.user.id, userRole)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكنك مراجعة دفعة قمت بإنشائها بنفسك' });
         }
-        return await db.accountantApproveBatch(input.batchId, ctx.user.id);
+        const result = await db.accountantApproveBatch(input.batchId, ctx.user.id);
+        await db.logAudit({ userId: ctx.user.id, action: 'ACCOUNTANT_APPROVE_PAYROLL', tableName: 'payroll_batches', recordId: input.batchId });
+        return result;
       }),
     
     // Accountant reject
@@ -2155,10 +2278,12 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAccountant) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المحاسب المالي يمكنه رفض الدفعة في هذه المرحلة' });
         }
-        return await db.accountantRejectBatch({
+        const result = await db.accountantRejectBatch({
           ...input,
           reviewerId: ctx.user.id,
         });
+        await db.logAudit({ userId: ctx.user.id, action: 'ACCOUNTANT_REJECT_PAYROLL', tableName: 'payroll_batches', recordId: input.batchId, newValues: { note: input.note } });
+        return result;
       }),
     
     // Financial reviewer approve (Auditor)
@@ -2170,7 +2295,9 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAuditor) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المراجع المالي يمكنه اعتماد الدفعة في هذه المرحلة' });
         }
-        return await db.financialReviewerApproveBatch(input.batchId, ctx.user.id);
+        const result = await db.financialReviewerApproveBatch(input.batchId, ctx.user.id);
+        await db.logAudit({ userId: ctx.user.id, action: 'AUDITOR_APPROVE_PAYROLL', tableName: 'payroll_batches', recordId: input.batchId });
+        return result;
       }),
     
     // Financial reviewer reject
@@ -2189,10 +2316,12 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAuditor) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المراجع المالي يمكنه رفض الدفعة في هذه المرحلة' });
         }
-        return await db.financialReviewerRejectBatch({
+        const result = await db.financialReviewerRejectBatch({
           ...input,
           reviewerId: ctx.user.id,
         });
+        await db.logAudit({ userId: ctx.user.id, action: 'AUDITOR_REJECT_PAYROLL', tableName: 'payroll_batches', recordId: input.batchId, newValues: { note: input.note } });
+        return result;
       }),
     
     // Finance Manager final approve
@@ -2204,7 +2333,9 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canApproveAsFM) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المدير المالي يمكنه الاعتماد النهائي للدفعة' });
         }
-        return await db.accountsManagerApproveBatch(input.batchId, ctx.user.id);
+        const result = await db.accountsManagerApproveBatch(input.batchId, ctx.user.id);
+        await db.logAudit({ userId: ctx.user.id, action: 'FM_APPROVE_PAYROLL', tableName: 'payroll_batches', recordId: input.batchId });
+        return result;
       }),
     
     // Accounts manager final reject
@@ -2219,10 +2350,12 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canApproveAsFM) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المدير المالي يمكنه رفض الدفعة في هذه المرحلة' });
         }
-        return await db.accountsManagerRejectBatch({
+        const result = await db.accountsManagerRejectBatch({
           ...input,
           reviewerId: ctx.user.id,
         });
+        await db.logAudit({ userId: ctx.user.id, action: 'FM_REJECT_PAYROLL', tableName: 'payroll_batches', recordId: input.batchId, newValues: { note: input.note } });
+        return result;
       }),
     
     // Delete batch (DRAFT: admin_affairs + super_admin, Non-DRAFT: super_admin only)
@@ -2236,13 +2369,17 @@ export const appRouter = router({
           if (ctx.user.role !== 'super_admin') {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'الحذف النهائي متاح فقط للمسؤول الأعلى (Super Admin)' });
           }
-          return await db.deleteBatch(input.batchId, true);
+          const result1 = await db.deleteBatch(input.batchId, true);
+          await db.logAudit({ userId: ctx.user.id, action: 'FORCE_DELETE_PAYROLL_BATCH', tableName: 'payroll_batches', recordId: input.batchId });
+          return result1;
         } else {
           // حذف المسودات: super_admin + admin_affairs
           if (ctx.user.role !== 'super_admin' && ctx.user.role !== 'admin_affairs') {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'لا تملك صلاحية حذف دفعات الرواتب' });
           }
-          return await db.deleteBatch(input.batchId, false);
+          const result2 = await db.deleteBatch(input.batchId, false);
+          await db.logAudit({ userId: ctx.user.id, action: 'DELETE_PAYROLL_BATCH', tableName: 'payroll_batches', recordId: input.batchId });
+          return result2;
         }
       }),
     
@@ -3212,17 +3349,39 @@ export const appRouter = router({
 
   // Audit Log (سجل التدقيق)
   audit: router({
-    // Get audit log entries
+    // Get comprehensive audit log entries - restricted to auditor, finance_manager, super_admin
     getLog: protectedProcedure
       .input(z.object({
-        workerId: z.number().optional(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
         action: z.string().optional(),
-        limit: z.number().optional().default(100),
+        tableName: z.string().optional(),
+        userId: z.number().optional(),
+        limit: z.number().optional().default(50),
+        offset: z.number().optional().default(0),
       }))
+      .use(requireRole('auditor', 'finance_manager', 'super_admin'))
       .query(async ({ input }) => {
         return await db.getAuditLog(input);
+      }),
+    
+    // Get audit log statistics
+    getStats: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .use(requireRole('auditor', 'finance_manager', 'super_admin'))
+      .query(async ({ input }) => {
+        return await db.getAuditLogStats(input);
+      }),
+    
+    // Get list of users for filter dropdown
+    getUsers: protectedProcedure
+      .use(requireRole('auditor', 'finance_manager', 'super_admin'))
+      .query(async () => {
+        const allUsers = await db.getAllUsers();
+        return allUsers.map(u => ({ id: u.id, fullName: u.fullName, role: u.role }));
       }),
   }),
 
