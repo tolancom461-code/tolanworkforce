@@ -205,6 +205,7 @@ const menuSections = [
   {
     label: "\u2699\uFE0F \u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645",
     items: [
+      { icon: Shield, label: "سجل التدقيق", path: "/audit-log", color: "text-red-600" },
       { icon: HardDrive, label: "\u0627\u0644\u0646\u0633\u062e \u0627\u0644\u0627\u062d\u062a\u064a\u0627\u0637\u064a", path: "/backup", color: "text-blue-600" },
       { icon: Settings, label: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a", path: "/profile" },
     ]
