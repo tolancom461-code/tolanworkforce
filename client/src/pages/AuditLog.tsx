@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   BarChart3,
   Eye,
-  X
+  X,
+  UserCircle
 } from 'lucide-react';
 import {
   Dialog,
@@ -61,6 +62,15 @@ const ACTION_LABELS: Record<string, string> = {
   CREATE_PAY_OVERRIDE: 'إضافة تجاوز مالي',
   APPROVE_PAY_OVERRIDE: 'اعتماد تجاوز مالي',
   REJECT_PAY_OVERRIDE: 'رفض تجاوز مالي',
+  // Temporary Assignments
+  CREATE_TEMP_ASSIGNMENT: 'إنشاء انتداب مؤقت',
+  UPDATE_TEMP_ASSIGNMENT: 'تعديل انتداب مؤقت',
+  CANCEL_TEMP_ASSIGNMENT: 'إلغاء انتداب مؤقت',
+  DELETE_TEMP_ASSIGNMENT: 'حذف انتداب مؤقت',
+  // Backup
+  'نسخ احتياطي Excel': 'نسخ احتياطي Excel',
+  'نسخ احتياطي SQL': 'نسخ احتياطي SQL',
+  'نسخ احتياطي CSV': 'نسخ احتياطي CSV',
 };
 
 const TABLE_LABELS: Record<string, string> = {
@@ -70,6 +80,8 @@ const TABLE_LABELS: Record<string, string> = {
   attendance_events: 'الحضور',
   payroll_batches: 'الرواتب',
   pay_overrides: 'التجاوزات المالية',
+  temporary_assignments: 'الانتدابات المؤقتة',
+  backup: 'النسخ الاحتياطي',
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -84,12 +96,133 @@ const ROLE_LABELS: Record<string, string> = {
   supervisor_malqa: 'مشرف ملقا',
 };
 
+// ===== ترجمة أسماء الحقول التقنية إلى عربي =====
+const FIELD_LABELS: Record<string, string> = {
+  // Workers
+  fullName: 'الاسم الكامل',
+  code: 'الرمز',
+  groupId: 'رقم المجموعة',
+  status: 'الحالة',
+  nationality: 'الجنسية',
+  jobTitle: 'المسمى الوظيفي',
+  hireDate: 'تاريخ التعيين',
+  baseSalary: 'الراتب الأساسي',
+  housingAllowance: 'بدل السكن',
+  transportAllowance: 'بدل النقل',
+  foodAllowance: 'بدل الطعام',
+  otherAllowance: 'بدلات أخرى',
+  iqamaNumber: 'رقم الإقامة',
+  passportNumber: 'رقم الجواز',
+  phone: 'الهاتف',
+  // Users
+  username: 'اسم المستخدم',
+  role: 'الدور',
+  isActive: 'نشط',
+  email: 'البريد الإلكتروني',
+  // Groups
+  name: 'الاسم',
+  costCenterId: 'مركز التكلفة',
+  // Attendance
+  workerId: 'رقم العامل',
+  eventType: 'نوع الحدث',
+  eventTime: 'وقت الحدث',
+  // Payroll
+  periodStart: 'بداية الفترة',
+  periodEnd: 'نهاية الفترة',
+  itemsCount: 'عدد العناصر',
+  note: 'ملاحظة',
+  // Pay Overrides
+  overrideType: 'نوع التجاوز',
+  amount: 'المبلغ',
+  reason: 'السبب',
+  // Backup
+  type: 'النوع',
+  tables: 'الجداول',
+  table: 'الجدول',
+  timestamp: 'الوقت',
+  // Temp Assignments
+  workerName: 'اسم العامل',
+  fromGroupId: 'من مجموعة',
+  toGroupId: 'إلى مجموعة',
+  startDate: 'تاريخ البداية',
+  endDate: 'تاريخ النهاية',
+};
+
 // Action category colors
 function getActionColor(action: string): string {
-  if (action.includes('CREATE') || action.includes('APPROVE')) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-  if (action.includes('DELETE') || action.includes('REJECT') || action.includes('FORCE')) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+  if (action.includes('CREATE') || action.includes('APPROVE') || action.includes('إنشاء')) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+  if (action.includes('DELETE') || action.includes('REJECT') || action.includes('FORCE') || action.includes('CANCEL')) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
   if (action.includes('UPDATE') || action.includes('SUBMIT') || action.includes('LOCK')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+  if (action.includes('نسخ احتياطي')) return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
   return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+}
+
+// ===== استخراج اسم الكيان المتأثر من البيانات =====
+function getEntityName(log: any): string | null {
+  const action = log.action || '';
+  const tableName = log.tableName || '';
+  const oldValues = log.oldValues;
+  const newValues = log.newValues;
+  
+  // العمال: fullName
+  if (tableName === 'workers' || action.includes('WORKER')) {
+    return newValues?.fullName || oldValues?.fullName || null;
+  }
+  
+  // المستخدمين: fullName أو username
+  if (tableName === 'users' || action.includes('USER')) {
+    return newValues?.fullName || oldValues?.fullName || newValues?.username || oldValues?.username || null;
+  }
+  
+  // المجموعات: name أو code
+  if (tableName === 'groups' || action.includes('GROUP')) {
+    const name = newValues?.name || oldValues?.name;
+    const code = newValues?.code || oldValues?.code;
+    if (name && code) return `${name} (${code})`;
+    return name || code || null;
+  }
+  
+  // الحضور: workerId
+  if (tableName === 'attendance_events' || action.includes('ATTENDANCE')) {
+    const wId = newValues?.workerId || oldValues?.workerId;
+    if (wId) return `عامل رقم ${wId}`;
+    return null;
+  }
+  
+  // الرواتب: periodStart + periodEnd
+  if (tableName === 'payroll_batches' || action.includes('PAYROLL')) {
+    const start = newValues?.periodStart || oldValues?.periodStart;
+    const end = newValues?.periodEnd || oldValues?.periodEnd;
+    if (start && end) return `فترة ${start} - ${end}`;
+    return log.recordId ? `دفعة رقم ${log.recordId}` : null;
+  }
+  
+  // التجاوزات المالية: workerId + overrideType
+  if (tableName === 'pay_overrides' || action.includes('PAY_OVERRIDE')) {
+    const wId = newValues?.workerId || oldValues?.workerId;
+    const oType = newValues?.overrideType || oldValues?.overrideType;
+    if (wId && oType) return `عامل ${wId} - ${oType}`;
+    if (wId) return `عامل رقم ${wId}`;
+    return null;
+  }
+  
+  // الانتدابات المؤقتة
+  if (tableName === 'temporary_assignments' || action.includes('TEMP_ASSIGNMENT')) {
+    const wName = newValues?.workerName || oldValues?.workerName;
+    if (wName) return wName;
+    const wId = newValues?.workerId || oldValues?.workerId;
+    if (wId) return `عامل رقم ${wId}`;
+    return null;
+  }
+  
+  // النسخ الاحتياطي
+  if (tableName === 'backup' || action.includes('نسخ احتياطي')) {
+    const bType = newValues?.type;
+    if (bType) return `نسخة ${bType.toUpperCase()}`;
+    return null;
+  }
+  
+  return null;
 }
 
 // Category filter options
@@ -101,6 +234,8 @@ const TABLE_FILTER_OPTIONS = [
   { value: 'attendance_events', label: 'الحضور' },
   { value: 'payroll_batches', label: 'الرواتب' },
   { value: 'pay_overrides', label: 'التجاوزات المالية' },
+  { value: 'temporary_assignments', label: 'الانتدابات المؤقتة' },
+  { value: 'backup', label: 'النسخ الاحتياطي' },
 ];
 
 export default function AuditLog() {
@@ -169,9 +304,19 @@ export default function AuditLog() {
   const formatValue = (key: string, value: any): string => {
     if (value === null || value === undefined) return '-';
     if (typeof value === 'boolean') return value ? 'نعم' : 'لا';
-    if (key === 'eventTime' || key === 'createdAt') {
+    if (key === 'eventTime' || key === 'createdAt' || key === 'timestamp') {
       try { return formatDate(value); } catch { return String(value); }
     }
+    if (key === 'role' && ROLE_LABELS[value]) return ROLE_LABELS[value];
+    if (key === 'status') {
+      const statusLabels: Record<string, string> = { active: 'نشط', inactive: 'غير نشط', terminated: 'منتهي', transferred: 'منقول' };
+      return statusLabels[value] || String(value);
+    }
+    if (key === 'eventType') {
+      return value === 'check_in' ? 'حضور' : value === 'check_out' ? 'انصراف' : String(value);
+    }
+    if (key === 'isActive') return value ? 'نعم' : 'لا';
+    if (typeof value === 'object') return JSON.stringify(value);
     return String(value);
   };
 
@@ -185,9 +330,9 @@ export default function AuditLog() {
         <h4 className="font-semibold text-sm">{label}</h4>
         <div className="bg-muted/50 rounded-lg p-3 space-y-1">
           {entries.map(([key, val]) => (
-            <div key={key} className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{key}</span>
-              <span className="font-mono text-xs">{formatValue(key, val)}</span>
+            <div key={key} className="flex justify-between text-sm gap-4">
+              <span className="text-muted-foreground whitespace-nowrap">{FIELD_LABELS[key] || key}</span>
+              <span className="font-medium text-xs text-left">{formatValue(key, val)}</span>
             </div>
           ))}
         </div>
@@ -342,59 +487,69 @@ export default function AuditLog() {
                         <TableHead className="w-[140px]">المستخدم</TableHead>
                         <TableHead className="w-[100px]">القسم</TableHead>
                         <TableHead className="w-[160px]">العملية</TableHead>
-                        <TableHead className="w-[80px]">رقم السجل</TableHead>
+                        <TableHead className="w-[180px]">الكيان المتأثر</TableHead>
                         <TableHead className="w-[60px]">تفاصيل</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {logs.map((log) => (
-                        <TableRow key={log.id} className="hover:bg-muted/50">
-                          <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                              <span className="text-xs font-mono">{formatDate(log.createdAt)}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              <User className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                              <div className="min-w-0">
-                                <span className="text-sm block truncate">{log.userName || 'غير معروف'}</span>
-                                {log.userRole && (
-                                  <span className="text-[10px] text-muted-foreground">
-                                    {ROLE_LABELS[log.userRole] || log.userRole}
-                                  </span>
-                                )}
+                      {logs.map((log) => {
+                        const entityName = getEntityName(log);
+                        return (
+                          <TableRow key={log.id} className="hover:bg-muted/50">
+                            <TableCell>
+                              <div className="flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                <span className="text-xs font-mono">{formatDate(log.createdAt)}</span>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-[10px] font-normal">
-                              {TABLE_LABELS[log.tableName || ''] || log.tableName || '-'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={`text-[11px] font-normal ${getActionColor(log.action)}`}>
-                              {ACTION_LABELS[log.action] || log.action}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs font-mono text-muted-foreground">
-                              {log.recordId || '-'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => setSelectedLog(log)}
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1.5">
+                                <User className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <span className="text-sm block truncate">{log.userName || 'غير معروف'}</span>
+                                  {log.userRole && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {ROLE_LABELS[log.userRole] || log.userRole}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-[10px] font-normal">
+                                {TABLE_LABELS[log.tableName || ''] || log.tableName || '-'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={`text-[11px] font-normal ${getActionColor(log.action)}`}>
+                                {ACTION_LABELS[log.action] || log.action}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {entityName ? (
+                                <div className="flex items-center gap-1.5">
+                                  <UserCircle className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                                  <span className="text-sm font-medium text-indigo-700 dark:text-indigo-400 truncate max-w-[160px]">
+                                    {entityName}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={() => setSelectedLog(log)}
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -552,6 +707,17 @@ export default function AuditLog() {
           </DialogHeader>
           {selectedLog && (
             <div className="space-y-4">
+              {/* الكيان المتأثر - بارز في الأعلى */}
+              {getEntityName(selectedLog) && (
+                <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 flex items-center gap-3">
+                  <UserCircle className="h-6 w-6 text-indigo-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400">الكيان المتأثر</p>
+                    <p className="font-bold text-indigo-800 dark:text-indigo-300">{getEntityName(selectedLog)}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">التاريخ:</span>

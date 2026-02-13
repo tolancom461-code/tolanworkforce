@@ -304,6 +304,13 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية تعيين مراكز التكلفة' });
         }
         await db.assignUserCostCenters(input.userId, input.costCenterIds);
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'ASSIGN_COST_CENTERS',
+          tableName: 'users',
+          recordId: input.userId,
+          newValues: { costCenterIds: input.costCenterIds },
+        });
         return { success: true };
       }),
     
@@ -778,8 +785,15 @@ export const appRouter = router({
         description: z.string().optional(),
       }))
       .use(requirePermissionFlag('canManageCostCenters'))
-      .mutation(async ({ input }) => {
-        return await db.createCostCenter(input);
+      .mutation(async ({ input, ctx }) => {
+        const result = await db.createCostCenter(input);
+        await db.logAudit({
+          userId: ctx.user?.id,
+          action: 'CREATE_COST_CENTER',
+          tableName: 'cost_centers',
+          newValues: { code: input.code, name: input.name },
+        });
+        return result;
       }),
     
     update: protectedProcedure
@@ -791,16 +805,37 @@ export const appRouter = router({
         isActive: z.boolean().optional(),
       }))
       .use(requirePermissionFlag('canManageCostCenters'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
-        return await db.updateCostCenter(id, data);
+        const allCC = await db.getAllCostCenters();
+        const oldCC = allCC.find((c: any) => c.id === id);
+        const result = await db.updateCostCenter(id, data);
+        await db.logAudit({
+          userId: ctx.user?.id,
+          action: 'UPDATE_COST_CENTER',
+          tableName: 'cost_centers',
+          recordId: id,
+          oldValues: oldCC ? { code: oldCC.code, name: oldCC.name } : null,
+          newValues: data,
+        });
+        return result;
       }),
     
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .use(requirePermissionFlag('canManageCostCenters'))
-      .mutation(async ({ input }) => {
-        return await db.deleteCostCenter(input.id);
+      .mutation(async ({ input, ctx }) => {
+        const allCCDel = await db.getAllCostCenters();
+        const oldCC = allCCDel.find((c: any) => c.id === input.id);
+        const result = await db.deleteCostCenter(input.id);
+        await db.logAudit({
+          userId: ctx.user?.id,
+          action: 'DELETE_COST_CENTER',
+          tableName: 'cost_centers',
+          recordId: input.id,
+          oldValues: oldCC ? { code: oldCC.code, name: oldCC.name } : null,
+        });
+        return result;
       }),
   }),
 
@@ -814,7 +849,16 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         if (!ctx.user) throw new Error("Not authenticated");
+        const oldUser = await db.getUserById(ctx.user.id);
         await db.updateUser(ctx.user.id, input);
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'UPDATE_PROFILE',
+          tableName: 'users',
+          recordId: ctx.user.id,
+          oldValues: oldUser ? { fullName: oldUser.fullName, email: oldUser.email } : null,
+          newValues: input,
+        });
         return { success: true };
       }),
     
@@ -826,6 +870,12 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         if (!ctx.user) throw new Error("Not authenticated");
         await db.changeUserPassword(ctx.user.id, input.currentPassword, input.newPassword);
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'CHANGE_PASSWORD',
+          tableName: 'users',
+          recordId: ctx.user.id,
+        });
         return { success: true };
       }),
   }),
@@ -1011,6 +1061,12 @@ export const appRouter = router({
             console.error('[addMissingCheckIn] Finance recalc failed (non-fatal):', finError);
           }
           
+          await db.logAudit({
+            userId: ctx.user.id,
+            action: 'ADD_MISSING_CHECK_IN',
+            tableName: 'attendance_events',
+            newValues: { workerId: input.workerId, eventTime: input.checkInTime, note: input.note },
+          });
           return { success: true, message: 'تم إضافة بصمة الحضور بنجاح' };
         } catch (error: any) {
           console.error('[addMissingCheckIn] Error:', error);
@@ -1058,6 +1114,12 @@ export const appRouter = router({
             console.error('[addMissingCheckOut] Finance calc failed (non-fatal):', finError);
           }
           
+          await db.logAudit({
+            userId: ctx.user.id,
+            action: 'ADD_MISSING_CHECK_OUT',
+            tableName: 'attendance_events',
+            newValues: { workerId: input.workerId, eventTime: input.checkOutTime, note: input.note },
+          });
           return { success: true, message: 'تم إضافة بصمة الانصراف بنجاح' };
         } catch (error: any) {
           console.error('[addMissingCheckOut] Error:', error);
@@ -1606,16 +1668,23 @@ export const appRouter = router({
         if (batch) {
           throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
         }
-        
-        return await db.updateAttendanceEvent(
+               const result = await db.updateAttendanceEvent(
           input.eventId,
           input.newTime,
-          input.internalNote,
+          input.internalNote || '',
           ctx.user.id
         );
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'UPDATE_ATTENDANCE',
+          tableName: 'attendance_events',
+          recordId: input.eventId,
+          oldValues: event ? { eventTime: event.eventTime, workerId: event.workerId } : null,
+          newValues: { newTime: input.newTime, note: input.internalNote },
+        });
+        return result;
       }),
   }),
-
   // Pay Overrides (Exceptions)
   payOverrides: router({
     // Create new override
@@ -2433,7 +2502,9 @@ export const appRouter = router({
       }))
       .use(requireRole('super_admin'))
       .mutation(async ({ input, ctx }) => {
-        return await db.forceUnlockPayroll(input.batchId, input.reason, ctx.user.id);
+        const result = await db.forceUnlockPayroll(input.batchId, input.reason, ctx.user.id);
+        await db.logAudit({ userId: ctx.user.id, action: 'FORCE_UNLOCK_PAYROLL', tableName: 'payroll_batches', recordId: input.batchId, newValues: { reason: input.reason } });
+        return result;
       }),
     
     // Re-lock payroll batch (super_admin only)
@@ -2441,7 +2512,9 @@ export const appRouter = router({
       .input(z.object({ batchId: z.number() }))
       .use(requireRole('super_admin'))
       .mutation(async ({ input, ctx }) => {
-        return await db.relockPayroll(input.batchId, ctx.user.id);
+        const relockResult = await db.relockPayroll(input.batchId, ctx.user.id);
+        await db.logAudit({ userId: ctx.user.id, action: 'RELOCK_PAYROLL', tableName: 'payroll_batches', recordId: input.batchId });
+        return relockResult;
       }),
     
     // Workflow: Submit to accounting (الشؤون الإدارية ترسل المسودة للمحاسب)
@@ -2465,7 +2538,9 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAccountant) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المحاسب المالي يمكنه إرسال الدفعة للمراجع' });
         }
-        return await db.submitBatchToFinalReview(input.batchId, ctx.user.id, input.reason);
+        const fReviewResult = await db.submitBatchToFinalReview(input.batchId, ctx.user.id, input.reason);
+        await db.logAudit({ userId: ctx.user.id, action: 'SUBMIT_TO_FINAL_REVIEW', tableName: 'payroll_batches', recordId: input.batchId });
+        return fReviewResult;
       }),
     
     // Workflow: Submit for approval (المراجع يعتمد ويرسل للمدير المالي)
@@ -2477,7 +2552,9 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canReviewAsAuditor) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المراجع المالي يمكنه إرسال الدفعة للمدير المالي' });
         }
-        return await db.submitBatchForApproval(input.batchId, ctx.user.id, input.reason);
+        const approvalResult = await db.submitBatchForApproval(input.batchId, ctx.user.id, input.reason);
+        await db.logAudit({ userId: ctx.user.id, action: 'SUBMIT_FOR_APPROVAL', tableName: 'payroll_batches', recordId: input.batchId });
+        return approvalResult;
       }),
     
     // Workflow: Approve batch (المدير المالي فقط)
@@ -2489,7 +2566,9 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canApproveAsFM) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المدير المالي يمكنه الاعتماد النهائي للدفعة' });
         }
-        return await db.approveBatch(input.batchId, ctx.user.id);
+        const approveFinalResult = await db.approveBatch(input.batchId, ctx.user.id);
+        await db.logAudit({ userId: ctx.user.id, action: 'APPROVE_BATCH_FINAL', tableName: 'payroll_batches', recordId: input.batchId });
+        return approveFinalResult;
       }),
     
     // Workflow: Reject batch (المدير المالي يرفض → تعود draft للشؤون الإدارية)
@@ -2501,7 +2580,9 @@ export const appRouter = router({
         if (!ROLE_PERMISSIONS[userRole]?.canApproveAsFM) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'فقط المدير المالي يمكنه رفض الدفعة في هذه المرحلة' });
         }
-        return await db.rejectBatch(input.batchId, ctx.user.id, input.reason);
+        const rejectFinalResult = await db.rejectBatch(input.batchId, ctx.user.id, input.reason);
+        await db.logAudit({ userId: ctx.user.id, action: 'REJECT_BATCH_FINAL', tableName: 'payroll_batches', recordId: input.batchId, newValues: { reason: input.reason } });
+        return rejectFinalResult;
       }),
     
     // Get official payroll report by group
@@ -2823,6 +2904,13 @@ export const appRouter = router({
           ...input,
           createdBy: ctx.user.id,
         });
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'CREATE_FLAG',
+          tableName: 'operational_flags',
+          recordId: flagId,
+          newValues: { workerId: input.workerId, description: input.description },
+        });
         return { success: true, flagId };
       }),
 
@@ -2860,9 +2948,16 @@ export const appRouter = router({
       }))
       .use(requirePermissionFlag('canProcessNotes'))
       .mutation(async ({ input, ctx }) => {
-        return await db.approveOperationalFlag(input.flagId, ctx.user.id, input.notes);
+        const approveResult = await db.approveOperationalFlag(input.flagId, ctx.user.id, input.notes);
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'APPROVE_FLAG',
+          tableName: 'operational_flags',
+          recordId: input.flagId,
+          newValues: { notes: input.notes },
+        });
+        return approveResult;
       }),
-
     // Reject a flag
     reject: protectedProcedure
       .input(z.object({
@@ -2871,10 +2966,16 @@ export const appRouter = router({
       }))
       .use(requirePermissionFlag('canProcessNotes'))
       .mutation(async ({ input, ctx }) => {
-        return await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
+        const rejectFlagResult = await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'REJECT_FLAG',
+          tableName: 'operational_flags',
+          recordId: input.flagId,
+          newValues: { notes: input.notes },
+        });
+        return rejectFlagResult;
       }),
-
-
   }),
 
   // ============================================
