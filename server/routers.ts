@@ -1310,7 +1310,7 @@ export const appRouter = router({
         internalNote: z.string().optional(),
       }))
       .use(requirePermissionFlag('canEditAttendanceLog'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const results = [];
         for (const eventId of input.eventIds) {
           try {
@@ -1324,6 +1324,7 @@ export const appRouter = router({
             const newTime = new Date(currentTime.getTime() + input.adjustmentMinutes * 60 * 1000);
             
             await db.updateAttendanceEvent(eventId, newTime.toISOString(), input.internalNote);
+            await db.logAudit({ userId: ctx.user?.id, action: 'BULK_UPDATE_ATTENDANCE', tableName: 'attendance_events', recordId: eventId, oldValues: { eventTime: event.eventTime, workerId: event.workerId }, newValues: { adjustmentMinutes: input.adjustmentMinutes, note: input.internalNote } });
             results.push({ eventId, success: true });
           } catch (error) {
             results.push({ eventId, success: false, error: String(error) });
@@ -1363,7 +1364,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
-        return await db.updateDailyAttendanceRecord(
+        const updateRecResult = await db.updateDailyAttendanceRecord(
           input.recordId,
           input.checkInTime,
           input.checkOutTime,
@@ -1371,6 +1372,8 @@ export const appRouter = router({
           input.notes,
           ctx.user.id
         );
+        await db.logAudit({ userId: ctx.user.id, action: 'UPDATE_DAILY_RECORD', tableName: 'attendance_events', recordId: input.recordId, newValues: { checkInTime: input.checkInTime, checkOutTime: input.checkOutTime, status: input.status, notes: input.notes } });
+        return updateRecResult;
       }),
 
     // Recalculate daily finance for a specific date
@@ -1462,14 +1465,15 @@ export const appRouter = router({
           throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
         }
         
-        return await db.updateAttendanceEvent(
+        const updateResult = await db.updateAttendanceEvent(
           input.eventId,
           input.newTime,
           input.internalNote || '',
           ctx.user.id
         );
+        await db.logAudit({ userId: ctx.user.id, action: 'UPDATE_ATTENDANCE', tableName: 'attendance_events', recordId: input.eventId, oldValues: event ? { eventTime: event.eventTime, workerId: event.workerId } : null, newValues: { newTime: input.newTime, note: input.internalNote } });
+        return updateResult;
       }),
-
     // Export attendance log to Excel
     exportToExcel: protectedProcedure
       .input(z.object({
@@ -1614,13 +1618,15 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         // Check is already done in db.setFullDayOverride
         // No need to duplicate here
-        return await db.setFullDayOverride(
+        const overrideResult = await db.setFullDayOverride(
           input.workerId,
           input.workDate,
           input.override,
           input.reason,
           ctx.user?.id
         );
+        await db.logAudit({ userId: ctx.user?.id, action: 'SET_FULL_DAY_OVERRIDE', tableName: 'attendance_events', newValues: { workerId: input.workerId, workDate: input.workDate, override: input.override, reason: input.reason } });
+        return overrideResult;
       }),
 
   }),
@@ -2294,8 +2300,10 @@ export const appRouter = router({
         notes: z.string().optional(),
       }))
       .use(requireRole('super_admin', 'admin_affairs'))
-      .mutation(async ({ input }) => {
-        return await db.updateBatchItem(input);
+      .mutation(async ({ input, ctx }) => {
+        const result = await db.updateBatchItem(input);
+        await db.logAudit({ userId: ctx.user?.id, action: 'UPDATE_PAYROLL_ITEM', tableName: 'payroll_batches', recordId: input.itemId, newValues: { baseAmount: input.baseAmount, totalDeductions: input.totalDeductions, totalBonuses: input.totalBonuses, notes: input.notes } });
+        return result;
       }),
     
     // Submit for accountant review
@@ -2860,11 +2868,13 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("Not authenticated");
         const { addBatchNote } = await import('./db_batch_notes');
-        return await addBatchNote({
+        const noteResult = await addBatchNote({
           ...input,
           userId: ctx.user.id,
           userRole: ctx.user.role || 'guard',
         });
+        await db.logAudit({ userId: ctx.user.id, action: 'ADD_BATCH_NOTE', tableName: 'payroll_batches', recordId: input.batchId, newValues: { noteType: input.noteType, fieldName: input.fieldName } });
+        return noteResult;
       }),
     
     // Get notes for a batch
@@ -3179,7 +3189,7 @@ export const appRouter = router({
         effectiveDate: z.string().optional(),
       }))
       .use(requirePermissionFlag('canManageGroups'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
           const updated = await db.updateGroupSchedule(
             input.id,
@@ -3188,6 +3198,7 @@ export const appRouter = router({
             input.requiredHours,
             input.effectiveDate
           );
+          await db.logAudit({ userId: ctx.user?.id, action: 'UPDATE_GROUP_SCHEDULE', tableName: 'groups', recordId: input.id, newValues: { startTime: input.startTime, endTime: input.endTime, requiredHours: input.requiredHours, effectiveDate: input.effectiveDate } });
           return updated;
         } catch (error) {
           throw new TRPCError({
@@ -3211,13 +3222,14 @@ export const appRouter = router({
         effectiveDate: z.string().optional(),
       }))
       .use(requirePermissionFlag('canManageGroups'))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
           const result = await db.saveWeeklySchedules(
             input.groupId,
             input.schedules,
             input.effectiveDate
           );
+          await db.logAudit({ userId: ctx.user?.id, action: 'UPDATE_WEEKLY_SCHEDULES', tableName: 'groups', recordId: input.groupId, newValues: { schedulesCount: input.schedules.length, effectiveDate: input.effectiveDate } });
           return result;
         } catch (error) {
           throw new TRPCError({
@@ -3706,10 +3718,10 @@ export const appRouter = router({
           ...input,
           createdBy: ctx.user.id,
         });
+        await db.logAudit({ userId: ctx.user.id, action: 'CREATE_FLAG', tableName: 'operational_flags', recordId: flagId, newValues: { workerId: input.workerId, flagType: input.flagType, description: input.description } });
         return { success: true, flagId };
       }),
-
-    // Get flags for review page
+    // Get flags for review pagee
     getFlags: protectedProcedure
       .input(z.object({
         status: z.string().optional(),
@@ -3735,9 +3747,10 @@ export const appRouter = router({
         if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'المشرفون لا يملكون صلاحية معالجة الملاحظات' });
         }
-        return await db.approveOperationalFlag(input.flagId, ctx.user.id, input.notes);
+         const approveFlagResult = await db.approveOperationalFlag(input.flagId, ctx.user.id, input.notes);
+        await db.logAudit({ userId: ctx.user.id, action: 'APPROVE_FLAG', tableName: 'operational_flags', recordId: input.flagId, newValues: { notes: input.notes } });
+        return approveFlagResult;
       }),
-
     // Reject flag
     rejectFlag: protectedProcedure
       .input(z.object({
@@ -3750,7 +3763,9 @@ export const appRouter = router({
         if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'المشرفون لا يملكون صلاحية معالجة الملاحظات' });
         }
-        return await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
+        const rejectFlagResult = await db.rejectOperationalFlag(input.flagId, ctx.user.id, input.notes);
+        await db.logAudit({ userId: ctx.user.id, action: 'REJECT_FLAG', tableName: 'operational_flags', recordId: input.flagId, newValues: { notes: input.notes } });
+        return rejectFlagResult;
       }),
 
     // Get pending count
