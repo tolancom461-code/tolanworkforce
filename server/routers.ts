@@ -3671,9 +3671,8 @@ export const appRouter = router({
         periodEnd: z.string(),
         costCenterId: z.number().optional(),
       }))
+      .use(requireRole('super_admin', 'finance_manager', 'executive'))
       .query(async ({ ctx, input }) => {
-        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager', 'executive']);
         return await db.getCostCenterPayrollReport(input.periodStart, input.periodEnd, input.costCenterId);
       }),
   }),
@@ -3682,9 +3681,8 @@ export const appRouter = router({
   backup: router({
     // Get table info for backup
     getTableInfo: protectedProcedure
-      .query(async ({ ctx }) => {
-        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
+      .use(requireRole('super_admin', 'finance_manager'))
+      .query(async () => {
         return await db.getBackupTableInfo();
       }),
 
@@ -3693,10 +3691,8 @@ export const appRouter = router({
       .input(z.object({
         tableNames: z.array(z.string()),
       }))
+      .use(requireRole('super_admin', 'finance_manager'))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
-        
         const data = await db.exportTablesData(input.tableNames);
         
         const workbook = new ExcelJS.Workbook();
@@ -3759,9 +3755,8 @@ export const appRouter = router({
 
     // Export full SQL dump
     exportSql: protectedProcedure
+      .use(requireRole('super_admin', 'finance_manager'))
       .mutation(async ({ ctx }) => {
-        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
         
         const sqlDump = await db.exportFullSqlDump();
         const base64 = Buffer.from(sqlDump, 'utf-8').toString('base64');
@@ -3781,10 +3776,8 @@ export const appRouter = router({
       .input(z.object({
         tableName: z.string(),
       }))
+      .use(requireRole('super_admin', 'finance_manager'))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
-        
         const data = await db.exportTablesData([input.tableName]);
         const rows = data[input.tableName] || [];
         
@@ -3818,9 +3811,8 @@ export const appRouter = router({
 
     // Get backup history
     getHistory: protectedProcedure
-      .query(async ({ ctx }) => {
-        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-        requireRole(ctx.user.role as any, ['super_admin', 'finance_manager']);
+      .use(requireRole('super_admin', 'finance_manager'))
+      .query(async () => {
         return await db.getBackupHistory();
       }),
   }),
