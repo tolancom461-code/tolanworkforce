@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
-import { Users, UserX, Clock, CheckCircle, XCircle, ArrowRight, Filter, CalendarDays, ArrowLeftRight } from "lucide-react";
+import { Users, UserX, Clock, CheckCircle, XCircle, ArrowRight, Filter, CalendarDays, ArrowLeftRight, AlertTriangle, ShieldCheck } from "lucide-react";
 
 type TabType = 'present' | 'absent' | 'late';
 
@@ -41,8 +42,33 @@ export default function OperationalDashboard() {
   const [transferNote, setTransferNote] = useState('');
   const [transferNoteError, setTransferNoteError] = useState('');
 
+  const { user } = useAuth();
+  const isSupervisor = user?.role === 'supervisor_tolan' || user?.role === 'supervisor_malqa';
+
   const { data: groupsData } = trpc.groups.list.useQuery();
   const { data: costCentersData } = trpc.costCenters.list.useQuery();
+  const { data: userCostCenters } = trpc.costCenters.getUserCostCenters.useQuery(
+    { userId: user?.id || 0 },
+    { enabled: isSupervisor && !!user?.id }
+  );
+
+  // فلترة المجموعات ومراكز التكلفة حسب دور المشرف
+  const allowedCostCenterIds = useMemo(() => {
+    if (!isSupervisor || !userCostCenters) return null; // null = لا فلترة (يرى الكل)
+    return userCostCenters.map((uc: any) => uc.costCenterId);
+  }, [isSupervisor, userCostCenters]);
+
+  const filteredGroups = useMemo(() => {
+    if (!groupsData) return [];
+    if (!allowedCostCenterIds) return groupsData; // مدير أو مسؤول يرى الكل
+    return groupsData.filter((g: any) => allowedCostCenterIds.includes(g.costCenterId));
+  }, [groupsData, allowedCostCenterIds]);
+
+  const filteredCostCenters = useMemo(() => {
+    if (!costCentersData) return [];
+    if (!allowedCostCenterIds) return costCentersData; // مدير أو مسؤول يرى الكل
+    return costCentersData.filter((cc: any) => allowedCostCenterIds.includes(cc.id));
+  }, [costCentersData, allowedCostCenterIds]);
 
   const { data: stats, isLoading: statsLoading } = trpc.operationalDashboard.getStats.useQuery({
     workDateStr: selectedDate,
@@ -63,7 +89,30 @@ export default function OperationalDashboard() {
     { enabled: activeTab === 'late' }
   );
 
+  // جلب حالة تأكيد الحضور للعمال في هذا التاريخ
+  const { data: confirmedWorkerIds } = trpc.operationalDashboard.getConfirmedWorkerIds.useQuery(
+    { workDateStr: selectedDate },
+    { enabled: activeTab === 'present' }
+  );
+  const confirmedSet = useMemo(() => new Set(confirmedWorkerIds || []), [confirmedWorkerIds]);
+
   const utils = trpc.useUtils();
+
+  // Mutation لإنشاء بلاغات تلقائية للعمال غير المؤكدين
+  const generateUnconfirmedMutation = trpc.operationalDashboard.generateUnconfirmedFlags.useMutation({
+    onSuccess: (data) => {
+      if (data.createdCount > 0) {
+        toast.success(`تم إنشاء ${data.createdCount} ملاحظة تشغيلية`, { description: 'للعمال الحاضرين الذين لم يتم تأكيد حضورهم' });
+      } else {
+        toast.info('جميع العمال الحاضرين تم تأكيد حضورهم', { description: 'لا توجد ملاحظات جديدة' });
+      }
+      utils.operationalDashboard.invalidate();
+    },
+    onError: (error) => {
+      toast.error('خطأ', { description: error.message });
+    },
+  });
+
   const createFlagMutation = trpc.operationalDashboard.createFlag.useMutation({
     onSuccess: (_, variables) => {
       if (variables.flagType === 'transfer') {
@@ -77,6 +126,7 @@ export default function OperationalDashboard() {
       setTransferNote('');
       setTransferNoteError('');
       utils.operationalDashboard.invalidate();
+      utils.operationalDashboard.getConfirmedWorkerIds.invalidate();
     },
     onError: (error) => {
       toast.error("خطأ", { description: error.message });
@@ -288,7 +338,7 @@ export default function OperationalDashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">كل المجموعات</SelectItem>
-                      {groupsData?.map((g: any) => (
+                      {filteredGroups.map((g: any) => (
                         <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -303,7 +353,7 @@ export default function OperationalDashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">كل مراكز التكلفة</SelectItem>
-                      {costCentersData?.map((cc: any) => (
+                      {filteredCostCenters.map((cc: any) => (
                         <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -332,7 +382,10 @@ export default function OperationalDashboard() {
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground">المجموعة</th>
                         <th className="text-right py-3 px-4 font-medium text-muted-foreground">مركز التكلفة</th>
                         {activeTab === 'present' && (
-                          <th className="text-right py-3 px-4 font-medium text-muted-foreground">وقت الحضور</th>
+                          <>
+                            <th className="text-right py-3 px-4 font-medium text-muted-foreground">وقت الحضور</th>
+                            <th className="text-center py-3 px-4 font-medium text-muted-foreground">حالة التأكيد</th>
+                          </>
                         )}
                         {activeTab === 'late' && (
                           <>
@@ -351,11 +404,26 @@ export default function OperationalDashboard() {
                           <td className="py-3 px-4 text-muted-foreground">{worker.groupName || '-'}</td>
                           <td className="py-3 px-4 text-muted-foreground">{worker.costCenterName || '-'}</td>
                           {activeTab === 'present' && (
-                            <td className="py-3 px-4">
-                              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-                                {formatTime(worker.checkInTime)}
-                              </Badge>
-                            </td>
+                            <>
+                              <td className="py-3 px-4">
+                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                                  {formatTime(worker.checkInTime)}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                {confirmedSet.has(worker.workerId) ? (
+                                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 gap-1">
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                    مؤكد
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 gap-1 border-amber-300">
+                                    <AlertTriangle className="h-3.5 w-3.5" />
+                                    غير مؤكد
+                                  </Badge>
+                                )}
+                              </td>
+                            </>
                           )}
                           {activeTab === 'late' && (
                             <>
@@ -401,18 +469,32 @@ export default function OperationalDashboard() {
                                   </Button>
                                 </>
                               ) : activeTab === 'present' ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-red-600 border-red-300 hover:bg-red-50"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAction(worker.workerId, worker.workerName, 'confirm_absence', worker.groupId, worker.costCenterId);
-                                  }}
-                                >
-                                  <XCircle className="h-4 w-4 ml-1" />
-                                  تأكيد غياب
-                                </Button>
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAction(worker.workerId, worker.workerName, 'confirm_attendance', worker.groupId, worker.costCenterId);
+                                    }}
+                                  >
+                                    <CheckCircle className="h-4 w-4 ml-1" />
+                                    تأكيد حضور
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-300 hover:bg-red-50"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAction(worker.workerId, worker.workerName, 'confirm_absence', worker.groupId, worker.costCenterId);
+                                    }}
+                                  >
+                                    <XCircle className="h-4 w-4 ml-1" />
+                                    تأكيد غياب
+                                  </Button>
+                                </>
                               ) : (
                                 <>
                                   <Button
@@ -459,6 +541,35 @@ export default function OperationalDashboard() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+              {/* زر إنشاء ملاحظات تلقائية للعمال غير المؤكدين */}
+              {activeTab === 'present' && currentWorkers.length > 0 && (
+                <div className="mt-4 flex items-center justify-between border-t pt-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <span>
+                      {currentWorkers.filter((w: any) => !confirmedSet.has(w.workerId)).length > 0
+                        ? `${currentWorkers.filter((w: any) => !confirmedSet.has(w.workerId)).length} عامل لم يتم تأكيد حضورهم`
+                        : 'جميع العمال تم تأكيد حضورهم ✅'
+                      }
+                    </span>
+                  </div>
+                  {currentWorkers.filter((w: any) => !confirmedSet.has(w.workerId)).length > 0 && (
+                    <Button
+                      variant="outline"
+                      className="text-amber-600 border-amber-300 hover:bg-amber-50"
+                      onClick={() => generateUnconfirmedMutation.mutate({
+                        workDateStr: selectedDate,
+                        groupId: filterGroupId,
+                        costCenterId: filterCostCenterId,
+                      })}
+                      disabled={generateUnconfirmedMutation.isPending}
+                    >
+                      <AlertTriangle className="h-4 w-4 ml-1" />
+                      {generateUnconfirmedMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء ملاحظات لغير المؤكدين'}
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>

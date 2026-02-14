@@ -3773,6 +3773,62 @@ export const appRouter = router({
       .query(async () => {
         return await db.getPendingOperationalFlagsCount();
       }),
+
+    // Generate auto flags for unconfirmed present workers
+    generateUnconfirmedFlags: protectedProcedure
+      .input(z.object({
+        workDateStr: z.string(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        // جلب العمال الحاضرين
+        const presentWorkers = await db.getPresentWorkers(input.workDateStr, input.groupId, input.costCenterId);
+        // جلب البلاغات الموجودة لهذا التاريخ
+        const existingFlags = await db.getOperationalFlagsForReview({
+          startDate: input.workDateStr,
+          endDate: input.workDateStr,
+        });
+        // تحديد العمال الذين لديهم تأكيد حضور
+        const confirmedWorkerIds = new Set(
+          (existingFlags || []).filter((f: any) => f.flagType === 'confirm_attendance').map((f: any) => f.workerId)
+        );
+        // إنشاء بلاغات للعمال غير المؤكدين
+        let createdCount = 0;
+        for (const worker of (presentWorkers || [])) {
+          if (!confirmedWorkerIds.has(worker.workerId)) {
+            await db.createOperationalFlagFromAction({
+              workerId: worker.workerId,
+              groupId: worker.groupId,
+              costCenterId: worker.costCenterId,
+              flagDate: input.workDateStr,
+              flagType: 'other',
+              description: `حضور غير مؤكد من المشرف - العامل ${worker.workerName} (${worker.workerCode || ''}) سُجّل حاضراً بتاريخ ${input.workDateStr} لكن لم يتم تأكيد حضوره من المشرف`,
+              createdBy: ctx.user.id,
+            });
+            createdCount++;
+          }
+        }
+        if (createdCount > 0) {
+          await db.logAudit({ userId: ctx.user.id, action: 'GENERATE_UNCONFIRMED_FLAGS', tableName: 'operational_flags', recordId: 0, newValues: { date: input.workDateStr, count: createdCount } });
+        }
+        return { success: true, createdCount };
+      }),
+
+    // Get confirmed worker IDs for a specific date
+    getConfirmedWorkerIds: protectedProcedure
+      .input(z.object({
+        workDateStr: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const flags = await db.getOperationalFlagsForReview({
+          startDate: input.workDateStr,
+          endDate: input.workDateStr,
+        });
+        const confirmedIds = (flags || []).filter((f: any) => f.flagType === 'confirm_attendance').map((f: any) => f.workerId);
+        return confirmedIds;
+      }),
   }),
 
   // ============================================
