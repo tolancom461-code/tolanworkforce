@@ -4166,6 +4166,34 @@ export const appRouter = router({
         return await db.getBackupHistory();
       }),
   }),
+
+  // TEMPORARY: Migration endpoint for flexible schedule feature
+  migration: router({
+    addFlexibleScheduleColumns: protectedProcedure
+      .use(requireRole('super_admin'))
+      .mutation(async ({ ctx }) => {
+        try {
+          await db.runMigration();
+          
+          await db.logAudit({
+            userId: ctx.user.id,
+            action: 'تشغيل Migration',
+            tableName: 'groups',
+            newValues: { migration: 'add_flexible_schedule_columns', timestamp: new Date().toISOString() },
+          });
+          
+          return { success: true, message: 'Migration completed successfully' };
+        } catch (error: any) {
+          if (error.message?.includes('duplicate column name')) {
+            return { success: true, message: 'Columns already exist, migration not needed' };
+          }
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Migration failed: ${error.message}`,
+          });
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -7809,3 +7809,15 @@ export async function getCostCenterPayrollReport(
     },
   };
 }
+
+/**
+ * Run database migration to add flexible schedule columns
+ * TEMPORARY: This function should be removed after migration is complete
+ */
+export async function runMigration() {
+  // Add is_flexible_schedule column
+  await db.run(sql`ALTER TABLE groups ADD COLUMN is_flexible_schedule BOOLEAN DEFAULT 0`);
+  
+  // Add required_hours column
+  await db.run(sql`ALTER TABLE groups ADD COLUMN required_hours REAL`);
+}
