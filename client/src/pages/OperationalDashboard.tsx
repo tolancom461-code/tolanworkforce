@@ -52,51 +52,34 @@ export default function OperationalDashboard() {
     { enabled: isSupervisor && !!user?.id }
   );
 
-  // فلترة المجموعات ومراكز التكلفة حسب دور المشرف
-  const allowedCostCenterIds = useMemo(() => {
-    if (!isSupervisor || !userCostCenters) return null; // null = لا فلترة (يرى الكل)
-    return userCostCenters.map((uc: any) => uc.costCenterId);
-  }, [isSupervisor, userCostCenters]);
-
   const filteredGroups = useMemo(() => {
     if (!groupsData) return [];
-    if (!allowedCostCenterIds) return groupsData; // مدير أو مسؤول يرى الكل
-    return groupsData.filter((g: any) => allowedCostCenterIds.includes(g.costCenterId));
-  }, [groupsData, allowedCostCenterIds]);
+    return groupsData;
+  }, [groupsData]);
 
   const filteredCostCenters = useMemo(() => {
     if (!costCentersData) return [];
-    if (!allowedCostCenterIds) return costCentersData; // مدير أو مسؤول يرى الكل
-    return costCentersData.filter((cc: any) => allowedCostCenterIds.includes(cc.id));
-  }, [costCentersData, allowedCostCenterIds]);
-
-  // تطبيق فلترة تلقائية للمشرفين - استخدام أول مركز تكلفة إذا لم يتم اختيار فلتر
-  const effectiveCostCenterId = useMemo(() => {
-    if (!isSupervisor || !allowedCostCenterIds || allowedCostCenterIds.length === 0) {
-      return filterCostCenterId; // غير مشرف أو لا توجد مراكز تكلفة مسموح بها
-    }
-    // إذا كان مشرف ولم يختر فلتر، استخدم أول مركز تكلفة
-    return filterCostCenterId || allowedCostCenterIds[0];
-  }, [isSupervisor, allowedCostCenterIds, filterCostCenterId]);
+    return costCentersData;
+  }, [costCentersData]);
 
   const { data: stats, isLoading: statsLoading } = trpc.operationalDashboard.getStats.useQuery({
     workDateStr: selectedDate,
     groupId: filterGroupId,
-    costCenterId: effectiveCostCenterId,
+    costCenterId: filterCostCenterId,
   });
 
   const { data: presentWorkers, isLoading: presentLoading } = trpc.operationalDashboard.getPresentWorkers.useQuery(
-    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: effectiveCostCenterId },
+    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: filterCostCenterId },
     { enabled: activeTab === 'present' }
   );
 
   const { data: absentWorkers, isLoading: absentLoading } = trpc.operationalDashboard.getAbsentWorkers.useQuery(
-    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: effectiveCostCenterId },
+    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: filterCostCenterId },
     { enabled: activeTab === 'absent' }
   );
 
   const { data: lateWorkers, isLoading: lateLoading } = trpc.operationalDashboard.getLateWorkers.useQuery(
-    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: effectiveCostCenterId },
+    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: filterCostCenterId },
     { enabled: activeTab === 'late' }
   );
 
@@ -573,7 +556,7 @@ export default function OperationalDashboard() {
                       onClick={() => generateUnconfirmedMutation.mutate({
                         workDateStr: selectedDate,
                         groupId: filterGroupId,
-                        costCenterId: effectiveCostCenterId,
+                        costCenterId: filterCostCenterId,
                       })}
                       disabled={generateUnconfirmedMutation.isPending}
                     >
