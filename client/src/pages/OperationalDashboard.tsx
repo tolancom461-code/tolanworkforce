@@ -81,6 +81,7 @@ export default function OperationalDashboard() {
 
   const { data: stats, isLoading: statsLoading } = trpc.operationalDashboard.getStats.useQuery({
     workDateStr: selectedDate,
+    groupId: filterGroupId,
     costCenterId: effectiveCostCenterId,
   });
 
@@ -344,10 +345,10 @@ export default function OperationalDashboard() {
                     onValueChange={(v) => setFilterGroupId(v === "all" ? undefined : Number(v))}
                   >
                     <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="كل المجموعات" />
+                      <SelectValue placeholder={isSupervisor ? "اختر مجموعة" : "كل المجموعات"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">كل المجموعات</SelectItem>
+                      {!isSupervisor && <SelectItem value="all">كل المجموعات</SelectItem>}
                       {filteredGroups.map((g: any) => (
                         <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
                       ))}
@@ -380,7 +381,11 @@ export default function OperationalDashboard() {
               ) : currentWorkers.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p>لا يوجد عمال في هذه الفئة</p>
+                  {isSupervisor && !filterGroupId ? (
+                    <p className="text-amber-600 font-medium">يرجى اختيار مجموعة محددة لعرض البيانات</p>
+                  ) : (
+                    <p>لا يوجد عمال في هذه الفئة</p>
+                  )}
                 </div>
               ) : (
                 <div className="overflow-x-auto">

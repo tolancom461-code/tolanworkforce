@@ -3713,23 +3713,30 @@ export const appRouter = router({
       .query(async ({ input, ctx }) => {
         if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
         
-        // Filter by supervisor's assigned cost centers
-        let filteredCostCenterId = input.costCenterId;
+        // STRICT FILTERING: Supervisors MUST select a specific group
         if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
+          const allGroups = await db.getAllGroups();
           const supervisorCostCenters = ctx.user.costCenterIds || [];
-          if (supervisorCostCenters.length === 0) {
-            return { present: 0, absent: 0, late: 0 }; // No cost centers assigned
+          const allowedGroupIds = allGroups
+            .filter((g: any) => supervisorCostCenters.includes(g.costCenterId))
+            .map((g: any) => g.id);
+          
+          if (allowedGroupIds.length === 0) {
+            return { presentCount: 0, absentCount: 0, lateCount: 0 };
           }
-          // If no specific cost center requested, use supervisor's first one
-          if (!filteredCostCenterId) {
-            filteredCostCenterId = supervisorCostCenters[0];
-          } else if (!supervisorCostCenters.includes(filteredCostCenterId)) {
-            // Supervisor trying to access unauthorized cost center
-            return { present: 0, absent: 0, late: 0 };
+          
+          // MANDATORY: groupId must be provided for stats
+          if (!input.groupId) {
+            return { presentCount: 0, absentCount: 0, lateCount: 0 };
+          }
+          
+          // Verify the selected group is allowed
+          if (!allowedGroupIds.includes(input.groupId)) {
+            return { presentCount: 0, absentCount: 0, lateCount: 0 };
           }
         }
         
-        return await db.getOperationalDashboardStats(input.workDateStr, input.groupId, filteredCostCenterId);
+        return await db.getOperationalDashboardStats(input.workDateStr, input.groupId, input.costCenterId);
       }),
 
     // Get present workers
@@ -3742,27 +3749,30 @@ export const appRouter = router({
       .query(async ({ input, ctx }) => {
         if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
         
-        // Filter by supervisor's assigned groups
-        let allowedGroupIds: number[] | undefined = undefined;
+        // STRICT FILTERING: Supervisors MUST select a specific group
         if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
           const allGroups = await db.getAllGroups();
           const supervisorCostCenters = ctx.user.costCenterIds || [];
-          allowedGroupIds = allGroups
+          const allowedGroupIds = allGroups
             .filter((g: any) => supervisorCostCenters.includes(g.costCenterId))
             .map((g: any) => g.id);
           
           if (allowedGroupIds.length === 0) {
-            return []; // No groups assigned, return empty
+            return [];
+          }
+          
+          // MANDATORY: groupId must be provided
+          if (!input.groupId) {
+            return [];
+          }
+          
+          // Verify the selected group is allowed
+          if (!allowedGroupIds.includes(input.groupId)) {
+            return [];
           }
         }
         
         const workers = await db.getPresentWorkers(input.workDateStr, input.groupId, input.costCenterId);
-        
-        // Apply supervisor filter
-        if (allowedGroupIds) {
-          return workers.filter((w: any) => allowedGroupIds!.includes(w.groupId));
-        }
-        
         return workers;
       }),
 
@@ -3776,27 +3786,30 @@ export const appRouter = router({
       .query(async ({ input, ctx }) => {
         if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
         
-        // Filter by supervisor's assigned groups
-        let allowedGroupIds: number[] | undefined = undefined;
+        // STRICT FILTERING: Supervisors MUST select a specific group
         if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
           const allGroups = await db.getAllGroups();
           const supervisorCostCenters = ctx.user.costCenterIds || [];
-          allowedGroupIds = allGroups
+          const allowedGroupIds = allGroups
             .filter((g: any) => supervisorCostCenters.includes(g.costCenterId))
             .map((g: any) => g.id);
           
           if (allowedGroupIds.length === 0) {
-            return []; // No groups assigned, return empty
+            return [];
+          }
+          
+          // MANDATORY: groupId must be provided
+          if (!input.groupId) {
+            return [];
+          }
+          
+          // Verify the selected group is allowed
+          if (!allowedGroupIds.includes(input.groupId)) {
+            return [];
           }
         }
         
         const workers = await db.getAbsentWorkersWithDetails(input.workDateStr, input.groupId, input.costCenterId);
-        
-        // Apply supervisor filter
-        if (allowedGroupIds) {
-          return workers.filter((w: any) => allowedGroupIds!.includes(w.groupId));
-        }
-        
         return workers;
       }),
 
@@ -3810,27 +3823,30 @@ export const appRouter = router({
       .query(async ({ input, ctx }) => {
         if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
         
-        // Filter by supervisor's assigned groups
-        let allowedGroupIds: number[] | undefined = undefined;
+        // STRICT FILTERING: Supervisors MUST select a specific group
         if (ctx.user.role === 'supervisor_tolan' || ctx.user.role === 'supervisor_malqa') {
           const allGroups = await db.getAllGroups();
           const supervisorCostCenters = ctx.user.costCenterIds || [];
-          allowedGroupIds = allGroups
+          const allowedGroupIds = allGroups
             .filter((g: any) => supervisorCostCenters.includes(g.costCenterId))
             .map((g: any) => g.id);
           
           if (allowedGroupIds.length === 0) {
-            return []; // No groups assigned, return empty
+            return [];
+          }
+          
+          // MANDATORY: groupId must be provided
+          if (!input.groupId) {
+            return [];
+          }
+          
+          // Verify the selected group is allowed
+          if (!allowedGroupIds.includes(input.groupId)) {
+            return [];
           }
         }
         
         const workers = await db.getLateWorkers(input.workDateStr, input.groupId, input.costCenterId);
-        
-        // Apply supervisor filter
-        if (allowedGroupIds) {
-          return workers.filter((w: any) => allowedGroupIds!.includes(w.groupId));
-        }
-        
         return workers;
       }),
 
