@@ -16,7 +16,8 @@ import {
   Edit,
   Lock,
   AlertCircle,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,8 @@ export default function AttendanceLog() {
   const [editCheckOutTime, setEditCheckOutTime] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{eventId: number, eventType: 'checkIn' | 'checkOut'} | null>(null);
   const [isAbsentDialogOpen, setIsAbsentDialogOpen] = useState(false);
   const [isPrepareDialogOpen, setIsPrepareDialogOpen] = useState(false);
   const [selectedAbsentWorker, setSelectedAbsentWorker] = useState<any>(null);
@@ -139,6 +142,18 @@ export default function AttendanceLog() {
     }
   });
 
+  const deletePunchMutation = trpc.attendance.deletePunchEvent.useMutation({
+    onSuccess: () => {
+      toast.success('تم حذف سجل الحضور بنجاح');
+      setIsDeleteConfirmOpen(false);
+      setIsEditDialogOpen(false);
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'فشل حذف سجل الحضور');
+    }
+  });
+
   const handleEditClick = (record: any) => {
     setEditingRecord(record);
     
@@ -164,6 +179,19 @@ export default function AttendanceLog() {
     
     setEditNote('');
     setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (eventId: number, eventType: 'checkIn' | 'checkOut') => {
+    setDeleteTarget({ eventId, eventType });
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deletePunchMutation.mutate({
+      eventId: deleteTarget.eventId,
+      reason: editNote || 'حذف سجل حضور تم بالخطأ'
+    });
   };
 
   const handleSaveEdit = () => {
@@ -645,13 +673,39 @@ export default function AttendanceLog() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              إلغاء
-            </Button>
-            <Button onClick={handleSaveEdit} disabled={updateEventMutation.isPending}>
-              {updateEventMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-            </Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <div className="flex gap-2 flex-1">
+              {editingRecord?.checkInId && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDeleteClick(editingRecord.checkInId, 'checkIn')}
+                  disabled={deletePunchMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  حذف الحضور
+                </Button>
+              )}
+              {editingRecord?.checkOutId && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDeleteClick(editingRecord.checkOutId, 'checkOut')}
+                  disabled={deletePunchMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  حذف الانصراف
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                إلغاء
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={updateEventMutation.isPending}>
+                {updateEventMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -778,6 +832,35 @@ export default function AttendanceLog() {
               disabled={addCheckInMutation.isPending || addCheckOutMutation.isPending}
             >
               {(addCheckInMutation.isPending || addCheckOutMutation.isPending) ? 'جاري الحفظ...' : 'حفظ'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              تأكيد الحذف
+            </DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من حذف سجل {deleteTarget?.eventType === 'checkIn' ? 'الحضور' : 'الانصراف'} للعامل <strong>{editingRecord?.workerName}</strong>؟
+              <br /><br />
+              <span className="text-destructive font-semibold">لن يمكن التراجع عن هذا الإجراء!</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleConfirmDelete}
+              disabled={deletePunchMutation.isPending}
+            >
+              {deletePunchMutation.isPending ? 'جاري الحذف...' : 'حذف'}
             </Button>
           </DialogFooter>
         </DialogContent>
