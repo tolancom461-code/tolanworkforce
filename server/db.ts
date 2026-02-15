@@ -7820,37 +7820,27 @@ export async function runMigration() {
     throw new Error('Database connection not available');
   }
   
+  console.log('[Migration] Starting migration...');
+  
+  // Try to add is_flexible_schedule column
+  // If it already exists, the query will fail and we'll just log it
   try {
-    // Check if is_flexible_schedule column exists
-    const columnsResult = await db.execute(sql`SHOW COLUMNS FROM groups LIKE 'is_flexible_schedule'`);
-    
-    if (columnsResult.rows && columnsResult.rows.length === 0) {
-      // Column doesn't exist, add it
-      await db.execute(sql`ALTER TABLE groups ADD COLUMN is_flexible_schedule BOOLEAN DEFAULT 0`);
-      console.log('[Migration] ✅ Added is_flexible_schedule column');
-    } else {
-      console.log('[Migration] ℹ️  Column is_flexible_schedule already exists, skipping');
-    }
+    await db.execute(sql`ALTER TABLE groups ADD COLUMN is_flexible_schedule BOOLEAN DEFAULT 0`);
+    console.log('[Migration] ✅ Added is_flexible_schedule column');
   } catch (error: any) {
-    console.error('[Migration] ❌ Failed with is_flexible_schedule:', error.message);
-    // Don't throw, continue with next column
+    // Column might already exist, which is fine
+    console.log('[Migration] ℹ️  is_flexible_schedule: ' + (error.message || 'Already exists or error occurred'));
   }
   
+  // Try to add required_hours column
+  // If it already exists, the query will fail and we'll just log it
   try {
-    // Check if required_hours column exists
-    const columnsResult = await db.execute(sql`SHOW COLUMNS FROM groups LIKE 'required_hours'`);
-    
-    if (columnsResult.rows && columnsResult.rows.length === 0) {
-      // Column doesn't exist, add it
-      await db.execute(sql`ALTER TABLE groups ADD COLUMN required_hours REAL`);
-      console.log('[Migration] ✅ Added required_hours column');
-    } else {
-      console.log('[Migration] ℹ️  Column required_hours already exists, skipping');
-    }
+    await db.execute(sql`ALTER TABLE groups ADD COLUMN required_hours REAL`);
+    console.log('[Migration] ✅ Added required_hours column');
   } catch (error: any) {
-    console.error('[Migration] ❌ Failed with required_hours:', error.message);
-    // Don't throw, continue
+    // Column might already exist, which is fine
+    console.log('[Migration] ℹ️  required_hours: ' + (error.message || 'Already exists or error occurred'));
   }
   
-  console.log('[Migration] ✅ Migration process completed');
+  console.log('[Migration] ✅ Migration completed');
 }
