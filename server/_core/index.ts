@@ -151,8 +151,21 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
+  server.listen(port, async () => {
     console.log(`Server running on http://localhost:${port}/`);
+    
+    // Auto-run migration for flexible schedule feature
+    try {
+      const { runMigration } = await import('../db');
+      await runMigration();
+      console.log('[Migration] Successfully added flexible schedule columns');
+    } catch (error: any) {
+      if (error.message?.includes('duplicate column name')) {
+        console.log('[Migration] Columns already exist, skipping migration');
+      } else {
+        console.error('[Migration] Failed:', error.message);
+      }
+    }
   });
 }
 
