@@ -45,6 +45,7 @@ import LocalLogin from "./pages/LocalLogin";
 import OperationalFlagsSimple from "./pages/OperationalFlagsSimple";
 import OperationalDashboard from "./pages/OperationalDashboard";
 import OperationalNotesReview from "./pages/OperationalNotesReview";
+import SupervisorPerformance from "./pages/SupervisorPerformance";
 import { PayrollDashboard } from "./pages/PayrollDashboard";
 
 import WeeklyShifts from "./pages/WeeklyShifts";
@@ -237,6 +238,11 @@ function Router() {
       <Route path="/operations/notes-review">
         <ProtectedRoute>
           <OperationalNotesReview />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/operations/supervisor-performance">
+        <ProtectedRoute>
+          <SupervisorPerformance />
         </ProtectedRoute>
       </Route>
       <Route path="/punches/review">

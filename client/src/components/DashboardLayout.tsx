@@ -62,7 +62,8 @@ import {
   AlertCircle,
   FileSearch,
   ArrowLeftRight,
-  HardDrive
+  HardDrive,
+  ShieldCheck
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -86,7 +87,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/payroll/dashboard', '/payroll/batches', '/payroll/batches/create',
     '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
     '/schedules/weekly', '/punches/review',
-    '/operations', '/operations/notes-review',
+    '/operations', '/operations/notes-review', '/operations/supervisor-performance',
     '/cost-centers', '/temporary-assignments', '/profile',
   ],
   // المحاسب: بدون لوحة التحكم، بدون سجل الحضور، بدون المستخدمين
@@ -95,7 +96,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
     '/schedules/weekly', '/punches/review',
-    '/operations', '/operations/notes-review',
+    '/operations', '/operations/notes-review', '/operations/supervisor-performance',
     '/cost-centers', '/temporary-assignments', '/profile',
   ],
   // المراجع: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط) + سجل التدقيق
@@ -193,6 +194,7 @@ const menuSections = [
     items: [
       { icon: AlertCircle, label: "لوحة العمليات", path: "/operations", color: "text-blue-600" },
       { icon: ClipboardCheck, label: "معالجات الملاحظات", path: "/operations/notes-review", color: "text-amber-600" },
+      { icon: ShieldCheck, label: "متابعة أداء المشرفين", path: "/operations/supervisor-performance", color: "text-teal-600" },
     ]
   },
   {

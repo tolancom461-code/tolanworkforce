@@ -3829,6 +3829,95 @@ export const appRouter = router({
         const confirmedIds = (flags || []).filter((f: any) => f.flagType === 'confirm_attendance').map((f: any) => f.workerId);
         return confirmedIds;
       }),
+
+    // تقرير متابعة أداء المشرفين في تأكيد الحضور
+    getSupervisorPerformance: protectedProcedure
+      .input(z.object({
+        fromDate: z.string(),
+        toDate: z.string(),
+      }))
+      .use(requireRole('super_admin', 'finance_manager', 'executive', 'admin_affairs'))
+      .query(async ({ input }) => {
+        const { fromDate, toDate } = input;
+        
+        // جلب جميع المشرفين
+        const allUsers = await db.getAllUsers();
+        const supervisors = allUsers.filter((u: any) => 
+          (u.role === 'supervisor_tolan' || u.role === 'supervisor_malqa') && u.isActive
+        );
+        
+        // جلب جميع المجموعات
+        const allGroups = await db.getAllGroups();
+        
+        // جلب جميع البلاغات في الفترة
+        const allFlags = await db.getOperationalFlagsForReview({
+          startDate: fromDate,
+          endDate: toDate,
+        });
+        
+        // إنشاء قائمة التواريخ
+        const dates: string[] = [];
+        const start = new Date(fromDate);
+        const end = new Date(toDate);
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          dates.push(d.toISOString().split('T')[0]);
+        }
+        
+        const results: any[] = [];
+        
+        for (const date of dates) {
+          for (const supervisor of supervisors) {
+            // جلب المجموعات المعينة لهذا المشرف
+            const supervisorGroups = allGroups.filter((g: any) => g.supervisorId === supervisor.id);
+            if (supervisorGroups.length === 0) continue;
+            
+            const groupNames = supervisorGroups.map((g: any) => g.name).join('\u060C ');
+            const groupIds = supervisorGroups.map((g: any) => g.id);
+            
+            // حساب العمال الحاضرين في مجموعات هذا المشرف
+            const presentWorkers = await db.getPresentWorkers(date);
+            const supervisorPresent = (presentWorkers || []).filter((w: any) => groupIds.includes(w.groupId));
+            const totalPresent = supervisorPresent.length;
+            
+            if (totalPresent === 0) continue; // تجاهل الأيام بدون حاضرين
+            
+            // حساب البلاغات التي أنشأها هذا المشرف
+            const supervisorFlags = (allFlags || []).filter((f: any) => 
+              f.createdBy === supervisor.id && 
+              f.flagDate && new Date(f.flagDate).toISOString().split('T')[0] === date
+            );
+            const confirmedCount = supervisorFlags.filter((f: any) => f.flagType === 'confirm_attendance').length;
+            const absenceCount = supervisorFlags.filter((f: any) => f.flagType === 'confirm_absence').length;
+            const transferCount = supervisorFlags.filter((f: any) => f.flagType === 'transfer').length;
+            const totalActions = confirmedCount + absenceCount + transferCount;
+            const unconfirmedCount = Math.max(0, totalPresent - confirmedCount);
+            const shortfallPercent = totalPresent > 0 ? Math.round((unconfirmedCount / totalPresent) * 100) : 0;
+            
+            results.push({
+              date,
+              supervisorId: supervisor.id,
+              supervisorName: supervisor.fullName,
+              supervisorRole: supervisor.role === 'supervisor_tolan' ? 'مشرف تولان' : 'مشرف الملقا',
+              groupNames,
+              totalPresent,
+              confirmedCount,
+              absenceCount,
+              transferCount,
+              totalActions,
+              unconfirmedCount,
+              shortfallPercent,
+            });
+          }
+        }
+        
+        // ترتيب حسب التاريخ (الأحدث أولاً) ثم حسب نسبة التقصير (الأعلى أولاً)
+        results.sort((a, b) => {
+          if (a.date !== b.date) return b.date.localeCompare(a.date);
+          return b.shortfallPercent - a.shortfallPercent;
+        });
+        
+        return results;
+      }),
   }),
 
   // ============================================
