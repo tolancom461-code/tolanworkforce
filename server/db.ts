@@ -446,6 +446,8 @@ function transformGroup(group: any): any {
     minuteCost: group.minuteCost,
     latePenaltyRate: group.latePenaltyRate,
     earlyLeavePenaltyRate: group.earlyLeavePenaltyRate,
+    isFlexibleSchedule: group.isFlexibleSchedule,
+    requiredHours: group.requiredHours,
     isActive: group.isActive,
     createdAt: group.createdAt,
     updatedAt: group.updatedAt,
