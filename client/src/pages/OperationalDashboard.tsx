@@ -70,22 +70,32 @@ export default function OperationalDashboard() {
     return costCentersData.filter((cc: any) => allowedCostCenterIds.includes(cc.id));
   }, [costCentersData, allowedCostCenterIds]);
 
+  // تطبيق فلترة تلقائية للمشرفين - استخدام أول مركز تكلفة إذا لم يتم اختيار فلتر
+  const effectiveCostCenterId = useMemo(() => {
+    if (!isSupervisor || !allowedCostCenterIds || allowedCostCenterIds.length === 0) {
+      return filterCostCenterId; // غير مشرف أو لا توجد مراكز تكلفة مسموح بها
+    }
+    // إذا كان مشرف ولم يختر فلتر، استخدم أول مركز تكلفة
+    return filterCostCenterId || allowedCostCenterIds[0];
+  }, [isSupervisor, allowedCostCenterIds, filterCostCenterId]);
+
   const { data: stats, isLoading: statsLoading } = trpc.operationalDashboard.getStats.useQuery({
     workDateStr: selectedDate,
+    costCenterId: effectiveCostCenterId,
   });
 
   const { data: presentWorkers, isLoading: presentLoading } = trpc.operationalDashboard.getPresentWorkers.useQuery(
-    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: filterCostCenterId },
+    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: effectiveCostCenterId },
     { enabled: activeTab === 'present' }
   );
 
   const { data: absentWorkers, isLoading: absentLoading } = trpc.operationalDashboard.getAbsentWorkers.useQuery(
-    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: filterCostCenterId },
+    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: effectiveCostCenterId },
     { enabled: activeTab === 'absent' }
   );
 
   const { data: lateWorkers, isLoading: lateLoading } = trpc.operationalDashboard.getLateWorkers.useQuery(
-    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: filterCostCenterId },
+    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: effectiveCostCenterId },
     { enabled: activeTab === 'late' }
   );
 
@@ -562,7 +572,7 @@ export default function OperationalDashboard() {
                       onClick={() => generateUnconfirmedMutation.mutate({
                         workDateStr: selectedDate,
                         groupId: filterGroupId,
-                        costCenterId: filterCostCenterId,
+                        costCenterId: effectiveCostCenterId,
                       })}
                       disabled={generateUnconfirmedMutation.isPending}
                     >
