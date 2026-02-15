@@ -3839,15 +3839,18 @@ export const appRouter = router({
       .use(requireRole('super_admin', 'finance_manager', 'executive', 'admin_affairs'))
       .query(async ({ input }) => {
         const { fromDate, toDate } = input;
+        console.log('[getSupervisorPerformance] Input:', { fromDate, toDate });
         
         // جلب جميع المشرفين
         const allUsers = await db.getAllUsers();
         const supervisors = allUsers.filter((u: any) => 
           (u.role === 'supervisor_tolan' || u.role === 'supervisor_malqa') && u.isActive
         );
+        console.log('[getSupervisorPerformance] Found supervisors:', supervisors.length);
         
         // جلب جميع المجموعات
         const allGroups = await db.getAllGroups();
+        console.log('[getSupervisorPerformance] Found groups:', allGroups.length);
         
         // جلب جميع البلاغات في الفترة
         const allFlags = await db.getOperationalFlagsForReview({
@@ -3876,6 +3879,9 @@ export const appRouter = router({
             
             // حساب العمال الحاضرين في مجموعات هذا المشرف
             const presentWorkers = await db.getPresentWorkers(date);
+            if (date === dates[0] && supervisor.id === supervisors[0]?.id) {
+              console.log(`[getSupervisorPerformance] Date ${date}, Supervisor ${supervisor.fullName}: presentWorkers =`, presentWorkers?.length || 0);
+            }
             const supervisorPresent = (presentWorkers || []).filter((w: any) => groupIds.includes(w.groupId));
             const totalPresent = supervisorPresent.length;
             
@@ -3916,6 +3922,7 @@ export const appRouter = router({
           return b.shortfallPercent - a.shortfallPercent;
         });
         
+        console.log('[getSupervisorPerformance] Returning results:', results.length);
         return results;
       }),
   }),

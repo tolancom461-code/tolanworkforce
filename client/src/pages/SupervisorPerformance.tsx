@@ -199,7 +199,13 @@ export default function SupervisorPerformance() {
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>لا توجد بيانات في الفترة المحددة</p>
+              <p className="font-medium mb-2">لا توجد بيانات في الفترة المحددة</p>
+              <p className="text-sm">الأسباب المحتملة:</p>
+              <ul className="text-sm mt-2 space-y-1">
+                <li>• لا توجد بيانات حضور في هذه الفترة</li>
+                <li>• المشرفون ليس لديهم مجموعات معينة</li>
+                <li>• جميع العمال غائبون في هذه الفترة</li>
+              </ul>
             </CardContent>
           </Card>
         ) : (
