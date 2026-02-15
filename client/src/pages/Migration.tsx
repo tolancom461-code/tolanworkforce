@@ -1,33 +1,29 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "@/hooks/use-toast";
 
 export default function Migration() {
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const migrationMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/trpc/migration.addFlexibleScheduleColumns", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
-      return response.json();
-    },
+  const migrationMutation = trpc.migration.addFlexibleScheduleColumns.useMutation({
     onSuccess: (data) => {
-      if (data.result?.data) {
-        setResult(data.result.data);
-      } else if (data.error) {
-        setResult({ success: false, message: data.error.message });
-      }
+      setResult(data);
+      toast({
+        title: "نجح",
+        description: data.message,
+      });
     },
     onError: (error: any) => {
       setResult({ success: false, message: error.message });
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
