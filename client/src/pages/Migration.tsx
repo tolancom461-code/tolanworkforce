@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export default function Migration() {
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -12,18 +12,11 @@ export default function Migration() {
   const migrationMutation = trpc.migration.addFlexibleScheduleColumns.useMutation({
     onSuccess: (data) => {
       setResult(data);
-      toast({
-        title: "نجح",
-        description: data.message,
-      });
+      toast.success(data.message);
     },
     onError: (error: any) => {
       setResult({ success: false, message: error.message });
-      toast({
-        title: "خطأ",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message);
     },
   });
 
