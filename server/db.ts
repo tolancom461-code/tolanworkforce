@@ -7820,9 +7820,35 @@ export async function runMigration() {
     throw new Error('Database connection not available');
   }
   
-  // Add is_flexible_schedule column
-  await db.execute(sql`ALTER TABLE groups ADD COLUMN is_flexible_schedule BOOLEAN DEFAULT 0`);
+  try {
+    // Add is_flexible_schedule column
+    await db.execute(sql`ALTER TABLE groups ADD COLUMN is_flexible_schedule BOOLEAN DEFAULT 0`);
+    console.log('[Migration] ✅ Added is_flexible_schedule column');
+  } catch (error: any) {
+    // Check if error is due to duplicate column (column already exists)
+    if (error.message?.toLowerCase().includes('duplicate column') || 
+        error.message?.toLowerCase().includes('already exists')) {
+      console.log('[Migration] ℹ️  Column is_flexible_schedule already exists, skipping');
+    } else {
+      console.error('[Migration] ❌ Failed to add is_flexible_schedule:', error.message);
+      throw error;
+    }
+  }
   
-  // Add required_hours column
-  await db.execute(sql`ALTER TABLE groups ADD COLUMN required_hours REAL`);
+  try {
+    // Add required_hours column
+    await db.execute(sql`ALTER TABLE groups ADD COLUMN required_hours REAL`);
+    console.log('[Migration] ✅ Added required_hours column');
+  } catch (error: any) {
+    // Check if error is due to duplicate column (column already exists)
+    if (error.message?.toLowerCase().includes('duplicate column') || 
+        error.message?.toLowerCase().includes('already exists')) {
+      console.log('[Migration] ℹ️  Column required_hours already exists, skipping');
+    } else {
+      console.error('[Migration] ❌ Failed to add required_hours:', error.message);
+      throw error;
+    }
+  }
+  
+  console.log('[Migration] ✅ Migration completed successfully');
 }
