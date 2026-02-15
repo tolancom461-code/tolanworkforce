@@ -26,20 +26,15 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
-    try {
-      await logoutMutation.mutateAsync();
-    } catch (error: unknown) {
-      if (
-        error instanceof TRPCClientError &&
-        error.data?.code === "UNAUTHORIZED"
-      ) {
-        return;
-      }
-      throw error;
-    } finally {
-      utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
-    }
+    // Clear user data immediately for instant logout
+    utils.auth.me.setData(undefined, null);
+    localStorage.removeItem('manus-runtime-user-info');
+    
+    // Redirect to login page immediately
+    window.location.href = getLoginUrl();
+    
+    // Send logout request to backend in the background (fire and forget)
+    logoutMutation.mutate();
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
