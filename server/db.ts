@@ -7815,6 +7815,11 @@ export async function getCostCenterPayrollReport(
  * TEMPORARY: This function should be removed after migration is complete
  */
 export async function runMigration() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error('Database connection not available');
+  }
+  
   // Add is_flexible_schedule column
   await db.run(sql`ALTER TABLE groups ADD COLUMN is_flexible_schedule BOOLEAN DEFAULT 0`);
   
