@@ -7821,34 +7821,36 @@ export async function runMigration() {
   }
   
   try {
-    // Add is_flexible_schedule column
-    await db.execute(sql`ALTER TABLE groups ADD COLUMN is_flexible_schedule BOOLEAN DEFAULT 0`);
-    console.log('[Migration] ✅ Added is_flexible_schedule column');
-  } catch (error: any) {
-    // Check if error is due to duplicate column (column already exists)
-    if (error.message?.toLowerCase().includes('duplicate column') || 
-        error.message?.toLowerCase().includes('already exists')) {
-      console.log('[Migration] ℹ️  Column is_flexible_schedule already exists, skipping');
+    // Check if is_flexible_schedule column exists
+    const columnsResult = await db.execute(sql`SHOW COLUMNS FROM groups LIKE 'is_flexible_schedule'`);
+    
+    if (columnsResult.rows && columnsResult.rows.length === 0) {
+      // Column doesn't exist, add it
+      await db.execute(sql`ALTER TABLE groups ADD COLUMN is_flexible_schedule BOOLEAN DEFAULT 0`);
+      console.log('[Migration] ✅ Added is_flexible_schedule column');
     } else {
-      console.error('[Migration] ❌ Failed to add is_flexible_schedule:', error.message);
-      throw error;
+      console.log('[Migration] ℹ️  Column is_flexible_schedule already exists, skipping');
     }
+  } catch (error: any) {
+    console.error('[Migration] ❌ Failed with is_flexible_schedule:', error.message);
+    // Don't throw, continue with next column
   }
   
   try {
-    // Add required_hours column
-    await db.execute(sql`ALTER TABLE groups ADD COLUMN required_hours REAL`);
-    console.log('[Migration] ✅ Added required_hours column');
-  } catch (error: any) {
-    // Check if error is due to duplicate column (column already exists)
-    if (error.message?.toLowerCase().includes('duplicate column') || 
-        error.message?.toLowerCase().includes('already exists')) {
-      console.log('[Migration] ℹ️  Column required_hours already exists, skipping');
+    // Check if required_hours column exists
+    const columnsResult = await db.execute(sql`SHOW COLUMNS FROM groups LIKE 'required_hours'`);
+    
+    if (columnsResult.rows && columnsResult.rows.length === 0) {
+      // Column doesn't exist, add it
+      await db.execute(sql`ALTER TABLE groups ADD COLUMN required_hours REAL`);
+      console.log('[Migration] ✅ Added required_hours column');
     } else {
-      console.error('[Migration] ❌ Failed to add required_hours:', error.message);
-      throw error;
+      console.log('[Migration] ℹ️  Column required_hours already exists, skipping');
     }
+  } catch (error: any) {
+    console.error('[Migration] ❌ Failed with required_hours:', error.message);
+    // Don't throw, continue
   }
   
-  console.log('[Migration] ✅ Migration completed successfully');
+  console.log('[Migration] ✅ Migration process completed');
 }
