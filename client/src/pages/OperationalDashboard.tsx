@@ -44,6 +44,7 @@ export default function OperationalDashboard() {
 
   const { user } = useAuth();
   const isSupervisor = user?.role === 'supervisor_tolan' || user?.role === 'supervisor_malqa';
+  const isSupervisorTolan = user?.role === 'supervisor_tolan';
 
   const { data: groupsData } = trpc.groups.list.useQuery();
   const { data: costCentersData } = trpc.costCenters.list.useQuery();
@@ -51,6 +52,22 @@ export default function OperationalDashboard() {
     { userId: user?.id || 0 },
     { enabled: isSupervisor && !!user?.id }
   );
+
+  // Auto-select cost center for Tolan supervisor
+  const autoSelectedCostCenterId = useMemo(() => {
+    if (isSupervisorTolan && userCostCenters && userCostCenters.length > 0) {
+      return userCostCenters[0].costCenterId;
+    }
+    return undefined;
+  }, [isSupervisorTolan, userCostCenters]);
+
+  // Override filterCostCenterId for Tolan supervisor
+  const effectiveCostCenterId = useMemo(() => {
+    if (isSupervisorTolan && autoSelectedCostCenterId) {
+      return autoSelectedCostCenterId;
+    }
+    return filterCostCenterId;
+  }, [isSupervisorTolan, autoSelectedCostCenterId, filterCostCenterId]);
 
   const filteredGroups = useMemo(() => {
     if (!groupsData) return [];
@@ -65,21 +82,21 @@ export default function OperationalDashboard() {
   const { data: stats, isLoading: statsLoading } = trpc.operationalDashboard.getStats.useQuery({
     workDateStr: selectedDate,
     groupId: filterGroupId,
-    costCenterId: filterCostCenterId,
+    costCenterId: effectiveCostCenterId,
   });
 
   const { data: presentWorkers, isLoading: presentLoading } = trpc.operationalDashboard.getPresentWorkers.useQuery(
-    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: filterCostCenterId },
+    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: effectiveCostCenterId },
     { enabled: activeTab === 'present' }
   );
 
   const { data: absentWorkers, isLoading: absentLoading } = trpc.operationalDashboard.getAbsentWorkers.useQuery(
-    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: filterCostCenterId },
+    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: effectiveCostCenterId },
     { enabled: activeTab === 'absent' }
   );
 
   const { data: lateWorkers, isLoading: lateLoading } = trpc.operationalDashboard.getLateWorkers.useQuery(
-    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: filterCostCenterId },
+    { workDateStr: selectedDate, groupId: filterGroupId, costCenterId: effectiveCostCenterId },
     { enabled: activeTab === 'late' }
   );
 
@@ -338,20 +355,28 @@ export default function OperationalDashboard() {
                     </SelectContent>
                   </Select>
 
-                  <Select
-                    value={filterCostCenterId ? String(filterCostCenterId) : "all"}
-                    onValueChange={(v) => setFilterCostCenterId(v === "all" ? undefined : Number(v))}
-                  >
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="كل مراكز التكلفة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">كل مراكز التكلفة</SelectItem>
-                      {filteredCostCenters.map((cc: any) => (
-                        <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isSupervisorTolan ? (
+                    <div className="w-[200px] px-3 py-2 border rounded-md bg-muted text-muted-foreground">
+                      {autoSelectedCostCenterId && costCentersData
+                        ? costCentersData.find((cc: any) => cc.id === autoSelectedCostCenterId)?.name || 'مركز التكلفة'
+                        : 'مركز التكلفة'}
+                    </div>
+                  ) : (
+                    <Select
+                      value={filterCostCenterId ? String(filterCostCenterId) : "all"}
+                      onValueChange={(v) => setFilterCostCenterId(v === "all" ? undefined : Number(v))}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="كل مراكز التكلفة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">كل مراكز التكلفة</SelectItem>
+                        {filteredCostCenters.map((cc: any) => (
+                          <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -556,7 +581,7 @@ export default function OperationalDashboard() {
                       onClick={() => generateUnconfirmedMutation.mutate({
                         workDateStr: selectedDate,
                         groupId: filterGroupId,
-                        costCenterId: filterCostCenterId,
+                        costCenterId: effectiveCostCenterId,
                       })}
                       disabled={generateUnconfirmedMutation.isPending}
                     >
