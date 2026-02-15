@@ -277,28 +277,36 @@ function buildArabicDescription(log: any): string {
 
   // ===== الحضور والانصراف =====
   if (action === 'ADD_MISSING_CHECK_IN') {
+    const wName = newValues?.workerName || '';
     const wId = newValues?.workerId || '';
+    const workerDisplay = wName || `عامل رقم ${wId}`;
     const time = newValues?.eventTime || newValues?.checkInTime || '';
-    return `${userInfo} قام بإضافة بصمة حضور ناقصة للعامل رقم ${wId}${time ? ` - الوقت: ${time}` : ''}`;
+    return `${userInfo} قام بإضافة بصمة حضور ناقصة للعامل ${workerDisplay}${time ? ` - الوقت: ${time}` : ''}`;
   }
   if (action === 'ADD_MISSING_CHECK_OUT') {
+    const wName = newValues?.workerName || '';
     const wId = newValues?.workerId || '';
+    const workerDisplay = wName || `عامل رقم ${wId}`;
     const time = newValues?.eventTime || newValues?.checkOutTime || '';
-    return `${userInfo} قام بإضافة بصمة انصراف ناقصة للعامل رقم ${wId}${time ? ` - الوقت: ${time}` : ''}`;
+    return `${userInfo} قام بإضافة بصمة انصراف ناقصة للعامل ${workerDisplay}${time ? ` - الوقت: ${time}` : ''}`;
   }
   if (action === 'UPDATE_ATTENDANCE') {
+    const wName = oldValues?.workerName || newValues?.workerName || '';
     const wId = oldValues?.workerId || newValues?.workerId || '';
+    const workerDisplay = wName || `عامل رقم ${wId}`;
     const oldTime = oldValues?.eventTime || '';
     const newTime = newValues?.newTime || '';
-    let desc = `${userInfo} قام بتعديل بصمة العامل رقم ${wId}`;
+    let desc = `${userInfo} قام بتعديل بصمة العامل ${workerDisplay}`;
     if (oldTime && newTime) desc += ` من ${oldTime} إلى ${newTime}`;
     return desc;
   }
   if (action === 'DELETE_ATTENDANCE') {
+    const wName = oldValues?.workerName || '';
     const wId = oldValues?.workerId || '';
+    const workerDisplay = wName || `عامل رقم ${wId}`;
     const eType = oldValues?.eventType === 'check_in' ? 'حضور' : oldValues?.eventType === 'check_out' ? 'انصراف' : oldValues?.eventType || '';
     const time = oldValues?.eventTime || '';
-    return `${userInfo} قام بحذف بصمة ${eType} للعامل رقم ${wId}${time ? ` - الوقت: ${time}` : ''}`;
+    return `${userInfo} قام بحذف بصمة ${eType} للعامل ${workerDisplay}${time ? ` - الوقت: ${time}` : ''}`;
   }
 
   // ===== دفعات الرواتب =====
@@ -354,10 +362,12 @@ function buildArabicDescription(log: any): string {
 
   // ===== الاستثناءات المالية =====
   if (action === 'CREATE_PAY_OVERRIDE') {
+    const wName = newValues?.workerName || '';
     const wId = newValues?.workerId || '';
+    const workerDisplay = wName || `عامل رقم ${wId}`;
     const oType = OVERRIDE_TYPE_LABELS[newValues?.overrideType] || newValues?.overrideType || '';
     const amount = newValues?.amount || '';
-    return `${userInfo} قام بإضافة ${oType} للعامل رقم ${wId}${amount ? ` بمبلغ ${amount} ريال` : ''}`;
+    return `${userInfo} قام بإضافة ${oType} للعامل ${workerDisplay}${amount ? ` بمبلغ ${amount} ريال` : ''}`;
   }
   if (action === 'APPROVE_PAY_OVERRIDE') {
     return `${userInfo} قام باعتماد الاستثناء المالي رقم ${log.recordId}`;
@@ -368,9 +378,11 @@ function buildArabicDescription(log: any): string {
 
   // ===== البلاغات التشغيلية =====
   if (action === 'CREATE_FLAG') {
+    const wName = newValues?.workerName || '';
     const wId = newValues?.workerId || '';
     const desc = newValues?.description || '';
-    return `${userInfo} قام بإنشاء بلاغ تشغيلي للعامل رقم ${wId}${desc ? ` - ${desc}` : ''}`;
+    const workerDisplay = wName || `عامل رقم ${wId}`;
+    return `${userInfo} قام بإنشاء بلاغ تشغيلي للعامل ${workerDisplay}${desc ? ` - ${desc}` : ''}`;
   }
   if (action === 'APPROVE_FLAG') {
     return `${userInfo} قام بالموافقة على البلاغ رقم ${log.recordId}`;
@@ -400,15 +412,19 @@ function buildArabicDescription(log: any): string {
     return `${userInfo} قام بتعديل بند راتب في الدفعة - العنصر رقم ${log.recordId}`;
   }
   if (action === 'BULK_UPDATE_ATTENDANCE') {
+    const wName = oldValues?.workerName || '';
     const wId = oldValues?.workerId || '';
+    const workerDisplay = wName || (wId ? `عامل رقم ${wId}` : '');
     const adj = newValues?.adjustmentMinutes || '';
-    return `${userInfo} قام بتعديل جماعي للحضور${wId ? ` - العامل رقم ${wId}` : ''}${adj ? ` (${adj} دقيقة)` : ''}`;
+    return `${userInfo} قام بتعديل جماعي للحضور${workerDisplay ? ` - ${workerDisplay}` : ''}${adj ? ` (${adj} دقيقة)` : ''}`;
   }
   if (action === 'SET_FULL_DAY_OVERRIDE') {
+    const wName = newValues?.workerName || '';
     const wId = newValues?.workerId || '';
+    const workerDisplay = wName || `عامل رقم ${wId}`;
     const date = newValues?.workDate || '';
     const override = newValues?.override ? 'تفعيل' : 'إلغاء';
-    return `${userInfo} قام بـ${override} تجاوز يوم كامل للعامل رقم ${wId} بتاريخ ${date}`;
+    return `${userInfo} قام بـ${override} تجاوز يوم كامل للعامل ${workerDisplay} بتاريخ ${date}`;
   }
   if (action === 'UPDATE_DAILY_RECORD') {
     return `${userInfo} قام بتعديل السجل اليومي رقم ${log.recordId}`;

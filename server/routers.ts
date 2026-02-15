@@ -1061,11 +1061,15 @@ export const appRouter = router({
             console.error('[addMissingCheckIn] Finance recalc failed (non-fatal):', finError);
           }
           
+          // Get worker name for audit log
+          const worker = await db.getWorkerById(input.workerId);
+          const workerName = worker?.fullName || `عامل رقم ${input.workerId}`;
+          
           await db.logAudit({
             userId: ctx.user.id,
             action: 'ADD_MISSING_CHECK_IN',
             tableName: 'attendance_events',
-            newValues: { workerId: input.workerId, eventTime: input.checkInTime, note: input.note },
+            newValues: { workerId: input.workerId, workerName: workerName, eventTime: input.checkInTime, note: input.note },
           });
           return { success: true, message: 'تم إضافة بصمة الحضور بنجاح' };
         } catch (error: any) {
@@ -1114,11 +1118,15 @@ export const appRouter = router({
             console.error('[addMissingCheckOut] Finance calc failed (non-fatal):', finError);
           }
           
+          // Get worker name for audit log
+          const worker = await db.getWorkerById(input.workerId);
+          const workerName = worker?.fullName || `عامل رقم ${input.workerId}`;
+          
           await db.logAudit({
             userId: ctx.user.id,
             action: 'ADD_MISSING_CHECK_OUT',
             tableName: 'attendance_events',
-            newValues: { workerId: input.workerId, eventTime: input.checkOutTime, note: input.note },
+            newValues: { workerId: input.workerId, workerName: workerName, eventTime: input.checkOutTime, note: input.note },
           });
           return { success: true, message: 'تم إضافة بصمة الانصراف بنجاح' };
         } catch (error: any) {
@@ -1148,13 +1156,20 @@ export const appRouter = router({
         // Delete the event
         await database.delete(attendanceEvents).where(eq(attendanceEvents.id, input.eventId));
         
+        // Get worker name for audit log
+        let workerName = `عامل غير معروف`;
+        if (oldEvent?.workerId) {
+          const worker = await db.getWorkerById(oldEvent.workerId);
+          workerName = worker?.fullName || `عامل رقم ${oldEvent.workerId}`;
+        }
+        
         // Audit log
         await db.logAudit({
           userId: ctx.user.id,
           action: 'DELETE_ATTENDANCE',
           tableName: 'attendance_events',
           recordId: input.eventId,
-          oldValues: oldEvent ? { workerId: oldEvent.workerId, eventType: oldEvent.eventType, eventTime: oldEvent.eventTime } : null,
+          oldValues: oldEvent ? { workerId: oldEvent.workerId, workerName: workerName, eventType: oldEvent.eventType, eventTime: oldEvent.eventTime } : null,
           newValues: input.reason ? { reason: input.reason } : null,
         });
         
@@ -1324,7 +1339,15 @@ export const appRouter = router({
             const newTime = new Date(currentTime.getTime() + input.adjustmentMinutes * 60 * 1000);
             
             await db.updateAttendanceEvent(eventId, newTime.toISOString(), input.internalNote);
-            await db.logAudit({ userId: ctx.user?.id, action: 'BULK_UPDATE_ATTENDANCE', tableName: 'attendance_events', recordId: eventId, oldValues: { eventTime: event.eventTime, workerId: event.workerId }, newValues: { adjustmentMinutes: input.adjustmentMinutes, note: input.internalNote } });
+            
+            // Get worker name for audit log
+            let workerName = `عامل غير معروف`;
+            if (event.workerId) {
+              const worker = await db.getWorkerById(event.workerId);
+              workerName = worker?.fullName || `عامل رقم ${event.workerId}`;
+            }
+            
+            await db.logAudit({ userId: ctx.user?.id, action: 'BULK_UPDATE_ATTENDANCE', tableName: 'attendance_events', recordId: eventId, oldValues: { eventTime: event.eventTime, workerId: event.workerId, workerName: workerName }, newValues: { adjustmentMinutes: input.adjustmentMinutes, note: input.internalNote } });
             results.push({ eventId, success: true });
           } catch (error) {
             results.push({ eventId, success: false, error: String(error) });
@@ -1471,7 +1494,14 @@ export const appRouter = router({
           input.internalNote || '',
           ctx.user.id
         );
-        await db.logAudit({ userId: ctx.user.id, action: 'UPDATE_ATTENDANCE', tableName: 'attendance_events', recordId: input.eventId, oldValues: event ? { eventTime: event.eventTime, workerId: event.workerId } : null, newValues: { newTime: input.newTime, note: input.internalNote } });
+        // Get worker name for audit log
+        let workerName = `عامل غير معروف`;
+        if (event?.workerId) {
+          const worker = await db.getWorkerById(event.workerId);
+          workerName = worker?.fullName || `عامل رقم ${event.workerId}`;
+        }
+        
+        await db.logAudit({ userId: ctx.user.id, action: 'UPDATE_ATTENDANCE', tableName: 'attendance_events', recordId: input.eventId, oldValues: event ? { eventTime: event.eventTime, workerId: event.workerId, workerName: workerName } : null, newValues: { newTime: input.newTime, note: input.internalNote } });
         return updateResult;
       }),
     // Export attendance log to Excel
@@ -1625,7 +1655,11 @@ export const appRouter = router({
           input.reason,
           ctx.user?.id
         );
-        await db.logAudit({ userId: ctx.user?.id, action: 'SET_FULL_DAY_OVERRIDE', tableName: 'attendance_events', newValues: { workerId: input.workerId, workDate: input.workDate, override: input.override, reason: input.reason } });
+        // Get worker name for audit log
+        const worker = await db.getWorkerById(input.workerId);
+        const workerName = worker?.fullName || `عامل رقم ${input.workerId}`;
+        
+        await db.logAudit({ userId: ctx.user?.id, action: 'SET_FULL_DAY_OVERRIDE', tableName: 'attendance_events', newValues: { workerId: input.workerId, workerName: workerName, workDate: input.workDate, override: input.override, reason: input.reason } });
         return overrideResult;
       }),
 
@@ -1680,12 +1714,19 @@ export const appRouter = router({
           input.internalNote || '',
           ctx.user.id
         );
+        // Get worker name for audit log
+        let workerName = `عامل غير معروف`;
+        if (event?.workerId) {
+          const worker = await db.getWorkerById(event.workerId);
+          workerName = worker?.fullName || `عامل رقم ${event.workerId}`;
+        }
+        
         await db.logAudit({
           userId: ctx.user.id,
           action: 'UPDATE_ATTENDANCE',
           tableName: 'attendance_events',
           recordId: input.eventId,
-          oldValues: event ? { eventTime: event.eventTime, workerId: event.workerId } : null,
+          oldValues: event ? { eventTime: event.eventTime, workerId: event.workerId, workerName: workerName } : null,
           newValues: { newTime: input.newTime, note: input.internalNote },
         });
         return result;
@@ -1711,11 +1752,15 @@ export const appRouter = router({
           throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
         }
         
+        // Get worker name for audit log
+        const worker = await db.getWorkerById(input.workerId);
+        const workerName = worker?.fullName || `عامل رقم ${input.workerId}`;
+        
         const result = await db.createPayOverride({
           ...input,
           createdBy: ctx.user.id,
         });
-        await db.logAudit({ userId: ctx.user.id, action: 'CREATE_PAY_OVERRIDE', tableName: 'pay_overrides', newValues: { workerId: input.workerId, overrideType: input.overrideType, amount: input.amount, reason: input.reason } });
+        await db.logAudit({ userId: ctx.user.id, action: 'CREATE_PAY_OVERRIDE', tableName: 'pay_overrides', newValues: { workerId: input.workerId, workerName: workerName, overrideType: input.overrideType, amount: input.amount, reason: input.reason } });
         return result;
       }),
     
@@ -3801,11 +3846,29 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        
+        // Get worker name for audit log
+        const worker = await db.getWorkerById(input.workerId);
+        const workerName = worker?.fullName || `عامل رقم ${input.workerId}`;
+        
         const flagId = await db.createOperationalFlagFromAction({
           ...input,
           createdBy: ctx.user.id,
         });
-        await db.logAudit({ userId: ctx.user.id, action: 'CREATE_FLAG', tableName: 'operational_flags', recordId: flagId, newValues: { workerId: input.workerId, flagType: input.flagType, description: input.description } });
+        
+        await db.logAudit({ 
+          userId: ctx.user.id, 
+          action: 'CREATE_FLAG', 
+          tableName: 'operational_flags', 
+          recordId: flagId, 
+          newValues: { 
+            workerId: input.workerId, 
+            workerName: workerName,
+            flagType: input.flagType, 
+            description: input.description 
+          } 
+        });
+        
         return { success: true, flagId };
       }),
     // Get flags for review pagee
