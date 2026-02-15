@@ -378,6 +378,8 @@ export const appRouter = router({
         workMinutes: z.string().optional().nullable(),
         latePenaltyRate: z.string().optional().nullable(),
         earlyLeavePenaltyRate: z.string().optional().nullable(),
+        isFlexibleSchedule: z.boolean().default(false),
+        requiredHours: z.string().optional().nullable(),
         isActive: z.boolean().default(true),
       }))
       .use(requirePermissionFlag('canManageGroups'))
@@ -393,6 +395,8 @@ export const appRouter = router({
             workMinutes: input.workMinutes ? parseInt(input.workMinutes) : null,
             latePenaltyRate: input.latePenaltyRate ? parseFloat(input.latePenaltyRate) : null,
             earlyLeavePenaltyRate: input.earlyLeavePenaltyRate ? parseFloat(input.earlyLeavePenaltyRate) : null,
+            isFlexibleSchedule: input.isFlexibleSchedule,
+            requiredHours: input.requiredHours ? parseFloat(input.requiredHours) : null,
             isActive: input.isActive,
           } as any);
           // Audit log
@@ -424,6 +428,8 @@ export const appRouter = router({
         workMinutes: z.string().optional().nullable(),
         latePenaltyRate: z.string().optional().nullable(),
         earlyLeavePenaltyRate: z.string().optional().nullable(),
+        isFlexibleSchedule: z.boolean().optional(),
+        requiredHours: z.string().optional().nullable(),
         isActive: z.boolean().optional(),
       }))
       .use(requirePermissionFlag('canManageGroups'))
@@ -440,6 +446,8 @@ export const appRouter = router({
         if (data.workMinutes !== undefined) updateData.workMinutes = data.workMinutes ? parseInt(data.workMinutes) : null;
         if (data.latePenaltyRate !== undefined) updateData.latePenaltyRate = data.latePenaltyRate ? parseFloat(data.latePenaltyRate) : null;
         if (data.earlyLeavePenaltyRate !== undefined) updateData.earlyLeavePenaltyRate = data.earlyLeavePenaltyRate ? parseFloat(data.earlyLeavePenaltyRate) : null;
+        if (data.isFlexibleSchedule !== undefined) updateData.isFlexibleSchedule = data.isFlexibleSchedule;
+        if (data.requiredHours !== undefined) updateData.requiredHours = data.requiredHours ? parseFloat(data.requiredHours) : null;
         if (data.isActive !== undefined) updateData.isActive = data.isActive;
         
         const oldGroup = await db.getGroupById(id);

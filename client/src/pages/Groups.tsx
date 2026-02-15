@@ -36,6 +36,8 @@ export default function Groups() {
     workMinutes: "",
     latePenaltyRate: "",
     earlyLeavePenaltyRate: "",
+    isFlexibleSchedule: false,
+    requiredHours: "8.00",
     isActive: true,
   });
 
@@ -139,6 +141,8 @@ export default function Groups() {
       workMinutes: "",
       latePenaltyRate: "",
       earlyLeavePenaltyRate: "",
+      isFlexibleSchedule: false,
+      requiredHours: "8.00",
       isActive: true,
     });
   };
@@ -155,6 +159,8 @@ export default function Groups() {
       workMinutes: group.workMinutes ? String(group.workMinutes) : "",
       latePenaltyRate: group.latePenaltyRate ? String(group.latePenaltyRate) : "",
       earlyLeavePenaltyRate: group.earlyLeavePenaltyRate ? String(group.earlyLeavePenaltyRate) : "",
+      isFlexibleSchedule: group.isFlexibleSchedule || false,
+      requiredHours: group.requiredHours ? String(group.requiredHours) : "8.00",
       isActive: group.isActive !== undefined ? group.isActive : true,
     });
     setIsEditDialogOpen(true);
@@ -176,6 +182,8 @@ export default function Groups() {
         workMinutes: freshGroupData.workMinutes ? String(freshGroupData.workMinutes) : "",
         latePenaltyRate: freshGroupData.latePenaltyRate ? String(freshGroupData.latePenaltyRate) : "",
         earlyLeavePenaltyRate: freshGroupData.earlyLeavePenaltyRate ? String(freshGroupData.earlyLeavePenaltyRate) : "",
+        isFlexibleSchedule: freshGroupData.isFlexibleSchedule || false,
+        requiredHours: freshGroupData.requiredHours ? String(freshGroupData.requiredHours) : "8.00",
         isActive: freshGroupData.isActive ?? true,
       });
     }
@@ -366,6 +374,52 @@ export default function Groups() {
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* Flexible Schedule Settings */}
+                <div className="border-t pt-4 mt-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Switch
+                      id="isFlexibleSchedule"
+                      checked={formData.isFlexibleSchedule}
+                      onCheckedChange={(checked) => setFormData({ ...formData, isFlexibleSchedule: checked })}
+                    />
+                    <Label htmlFor="isFlexibleSchedule" className="font-medium">تفعيل الدوام المرن</Label>
+                  </div>
+                  {formData.isFlexibleSchedule && (
+                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 space-y-3">
+                      <div className="flex items-start gap-2">
+                        <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                        <div className="flex-1 space-y-2">
+                          <p className="text-sm text-amber-900 dark:text-amber-100">
+                            <strong>ملاحظة:</strong> عند تفعيل الدوام المرن:
+                          </p>
+                          <ul className="text-sm text-amber-800 dark:text-amber-200 list-disc list-inside space-y-1">
+                            <li>لن يطبق نظام الورديات الأسبوعية على هذه المجموعة</li>
+                            <li>المطلوب فقط إكمال عدد الساعات المحددة يومياً</li>
+                            <li>لا يهم وقت الحضور أو الانصراف</li>
+                            <li>يتم حساب إجمالي ساعات العمل فقط</li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="requiredHours">عدد الساعات المطلوبة يومياً</Label>
+                        <Input
+                          id="requiredHours"
+                          type="number"
+                          step="0.25"
+                          min="1"
+                          max="24"
+                          value={formData.requiredHours}
+                          onChange={(e) => setFormData({ ...formData, requiredHours: e.target.value })}
+                          placeholder="8.00"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          مثال: 8 ساعات = يوم كامل، 4 ساعات = نصف يوم
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 
@@ -640,6 +694,52 @@ export default function Groups() {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Flexible Schedule Settings */}
+              <div className="border-t pt-4 mt-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <Switch
+                    id="edit-isFlexibleSchedule"
+                    checked={formData.isFlexibleSchedule}
+                    onCheckedChange={(checked) => setFormData({ ...formData, isFlexibleSchedule: checked })}
+                  />
+                  <Label htmlFor="edit-isFlexibleSchedule" className="font-medium">تفعيل الدوام المرن</Label>
+                </div>
+                {formData.isFlexibleSchedule && (
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                      <div className="flex-1 space-y-2">
+                        <p className="text-sm text-amber-900 dark:text-amber-100">
+                          <strong>ملاحظة:</strong> عند تفعيل الدوام المرن:
+                        </p>
+                        <ul className="text-sm text-amber-800 dark:text-amber-200 list-disc list-inside space-y-1">
+                          <li>لن يطبق نظام الورديات الأسبوعية على هذه المجموعة</li>
+                          <li>المطلوب فقط إكمال عدد الساعات المحددة يومياً</li>
+                          <li>لا يهم وقت الحضور أو الانصراف</li>
+                          <li>يتم حساب إجمالي ساعات العمل فقط</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-requiredHours">عدد الساعات المطلوبة يومياً</Label>
+                      <Input
+                        id="edit-requiredHours"
+                        type="number"
+                        step="0.25"
+                        min="1"
+                        max="24"
+                        value={formData.requiredHours}
+                        onChange={(e) => setFormData({ ...formData, requiredHours: e.target.value })}
+                        placeholder="8.00"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        مثال: 8 ساعات = يوم كامل، 4 ساعات = نصف يوم
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               

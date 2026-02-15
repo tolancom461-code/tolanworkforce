@@ -1376,6 +1376,8 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   let groupWorkMinutes: number | null = null;
   let groupLatePenaltyRate: number | null = null;
   let groupEarlyLeavePenaltyRate: number | null = null;
+  let isFlexibleSchedule = false;
+  let requiredHours: number | null = null;
   
   // ⚠️ CRITICAL: Shift times from group_schedules are the SOLE reference
   // If no shift is defined, NO penalties are calculated
@@ -1394,6 +1396,8 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       groupWorkMinutes = safeParseInt(group.workMinutes);
       groupLatePenaltyRate = group.latePenaltyRate ? safeParseDecimal(group.latePenaltyRate) : null;
       groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? safeParseDecimal(group.earlyLeavePenaltyRate) : null;
+      isFlexibleSchedule = group.isFlexibleSchedule || false;
+      requiredHours = group.requiredHours ? safeParseDecimal(group.requiredHours) : null;
       
       // Get shift times from weekly schedule based on day of week and effective date
       const workDateObj = typeof workDate === 'string' ? new Date(workDate + 'T00:00:00') : workDate;
@@ -1473,8 +1477,35 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       baseAmount = dailyRate;
     }
     
+    // ⚠️ FLEXIBLE SCHEDULE: Hours-based calculation (no shift times needed)
+    if (isFlexibleSchedule && requiredHours && requiredHours > 0) {
+      // Calculate total work hours
+      const totalWorkHours = rawWorkMinutes / 60;
+      
+      // No late or early leave penalties for flexible schedules
+      lateMinutes = 0;
+      earlyLeaveMinutes = 0;
+      
+      // If worker completed required hours → full daily wage
+      if (totalWorkHours >= requiredHours) {
+        actualWorkMinutes = requiredHours * 60; // Cap at required hours
+        // No deductions - full wage
+        deductions = 0;
+      } else {
+        // If less than required hours → deduct the difference
+        actualWorkMinutes = rawWorkMinutes;
+        const missingHours = requiredHours - totalWorkHours;
+        
+        if (groupDailyWage && requiredHours > 0) {
+          // Calculate hourly rate
+          const hourlyRate = groupDailyWage / requiredHours;
+          // Deduct missing hours
+          deductions = hourlyRate * missingHours;
+        }
+      }
+    }
     // ⚠️ SHIFT-BASED CALCULATIONS: Only if shift is defined in group_schedules
-    if (hasShiftDefined && shiftStartTime && shiftEndTime) {
+    else if (hasShiftDefined && shiftStartTime && shiftEndTime) {
       const [shiftStartHour, shiftStartMin] = shiftStartTime.split(':').map(Number);
       const [shiftEndHour, shiftEndMin] = shiftEndTime.split(':').map(Number);
       

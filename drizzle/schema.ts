@@ -64,6 +64,9 @@ export const groups = mysqlTable("groups", {
   minuteCost: decimal("minute_cost", { precision: 10, scale: 4 }),
   latePenaltyRate: decimal("late_penalty_rate", { precision: 5, scale: 2 }),
   earlyLeavePenaltyRate: decimal("early_leave_penalty_rate", { precision: 5, scale: 2 }),
+  // Flexible schedule settings
+  isFlexibleSchedule: boolean("is_flexible_schedule").default(false),
+  requiredHours: decimal("required_hours", { precision: 4, scale: 2 }).default("8.00"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
