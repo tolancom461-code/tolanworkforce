@@ -1496,13 +1496,14 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       } else {
         // If less than required hours → deduct the difference
         actualWorkMinutes = rawWorkMinutes;
-        const missingHours = requiredHours - totalWorkHours;
+        const requiredMinutes = requiredHours * 60;
+        const missingMinutes = requiredMinutes - rawWorkMinutes;
         
         if (groupDailyWage && requiredHours > 0) {
-          // Calculate hourly rate
-          const hourlyRate = groupDailyWage / requiredHours;
-          // Deduct missing hours
-          deductions = hourlyRate * missingHours;
+          // Calculate minute rate (more accurate than hourly rate)
+          const minuteRate = groupDailyWage / requiredMinutes;
+          // Deduct missing minutes
+          deductions = minuteRate * missingMinutes;
         }
       }
     }
