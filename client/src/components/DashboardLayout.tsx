@@ -117,7 +117,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/backup',
     '/profile',
   ],
-  executive: ['/executive/finance', '/finance/cost-center-report', '/profile'],
+  executive: ['/executive/finance', '/profile'],
   super_admin: 'all',
 };
 
