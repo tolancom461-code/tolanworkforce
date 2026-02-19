@@ -543,7 +543,7 @@ export async function getAllWorkers(): Promise<DbWorker[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return await db.select().from(workers).orderBy(desc(workers.createdAt));
+  return await db.select().from(workers).orderBy(desc(workers.createdAt), desc(workers.id));
 }
 
 export async function getWorkersByGroup(groupId: number): Promise<DbWorker[]> {
@@ -5398,7 +5398,7 @@ export async function getWorkersWithPagination(
   const total = countResult[0]?.count || 0;
 
   // Get paginated data
-  let query: any = db.select().from(workers).orderBy(desc(workers.createdAt));
+  let query: any = db.select().from(workers).orderBy(desc(workers.createdAt), desc(workers.id));
   if (conditions.length > 0) {
     query = query.where(and(...conditions));
   }
