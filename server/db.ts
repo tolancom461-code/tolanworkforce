@@ -5366,24 +5366,41 @@ export async function checkLockedDaysInPeriod(
 export async function getWorkersWithPagination(
   page: number = 1,
   limit: number = 10,
-  groupId?: number
+  groupId?: number,
+  searchQuery?: string
 ): Promise<{ data: DbWorker[]; total: number; page: number; limit: number; totalPages: number }> {
   const db = await getDb();
   if (!db) return { data: [], total: 0, page, limit, totalPages: 0 };
 
   const offset = (page - 1) * limit;
   
-  // Get total count
-  const countResult = groupId
-    ? await db.select({ count: count() }).from(workers).where(eq(workers.groupId, groupId))
-    : await db.select({ count: count() }).from(workers);
+  // Build where conditions
+  const conditions = [];
+  if (groupId) {
+    conditions.push(eq(workers.groupId, groupId));
+  }
+  if (searchQuery && searchQuery.trim()) {
+    const searchTerm = `%${searchQuery.trim()}%`;
+    conditions.push(
+      or(
+        like(workers.fullName, searchTerm),
+        like(workers.code, searchTerm),
+        like(workers.nationalId, searchTerm)
+      )
+    );
+  }
   
+  // Get total count
+  const countQuery = conditions.length > 0
+    ? db.select({ count: count() }).from(workers).where(and(...conditions))
+    : db.select({ count: count() }).from(workers);
+  const countResult = await countQuery;
   const total = countResult[0]?.count || 0;
 
   // Get paginated data
   let query: any = db.select().from(workers).orderBy(desc(workers.createdAt));
-  if (groupId) {
-    query = query.where(eq(workers.groupId, groupId));
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions));
   }
   
   const data = await query.limit(limit).offset(offset);

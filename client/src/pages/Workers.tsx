@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { PERMISSIONS } from "../../../shared/permissions";
@@ -26,6 +26,11 @@ export default function Workers() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
+
+  // Reset page when search query or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterGroup, filterStatus]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -51,6 +56,7 @@ export default function Workers() {
     page: currentPage,
     limit: pageSize,
     groupId,
+    searchQuery: searchQuery || undefined,
   });
   // Get all groups (Workers page doesn't filter by cost center)
   const { data: groups } = trpc.groups.list.useQuery();
@@ -226,16 +232,10 @@ export default function Workers() {
       .slice(0, 2);
   };
 
+  // Filter by status only (search and group are handled server-side)
   const filteredWorkers = workers?.filter((worker) => {
-    const matchesSearch =
-      worker.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      worker.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (worker.nationalId && worker.nationalId.includes(searchQuery));
-    
-    const matchesGroup = filterGroup === "all" || worker.groupId?.toString() === filterGroup;
     const matchesStatus = filterStatus === "all" || worker.status === filterStatus;
-    
-    return matchesSearch && matchesGroup && matchesStatus;
+    return matchesStatus;
   });
 
   // Export handlers

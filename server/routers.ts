@@ -506,9 +506,10 @@ export const appRouter = router({
         page: z.number().default(1),
         limit: z.number().default(10),
         groupId: z.number().optional(),
+        searchQuery: z.string().optional(),
       }))
       .query(async ({ input }) => {
-        return await db.getWorkersWithPagination(input.page, input.limit, input.groupId);
+        return await db.getWorkersWithPagination(input.page, input.limit, input.groupId, input.searchQuery);
       }),
     
     listByGroup: protectedProcedure
