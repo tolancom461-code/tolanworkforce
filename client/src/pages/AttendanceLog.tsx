@@ -438,7 +438,10 @@ export default function AttendanceLog() {
         </Card>
         <Card 
           className="cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => setIsAbsentDialogOpen(true)}
+          onClick={() => {
+            setAbsentFilterGroup(selectedGroup);
+            setIsAbsentDialogOpen(true);
+          }}
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -743,7 +746,7 @@ export default function AttendanceLog() {
                 <p>لا يوجد عمال غائبون لهذا اليوم</p>
               </div>
             ) : (
-              <div className="border rounded-lg">
+              <div className="border rounded-lg max-h-[400px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-red-50">
