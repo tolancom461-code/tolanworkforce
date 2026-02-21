@@ -526,6 +526,14 @@ export async function updateGroup(id: number, data: Partial<InsertGroup>): Promi
   }
 
   await db.update(groups).set({ ...updatedData, updatedAt: new Date() }).where(eq(groups.id, id));
+
+  // ✅ Automatic recalculation for all workers in this group (open periods only)
+  try {
+    await recalculateGroupFinanceForOpenPeriods(id);
+    console.log(`[Group Updated] ✅ Recalculated all workers in group ${id}`);
+  } catch (error: any) {
+    console.error(`[Group Updated] ⚠️ Recalc failed for group ${id}:`, error.message);
+  }
 }
 
 export async function getGroupsByCostCenter(costCenterId: number): Promise<Group[]> {
@@ -5515,9 +5523,22 @@ export async function updateGroupSchedule(
     throw new Error("No fields to update");
   }
 
+  // Get the groupId before update for recalculation
+  const [schedule] = await db.select().from(groupSchedules).where(eq(groupSchedules.id, id));
+  
   const result = await db.update(groupSchedules)
     .set(updates)
     .where(eq(groupSchedules.id, id));
+
+  // ✅ Automatic recalculation when schedule is updated
+  if (schedule?.groupId) {
+    try {
+      await recalculateGroupFinanceForOpenPeriods(schedule.groupId);
+      console.log(`[Schedule Updated] ✅ Recalculated group ${schedule.groupId}`);
+    } catch (error: any) {
+      console.error(`[Schedule Updated] ⚠️ Recalc failed:`, error.message);
+    }
+  }
 
   return result;
 }
@@ -7286,6 +7307,7 @@ export async function getTemporaryAssignments(filters?: {
 export async function createTemporaryAssignment(params: {
   workerId: number;
   toCostCenterId: number;
+  toGroupId: number;
   startDate: string;
   endDate: string;
   notes?: string;
@@ -7331,10 +7353,14 @@ export async function createTemporaryAssignment(params: {
     throw new Error("يوجد انتداب متداخل لنفس العامل في نفس الفترة");
   }
 
+  const fromGroupId = worker[0].groupId;
+
   const result = await db.insert(temporaryAssignments).values({
     workerId: params.workerId,
     fromCostCenterId: fromCostCenterId,
+    fromGroupId: fromGroupId,
     toCostCenterId: params.toCostCenterId,
+    toGroupId: params.toGroupId,
     startDate: params.startDate,
     endDate: params.endDate,
     notes: params.notes || null,
@@ -7342,7 +7368,17 @@ export async function createTemporaryAssignment(params: {
     createdBy: params.createdBy,
   } as any);
 
-  return { id: result[0].insertId };
+  const assignmentId = result[0].insertId;
+
+  // ✅ Automatic recalculation for the assignment period
+  try {
+    await recalculateWorkerFinanceForPeriod(params.workerId, params.startDate, params.endDate);
+    console.log(`[Assignment Created] ✅ Recalculated worker ${params.workerId} for ${params.startDate} → ${params.endDate}`);
+  } catch (error: any) {
+    console.error(`[Assignment Created] ⚠️ Recalc failed:`, error.message);
+  }
+
+  return { id: assignmentId };
 }
 
 /**
@@ -7351,19 +7387,27 @@ export async function createTemporaryAssignment(params: {
 export async function cancelTemporaryAssignment(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-
   const [existing] = await db
     .select()
     .from(temporaryAssignments)
     .where(eq(temporaryAssignments.id, id));
-
   if (!existing) throw new Error("الانتداب غير موجود");
   if (existing.status === 'cancelled') throw new Error("الانتداب ملغي مسبقاً");
-
+  
   await db
     .update(temporaryAssignments)
     .set({ status: 'cancelled' })
     .where(eq(temporaryAssignments.id, id));
+
+  // ✅ Automatic recalculation when assignment is cancelled
+  try {
+    const startDate = existing.startDate.toISOString().split('T')[0];
+    const endDate = existing.endDate.toISOString().split('T')[0];
+    await recalculateWorkerFinanceForPeriod(existing.workerId, startDate, endDate);
+    console.log(`[Assignment Cancelled] ✅ Recalculated worker ${existing.workerId} for ${startDate} → ${endDate}`);
+  } catch (error: any) {
+    console.error(`[Assignment Cancelled] ⚠️ Recalc failed:`, error.message);
+  }
 
   return { success: true };
 }
@@ -7503,6 +7547,7 @@ export function calculateAssignmentDays(
  */
 export async function updateTemporaryAssignment(id: number, params: {
   toCostCenterId?: number;
+  toGroupId?: number;
   startDate?: string;
   endDate?: string;
   notes?: string;
@@ -7521,6 +7566,7 @@ export async function updateTemporaryAssignment(id: number, params: {
 
   const updateData: any = {};
   if (params.toCostCenterId) updateData.toCostCenterId = params.toCostCenterId;
+  if (params.toGroupId) updateData.toGroupId = params.toGroupId;
   if (params.startDate) updateData.startDate = sql`${params.startDate}`;
   if (params.endDate) updateData.endDate = sql`${params.endDate}`;
   if (params.notes !== undefined) updateData.notes = params.notes;
@@ -7529,6 +7575,24 @@ export async function updateTemporaryAssignment(id: number, params: {
     .update(temporaryAssignments)
     .set(updateData)
     .where(eq(temporaryAssignments.id, id));
+
+  // ✅ Automatic recalculation for the affected period
+  // Use the wider range (old + new dates) to cover all changes
+  try {
+    const oldStart = current.startDate.toISOString().split('T')[0];
+    const oldEnd = current.endDate.toISOString().split('T')[0];
+    const newStart = params.startDate || oldStart;
+    const newEnd = params.endDate || oldEnd;
+    
+    // Calculate the full affected range
+    const recalcStart = new Date(oldStart) < new Date(newStart) ? oldStart : newStart;
+    const recalcEnd = new Date(oldEnd) > new Date(newEnd) ? oldEnd : newEnd;
+    
+    await recalculateWorkerFinanceForPeriod(current.workerId, recalcStart, recalcEnd);
+    console.log(`[Assignment Updated] ✅ Recalculated worker ${current.workerId} for ${recalcStart} → ${recalcEnd}`);
+  } catch (error: any) {
+    console.error(`[Assignment Updated] ⚠️ Recalc failed:`, error.message);
+  }
 
   return { success: true, id };
 }
@@ -7895,4 +7959,195 @@ export async function runMigration() {
   }
   
   console.log('[Migration] ✅ Migration completed');
+}
+
+
+// ============================================
+// Smart Recalculation Functions
+// ============================================
+
+/**
+ * Get the last closed payroll batch date
+ * Returns the latest periodEnd date from all closed payroll batches
+ * If no closed batches exist, returns null
+ */
+export async function getLastClosedPayrollDate(): Promise<string | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { payrollBatches } = await import('../drizzle/schema');
+
+  const result = await db
+    .select({
+      lastDate: sql<string>`MAX(${payrollBatches.periodEnd})`
+    })
+    .from(payrollBatches)
+    .where(eq(payrollBatches.status, 'closed'));
+
+  return result[0]?.lastDate || null;
+}
+
+/**
+ * Get the effective group for a worker on a specific date
+ * Checks if there's an active temporary assignment for that date
+ * Returns toGroupId if assigned, otherwise returns worker's original groupId
+ */
+export async function getEffectiveGroupForWorkerOnDate(
+  workerId: number,
+  date: string
+): Promise<number | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { temporaryAssignments, workers } = await import('../drizzle/schema');
+
+  // Check for active assignment on this date
+  const assignment = await db
+    .select({
+      toGroupId: temporaryAssignments.toGroupId
+    })
+    .from(temporaryAssignments)
+    .where(
+      and(
+        eq(temporaryAssignments.workerId, workerId),
+        eq(temporaryAssignments.status, 'active'),
+        lte(temporaryAssignments.startDate, new Date(date)),
+        gte(temporaryAssignments.endDate, new Date(date))
+      )
+    )
+    .limit(1);
+
+  if (assignment.length > 0 && assignment[0].toGroupId) {
+    return assignment[0].toGroupId;
+  }
+
+  // No assignment, return worker's original group
+  const worker = await db
+    .select({ groupId: workers.groupId })
+    .from(workers)
+    .where(eq(workers.id, workerId))
+    .limit(1);
+
+  return worker[0]?.groupId || null;
+}
+
+/**
+ * Recalculate worker daily finance for a specific period
+ * This is a smart, targeted recalculation that:
+ * 1. Only recalculates for the specified worker and date range
+ * 2. Determines the effective group for each day (considering temporary assignments)
+ * 3. Skips any dates that are in closed payroll periods
+ * 4. Recalculates finance based on the effective group's settings for each day
+ */
+export async function recalculateWorkerFinanceForPeriod(
+  workerId: number,
+  startDate: string,
+  endDate: string
+): Promise<{ recalculated: number; skipped: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Get last closed payroll date to protect closed periods
+  const lastClosedDate = await getLastClosedPayrollDate();
+  
+  // Adjust start date if it's before the last closed date
+  let effectiveStartDate = startDate;
+  if (lastClosedDate && new Date(startDate) <= new Date(lastClosedDate)) {
+    const nextDay = new Date(lastClosedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    effectiveStartDate = nextDay.toISOString().split('T')[0];
+  }
+
+  // If effective start is after end, nothing to recalculate
+  if (new Date(effectiveStartDate) > new Date(endDate)) {
+    console.log(`[Recalc] Skipped: entire period is closed (worker ${workerId})`);
+    return { recalculated: 0, skipped: 0 };
+  }
+
+  console.log(`[Recalc] Worker ${workerId}: ${effectiveStartDate} → ${endDate}`);
+
+  let recalculated = 0;
+  let skipped = 0;
+
+  // Iterate through each day in the period
+  const currentDate = new Date(effectiveStartDate);
+  const endDateObj = new Date(endDate);
+
+  while (currentDate <= endDateObj) {
+    const dateStr = currentDate.toISOString().split('T')[0];
+
+    try {
+      // Determine effective group for this specific day
+      const effectiveGroupId = await getEffectiveGroupForWorkerOnDate(workerId, dateStr);
+
+      if (!effectiveGroupId) {
+        console.log(`[Recalc] Skipped ${dateStr}: no group for worker ${workerId}`);
+        skipped++;
+        currentDate.setDate(currentDate.getDate() + 1);
+        continue;
+      }
+
+      // Recalculate finance for this day using the effective group
+      await calculateDailyFinanceFromAttendance(workerId, dateStr);
+      recalculated++;
+
+    } catch (error: any) {
+      console.error(`[Recalc] Error on ${dateStr} for worker ${workerId}:`, error.message);
+      skipped++;
+    }
+
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  console.log(`[Recalc] Worker ${workerId}: ✅ ${recalculated} days, ⏭️ ${skipped} skipped`);
+  return { recalculated, skipped };
+}
+
+/**
+ * Recalculate finance for all workers in a group for open periods
+ * Used when group settings are modified
+ */
+export async function recalculateGroupFinanceForOpenPeriods(
+  groupId: number
+): Promise<{ workersAffected: number; daysRecalculated: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { workers } = await import('../drizzle/schema');
+
+  // Get last closed payroll date
+  const lastClosedDate = await getLastClosedPayrollDate();
+  
+  // Calculate start date (day after last closed, or a reasonable default)
+  let startDate: string;
+  if (lastClosedDate) {
+    const nextDay = new Date(lastClosedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    startDate = nextDay.toISOString().split('T')[0];
+  } else {
+    // No closed payrolls, recalculate from 30 days ago
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    startDate = thirtyDaysAgo.toISOString().split('T')[0];
+  }
+
+  // End date is today
+  const endDate = new Date().toISOString().split('T')[0];
+
+  console.log(`[Recalc Group] Group ${groupId}: ${startDate} → ${endDate}`);
+
+  // Get all workers in this group
+  const groupWorkers = await db
+    .select({ id: workers.id })
+    .from(workers)
+    .where(eq(workers.groupId, groupId));
+
+  let totalDays = 0;
+  for (const worker of groupWorkers) {
+    const result = await recalculateWorkerFinanceForPeriod(worker.id, startDate, endDate);
+    totalDays += result.recalculated;
+  }
+
+  console.log(`[Recalc Group] ✅ ${groupWorkers.length} workers, ${totalDays} days recalculated`);
+  return { workersAffected: groupWorkers.length, daysRecalculated: totalDays };
 }

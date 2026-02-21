@@ -42,6 +42,7 @@ export default function TemporaryAssignments() {
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>("");
   const [toCostCenterId, setToCostCenterId] = useState<string>("");
+  const [toGroupId, setToGroupId] = useState<string>("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -53,6 +54,7 @@ export default function TemporaryAssignments() {
     id: number;
     workerName: string;
     toCostCenterId: string;
+    toGroupId: string;
     startDate: string;
     endDate: string;
     notes: string;
@@ -125,6 +127,7 @@ export default function TemporaryAssignments() {
     setSelectedGroupId("");
     setSelectedWorkerId("");
     setToCostCenterId("");
+    setToGroupId("");
     setStartDate("");
     setEndDate("");
     setNotes("");
@@ -150,9 +153,14 @@ export default function TemporaryAssignments() {
     (cc: any) => cc.id !== workerCostCenterId
   );
 
+  // Filter groups by selected "to" cost center
+  const availableToGroups = toCostCenterId
+    ? (allGroups || []).filter((g: any) => g.costCenterId === parseInt(toCostCenterId))
+    : [];
+
   const handleCreate = () => {
     setFormError("");
-    if (!selectedWorkerId || !toCostCenterId || !startDate || !endDate) {
+    if (!selectedWorkerId || !toCostCenterId || !toGroupId || !startDate || !endDate) {
       setFormError("يرجى ملء جميع الحقول المطلوبة");
       return;
     }
@@ -163,6 +171,7 @@ export default function TemporaryAssignments() {
     createMutation.mutate({
       workerId: parseInt(selectedWorkerId),
       toCostCenterId: parseInt(toCostCenterId),
+      toGroupId: parseInt(toGroupId),
       startDate,
       endDate,
       notes: notes || undefined,
@@ -183,6 +192,7 @@ export default function TemporaryAssignments() {
       id: assignment.id,
       workerName: assignment.workerName || '',
       toCostCenterId: assignment.toCostCenterId ? assignment.toCostCenterId.toString() : '',
+      toGroupId: assignment.toGroupId ? assignment.toGroupId.toString() : '',
       startDate: sd,
       endDate: ed,
       notes: assignment.notes || '',
@@ -193,7 +203,7 @@ export default function TemporaryAssignments() {
   const handleEditSave = () => {
     if (!editDialog) return;
     setEditError("");
-    if (!editDialog.toCostCenterId || !editDialog.startDate || !editDialog.endDate) {
+    if (!editDialog.toCostCenterId || !editDialog.toGroupId || !editDialog.startDate || !editDialog.endDate) {
       setEditError("يرجى ملء جميع الحقول المطلوبة");
       return;
     }
@@ -204,6 +214,7 @@ export default function TemporaryAssignments() {
     updateMutation.mutate({
       id: editDialog.id,
       toCostCenterId: parseInt(editDialog.toCostCenterId),
+      toGroupId: parseInt(editDialog.toGroupId),
       startDate: editDialog.startDate,
       endDate: editDialog.endDate,
       notes: editDialog.notes || undefined,
@@ -324,7 +335,7 @@ export default function TemporaryAssignments() {
               {/* To Cost Center */}
               <div className="space-y-2">
                 <Label>مركز التكلفة المنتدب إليه *</Label>
-                <Select value={toCostCenterId} onValueChange={setToCostCenterId} disabled={!selectedWorkerId}>
+                <Select value={toCostCenterId} onValueChange={(val) => { setToCostCenterId(val); setToGroupId(""); }} disabled={!selectedWorkerId}>
                   <SelectTrigger>
                     <SelectValue placeholder={selectedWorkerId ? "اختر مركز التكلفة" : "اختر العامل أولاً"} />
                   </SelectTrigger>
@@ -332,6 +343,23 @@ export default function TemporaryAssignments() {
                     {availableToCostCenters.map((cc: any) => (
                       <SelectItem key={cc.id} value={cc.id.toString()}>
                         {cc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* To Group */}
+              <div className="space-y-2">
+                <Label>المجموعة المنتدب إليها *</Label>
+                <Select value={toGroupId} onValueChange={setToGroupId} disabled={!toCostCenterId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={toCostCenterId ? "اختر المجموعة" : "اختر مركز التكلفة أولاً"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableToGroups.map((g: any) => (
+                      <SelectItem key={g.id} value={g.id.toString()}>
+                        {g.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -610,7 +638,7 @@ export default function TemporaryAssignments() {
               <Label>مركز التكلفة المنتدب إليه *</Label>
               <Select
                 value={editDialog?.toCostCenterId || ""}
-                onValueChange={(val) => setEditDialog(prev => prev ? { ...prev, toCostCenterId: val } : null)}
+                onValueChange={(val) => setEditDialog(prev => prev ? { ...prev, toCostCenterId: val, toGroupId: "" } : null)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="اختر مركز التكلفة" />
@@ -619,6 +647,27 @@ export default function TemporaryAssignments() {
                   {(costCenters || []).map((cc: any) => (
                     <SelectItem key={cc.id} value={cc.id.toString()}>
                       {cc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* To Group */}
+            <div className="space-y-2">
+              <Label>المجموعة المنتدب إليها *</Label>
+              <Select
+                value={editDialog?.toGroupId || ""}
+                onValueChange={(val) => setEditDialog(prev => prev ? { ...prev, toGroupId: val } : null)}
+                disabled={!editDialog?.toCostCenterId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={editDialog?.toCostCenterId ? "اختر المجموعة" : "اختر مركز التكلفة أولاً"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(allGroups || []).filter((g: any) => g.costCenterId === parseInt(editDialog?.toCostCenterId || "0")).map((g: any) => (
+                    <SelectItem key={g.id} value={g.id.toString()}>
+                      {g.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
