@@ -542,6 +542,26 @@ export async function deleteGroup(id: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // 1️⃣ التحقق من وجود عمال مرتبطين بالمجموعة
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(workers)
+    .where(eq(workers.groupId, id));
+
+  // 2️⃣ التأكد من أن قيمة العدد رقمية دائماً
+  const workersCount = Number(result[0]?.count ?? 0);
+
+  // 3️⃣ منع الحذف إذا كان هناك عمال مرتبطون
+  if (workersCount > 0) {
+    // تسجيل محاولة الحذف المرفوضة في السجلات
+    console.warn(`[DeleteGroupBlocked] groupId=${id} workers=${workersCount}`);
+
+    throw new Error(
+      'لا يمكن حذف هذه المجموعة لأنها تحتوي على عمال مرتبطين بها. يرجى نقل أو حذف العمال المرتبطين أولاً ثم إعادة المحاولة.'
+    );
+  }
+
+  // تنفيذ الحذف إذا لم يكن هناك عمال مرتبطون
   await db.delete(groups).where(eq(groups.id, id));
 }
 
