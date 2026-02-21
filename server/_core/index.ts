@@ -3,6 +3,7 @@ import "dotenv/config";
 process.env.TZ = 'Asia/Riyadh';
 
 import express from "express";
+import { sql } from "drizzle-orm";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
