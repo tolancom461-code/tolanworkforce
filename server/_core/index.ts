@@ -32,6 +32,24 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+/**
+ * Log memory usage periodically to detect memory leaks early
+ */
+function startMemoryLogging() {
+  const MEMORY_LOG_INTERVAL = 60 * 1000; // Every 1 minute
+  
+  setInterval(() => {
+    const mem = process.memoryUsage();
+    console.log(
+      `[Memory] Heap: ${Math.round(mem.heapUsed / 1024 / 1024)}MB / ${Math.round(mem.heapTotal / 1024 / 1024)}MB | ` +
+      `RSS: ${Math.round(mem.rss / 1024 / 1024)}MB | ` +
+      `External: ${Math.round(mem.external / 1024 / 1024)}MB`
+    );
+  }, MEMORY_LOG_INTERVAL);
+  
+  console.log('[Memory] Periodic memory logging started (every 1 minute)');
+}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -125,6 +143,41 @@ async function startServer() {
     next();
   });
 
+  // ==========================================
+  // HEALTH CHECK ENDPOINT
+  // ==========================================
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Check database connection
+      const { getDb } = await import('../db');
+      const database = await getDb();
+      if (database) {
+        // Simple query to verify DB is responsive
+        await database.execute(sql`SELECT 1`);
+      }
+      
+      // Return health status with memory info
+      const mem = process.memoryUsage();
+      res.status(200).json({ 
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memory: {
+          heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+          heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+          rss: Math.round(mem.rss / 1024 / 1024),
+        }
+      });
+    } catch (error) {
+      console.error('[Health Check] Failed:', error);
+      res.status(503).json({ 
+        status: 'error', 
+        message: 'Database unreachable',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
 
@@ -166,6 +219,53 @@ async function startServer() {
         console.error('[Migration] Failed:', error.message);
       }
     }
+    
+    // Start periodic memory logging
+    startMemoryLogging();
+  });
+  
+  // ==========================================
+  // GRACEFUL SHUTDOWN HANDLERS
+  // ==========================================
+  
+  // Handle SIGTERM (sent by Railway before stopping the service)
+  process.on('SIGTERM', () => {
+    console.log('[Server] SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+      console.log('[Server] HTTP server closed');
+      process.exit(0);
+    });
+    
+    // Force shutdown after 10 seconds if graceful shutdown fails
+    setTimeout(() => {
+      console.error('[Server] Forced shutdown after timeout');
+      process.exit(1);
+    }, 10000);
+  });
+  
+  // Handle SIGINT (Ctrl+C in development)
+  process.on('SIGINT', () => {
+    console.log('[Server] SIGINT received, shutting down gracefully...');
+    server.close(() => {
+      console.log('[Server] HTTP server closed');
+      process.exit(0);
+    });
+  });
+  
+  // Handle uncaught exceptions
+  process.on('uncaughtException', (error) => {
+    console.error('[Server] Uncaught Exception:', error);
+    console.error('[Server] Stack:', error.stack);
+    // Exit with error code to trigger Railway restart policy
+    process.exit(1);
+  });
+  
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('[Server] Unhandled Rejection at:', promise);
+    console.error('[Server] Reason:', reason);
+    // Exit with error code to trigger Railway restart policy
+    process.exit(1);
   });
 }
 

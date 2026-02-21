@@ -266,3 +266,39 @@ export class PerformanceMonitor {
 }
 
 export const monitor = new PerformanceMonitor();
+
+// ============================================
+// Periodic Memory Cleanup
+// ============================================
+
+/**
+ * Clean up caches and performance metrics periodically to prevent memory leaks
+ * Runs every 5 minutes
+ */
+function startPeriodicCleanup() {
+  const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  
+  setInterval(() => {
+    try {
+      // Clear all cache instances
+      userCache.clear();
+      workerCache.clear();
+      groupCache.clear();
+      settingsCache.clear();
+      
+      // Reset performance metrics
+      monitor.reset();
+      
+      // Log memory usage after cleanup
+      const mem = process.memoryUsage();
+      console.log(`[Cleanup] Memory caches cleared. Heap: ${Math.round(mem.heapUsed / 1024 / 1024)}MB / ${Math.round(mem.heapTotal / 1024 / 1024)}MB`);
+    } catch (error) {
+      console.error('[Cleanup] Error during periodic cleanup:', error);
+    }
+  }, CLEANUP_INTERVAL);
+  
+  console.log('[Cleanup] Periodic memory cleanup started (every 5 minutes)');
+}
+
+// Start cleanup when module is loaded
+startPeriodicCleanup();

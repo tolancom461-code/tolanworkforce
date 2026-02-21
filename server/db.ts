@@ -217,7 +217,19 @@ export function getExpandedDateRange(dateStr: string): { startOfDay: Date; endOf
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      // Configure connection pool with limits to prevent resource exhaustion
+      _db = drizzle({
+        connection: {
+          uri: process.env.DATABASE_URL,
+          connectionLimit: 5,        // Max 5 concurrent connections
+          waitForConnections: true,  // Wait if all connections are busy
+          queueLimit: 10,            // Max 10 queued requests
+          idleTimeout: 60000,        // Close idle connections after 60s
+          enableKeepAlive: true,     // Keep connections alive
+          keepAliveInitialDelay: 30000, // First keepalive after 30s
+        }
+      });
+      console.log('[Database] Connection pool initialized (limit: 5, idle timeout: 60s)');
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
