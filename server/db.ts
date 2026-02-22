@@ -4859,9 +4859,9 @@ export async function getAttendanceReportData(
 
   const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
   
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
+  // Use work_date instead of eventTime for proper administrative day handling
+  // This ensures that punches from 00:00-04:59 of the next day are included
+  // in the previous day's report (5 AM boundary)
   
   // Build query
   let query = db
@@ -4875,6 +4875,7 @@ export async function getAttendanceReportData(
       costCenterName: costCenters.name,
       eventType: attendanceEvents.eventType,
       eventTime: attendanceEvents.eventTime,
+      workDate: attendanceEvents.workDate,
       method: attendanceEvents.method,
     })
     .from(attendanceEvents)
@@ -4882,8 +4883,8 @@ export async function getAttendanceReportData(
     .innerJoin(groups, eq(workers.groupId, groups.id))
     .leftJoin(costCenters, eq(groups.costCenterId, costCenters.id))
     .where(and(
-      gte(attendanceEvents.eventTime, start),
-      lte(attendanceEvents.eventTime, end)
+      gte(attendanceEvents.workDate, startDate),
+      lte(attendanceEvents.workDate, endDate)
     ));
   
   // Apply filters
@@ -4913,9 +4914,7 @@ export async function getAttendanceSummaryByWorker(
 
   const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
   
-  const start = new Date(startDate);
-  // Extend end date to capture night shift check_outs
-  const { endOfSearch: end } = getExpandedDateRange(endDate);
+  // Use work_date for proper administrative day handling (5 AM boundary)
   
   // Get all workers
   let workersQuery = db.select().from(workers) as any;
@@ -4924,13 +4923,13 @@ export async function getAttendanceSummaryByWorker(
   }
   const allWorkers = await workersQuery;
   
-  // Get attendance events (expanded range)
+  // Get attendance events using work_date
   const events = await db
     .select()
     .from(attendanceEvents)
     .where(and(
-      gte(attendanceEvents.eventTime, start),
-      lte(attendanceEvents.eventTime, end)
+      gte(attendanceEvents.workDate, startDate),
+      lte(attendanceEvents.workDate, endDate)
     ));
   
   // Get groups and cost centers for joining
@@ -4998,9 +4997,7 @@ export async function getAttendanceSummaryByGroup(
 
   const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
   
-  const start = new Date(startDate);
-  // Extend end date to capture night shift check_outs
-  const { endOfSearch: end } = getExpandedDateRange(endDate);
+  // Use work_date for proper administrative day handling (5 AM boundary)
   
   // Get all groups
   let groupsQuery = db.select().from(groups) as any;
@@ -5012,13 +5009,13 @@ export async function getAttendanceSummaryByGroup(
   // Get all workers
   const allWorkers = await db.select().from(workers);
   
-  // Get attendance events (expanded range)
+  // Get attendance events using work_date
   const events = await db
     .select()
     .from(attendanceEvents)
     .where(and(
-      gte(attendanceEvents.eventTime, start),
-      lte(attendanceEvents.eventTime, end)
+      gte(attendanceEvents.workDate, startDate),
+      lte(attendanceEvents.workDate, endDate)
     ));
   
   // Get cost centers
@@ -5084,9 +5081,7 @@ export async function getAttendanceSummaryByCostCenter(
 
   const { attendanceEvents, workers, groups, costCenters } = await import('../drizzle/schema');
   
-  const start = new Date(startDate);
-  // Extend end date to capture night shift check_outs
-  const { endOfSearch: end } = getExpandedDateRange(endDate);
+  // Use work_date for proper administrative day handling (5 AM boundary)
   
   // Get all cost centers
   const allCostCenters = await db.select().from(costCenters);
@@ -5097,13 +5092,13 @@ export async function getAttendanceSummaryByCostCenter(
   // Get all workers
   const allWorkers = await db.select().from(workers);
   
-  // Get attendance events (expanded range)
+  // Get attendance events using work_date
   const events = await db
     .select()
     .from(attendanceEvents)
     .where(and(
-      gte(attendanceEvents.eventTime, start),
-      lte(attendanceEvents.eventTime, end)
+      gte(attendanceEvents.workDate, startDate),
+      lte(attendanceEvents.workDate, endDate)
     ));
   
   // Use groupEventsByWorkDate for correct night shift handling
