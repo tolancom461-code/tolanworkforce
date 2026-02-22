@@ -133,7 +133,6 @@ export default function AttendanceScanner() {
       
       const result = await confirmAttendanceMutation.mutateAsync({
         workerId: workerData.worker.id,
-        eventType: workerData.nextEventType,
         ipAddress: ipAddress || undefined,
         deviceInfo,
       });
@@ -141,7 +140,7 @@ export default function AttendanceScanner() {
       setLastResult({
         success: true,
         worker: workerData.worker,
-        eventType: workerData.nextEventType,
+        eventType: result.eventType,
         timestamp: new Date(),
       });
       
@@ -149,7 +148,7 @@ export default function AttendanceScanner() {
       setShowSuccessDialog(true);
       refetchStats();
       
-      const eventText = workerData.nextEventType === 'check_in' ? 'تسجيل حضور' : 'تسجيل انصراف';
+      const eventText = result.eventType === 'check_in' ? 'تسجيل حضور' : 'تسجيل انصراف';
       toast.success(`${eventText} - ${workerData.worker.fullName}`);
       
       // Play success beep

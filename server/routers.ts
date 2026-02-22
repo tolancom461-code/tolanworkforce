@@ -926,9 +926,8 @@ export const appRouter = router({
         
         if (!worker) throw new Error("رمز QR غير صالح");
         
-        // Get last event to determine next action
+        // Get last event for display purposes only
         const lastEvent = await db.getWorkerLastEvent(worker.id);
-        const nextEventType = (!lastEvent || lastEvent.eventType === 'check_out') ? 'check_in' : 'check_out';
         
         // Get today's events
         const today = new Date().toLocaleDateString('en-CA');
@@ -944,7 +943,6 @@ export const appRouter = router({
         
         return { 
           worker, 
-          nextEventType,
           lastEvent,
           todayEvents
         };
@@ -1189,15 +1187,18 @@ export const appRouter = router({
     confirmAttendance: protectedProcedure
       .input(z.object({ 
         workerId: z.number(),
-        eventType: z.enum(['check_in', 'check_out']),
+        ipAddress: z.string().optional(),
+        deviceInfo: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        const result = await db.recordAttendance(
+        // ✅ استخدام الدالة الذكية مع المنطق المتقدم
+        const result = await db.recordAttendanceWithAdministrativeDay(
           input.workerId,
-          input.eventType,
           'qr',
           undefined,
-          ctx.user?.id
+          ctx.user?.id,
+          input.ipAddress,
+          input.deviceInfo
         );
         
         return result;
@@ -1210,19 +1211,18 @@ export const appRouter = router({
         const worker = await db.getWorkerByQRToken(input.qrToken);
         if (!worker) throw new Error("رمز QR غير صالح");
         
-        // Get last event to determine next action
+        // Get last event for display purposes only
         const lastEvent = await db.getWorkerLastEvent(worker.id);
-        const nextEventType = (!lastEvent || lastEvent.eventType === 'check_out') ? 'check_in' : 'check_out';
         
-        const result = await db.recordAttendance(
+        // ✅ استخدام الدالة الذكية
+        const result = await db.recordAttendanceWithAdministrativeDay(
           worker.id,
-          nextEventType,
           'qr',
           undefined,
           ctx.user?.id
         );
         
-        return { ...result, worker, eventType: nextEventType };
+        return { ...result, worker };
       }),
     
     // Manual code entry
@@ -1233,17 +1233,16 @@ export const appRouter = router({
         if (!worker) throw new Error("الرمز غير صالح");
         
         const lastEvent = await db.getWorkerLastEvent(worker.id);
-        const nextEventType = (!lastEvent || lastEvent.eventType === 'check_out') ? 'check_in' : 'check_out';
         
-        const result = await db.recordAttendance(
+        // ✅ استخدام الدالة الذكية
+        const result = await db.recordAttendanceWithAdministrativeDay(
           worker.id,
-          nextEventType,
           'manual',
           undefined,
           ctx.user?.id
         );
         
-        return { ...result, worker, eventType: nextEventType };
+        return { ...result, worker };
       }),
     
     // Get today's attendance log (paginated)
