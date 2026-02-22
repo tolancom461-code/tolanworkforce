@@ -50,23 +50,22 @@ async function backfillWorkDates() {
     let processedCount = 0;
     const batchSize = 100;
     
-    // معالجة السجلات في دفعات
+    // معالجة السجلات في دفعات (تسلسلياً)
     for (let i = 0; i < eventsArray.length; i += batchSize) {
       const batch = eventsArray.slice(i, i + batchSize);
       
-      // تحديث كل سجل في الدفعة
-      const updatePromises = batch.map(async (event: any) => {
+      // تحديث كل سجل في الدفعة بشكل تسلسلي
+      for (const event of batch) {
         const eventTime = new Date(event.event_time);
         const workDate = getAdministrativeWorkDate(eventTime);
         
         await db.execute(
           sql`UPDATE attendance_events SET work_date = ${workDate} WHERE id = ${event.id}`
         );
-      });
+        
+        processedCount++;
+      }
       
-      await Promise.all(updatePromises);
-      
-      processedCount += batch.length;
       const progress = ((processedCount / totalRecords) * 100).toFixed(1);
       console.log(`  ✓ تم معالجة ${processedCount} من ${totalRecords} (${progress}%)`);
     }
