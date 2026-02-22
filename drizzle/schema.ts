@@ -127,11 +127,14 @@ export const attendanceEvents = mysqlTable("attendance_events", {
   method: varchar("method", { length: 50 }),
   note: text("note"),
   isAutomatic: boolean("is_automatic").default(false),
+  workDate: date("work_date"), // تاريخ اليوم الإداري (5 AM boundary)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   workerIdIdx: index("idx_attendance_worker_id").on(table.workerId),
   eventTimeIdx: index("idx_attendance_event_time").on(table.eventTime),
   workerEventIdx: index("idx_attendance_worker_event").on(table.workerId, table.eventTime),
+  workDateIdx: index("idx_attendance_work_date").on(table.workDate),
+  workerWorkDateIdx: index("idx_attendance_worker_work_date").on(table.workerId, table.workDate),
 }));
 
 

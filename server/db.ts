@@ -828,17 +828,24 @@ export async function changeUserPassword(userId: number, currentPassword: string
 // Attendance Functions (Phase 4)
 // ============================================
 
+/**
+ * تسجيل حضور/انصراف - النسخة القديمة (مع eventType يدوي)
+ * ❗ هذه الدالة محفوظة للتوافق مع الكود القديم
+ * ✅ يفضل استخدام recordAttendanceWithAdministrativeDay للمنطق الجديد
+ */
 export async function recordAttendance(workerId: number, eventType: 'check_in' | 'check_out', method: string = 'manual', deviceId?: number, verifiedBy?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const { attendanceEvents, workers } = await import('../drizzle/schema');
+  const { getAdministrativeWorkDate } = await import('./attendance-logic');
   
   // Check if worker exists
   const [worker] = await db.select().from(workers).where(eq(workers.id, workerId)).limit(1);
   if (!worker) throw new Error("العامل غير موجود");
   
   const eventTime = new Date();
+  const workDate = getAdministrativeWorkDate(eventTime);
   
   // 🔥 RULE 1: Prevent any punch within 60 seconds of the last punch (regardless of type)
   const sixtySecondsAgo = new Date(eventTime.getTime() - 60 * 1000);
@@ -879,11 +886,12 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
     }
   }
   
-  // Insert attendance event
+  // Insert attendance event with work_date
   const result = await db.insert(attendanceEvents).values({
     workerId,
     eventType,
     eventTime,
+    workDate, // ✅ تسجيل تاريخ اليوم الإداري
     method,
     deviceId: deviceId || null,
     verifiedBy: verifiedBy || null,
@@ -897,8 +905,6 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
   // 🔥 AUTO-CALCULATE FINANCE ON CHECK_OUT
   if (eventType === 'check_out') {
     try {
-      // Use check_in's date as work date (handles night shifts crossing midnight)
-      const workDate = await getWorkDateForCheckOut(workerId, eventTime);
       await processAttendanceToFinance(workerId, workDate);
     } catch (error) {
       console.error('Error calculating daily finance:', error);
@@ -906,8 +912,11 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
     }
   }
   
-  return { success: true, eventType, workerId, eventId, timestamp: eventTime };
+  return { success: true, eventType, workerId, eventId, timestamp: eventTime, workDate };
 }
+
+// ✅ تصدير الدالة الجديدة مع المنطق الهجين المتطور
+export { recordAttendanceWithAdministrativeDay } from './attendance-logic';
 
 export async function getWorkerByQRToken(qrToken: string) {
   const db = await getDb();
@@ -1477,26 +1486,20 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     return { baseAmount: 0, deductions: 0, bonuses: 0, lateMinutes: 0, earlyLeaveMinutes: 0, actualWorkMinutes: 0 };
   }
   
-  // Get attendance events - expanded range to handle night shifts crossing midnight
-  // Search from start of work date to 10 AM next day (covers check_outs up to early morning)
-  const { startOfDay: dateStart, endOfSearch: dateEnd } = getExpandedDateRange(workDate);
-  
+  // ✅ استخدام work_date بدلاً من event_time للتجميع
+  // هذا يحل مشكلة الورديات الليلية بشكل تلقائي
   const allEvents = await db
     .select()
     .from(attendanceEvents)
     .where(and(
       eq(attendanceEvents.workerId, workerId),
-      gte(attendanceEvents.eventTime, dateStart),
-      lte(attendanceEvents.eventTime, dateEnd)
+      eq(attendanceEvents.workDate, sql`${workDate}`)
     ))
     .orderBy(attendanceEvents.eventTime);
   
-  // Use groupEventsByWorkDate to correctly pair check_in/check_out
-  const grouped = groupEventsByWorkDate(allEvents.map(e => ({ ...e, workerId })));
-  const dayData = grouped[workDate]?.[workerId];
-  
-  const checkIn = dayData?.checkIn || null;
-  const checkOut = dayData?.checkOut || null;
+  // البحث عن أول حضور وآخر انصراف في هذا اليوم الإداري
+  const checkIn = allEvents.find(e => e.eventType === 'check_in') || null;
+  const checkOut = allEvents.reverse().find(e => e.eventType === 'check_out') || null;
   
   let lateMinutes = 0;
   let earlyLeaveMinutes = 0;
@@ -1648,25 +1651,27 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
 export async function processAttendanceToFinance(workerId: number, workDate: string) {
   const financeData = await calculateDailyFinanceFromAttendance(workerId, workDate);
   
-  // Get check-in and check-out times for the record (expanded range for night shifts)
+  // Get check-in and check-out times for the record using work_date field
   const db = await getDb();
   let checkInTime: Date | null = null;
   let checkOutTime: Date | null = null;
   if (db) {
     const { attendanceEvents } = await import('../drizzle/schema');
-    const { startOfDay: dateStart, endOfSearch: dateEnd } = getExpandedDateRange(workDate);
+    
+    // ✅ استخدام work_date بدلاً من event_time للتجميع
     const events = await db.select().from(attendanceEvents)
       .where(and(
         eq(attendanceEvents.workerId, workerId),
-        gte(attendanceEvents.eventTime, dateStart),
-        lte(attendanceEvents.eventTime, dateEnd)
+        eq(attendanceEvents.workDate, sql`${workDate}`)
       ))
       .orderBy(attendanceEvents.eventTime);
-    // Use groupEventsByWorkDate to correctly pair check_in/check_out
-    const grouped = groupEventsByWorkDate(events.map(e => ({ ...e, workerId })));
-    const dayData = grouped[workDate]?.[workerId];
-    if (dayData?.checkIn) checkInTime = new Date(dayData.checkIn.eventTime);
-    if (dayData?.checkOut) checkOutTime = new Date(dayData.checkOut.eventTime);
+    
+    // البحث عن أول حضور وآخر انصراف في هذا اليوم الإداري
+    const checkInEvent = events.find(e => e.eventType === 'check_in');
+    const checkOutEvent = events.reverse().find(e => e.eventType === 'check_out');
+    
+    if (checkInEvent) checkInTime = new Date(checkInEvent.eventTime);
+    if (checkOutEvent) checkOutTime = new Date(checkOutEvent.eventTime);
   }
   
   return await createOrUpdateDailyFinance(workerId, workDate, {
