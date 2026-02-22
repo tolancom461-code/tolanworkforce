@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import QRScanner from '@/components/QRScanner';
+import { getDeviceAndNetworkInfo } from '@/lib/deviceInfo';
 
 export default function AttendanceScanner() {
   const { user } = useAuth();
@@ -127,9 +128,14 @@ export default function AttendanceScanner() {
     
     setIsProcessing(true);
     try {
+      // Get IP and Device Info
+      const { ipAddress, deviceInfo } = await getDeviceAndNetworkInfo();
+      
       const result = await confirmAttendanceMutation.mutateAsync({
         workerId: workerData.worker.id,
         eventType: workerData.nextEventType,
+        ipAddress: ipAddress || undefined,
+        deviceInfo,
       });
       
       setLastResult({
