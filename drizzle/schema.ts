@@ -128,6 +128,9 @@ export const attendanceEvents = mysqlTable("attendance_events", {
   note: text("note"),
   isAutomatic: boolean("is_automatic").default(false),
   workDate: date("work_date"), // تاريخ اليوم الإداري (5 AM boundary)
+  // 🔒 حقول أمنية لتتبع مصدر البصمة
+  ipAddress: varchar("ip_address", { length: 45 }), // IPv4 or IPv6
+  deviceInfo: text("device_info"), // User Agent / Device Name
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   workerIdIdx: index("idx_attendance_worker_id").on(table.workerId),
@@ -352,7 +355,36 @@ export const auditLog = mysqlTable("audit_log", {
   ipAddress: varchar("ip_address", { length: 45 }),
   userAgent: text("user_agent"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  userIdIdx: index("idx_audit_user_id").on(table.userId),
+  actionIdx: index("idx_audit_action").on(table.action),
+  createdAtIdx: index("idx_audit_created_at").on(table.createdAt),
+}));
+
+// 🔒 Login Sessions - تسجيل جميع محاولات الدخول
+export const loginSessions = mysqlTable("login_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  username: varchar("username", { length: 100 }).notNull(),
+  loginMethod: varchar("login_method", { length: 50 }).notNull(), // password, oauth, etc.
+  status: mysqlEnum("status", ["success", "failed", "blocked"]).notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }).notNull(), // إلزامي
+  userAgent: text("user_agent").notNull(), // إلزامي
+  deviceInfo: text("device_info"), // معلومات إضافية عن الجهاز
+  failureReason: text("failure_reason"), // سبب فشل الدخول
+  sessionToken: varchar("session_token", { length: 255 }), // JWT token or session ID
+  expiresAt: timestamp("expires_at"),
+  logoutAt: timestamp("logout_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_login_user_id").on(table.userId),
+  statusIdx: index("idx_login_status").on(table.status),
+  ipAddressIdx: index("idx_login_ip_address").on(table.ipAddress),
+  createdAtIdx: index("idx_login_created_at").on(table.createdAt),
+}));
+
+export type LoginSession = typeof loginSessions.$inferSelect;
+export type InsertLoginSession = typeof loginSessions.$inferInsert;
 
 // ============================================
 // Type Exports

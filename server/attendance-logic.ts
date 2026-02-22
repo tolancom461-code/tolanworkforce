@@ -166,7 +166,9 @@ export async function recordAttendanceWithAdministrativeDay(
   workerId: number,
   method: string = 'manual',
   deviceId?: number,
-  verifiedBy?: number
+  verifiedBy?: number,
+  ipAddress?: string,
+  deviceInfo?: string
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -265,6 +267,9 @@ export async function recordAttendanceWithAdministrativeDay(
     deviceId: deviceId || null,
     verifiedBy: verifiedBy || null,
     isAutomatic,
+    // 🔒 حقول أمنية
+    ipAddress: ipAddress || null,
+    deviceInfo: deviceInfo || null,
   });
   
   const eventId = result[0].insertId;

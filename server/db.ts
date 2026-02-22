@@ -833,7 +833,15 @@ export async function changeUserPassword(userId: number, currentPassword: string
  * ❗ هذه الدالة محفوظة للتوافق مع الكود القديم
  * ✅ يفضل استخدام recordAttendanceWithAdministrativeDay للمنطق الجديد
  */
-export async function recordAttendance(workerId: number, eventType: 'check_in' | 'check_out', method: string = 'manual', deviceId?: number, verifiedBy?: number) {
+export async function recordAttendance(
+  workerId: number, 
+  eventType: 'check_in' | 'check_out', 
+  method: string = 'manual', 
+  deviceId?: number, 
+  verifiedBy?: number,
+  ipAddress?: string,
+  deviceInfo?: string
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -886,7 +894,7 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
     }
   }
   
-  // Insert attendance event with work_date
+  // Insert attendance event with work_date and security fields
   const result = await db.insert(attendanceEvents).values({
     workerId,
     eventType,
@@ -895,6 +903,9 @@ export async function recordAttendance(workerId: number, eventType: 'check_in' |
     method,
     deviceId: deviceId || null,
     verifiedBy: verifiedBy || null,
+    // 🔒 حقول أمنية
+    ipAddress: ipAddress || null,
+    deviceInfo: deviceInfo || null,
   });
   
   const eventId = result[0].insertId;
