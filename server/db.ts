@@ -1430,6 +1430,9 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   const [worker] = await db.select().from(workers).where(eq(workers.id, workerId)).limit(1);
   if (!worker) throw new Error("العامل غير موجود");
   
+  // ✅ Get effective group (considers temporary assignments)
+  const effectiveGroupId = await getEffectiveGroupForWorkerOnDate(workerId, workDate);
+  
   // Get group and shift info
   let dailyRate = safeParseDecimal(worker.dailyRate);
   
@@ -1447,8 +1450,8 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   let shiftEndTime: string | null = null;
   let hasShiftDefined = false;
   
-  if (worker.groupId) {
-    const [group] = await db.select().from(groups).where(eq(groups.id, worker.groupId)).limit(1);
+  if (effectiveGroupId) {
+    const [group] = await db.select().from(groups).where(eq(groups.id, effectiveGroupId)).limit(1);
     if (group) {
       if (group.dailyRate) {
         dailyRate = dailyRate || safeParseDecimal(group.dailyRate);
@@ -7313,6 +7316,17 @@ export async function getTemporaryAssignments(filters?: {
 }
 
 /**
+ * Format date to YYYY-MM-DD for database
+ */
+function formatDateForDB(dateInput: string | Date): string {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Create a new temporary assignment
  */
 export async function createTemporaryAssignment(params: {
@@ -7324,6 +7338,9 @@ export async function createTemporaryAssignment(params: {
   notes?: string;
   createdBy: number;
 }) {
+  // Format dates to YYYY-MM-DD
+  const formattedStartDate = formatDateForDB(params.startDate);
+  const formattedEndDate = formatDateForDB(params.endDate);
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -7355,8 +7372,8 @@ export async function createTemporaryAssignment(params: {
         eq(temporaryAssignments.workerId, params.workerId),
         eq(temporaryAssignments.status, 'active'),
         // Overlap check: existing.start <= new.end AND existing.end >= new.start
-        lte(temporaryAssignments.startDate, new Date(params.endDate)),
-        gte(temporaryAssignments.endDate, new Date(params.startDate))
+        lte(temporaryAssignments.startDate, formattedEndDate),
+        gte(temporaryAssignments.endDate, formattedStartDate)
       )
     );
 
@@ -7366,18 +7383,20 @@ export async function createTemporaryAssignment(params: {
 
   const fromGroupId = worker[0].groupId;
 
-  const result = await db.insert(temporaryAssignments).values({
-    workerId: params.workerId,
-    fromCostCenterId: fromCostCenterId,
-    fromGroupId: fromGroupId,
-    toCostCenterId: params.toCostCenterId,
-    toGroupId: params.toGroupId,
-    startDate: params.startDate,
-    endDate: params.endDate,
-    notes: params.notes || null,
-    status: 'active',
-    createdBy: params.createdBy,
-  } as any);
+  const [result] = await db
+    .insert(temporaryAssignments)
+    .values({
+      workerId: params.workerId,
+      fromCostCenterId,
+      fromGroupId,
+      toCostCenterId: params.toCostCenterId,
+      toGroupId: params.toGroupId,
+      startDate: formattedStartDate,
+      endDate: formattedEndDate,
+      notes: params.notes || null,
+      status: 'active',
+      createdBy: params.createdBy,
+    } as any);
 
   const assignmentId = result[0].insertId;
 
@@ -7578,8 +7597,8 @@ export async function updateTemporaryAssignment(id: number, params: {
   const updateData: any = {};
   if (params.toCostCenterId) updateData.toCostCenterId = params.toCostCenterId;
   if (params.toGroupId) updateData.toGroupId = params.toGroupId;
-  if (params.startDate) updateData.startDate = sql`${params.startDate}`;
-  if (params.endDate) updateData.endDate = sql`${params.endDate}`;
+  if (params.startDate) updateData.startDate = formatDateForDB(params.startDate);
+  if (params.endDate) updateData.endDate = formatDateForDB(params.endDate);
   if (params.notes !== undefined) updateData.notes = params.notes;
 
   await db
