@@ -6,7 +6,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router, requireRole, requirePermissionFlag } from "./_core/trpc";
 import * as db from "./db";
-import { sql } from "drizzle-orm";
+import { sql, and, eq, gte, desc } from "drizzle-orm";
 import { attendanceEvents, type UserRole } from "../drizzle/schema";
 import { ROLE_PERMISSIONS, hasPageAccess, canApproveBatchAtStage, cannotSelfReview } from "./permissions";
 import { generateAttendanceExcel, generatePayrollExcel, type AttendanceReportRow, type PayrollReportRow } from "./excelExport";
