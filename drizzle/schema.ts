@@ -273,6 +273,7 @@ export const payrollBatchItems = mysqlTable("payroll_batch_items", {
   id: int("id").autoincrement().primaryKey(),
   batchId: int("batch_id").notNull().references(() => payrollBatches.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
   workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  groupId: int("group_id").references(() => groups.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   daysWorked: int("days_worked").default(0),
   baseAmount: decimal("base_amount", { precision: 10, scale: 2 }).default("0.00"),
   totalDeductions: decimal("total_deductions", { precision: 10, scale: 2 }).default("0.00"),
@@ -284,6 +285,7 @@ export const payrollBatchItems = mysqlTable("payroll_batch_items", {
 }, (table) => ({
   batchIdIdx: index("idx_payroll_items_batch_id").on(table.batchId),
   workerIdIdx: index("idx_payroll_items_worker_id").on(table.workerId),
+  groupIdIdx: index("idx_payroll_items_group_id").on(table.groupId),
   batchWorkerIdx: index("idx_payroll_items_batch_worker").on(table.batchId, table.workerId),
 }));
 

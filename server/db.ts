@@ -2482,6 +2482,7 @@ export async function createPayrollBatch(params: {
   // If items are empty, calculate from workerDailyFinance
   let batchItems: Array<{
     workerId: number;
+    groupId: number | null;
     daysWorked: number;
     baseAmount: string;
     totalDeductions: string;
@@ -2511,8 +2512,16 @@ export async function createPayrollBatch(params: {
       const netAmount = baseAmount - totalDeductions + totalBonuses;
       const daysWorked = finance.length;
       
+      // ✅ Get effective group for the last day of the period (or first day if available)
+      let effectiveGroupId: number | null = null;
+      if (finance.length > 0) {
+        const lastDay = finance[finance.length - 1];
+        effectiveGroupId = await getEffectiveGroupForWorkerOnDate(worker.id, lastDay.workDate);
+      }
+      
       batchItems.push({
         workerId: worker.id,
+        groupId: effectiveGroupId,
         daysWorked,
         baseAmount: baseAmount.toFixed(2),
         totalDeductions: totalDeductions.toFixed(2),
@@ -2523,6 +2532,7 @@ export async function createPayrollBatch(params: {
   } else {
     batchItems = params.items.map(item => ({
       workerId: item.workerId,
+      groupId: null, // Will be populated from worker's current group if needed
       daysWorked: item.daysWorked || 0,
       baseAmount: item.baseAmount,
       totalDeductions: item.deductions,
@@ -2564,6 +2574,7 @@ export async function createPayrollBatch(params: {
     const itemToInsert = {
       batchId,
       workerId: item.workerId,
+      groupId: item.groupId || null,
       daysWorked: item.daysWorked,
       baseAmount: item.baseAmount,
       totalDeductions: item.totalDeductions,
