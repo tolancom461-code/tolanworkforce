@@ -7398,7 +7398,7 @@ export async function createTemporaryAssignment(params: {
       createdBy: params.createdBy,
     } as any);
 
-  const assignmentId = result[0].insertId;
+  const assignmentId = result.insertId;
 
   // ✅ Automatic recalculation for the assignment period
   try {
