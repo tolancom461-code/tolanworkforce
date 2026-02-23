@@ -3623,6 +3623,7 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         toCostCenterId: z.number().optional(),
+        toGroupId: z.number().optional(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
         notes: z.string().optional(),
@@ -3632,6 +3633,7 @@ export const appRouter = router({
         
         const result = await db.updateTemporaryAssignment(input.id, {
           toCostCenterId: input.toCostCenterId,
+          toGroupId: input.toGroupId,
           startDate: input.startDate,
           endDate: input.endDate,
           notes: input.notes,
