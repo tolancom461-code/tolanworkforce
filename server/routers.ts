@@ -941,10 +941,59 @@ export const appRouter = router({
           workerId: event.worker_id || event.workerId,
         }));
         
+        // ✅ Calculate nextEventType using the same logic as recordAttendanceWithAdministrativeDay
+        const eventTime = new Date();
+        const fifteenHoursAgo = new Date(eventTime.getTime() - 15 * 60 * 60 * 1000);
+        
+        const database = await db.getDb();
+        if (!database) throw new Error("Database not available");
+        
+        const lastCheckIn = await database.select()
+          .from(attendanceEvents)
+          .where(
+            and(
+              eq(attendanceEvents.workerId, worker.id),
+              eq(attendanceEvents.eventType, 'check_in'),
+              gte(attendanceEvents.eventTime, fifteenHoursAgo)
+            )
+          )
+          .orderBy(desc(attendanceEvents.eventTime))
+          .limit(1);
+        
+        let nextEventType: 'check_in' | 'check_out';
+        
+        // إذا لم يوجد حضور في آخر 15 ساعة، افتح حضور جديد
+        if (lastCheckIn.length === 0) {
+          nextEventType = 'check_in';
+        } else {
+          // يوجد حضور، تحقق من وجود انصراف له
+          const checkInTime = lastCheckIn[0].eventTime;
+          
+          const matchingCheckOut = await database.select()
+            .from(attendanceEvents)
+            .where(
+              and(
+                eq(attendanceEvents.workerId, worker.id),
+                eq(attendanceEvents.eventType, 'check_out'),
+                gte(attendanceEvents.eventTime, checkInTime)
+              )
+            )
+            .limit(1);
+          
+          // إذا لم يوجد انصراف، سجل انصراف
+          if (matchingCheckOut.length === 0) {
+            nextEventType = 'check_out';
+          } else {
+            // يوجد حضور وانصراف، افتح حضور جديد
+            nextEventType = 'check_in';
+          }
+        }
+        
         return { 
           worker, 
           lastEvent,
-          todayEvents
+          todayEvents,
+          nextEventType
         };
       }),
 
