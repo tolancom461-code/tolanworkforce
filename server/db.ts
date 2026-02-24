@@ -2452,6 +2452,17 @@ export async function createPayrollBatch(params: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // 🧹 تنظيف تلقائي للسجلات اليتيمة قبل إنشاء الدفعة
+  try {
+    const cleanupResult = await cleanupOrphanFinanceRecords();
+    if (cleanupResult.deletedCount > 0) {
+      console.log(`[createPayrollBatch] Auto-cleanup: Removed ${cleanupResult.deletedCount} orphan records (${cleanupResult.totalAmount} SAR)`);
+    }
+  } catch (cleanupError) {
+    console.error('[createPayrollBatch] Cleanup error (non-critical):', cleanupError);
+    // لا نوقف إنشاء الدفعة إذا فشل التنظيف
+  }
+
   // ✅ 1. توحيد التواريخ - تحويل إلى YYYY-MM-DD فقط
   const periodStartDate = params.periodStart.split('T')[0];
   const periodEndDate = params.periodEnd.split('T')[0];
