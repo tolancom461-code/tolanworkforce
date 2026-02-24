@@ -991,8 +991,18 @@ export const appRouter = router({
         
         return { 
           worker, 
-          lastEvent,
-          todayEvents,
+          lastEvent: lastEvent ? {
+            ...lastEvent,
+            eventTime: lastEvent.eventTime instanceof Date 
+              ? lastEvent.eventTime.toISOString() 
+              : new Date(lastEvent.eventTime).toISOString()
+          } : null,
+          todayEvents: todayEvents.map((e: any) => ({
+            ...e,
+            eventTime: e.eventTime instanceof Date 
+              ? e.eventTime.toISOString() 
+              : new Date(e.eventTime).toISOString()
+          })),
           nextEventType
         };
       }),
