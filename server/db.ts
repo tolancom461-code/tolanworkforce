@@ -1113,7 +1113,9 @@ export async function getWorkerLastEvent(workerId: number) {
 
   const { attendanceEvents } = await import('../drizzle/schema');
   
-  const today = new Date(new Date().toLocaleDateString('en-CA') + 'T00:00:00');
+  // ✅ استخدام طريقة آمنة لإنشاء تاريخ اليوم
+  const now = new Date();
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   
   const [lastEvent] = await db
     .select()
