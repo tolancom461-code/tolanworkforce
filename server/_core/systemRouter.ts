@@ -112,4 +112,18 @@ export const systemRouter = router({
         total: checkOutEvents.length
       } as const;
     }),
+
+  cleanupOrphanFinance: adminProcedure
+    .mutation(async () => {
+      const { cleanupOrphanFinanceRecords } = await import('../db.js') as any;
+      
+      const result = await cleanupOrphanFinanceRecords();
+
+      return {
+        success: true,
+        deletedCount: result.deletedCount,
+        totalAmount: result.totalAmount,
+        records: result.records,
+      } as const;
+    }),
 });

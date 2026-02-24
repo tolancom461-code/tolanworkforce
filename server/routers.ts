@@ -1239,6 +1239,27 @@ export const appRouter = router({
           newValues: input.reason ? { reason: input.reason } : null,
         });
         
+        // ✅ إعادة حساب أو حذف السجل المالي
+        if (oldEvent?.workerId && oldEvent?.workDate) {
+          const { and } = await import('drizzle-orm');
+          
+          // التحقق من وجود بصمات أخرى في نفس اليوم الإداري
+          const remainingEvents = await database.select()
+            .from(attendanceEvents)
+            .where(and(
+              eq(attendanceEvents.workerId, oldEvent.workerId),
+              eq(attendanceEvents.workDate, oldEvent.workDate)
+            ));
+          
+          if (remainingEvents.length === 0) {
+            // لا توجد بصمات متبقية - حذف السجل المالي
+            await db.deleteDailyFinanceByWorkerAndDate(oldEvent.workerId, oldEvent.workDate);
+          } else {
+            // توجد بصمات متبقية - إعادة حساب السجل المالي
+            await db.processAttendanceToFinance(oldEvent.workerId, oldEvent.workDate);
+          }
+        }
+        
         return { success: true, message: 'تم حذف البصمة بنجاح' };
       }),
 

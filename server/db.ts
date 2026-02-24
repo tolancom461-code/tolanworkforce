@@ -4634,6 +4634,95 @@ export async function deleteDailyFinanceEntry(id: number): Promise<any> {
   }
 }
 
+/**
+ * حذف سجل مالي يومي حسب workerId و workDate
+ * مفيد للصيانة والتنظيف
+ */
+export async function deleteDailyFinanceByWorkerAndDate(
+  workerId: number,
+  workDate: string
+): Promise<any> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const { workerDailyFinance } = await import('../drizzle/schema');
+
+  try {
+    await db.delete(workerDailyFinance)
+      .where(and(
+        eq(workerDailyFinance.workerId, workerId),
+        eq(workerDailyFinance.workDate, sql`${workDate}`)
+      ));
+
+    return { success: true };
+  } catch (error) {
+    console.error('[Database] Error deleting daily finance by worker and date:', error);
+    throw error;
+  }
+}
+
+/**
+ * تنظيف السجلات المالية اليتيمة (بدون بصمات مقابلة)
+ * يحذف جميع السجلات في worker_daily_finance التي لا يوجد لها بصمات في attendance_events
+ */
+export async function cleanupOrphanFinanceRecords(): Promise<{
+  deletedCount: number;
+  totalAmount: number;
+  records: any[];
+}> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const { workerDailyFinance, attendanceEvents, workers } = await import('../drizzle/schema');
+
+  try {
+    // الحصول على قائمة السجلات اليتيمة
+    const orphanRecords = await db
+      .select({
+        id: workerDailyFinance.id,
+        workerId: workerDailyFinance.workerId,
+        workerCode: workers.code,
+        workerName: workers.fullName,
+        workDate: workerDailyFinance.workDate,
+        baseAmount: workerDailyFinance.baseAmount,
+        deductions: workerDailyFinance.deductions,
+        netAmount: workerDailyFinance.netAmount,
+      })
+      .from(workerDailyFinance)
+      .leftJoin(workers, eq(workerDailyFinance.workerId, workers.id))
+      .where(
+        sql`NOT EXISTS (
+          SELECT 1 FROM ${attendanceEvents}
+          WHERE ${attendanceEvents.workerId} = ${workerDailyFinance.workerId}
+          AND ${attendanceEvents.workDate} = ${workerDailyFinance.workDate}
+        )`
+      );
+
+    if (orphanRecords.length === 0) {
+      return { deletedCount: 0, totalAmount: 0, records: [] };
+    }
+
+    // حساب الإجمالي
+    const totalAmount = orphanRecords.reduce((sum, record) => {
+      return sum + parseFloat(record.netAmount?.toString() || '0');
+    }, 0);
+
+    // حذف السجلات اليتيمة
+    const recordIds = orphanRecords.map(r => r.id);
+    await db.delete(workerDailyFinance)
+      .where(sql`${workerDailyFinance.id} IN (${sql.join(recordIds.map(id => sql`${id}`), sql`, `)})`)
+
+    return {
+      deletedCount: orphanRecords.length,
+      totalAmount: Math.round(totalAmount * 100) / 100,
+      records: orphanRecords,
+    };
+  } catch (error) {
+    console.error('[Database] Error cleaning up orphan finance records:', error);
+    throw error;
+  }
+}
+
 
 // ============================================
 // Simplified Operational Flags (البلاغات التشغيلية المبسطة)
