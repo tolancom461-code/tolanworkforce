@@ -12,6 +12,7 @@ export default function PayrollBatchCreateSimple() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [refreshFinanceRecords, setRefreshFinanceRecords] = useState(false);
 
   const { data: costCenters } = trpc.costCenters.list.useQuery();
   const { data: recentChanges } = trpc.groupSchedules.getRecentChanges.useQuery({ hoursThreshold: 24 });
@@ -93,6 +94,7 @@ export default function PayrollBatchCreateSimple() {
         periodStart,
         periodEnd,
         costCenterId: parseInt(costCenterId),
+        refreshFinanceRecords,
         items: aggregateResult.map((item: any) => ({
           workerId: item.workerId,
           baseAmount: item.baseAmount,
@@ -164,6 +166,47 @@ export default function PayrollBatchCreateSimple() {
       )}
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div
+          style={{
+            padding: "16px",
+            backgroundColor: "#e3f2fd",
+            border: "1px solid #2196f3",
+            borderRadius: "8px",
+            display: "flex",
+            alignItems: "start",
+            gap: "12px",
+          }}
+        >
+          <input
+            type="checkbox"
+            id="refresh-finance"
+            checked={refreshFinanceRecords}
+            onChange={(e) => setRefreshFinanceRecords(e.target.checked)}
+            style={{
+              width: "20px",
+              height: "20px",
+              marginTop: "2px",
+              cursor: "pointer",
+            }}
+          />
+          <div style={{ flex: 1 }}>
+            <label
+              htmlFor="refresh-finance"
+              style={{
+                display: "block",
+                fontWeight: "500",
+                color: "#1976d2",
+                cursor: "pointer",
+                marginBottom: "4px",
+              }}
+            >
+              تحديث السجلات المالية (الرواتب والورديات) بناءً على الإعدادات الحالية
+            </label>
+            <p style={{ margin: 0, fontSize: "14px", color: "#555" }}>
+              سيتم إعادة حساب السجلات المالية غير المعتمدة فقط بناءً على أحدث رواتب وورديات في المجموعات
+            </p>
+          </div>
+        </div>
         <div>
           <label htmlFor="period-start" style={{ display: "block", marginBottom: "5px", fontWeight: "500" }}>
             من تاريخ
