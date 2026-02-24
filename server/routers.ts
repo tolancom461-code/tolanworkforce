@@ -2266,6 +2266,7 @@ export const appRouter = router({
         periodEnd: z.string(),
         groupId: z.number().optional(),
         costCenterId: z.number().optional(),
+        refreshFinanceRecords: z.boolean().optional(), // ✅ NEW: إعادة حساب السجلات المالية
         items: z.array(z.object({
           workerId: z.number(),
           baseAmount: z.string(),

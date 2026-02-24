@@ -2439,6 +2439,7 @@ export async function createPayrollBatch(params: {
   groupId?: number | null;
   costCenterId?: number | null;
   createdBy: number;
+  refreshFinanceRecords?: boolean; // ✅ NEW: إعادة حساب السجلات المالية قبل إنشاء الدفعة
   items: Array<{
     workerId: number;
     baseAmount: string;
@@ -2461,6 +2462,118 @@ export async function createPayrollBatch(params: {
   } catch (cleanupError) {
     console.error('[createPayrollBatch] Cleanup error (non-critical):', cleanupError);
     // لا نوقف إنشاء الدفعة إذا فشل التنظيف
+  }
+
+  // 🔄 إعادة المزامنة المالية (Financial Sync) - إذا طُلب
+  if (params.refreshFinanceRecords === true) {
+    try {
+      console.log('[createPayrollBatch] Financial Sync: Starting refresh for period', params.periodStart, '-', params.periodEnd);
+      
+      // 1. تحديد النطاق: استخراج جميع السجلات المالية في الفترة
+      const periodStartDate = params.periodStart.split('T')[0];
+      const periodEndDate = params.periodEnd.split('T')[0];
+      
+      let financeRecordsQuery = db
+        .select({
+          id: workerDailyFinance.id,
+          workerId: workerDailyFinance.workerId,
+          workDate: workerDailyFinance.workDate,
+        })
+        .from(workerDailyFinance)
+        .where(
+          and(
+            sql`${workerDailyFinance.workDate} >= ${periodStartDate}`,
+            sql`${workerDailyFinance.workDate} <= ${periodEndDate}`
+          )
+        );
+      
+      // إذا كانت الدفعة لمجموعة محددة
+      if (params.groupId) {
+        financeRecordsQuery = db
+          .select({
+            id: workerDailyFinance.id,
+            workerId: workerDailyFinance.workerId,
+            workDate: workerDailyFinance.workDate,
+          })
+          .from(workerDailyFinance)
+          .innerJoin(workers, eq(workerDailyFinance.workerId, workers.id))
+          .where(
+            and(
+              sql`${workerDailyFinance.workDate} >= ${periodStartDate}`,
+              sql`${workerDailyFinance.workDate} <= ${periodEndDate}`,
+              eq(workers.groupId, params.groupId)
+            )
+          );
+      }
+      
+      const financeRecords = await financeRecordsQuery;
+      console.log(`[createPayrollBatch] Financial Sync: Found ${financeRecords.length} finance records in period`);
+      
+      // 2. فلتر الأمان: استبعاد السجلات المعتمدة
+      const lockedRecords = new Set<string>();
+      
+      // فحص جميع الدفعات المغلقة/المعتمدة
+      const lockedBatchItems = await db
+        .select({
+          workerId: payrollBatchItems.workerId,
+          workDate: payrollBatchItems.workDate,
+          batchId: payrollBatchItems.batchId,
+        })
+        .from(payrollBatchItems)
+        .innerJoin(payrollBatches, eq(payrollBatchItems.batchId, payrollBatches.id))
+        .where(
+          and(
+            sql`${payrollBatchItems.workDate} >= ${periodStartDate}`,
+            sql`${payrollBatchItems.workDate} <= ${periodEndDate}`,
+            or(
+              eq(payrollBatches.status, 'finalized'),
+              eq(payrollBatches.status, 'approved')
+            )
+          )
+        );
+      
+      lockedBatchItems.forEach(item => {
+        const key = `${item.workerId}-${item.workDate}`;
+        lockedRecords.add(key);
+      });
+      
+      console.log(`[createPayrollBatch] Financial Sync: ${lockedRecords.size} records are locked (in finalized/approved batches)`);
+      
+      // 3. إعادة حساب السجلات "الحرة" فقط
+      let refreshedCount = 0;
+      let skippedCount = 0;
+      let errorCount = 0;
+      
+      for (const record of financeRecords) {
+        const key = `${record.workerId}-${record.workDate}`;
+        
+        // تخطي السجلات المعتمدة
+        if (lockedRecords.has(key)) {
+          skippedCount++;
+          continue;
+        }
+        
+        // إعادة حساب السجل مع معالجة الأخطاء
+        try {
+          // حذف السجل القديم
+          await db.delete(workerDailyFinance).where(eq(workerDailyFinance.id, record.id));
+          
+          // إعادة معالجة البصمات لإنشاء سجل جديد
+          await processAttendanceToFinance(record.workerId, record.workDate);
+          
+          refreshedCount++;
+        } catch (error) {
+          errorCount++;
+          console.error(`[createPayrollBatch] Financial Sync Error for worker ${record.workerId} on ${record.workDate}:`, error);
+          // الاستمرار للسجل التالي (لا نوقف العملية)
+        }
+      }
+      
+      console.log(`[createPayrollBatch] Financial Sync Complete: Refreshed ${refreshedCount}, Skipped ${skippedCount} (locked), Errors ${errorCount}`);
+    } catch (syncError) {
+      console.error('[createPayrollBatch] Financial Sync error (non-critical):', syncError);
+      // لا نوقف إنشاء الدفعة إذا فشلت المزامنة
+    }
   }
 
   // ✅ 1. توحيد التواريخ - تحويل إلى YYYY-MM-DD فقط

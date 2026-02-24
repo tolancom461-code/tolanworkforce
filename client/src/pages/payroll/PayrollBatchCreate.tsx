@@ -76,6 +76,7 @@ export default function PayrollBatchCreate() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [payrollSummary, setPayrollSummary] = useState<PayrollSummary | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [refreshFinanceRecords, setRefreshFinanceRecords] = useState(false); // ✅ NEW
 
   // Get groups filtered by cost center
   const { data: allGroups } = trpc.groups.listByCostCenter.useQuery(
@@ -299,6 +300,7 @@ export default function PayrollBatchCreate() {
       periodEnd,
       groupId: selectedGroupIds.size > 0 ? Array.from(selectedGroupIds)[0] : undefined,
       costCenterId,
+      refreshFinanceRecords, // ✅ NEW: إعادة حساب السجلات المالية
       items: [], // Empty items - will be populated later
     });
   };
@@ -547,6 +549,27 @@ export default function PayrollBatchCreate() {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+
+                {/* Financial Sync Checkbox */}
+                <div className="flex items-start space-x-2 space-x-reverse p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <Checkbox
+                    id="refreshFinanceRecords"
+                    checked={refreshFinanceRecords}
+                    onCheckedChange={(checked) => setRefreshFinanceRecords(checked === true)}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <label
+                      htmlFor="refreshFinanceRecords"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      تحديث السجلات المالية (الرواتب والورديات) بناءً على الإعدادات الحالية
+                    </label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      سيتم إعادة حساب السجلات المالية غير المعتمدة فقط بناءً على أحدث رواتب وورديات في المجموعات
+                    </p>
+                  </div>
                 </div>
 
                 {/* Submit Button */}
