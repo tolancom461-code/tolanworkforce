@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { trpc } from "../lib/trpc";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { AlertCircle, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
 
 export default function FinancialRecalculation() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [groupId, setGroupId] = useState<number | undefined>(undefined);
@@ -67,7 +67,7 @@ export default function FinancialRecalculation() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => navigate("/dashboard")}
+          onClick={() => setLocation("/dashboard")}
           className="mb-4"
         >
           ← العودة إلى لوحة التحكم
