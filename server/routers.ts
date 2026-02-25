@@ -4290,12 +4290,20 @@ export const appRouter = router({
             message: 'Database connection not available',
           });
         }
+        
+        // Execute raw SQL query
         const result = await database.execute(sql.raw(input.query));
-        return { rows: result.rows, affectedRows: result.rowCount };
+        
+        // Return results with proper structure
+        return { 
+          rows: result.rows || [], 
+          affectedRows: result.rowCount || 0 
+        };
       } catch (error: any) {
+        console.error('Database query error:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error.message,
+          message: `Failed query: ${input.query}; error: ${error.message}`,
         });
       }
     }),
