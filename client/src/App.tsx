@@ -54,6 +54,7 @@ import Backfill from "./pages/Backfill";
 import TemporaryAssignments from "./pages/TemporaryAssignments";
 import Backup from "./pages/Backup";
 import Migration from "./pages/Migration";
+import DatabaseConsole from "./pages/DatabaseConsole";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { lazy } from "react";
@@ -144,6 +145,11 @@ function Router() {
       <Route path="/migration">
         <ProtectedRoute>
           <Migration />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/db-console">
+        <ProtectedRoute>
+          <DatabaseConsole />
         </ProtectedRoute>
       </Route>
       <Route path="/attendance/reports" component={AttendanceReports} />
