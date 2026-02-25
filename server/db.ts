@@ -1470,12 +1470,16 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   
   if (effectiveGroupId) {
     const [group] = await db.select().from(groups).where(eq(groups.id, effectiveGroupId)).limit(1);
+    console.log('🔍 DEBUG: effectiveGroupId =', effectiveGroupId);
+    console.log('🔍 DEBUG: group =', group);
     if (group) {
       if (group.dailyRate) {
         dailyRate = dailyRate || safeParseDecimal(group.dailyRate);
       }
       // Load group settings
+      console.log('🔍 DEBUG: group.dailyWage RAW =', group.dailyWage, 'TYPE =', typeof group.dailyWage);
       groupDailyWage = group.dailyWage ? safeParseDecimal(group.dailyWage) : null;
+      console.log('🔍 DEBUG: groupDailyWage PARSED =', groupDailyWage);
       groupWorkMinutes = safeParseInt(group.workMinutes);
       groupLatePenaltyRate = group.latePenaltyRate ? safeParseDecimal(group.latePenaltyRate) : null;
       groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? safeParseDecimal(group.earlyLeavePenaltyRate) : null;
@@ -1547,9 +1551,12 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     // Raw work minutes (for attendance log display)
     const rawWorkMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
     
-    // Base amount = fixed daily wage
-    if (groupDailyWage && groupDailyWage > 0) {
-      baseAmount = groupDailyWage;
+  // Base amount = fixed daily wage
+  console.log('🔍 DEBUG: Calculating baseAmount...');
+  console.log('🔍 DEBUG: groupDailyWage =', groupDailyWage, 'dailyRate =', dailyRate);
+  if (groupDailyWage && groupDailyWage > 0) {
+    baseAmount = groupDailyWage;
+    console.log('🔍 DEBUG: baseAmount = groupDailyWage =', baseAmount);
     } else if (dailyRate > 0) {
       baseAmount = dailyRate;
     }
