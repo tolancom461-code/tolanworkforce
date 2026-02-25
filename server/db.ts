@@ -2606,8 +2606,13 @@ export async function createPayrollBatch(params: {
           // حذف السجل القديم
           await db.delete(workerDailyFinance).where(eq(workerDailyFinance.id, record.id));
           
+          // ✅ تحويل workDate من Date object إلى string (YYYY-MM-DD)
+          const workDateStr = typeof record.workDate === 'string' 
+            ? record.workDate 
+            : new Date(record.workDate).toLocaleDateString('en-CA');
+          
           // إعادة معالجة البصمات لإنشاء سجل جديد
-          await processAttendanceToFinance(record.workerId, record.workDate);
+          await processAttendanceToFinance(record.workerId, workDateStr);
           
           refreshedCount++;
         } catch (error) {
