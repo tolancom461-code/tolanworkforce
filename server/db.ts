@@ -27,6 +27,7 @@ import type { Worker as DbWorker } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _rawConnection: any = null;
 
 // ============================================
 // Audit Log Helper
@@ -236,6 +237,21 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+// Get raw MySQL connection for direct queries
+export async function getRawConnection() {
+  if (!_rawConnection && process.env.DATABASE_URL) {
+    try {
+      const mysql = await import('mysql2/promise');
+      _rawConnection = await mysql.createConnection(process.env.DATABASE_URL);
+      console.log('[Database] Raw connection established');
+    } catch (error) {
+      console.warn("[Database] Failed to create raw connection:", error);
+      _rawConnection = null;
+    }
+  }
+  return _rawConnection;
 }
 
 // ============================================
