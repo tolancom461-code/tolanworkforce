@@ -2655,18 +2655,31 @@ export async function createPayrollBatch(params: {
     netAmount: string;
   }> = [];
   
-  if (!params.items || params.items.length === 0) {
-    // Get all workers in the group (or all workers if no group specified)
-    let workersToInclude: any[] = [];
-    if (params.groupId) {
-      workersToInclude = await db.select().from(workers).where(eq(workers.groupId, params.groupId));
+  // ✅ FIX: عندما يكون refreshFinanceRecords=true، نعيد قراءة البيانات من قاعدة البيانات
+  // بعد إعادة الحساب بدلاً من استخدام القيم القديمة المرسلة من الواجهة
+  const shouldReadFromDB = !params.items || params.items.length === 0 || params.refreshFinanceRecords === true;
+  
+  if (shouldReadFromDB) {
+    console.log('[createPayrollBatch] Reading fresh finance data from DB (refreshFinanceRecords=' + params.refreshFinanceRecords + ', items.length=' + (params.items?.length || 0) + ')');
+    
+    // تحديد العمال المطلوبين
+    let workerIds: number[] = [];
+    
+    if (params.items && params.items.length > 0) {
+      // إذا كانت items موجودة، نستخدم نفس العمال لكن نقرأ قيمهم المحدثة
+      workerIds = params.items.map(item => item.workerId);
+    } else if (params.groupId) {
+      const groupWorkers = await db.select().from(workers).where(eq(workers.groupId, params.groupId));
+      workerIds = groupWorkers.map(w => w.id);
     } else {
-      workersToInclude = await db.select().from(workers);
+      const allWorkers = await db.select().from(workers);
+      workerIds = allWorkers.map(w => w.id);
     }
-    // Calculate finance for each worker
-    for (const worker of workersToInclude) {
+    
+    // قراءة البيانات المالية المحدثة لكل عامل
+    for (const wId of workerIds) {
       const finance = await getDailyFinanceRecords(
-        worker.id,
+        wId,
         periodStartDate,
         periodEndDate
       );
@@ -2681,11 +2694,13 @@ export async function createPayrollBatch(params: {
       let effectiveGroupId: number | null = null;
       if (finance.length > 0) {
         const lastDay = finance[finance.length - 1];
-        effectiveGroupId = await getEffectiveGroupForWorkerOnDate(worker.id, lastDay.workDate);
+        effectiveGroupId = await getEffectiveGroupForWorkerOnDate(wId, lastDay.workDate);
       }
       
+      console.log(`[createPayrollBatch] Worker ${wId}: baseAmount=${baseAmount}, deductions=${totalDeductions}, bonuses=${totalBonuses}, net=${netAmount}, days=${daysWorked}`);
+      
       batchItems.push({
-        workerId: worker.id,
+        workerId: wId,
         groupId: effectiveGroupId,
         daysWorked,
         baseAmount: baseAmount.toFixed(2),
