@@ -1517,10 +1517,13 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   }
   
   // Check if it's a work day
+  console.log(`[calcFinance] Worker ${workerId}, workDate=${workDate}, type=${typeof workDate}`);
   const [workDay] = await db.select().from(workDays).where(eq(workDays.workDate, sql`${workDate}`)).limit(1);
   if (workDay && (workDay.dayType === 'holiday' || workDay.dayType === 'weekend')) {
+    console.log(`[calcFinance] Worker ${workerId}: Holiday/Weekend → baseAmount=0`);
     return { baseAmount: 0, deductions: 0, bonuses: 0, lateMinutes: 0, earlyLeaveMinutes: 0, actualWorkMinutes: 0 };
   }
+  console.log(`[calcFinance] Worker ${workerId}: workDay =`, workDay ? workDay.dayType : 'NOT FOUND');
   
   // ✅ استخدام work_date بدلاً من event_time للتجميع
   // هذا يحل مشكلة الورديات الليلية بشكل تلقائي
@@ -1532,6 +1535,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       eq(attendanceEvents.workDate, sql`${workDate}`)
     ))
     .orderBy(attendanceEvents.eventTime);
+  console.log(`[calcFinance] Worker ${workerId}: Found ${allEvents.length} attendance events`);
   
   // البحث عن أول حضور وآخر انصراف في هذا اليوم الإداري
   const checkIn = allEvents.find(e => e.eventType === 'check_in') || null;
