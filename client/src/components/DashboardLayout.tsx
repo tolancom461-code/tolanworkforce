@@ -209,6 +209,7 @@ const menuSections = [
     items: [
       { icon: Shield, label: "سجل التدقيق", path: "/audit-log", color: "text-red-600" },
       { icon: HardDrive, label: "\u0627\u0644\u0646\u0633\u062e \u0627\u0644\u0627\u062d\u062a\u064a\u0627\u0637\u064a", path: "/backup", color: "text-blue-600" },
+      { icon: ShieldCheck, label: "\u0625\u0639\u0627\u062f\u0629 \u0645\u0632\u0627\u0645\u0646\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629", path: "/financial-recalculation", color: "text-green-600" },
       { icon: Settings, label: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a", path: "/profile" },
     ]
   },
