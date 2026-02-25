@@ -1671,8 +1671,24 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     // Absent: no base amount
     baseAmount = 0;
     actualWorkMinutes = 0;
+  } else if (checkIn && !checkOut) {
+    // ✅ Has check-in but no check-out yet → Worker is present, give full daily wage
+    console.log('🔍 DEBUG: Worker has check-in but no check-out → giving full baseAmount');
+    console.log('🔍 DEBUG: groupDailyWage =', groupDailyWage, 'dailyRate =', dailyRate);
+    if (groupDailyWage && groupDailyWage > 0) {
+      baseAmount = groupDailyWage;
+      console.log('🔍 DEBUG: baseAmount = groupDailyWage =', baseAmount);
+    } else if (dailyRate > 0) {
+      baseAmount = dailyRate;
+      console.log('🔍 DEBUG: baseAmount = dailyRate =', baseAmount);
+    }
+    // No penalties can be calculated without check-out time
+    actualWorkMinutes = 0;
+    lateMinutes = 0;
+    earlyLeaveMinutes = 0;
+    deductions = 0;
   } else {
-    // Incomplete attendance (only check-in or only check-out)
+    // Only check-out without check-in (unusual case)
     baseAmount = 0;
     actualWorkMinutes = 0;
   }
