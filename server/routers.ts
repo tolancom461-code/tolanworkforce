@@ -4277,6 +4277,28 @@ export const appRouter = router({
         }
       }),
   }),
+
+  // Database console for debugging
+  dbQuery: adminProcedure
+    .input(z.object({ query: z.string() }))
+    .mutation(async ({ input }) => {
+      try {
+        const database = await db.getDb();
+        if (!database) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Database connection not available',
+          });
+        }
+        const result = await database.execute(sql.raw(input.query));
+        return { rows: result.rows, affectedRows: result.rowCount };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error.message,
+        });
+      }
+    }),
 });
 
 export type AppRouter = typeof appRouter;
