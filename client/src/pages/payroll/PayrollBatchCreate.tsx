@@ -76,7 +76,7 @@ export default function PayrollBatchCreate() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [payrollSummary, setPayrollSummary] = useState<PayrollSummary | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [refreshFinanceRecords, setRefreshFinanceRecords] = useState(false); // ✅ NEW
+  const [refreshFinanceRecords, setRefreshFinanceRecords] = useState(true); // ✅ تفعيل إعادة الحساب تلقائياً
 
   // Get groups filtered by cost center
   const { data: allGroups } = trpc.groups.listByCostCenter.useQuery(

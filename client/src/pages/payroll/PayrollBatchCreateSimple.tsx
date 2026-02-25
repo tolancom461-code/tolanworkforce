@@ -12,7 +12,7 @@ export default function PayrollBatchCreateSimple() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [refreshFinanceRecords, setRefreshFinanceRecords] = useState(false);
+  const [refreshFinanceRecords, setRefreshFinanceRecords] = useState(true); // ✅ تفعيل إعادة الحساب تلقائياً
 
   const { data: costCenters } = trpc.costCenters.list.useQuery();
   const { data: recentChanges } = trpc.groupSchedules.getRecentChanges.useQuery({ hoursThreshold: 24 });
