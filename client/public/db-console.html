@@ -315,9 +315,17 @@ ORDER BY name;`
             try {
                 const response = await fetch('/api/trpc/dbQuery', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
                     body: JSON.stringify({ query })
                 });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
 
                 const result = await response.json();
                 const data = result.result?.data || result;
