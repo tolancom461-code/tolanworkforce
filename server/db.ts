@@ -2552,28 +2552,33 @@ export async function createPayrollBatch(params: {
       const lockedRecords = new Set<string>();
       
       // فحص جميع الدفعات المغلقة/المعتمدة
+      // ملاحظة: payroll_batch_items لا يحتوي على workDate، لذلك نستخدم periodStart/periodEnd من payroll_batches
+      // نعتبر أن أي عامل في دفعة معتمدة تتقاطع فترتها مع الفترة المطلوبة هو "مقفل"
       const lockedBatchItems = await db
         .select({
           workerId: payrollBatchItems.workerId,
-          workDate: payrollBatchItems.workDate,
           batchId: payrollBatchItems.batchId,
+          periodStart: payrollBatches.periodStart,
+          periodEnd: payrollBatches.periodEnd,
         })
         .from(payrollBatchItems)
         .innerJoin(payrollBatches, eq(payrollBatchItems.batchId, payrollBatches.id))
         .where(
           and(
-            sql`${payrollBatchItems.workDate} >= ${periodStartDate}`,
-            sql`${payrollBatchItems.workDate} <= ${periodEndDate}`,
+            // فترة الدفعة المعتمدة تتقاطع مع الفترة المطلوبة
+            sql`${payrollBatches.periodStart} <= ${periodEndDate}`,
+            sql`${payrollBatches.periodEnd} >= ${periodStartDate}`,
             or(
-              eq(payrollBatches.status, 'finalized'),
-              eq(payrollBatches.status, 'approved')
+              eq(payrollBatches.status, 'approved'),
+              eq(payrollBatches.status, 'paid')
             )
           )
         );
       
+      // بما أنه لا يوجد workDate في batch items، نقفل العامل لجميع أيام الفترة
       lockedBatchItems.forEach(item => {
-        const key = `${item.workerId}-${item.workDate}`;
-        lockedRecords.add(key);
+        // نضيف العامل كمقفل - سنتحقق لاحقاً بناءً على workerId فقط
+        lockedRecords.add(`worker-${item.workerId}`);
       });
       
       console.log(`[createPayrollBatch] Financial Sync: ${lockedRecords.size} records are locked (in finalized/approved batches)`);
@@ -2584,10 +2589,10 @@ export async function createPayrollBatch(params: {
       let errorCount = 0;
       
       for (const record of financeRecords) {
-        const key = `${record.workerId}-${record.workDate}`;
+        const workerLockKey = `worker-${record.workerId}`;
         
-        // تخطي السجلات المعتمدة
-        if (lockedRecords.has(key)) {
+        // تخطي السجلات المعتمدة (العامل موجود في دفعة معتمدة لنفس الفترة)
+        if (lockedRecords.has(workerLockKey)) {
           skippedCount++;
           continue;
         }
