@@ -2672,52 +2672,84 @@ export async function createPayrollBatch(params: {
   if (shouldReadFromDB) {
     console.log('[createPayrollBatch] Reading fresh finance data from DB (refreshFinanceRecords=' + params.refreshFinanceRecords + ', items.length=' + (params.items?.length || 0) + ')');
     
-    // تحديد العمال المطلوبين
-    let workerIds: number[] = [];
-    
-    if (params.items && params.items.length > 0) {
-      // إذا كانت items موجودة، نستخدم نفس العمال لكن نقرأ قيمهم المحدثة
-      workerIds = params.items.map(item => item.workerId);
-    } else if (params.groupId) {
-      const groupWorkers = await db.select().from(workers).where(eq(workers.groupId, params.groupId));
-      workerIds = groupWorkers.map(w => w.id);
-    } else {
-      const allWorkers = await db.select().from(workers);
-      workerIds = allWorkers.map(w => w.id);
-    }
-    
-    // قراءة البيانات المالية المحدثة لكل عامل
-    for (const wId of workerIds) {
-      const finance = await getDailyFinanceRecords(
-        wId,
+    // ✅ FIX: مراعاة الانتدابات عند تحديد العمال حسب مركز التكلفة
+    if (params.costCenterId) {
+      // استخدام نفس منطق aggregatePayrollDataByCostCenter لمراعاة الانتدابات
+      console.log(`[createPayrollBatch] Using cost center assignment-aware logic for CC ${params.costCenterId}`);
+      
+      const costCenterResults = await aggregatePayrollDataByCostCenter(
+        params.costCenterId,
         periodStartDate,
         periodEndDate
       );
       
-      const baseAmount = finance.reduce((sum, day) => sum + parseFloat(day.baseAmount || '0'), 0);
-      const totalDeductions = finance.reduce((sum, day) => sum + parseFloat(day.deductions || '0'), 0);
-      const totalBonuses = finance.reduce((sum, day) => sum + parseFloat(day.bonuses || '0'), 0);
-      const netAmount = baseAmount - totalDeductions + totalBonuses;
-      const daysWorked = finance.length;
+      for (const item of costCenterResults) {
+        // تحديد المجموعة الفعلية
+        let effectiveGroupId: number | null = null;
+        try {
+          effectiveGroupId = await getEffectiveGroupForWorkerOnDate(item.workerId, periodEndDate);
+        } catch (e) {
+          // fallback: use worker's original group
+        }
+        
+        batchItems.push({
+          workerId: item.workerId,
+          groupId: effectiveGroupId,
+          daysWorked: item.daysWorked,
+          baseAmount: item.baseAmount,
+          totalDeductions: item.deductions,
+          totalBonuses: item.bonuses,
+          netAmount: item.netAmount,
+        });
+        
+        console.log(`[createPayrollBatch] Worker ${item.workerId} (${item.workerName}): base=${item.baseAmount}, net=${item.netAmount}, days=${item.daysWorked}${(item as any).isAssigned ? ' [ASSIGNED IN]' : ''}${(item as any).isPartial ? ' [PARTIAL]' : ''}`);
+      }
+    } else {
+      // المسار الأصلي: بدون مركز تكلفة محدد
+      let workerIds: number[] = [];
       
-      // ✅ Get effective group for the last day of the period (or first day if available)
-      let effectiveGroupId: number | null = null;
-      if (finance.length > 0) {
-        const lastDay = finance[finance.length - 1];
-        effectiveGroupId = await getEffectiveGroupForWorkerOnDate(wId, lastDay.workDate);
+      if (params.items && params.items.length > 0) {
+        workerIds = params.items.map(item => item.workerId);
+      } else if (params.groupId) {
+        const groupWorkers = await db.select().from(workers).where(eq(workers.groupId, params.groupId));
+        workerIds = groupWorkers.map(w => w.id);
+      } else {
+        const allWorkers = await db.select().from(workers);
+        workerIds = allWorkers.map(w => w.id);
       }
       
-      console.log(`[createPayrollBatch] Worker ${wId}: baseAmount=${baseAmount}, deductions=${totalDeductions}, bonuses=${totalBonuses}, net=${netAmount}, days=${daysWorked}`);
-      
-      batchItems.push({
-        workerId: wId,
-        groupId: effectiveGroupId,
-        daysWorked,
-        baseAmount: baseAmount.toFixed(2),
-        totalDeductions: totalDeductions.toFixed(2),
-        totalBonuses: totalBonuses.toFixed(2),
-        netAmount: netAmount.toFixed(2),
-      });
+      // قراءة البيانات المالية المحدثة لكل عامل
+      for (const wId of workerIds) {
+        const finance = await getDailyFinanceRecords(
+          wId,
+          periodStartDate,
+          periodEndDate
+        );
+        
+        const baseAmount = finance.reduce((sum, day) => sum + parseFloat(day.baseAmount || '0'), 0);
+        const totalDeductions = finance.reduce((sum, day) => sum + parseFloat(day.deductions || '0'), 0);
+        const totalBonuses = finance.reduce((sum, day) => sum + parseFloat(day.bonuses || '0'), 0);
+        const netAmount = baseAmount - totalDeductions + totalBonuses;
+        const daysWorked = finance.length;
+        
+        let effectiveGroupId: number | null = null;
+        if (finance.length > 0) {
+          const lastDay = finance[finance.length - 1];
+          effectiveGroupId = await getEffectiveGroupForWorkerOnDate(wId, lastDay.workDate);
+        }
+        
+        console.log(`[createPayrollBatch] Worker ${wId}: baseAmount=${baseAmount}, deductions=${totalDeductions}, bonuses=${totalBonuses}, net=${netAmount}, days=${daysWorked}`);
+        
+        batchItems.push({
+          workerId: wId,
+          groupId: effectiveGroupId,
+          daysWorked,
+          baseAmount: baseAmount.toFixed(2),
+          totalDeductions: totalDeductions.toFixed(2),
+          totalBonuses: totalBonuses.toFixed(2),
+          netAmount: netAmount.toFixed(2),
+        });
+      }
     }
   } else {
     batchItems = params.items.map(item => ({

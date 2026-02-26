@@ -3656,6 +3656,7 @@ export const appRouter = router({
       .input(z.object({
         workerId: z.number(),
         toCostCenterId: z.number(),
+        toGroupId: z.number(),
         startDate: z.string(),
         endDate: z.string(),
         notes: z.string().optional(),
