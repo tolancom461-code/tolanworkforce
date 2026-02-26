@@ -991,6 +991,108 @@ export default function PayrollBatchDetails() {
         </CardContent>
       </Card>
     </div>
+
+      {/* Assignment Settlement Dialog */}
+      <Dialog open={settlementDialogOpen} onOpenChange={setSettlementDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <AlertTriangle className="h-5 w-5" />
+              تنبيه: يوجد عمال منتدبون في هذه الدفعة
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              تم اكتشاف انتدابات نشطة لعمال في هذه الدفعة. هل تريد تطبيق تسوية الانتدابات؟
+              سيتم خصم مبلغ أيام الانتداب من هذه الدفعة وإضافته لدفعة المركز المنتدب إليه.
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8">
+                    <Checkbox
+                      checked={selectedAssignmentIds.length === pendingAssignments.length}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedAssignmentIds(pendingAssignments.map((a: any) => a.assignmentId));
+                        } else {
+                          setSelectedAssignmentIds([]);
+                        }
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead>العامل</TableHead>
+                  <TableHead>منتدب إلى</TableHead>
+                  <TableHead>الأيام</TableHead>
+                  <TableHead>المبلغ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingAssignments.map((assignment: any) => (
+                  <TableRow key={assignment.assignmentId}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedAssignmentIds.includes(assignment.assignmentId)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedAssignmentIds([...selectedAssignmentIds, assignment.assignmentId]);
+                          } else {
+                            setSelectedAssignmentIds(selectedAssignmentIds.filter(id => id !== assignment.assignmentId));
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{assignment.workerName}</TableCell>
+                    <TableCell>
+                      <span className="text-blue-600 font-medium">{assignment.toCostCenterName}</span>
+                      <br />
+                      <span className="text-xs text-muted-foreground">{assignment.toGroupName}</span>
+                    </TableCell>
+                    <TableCell>{assignment.days} يوم</TableCell>
+                    <TableCell className="font-bold text-red-600">
+                      {assignment.totalAmount.toLocaleString('ar-SA')} ر.س
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <p className="text-sm font-medium text-orange-800">
+                إجمالي التسوية: {pendingAssignments
+                  .filter((a: any) => selectedAssignmentIds.includes(a.assignmentId))
+                  .reduce((sum: number, a: any) => sum + a.totalAmount, 0)
+                  .toLocaleString('ar-SA')} ر.س
+              </p>
+              <p className="text-xs text-orange-600 mt-1">
+                سيتم خصم هذا المبلغ من هذه الدفعة وإضافته لدفعة المركز المنتدب إليه
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleSkipSettlements}>
+              تجاهل وأرسل للمراجعة
+            </Button>
+            <Button
+              onClick={handleApplySettlements}
+              disabled={applySettlementsMutation.isPending || selectedAssignmentIds.length === 0}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {applySettlementsMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  جاري التطبيق...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 ml-2" />
+                  نعم، طبّق التسوية
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -1137,111 +1239,5 @@ function BatchNotesSection({ batchId }: { batchId: number }) {
         )}
       </div>
     </div>
-
-      {/* Assignment Settlement Dialog - تسوية الانتدابات */}
-      <Dialog open={settlementDialogOpen} onOpenChange={setSettlementDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-orange-600">
-              <AlertTriangle className="h-5 w-5" />
-              تنبيه: يوجد عمال منتدبون في هذه الدفعة
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              تم اكتشاف انتدابات نشطة لعمال في هذه الدفعة. هل تريد تطبيق تسوية الانتدابات؟
-              سيتم خصم مبلغ أيام الانتداب من هذه الدفعة وإضافته لدفعة المركز المنتدب إليه.
-            </p>
-
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-8">
-                    <Checkbox
-                      checked={selectedAssignmentIds.length === pendingAssignments.length}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedAssignmentIds(pendingAssignments.map((a: any) => a.assignmentId));
-                        } else {
-                          setSelectedAssignmentIds([]);
-                        }
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead>العامل</TableHead>
-                  <TableHead>منتدب إلى</TableHead>
-                  <TableHead>الأيام</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingAssignments.map((assignment: any) => (
-                  <TableRow key={assignment.assignmentId}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedAssignmentIds.includes(assignment.assignmentId)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedAssignmentIds([...selectedAssignmentIds, assignment.assignmentId]);
-                          } else {
-                            setSelectedAssignmentIds(selectedAssignmentIds.filter(id => id !== assignment.assignmentId));
-                          }
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">{assignment.workerName}</TableCell>
-                    <TableCell>
-                      <span className="text-blue-600 font-medium">{assignment.toCostCenterName}</span>
-                      <br />
-                      <span className="text-xs text-muted-foreground">{assignment.toGroupName}</span>
-                    </TableCell>
-                    <TableCell>{assignment.days} يوم</TableCell>
-                    <TableCell className="font-bold text-red-600">
-                      {assignment.totalAmount.toLocaleString('ar-SA')} ر.س
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-              <p className="text-sm font-medium text-orange-800">
-                إجمالي التسوية: {pendingAssignments
-                  .filter((a: any) => selectedAssignmentIds.includes(a.assignmentId))
-                  .reduce((sum: number, a: any) => sum + a.totalAmount, 0)
-                  .toLocaleString('ar-SA')} ر.س
-              </p>
-              <p className="text-xs text-orange-600 mt-1">
-                سيتم خصم هذا المبلغ من هذه الدفعة وإضافته لدفعة المركز المنتدب إليه
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={handleSkipSettlements}>
-              تجاهل وأرسل للمراجعة
-            </Button>
-            <Button
-              onClick={handleApplySettlements}
-              disabled={applySettlementsMutation.isPending || selectedAssignmentIds.length === 0}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              {applySettlementsMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                  جاري التطبيق...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4 ml-2" />
-                  نعم، طبّق التسوية
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }
