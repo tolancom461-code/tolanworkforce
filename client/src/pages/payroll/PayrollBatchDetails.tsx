@@ -23,7 +23,8 @@ import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/payroll/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download, Calendar, CheckCircle, Clock, XCircle, Printer } from "lucide-react";
+import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download, Calendar, CheckCircle, Clock, XCircle, Printer, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 
 export default function PayrollBatchDetails() {
@@ -54,6 +55,12 @@ export default function PayrollBatchDetails() {
     checkInTime: "",
     checkOutTime: "",
   });
+
+  // Assignment Settlement Dialog State
+  const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
+  const [pendingAssignments, setPendingAssignments] = useState<any[]>([]);
+  const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<number[]>([]);
+  const [isCheckingAssignments, setIsCheckingAssignments] = useState(false);
 
   const utils = trpc.useUtils();
   const { data: batch, isLoading } = trpc.payroll.getDetails.useQuery({ batchId });
@@ -214,8 +221,72 @@ export default function PayrollBatchDetails() {
     });
   };
 
-  const handleSubmitForReview = () => {
-    if (confirm("هل أنت متأكد من إرسال الدفعة للمراجعة؟ لن تتمكن من التعديل بعد ذلك.")) {
+  // Assignment Settlement Mutation
+  const applySettlementsMutation = trpc.payroll.applyAssignmentSettlements.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      setSettlementDialogOpen(false);
+      utils.payroll.getDetails.invalidate({ batchId });
+      utils.payroll.listBatches.invalidate();
+      // بعد تطبيق التسوية، نسأل عن إرسال للمراجعة
+      if (confirm("تم تطبيق التسوية بنجاح. هل تريد إرسال الدفعة للمراجعة الآن؟")) {
+        submitMutation.mutate({ batchId });
+      }
+    },
+    onError: (error) => {
+      toast.error(`خطأ في تطبيق التسوية: ${error.message}`);
+    },
+  });
+
+  const handleSubmitForReview = async () => {
+    // فحص الانتدابات أولاً قبل الإرسال
+    setIsCheckingAssignments(true);
+    try {
+      const result = await utils.client.payroll.checkBatchAssignments.query({ batchId });
+      if (result.hasAssignments) {
+        // يوجد انتدابات - عرض التنبيه
+        const unsettled = result.assignments.filter((a: any) => !a.alreadySettled);
+        if (unsettled.length > 0) {
+          setPendingAssignments(unsettled);
+          setSelectedAssignmentIds(unsettled.map((a: any) => a.assignmentId));
+          setSettlementDialogOpen(true);
+        } else {
+          // جميع التسويات مطبقة مسبقاً
+          if (confirm("هل أنت متأكد من إرسال الدفعة للمراجعة؟ لن تتمكن من التعديل بعد ذلك.")) {
+            submitMutation.mutate({ batchId });
+          }
+        }
+      } else {
+        // لا توجد انتدابات - إرسال عادي
+        if (confirm("هل أنت متأكد من إرسال الدفعة للمراجعة؟ لن تتمكن من التعديل بعد ذلك.")) {
+          submitMutation.mutate({ batchId });
+        }
+      }
+    } catch (error: any) {
+      toast.error(`خطأ في فحص الانتدابات: ${error.message}`);
+      // السماح بالإرسال حتى لو فشل الفحص
+      if (confirm("تعذر فحص الانتدابات. هل تريد إرسال الدفعة للمراجعة على أي حال؟")) {
+        submitMutation.mutate({ batchId });
+      }
+    } finally {
+      setIsCheckingAssignments(false);
+    }
+  };
+
+  const handleApplySettlements = () => {
+    if (selectedAssignmentIds.length === 0) {
+      toast.error("يرجى اختيار انتداب واحد على الأقل");
+      return;
+    }
+    applySettlementsMutation.mutate({
+      batchId,
+      assignmentIds: selectedAssignmentIds,
+    });
+  };
+
+  const handleSkipSettlements = () => {
+    setSettlementDialogOpen(false);
+    if (confirm("هل أنت متأكد من إرسال الدفعة للمراجعة بدون تطبيق تسويات الانتدابات؟")) {
       submitMutation.mutate({ batchId });
     }
   };
@@ -513,8 +584,13 @@ export default function PayrollBatchDetails() {
               </Button>
 
               {canSubmit && (
-                <Button onClick={handleSubmitForReview} disabled={submitMutation.isPending} className="text-black">
-                  {submitMutation.isPending ? (
+                <Button onClick={handleSubmitForReview} disabled={submitMutation.isPending || isCheckingAssignments} className="text-black">
+                  {isCheckingAssignments ? (
+                    <>
+                      <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                      جاري فحص الانتدابات...
+                    </>
+                  ) : submitMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 ml-2 animate-spin" />
                       جاري الإرسال...
@@ -1060,6 +1136,111 @@ function BatchNotesSection({ batchId }: { batchId: number }) {
         )}
       </div>
     </div>
+
+      {/* Assignment Settlement Dialog - تسوية الانتدابات */}
+      <Dialog open={settlementDialogOpen} onOpenChange={setSettlementDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <AlertTriangle className="h-5 w-5" />
+              تنبيه: يوجد عمال منتدبون في هذه الدفعة
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              تم اكتشاف انتدابات نشطة لعمال في هذه الدفعة. هل تريد تطبيق تسوية الانتدابات؟
+              سيتم خصم مبلغ أيام الانتداب من هذه الدفعة وإضافته لدفعة المركز المنتدب إليه.
+            </p>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8">
+                    <Checkbox
+                      checked={selectedAssignmentIds.length === pendingAssignments.length}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedAssignmentIds(pendingAssignments.map((a: any) => a.assignmentId));
+                        } else {
+                          setSelectedAssignmentIds([]);
+                        }
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead>العامل</TableHead>
+                  <TableHead>منتدب إلى</TableHead>
+                  <TableHead>الأيام</TableHead>
+                  <TableHead>المبلغ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingAssignments.map((assignment: any) => (
+                  <TableRow key={assignment.assignmentId}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedAssignmentIds.includes(assignment.assignmentId)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedAssignmentIds([...selectedAssignmentIds, assignment.assignmentId]);
+                          } else {
+                            setSelectedAssignmentIds(selectedAssignmentIds.filter(id => id !== assignment.assignmentId));
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{assignment.workerName}</TableCell>
+                    <TableCell>
+                      <span className="text-blue-600 font-medium">{assignment.toCostCenterName}</span>
+                      <br />
+                      <span className="text-xs text-muted-foreground">{assignment.toGroupName}</span>
+                    </TableCell>
+                    <TableCell>{assignment.days} يوم</TableCell>
+                    <TableCell className="font-bold text-red-600">
+                      {assignment.totalAmount.toLocaleString('ar-SA')} ر.س
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <p className="text-sm font-medium text-orange-800">
+                إجمالي التسوية: {pendingAssignments
+                  .filter((a: any) => selectedAssignmentIds.includes(a.assignmentId))
+                  .reduce((sum: number, a: any) => sum + a.totalAmount, 0)
+                  .toLocaleString('ar-SA')} ر.س
+              </p>
+              <p className="text-xs text-orange-600 mt-1">
+                سيتم خصم هذا المبلغ من هذه الدفعة وإضافته لدفعة المركز المنتدب إليه
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleSkipSettlements}>
+              تجاهل وأرسل للمراجعة
+            </Button>
+            <Button
+              onClick={handleApplySettlements}
+              disabled={applySettlementsMutation.isPending || selectedAssignmentIds.length === 0}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {applySettlementsMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  جاري التطبيق...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 ml-2" />
+                  نعم، طبّق التسوية
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
   );
 }

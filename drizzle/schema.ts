@@ -346,6 +346,36 @@ export type TemporaryAssignment = typeof temporaryAssignments.$inferSelect;
 export type InsertTemporaryAssignment = typeof temporaryAssignments.$inferInsert;
 
 // ============================================
+// Assignment Settlements (تسويات الانتدابات)
+// ============================================
+
+export const assignmentSettlements = mysqlTable("assignment_settlements", {
+  id: int("id").autoincrement().primaryKey(),
+  assignmentId: int("assignment_id").notNull().references(() => temporaryAssignments.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  fromBatchId: int("from_batch_id").references(() => payrollBatches.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  toBatchId: int("to_batch_id").references(() => payrollBatches.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  fromCostCenterId: int("from_cost_center_id").references(() => costCenters.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  toCostCenterId: int("to_cost_center_id").references(() => costCenters.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  days: int("days").notNull().default(1),
+  settlementDate: date("settlement_date").notNull(),
+  status: mysqlEnum("status", ["applied", "reversed"]).default("applied"),
+  appliedBy: int("applied_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  assignmentIdIdx: index("idx_settlements_assignment_id").on(table.assignmentId),
+  workerIdIdx: index("idx_settlements_worker_id").on(table.workerId),
+  fromBatchIdx: index("idx_settlements_from_batch").on(table.fromBatchId),
+  toBatchIdx: index("idx_settlements_to_batch").on(table.toBatchId),
+}));
+
+export type AssignmentSettlement = typeof assignmentSettlements.$inferSelect;
+export type InsertAssignmentSettlement = typeof assignmentSettlements.$inferInsert;
+
+// ============================================
 // Audit Log (سجل التدقيق)
 // ============================================
 

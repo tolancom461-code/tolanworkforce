@@ -3018,6 +3018,39 @@ export const appRouter = router({
         const { getBatchNotes } = await import('./db_batch_notes');
         return await getBatchNotes(input.batchId);
       }),
+
+    // ============================================
+    // Assignment Settlements (تسويات الانتدابات)
+    // ============================================
+
+    // فحص الانتدابات النشطة في دفعة معينة
+    checkBatchAssignments: protectedProcedure
+      .input(z.object({ batchId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.checkBatchAssignments(input.batchId);
+      }),
+
+    // تطبيق تسويات الانتدابات
+    applyAssignmentSettlements: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        assignmentIds: z.array(z.number()),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const result = await db.applyAssignmentSettlements({
+          ...input,
+          appliedBy: ctx.user.id,
+        });
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'APPLY_ASSIGNMENT_SETTLEMENTS',
+          tableName: 'assignment_settlements',
+          recordId: input.batchId,
+          newValues: { assignmentIds: input.assignmentIds, settlements: result.settlements },
+        });
+        return result;
+      }),
   }),
 
   // Operational Flags (البلاغات التشغيلية)
