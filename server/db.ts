@@ -1371,6 +1371,7 @@ export async function createOrUpdateDailyFinance(
     checkInTime?: Date | null;
     checkOutTime?: Date | null;
     notes?: string;
+    effectiveGroupId?: number | null; // ✅ المجموعة الفعالة (تراعي الانتدابات)
   }
 ) {
   const db = await getDb();
@@ -1412,6 +1413,7 @@ export async function createOrUpdateDailyFinance(
       checkInTime: data.checkInTime || existing.checkInTime,
       checkOutTime: data.checkOutTime || existing.checkOutTime,
       notes: data.notes,
+      effectiveGroupId: data.effectiveGroupId ?? existing.effectiveGroupId, // ✅ حفظ المجموعة الفعالة
       updatedAt: new Date(),
     }).where(eq(workerDailyFinance.id, existing.id));
     return { id: existing.id, created: false };
@@ -1433,6 +1435,7 @@ export async function createOrUpdateDailyFinance(
       checkInTime: data.checkInTime || null,
       checkOutTime: data.checkOutTime || null,
       notes: data.notes,
+      effectiveGroupId: data.effectiveGroupId ?? null, // ✅ حفظ المجموعة الفعالة
     });
     return { id: (result as any).insertId, created: true };
   }
@@ -1700,6 +1703,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     lateMinutes,
     earlyLeaveMinutes,
     actualWorkMinutes,
+    effectiveGroupId, // ✅ المجموعة الفعالة (تراعي الانتدابات)
   };
 }
 
@@ -2672,37 +2676,76 @@ export async function createPayrollBatch(params: {
   if (shouldReadFromDB) {
     console.log('[createPayrollBatch] Reading fresh finance data from DB (refreshFinanceRecords=' + params.refreshFinanceRecords + ', items.length=' + (params.items?.length || 0) + ')');
     
-    // ✅ FIX: مراعاة الانتدابات عند تحديد العمال حسب مركز التكلفة
+    // ✅ NEW: تجميع العمال حسب effective_group_id من السجلات المالية
     if (params.costCenterId) {
-      // استخدام نفس منطق aggregatePayrollDataByCostCenter لمراعاة الانتدابات
-      console.log(`[createPayrollBatch] Using cost center assignment-aware logic for CC ${params.costCenterId}`);
+      console.log(`[createPayrollBatch] Using effective_group_id logic for CC ${params.costCenterId}`);
       
-      const costCenterResults = await aggregatePayrollDataByCostCenter(
-        params.costCenterId,
-        periodStartDate,
-        periodEndDate
-      );
+      // 1. جلب جميع المجموعات في مركز التكلفة هذا
+      const groupsInCC = await db.select({ id: groups.id }).from(groups).where(eq(groups.costCenterId, params.costCenterId));
+      const groupIdsInCC = groupsInCC.map(g => g.id);
       
-      for (const item of costCenterResults) {
-        // تحديد المجموعة الفعلية
-        let effectiveGroupId: number | null = null;
-        try {
-          effectiveGroupId = await getEffectiveGroupForWorkerOnDate(item.workerId, periodEndDate);
-        } catch (e) {
-          // fallback: use worker's original group
+      if (groupIdsInCC.length > 0) {
+        // 2. جلب السجلات المالية التي effective_group_id تنتمي لهذا المركز
+        const financeRecords = await db
+          .select({
+            workerId: workerDailyFinance.workerId,
+            baseAmount: workerDailyFinance.baseAmount,
+            deductions: workerDailyFinance.deductions,
+            bonuses: workerDailyFinance.bonuses,
+            netAmount: workerDailyFinance.netAmount,
+            effectiveGroupId: workerDailyFinance.effectiveGroupId,
+          })
+          .from(workerDailyFinance)
+          .where(
+            and(
+              sql`${workerDailyFinance.workDate} >= ${periodStartDate}`,
+              sql`${workerDailyFinance.workDate} <= ${periodEndDate}`,
+              inArray(workerDailyFinance.effectiveGroupId, groupIdsInCC)
+            )
+          );
+        
+        // 3. تجميع حسب العامل
+        const workerMap = new Map<number, { baseAmount: number; deductions: number; bonuses: number; netAmount: number; daysWorked: number; groupId: number | null }>();
+        
+        for (const rec of financeRecords) {
+          const existing = workerMap.get(rec.workerId);
+          const base = parseFloat(rec.baseAmount || '0');
+          const ded = parseFloat(rec.deductions || '0');
+          const bon = parseFloat(rec.bonuses || '0');
+          const net = parseFloat(rec.netAmount || '0');
+          
+          if (existing) {
+            existing.baseAmount += base;
+            existing.deductions += ded;
+            existing.bonuses += bon;
+            existing.netAmount += net;
+            existing.daysWorked += 1;
+            // استخدام آخر مجموعة فعالة
+            existing.groupId = rec.effectiveGroupId;
+          } else {
+            workerMap.set(rec.workerId, {
+              baseAmount: base,
+              deductions: ded,
+              bonuses: bon,
+              netAmount: net,
+              daysWorked: 1,
+              groupId: rec.effectiveGroupId,
+            });
+          }
         }
         
-        batchItems.push({
-          workerId: item.workerId,
-          groupId: effectiveGroupId,
-          daysWorked: item.daysWorked,
-          baseAmount: item.baseAmount,
-          totalDeductions: item.deductions,
-          totalBonuses: item.bonuses,
-          netAmount: item.netAmount,
-        });
-        
-        console.log(`[createPayrollBatch] Worker ${item.workerId} (${item.workerName}): base=${item.baseAmount}, net=${item.netAmount}, days=${item.daysWorked}${(item as any).isAssigned ? ' [ASSIGNED IN]' : ''}${(item as any).isPartial ? ' [PARTIAL]' : ''}`);
+        for (const [wId, data] of workerMap) {
+          batchItems.push({
+            workerId: wId,
+            groupId: data.groupId,
+            daysWorked: data.daysWorked,
+            baseAmount: data.baseAmount.toFixed(2),
+            totalDeductions: data.deductions.toFixed(2),
+            totalBonuses: data.bonuses.toFixed(2),
+            netAmount: data.netAmount.toFixed(2),
+          });
+          console.log(`[createPayrollBatch] Worker ${wId}: base=${data.baseAmount}, net=${data.netAmount}, days=${data.daysWorked}, group=${data.groupId}`);
+        }
       }
     } else {
       // المسار الأصلي: بدون مركز تكلفة محدد

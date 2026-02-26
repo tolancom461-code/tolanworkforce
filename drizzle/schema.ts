@@ -202,6 +202,8 @@ export const workerDailyFinance = mysqlTable("worker_daily_finance", {
   lateMinutes: int("late_minutes").default(0),
   earlyLeaveMinutes: int("early_leave_minutes").default(0),
   notes: text("notes"),
+  // ✅ المجموعة الفعالة: تحدد لأي مركز تكلفة ينتمي هذا السجل (تراعي الانتدابات)
+  effectiveGroupId: int("effective_group_id").references(() => groups.id, { onDelete: 'set null', onUpdate: 'cascade' }),
   // Double payment protection: links day to approved batch
   lockedBatchId: int("locked_batch_id").references(() => payrollBatches.id, { onDelete: 'set null', onUpdate: 'cascade' }), // NULL = unlocked, set when batch is approved
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -211,6 +213,7 @@ export const workerDailyFinance = mysqlTable("worker_daily_finance", {
   workDateIdx: index("idx_daily_finance_work_date").on(table.workDate),
   lockedBatchIdx: index("idx_daily_finance_locked_batch").on(table.lockedBatchId),
   workerDateIdx: index("idx_daily_finance_worker_date").on(table.workerId, table.workDate),
+  effectiveGroupIdx: index("idx_daily_finance_effective_group").on(table.effectiveGroupId),
 }));
 
 export const payrollBatches = mysqlTable("payroll_batches", {
