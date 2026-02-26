@@ -414,6 +414,7 @@ export default function PayrollBatchDetails() {
   const groups = Object.values(groupedItems || {});
 
   return (
+    <>
     <div className="container py-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
@@ -1241,6 +1242,6 @@ function BatchNotesSection({ batchId }: { batchId: number }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
+    </>
   );
 }
