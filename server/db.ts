@@ -1737,6 +1737,7 @@ export async function processAttendanceToFinance(workerId: number, workDate: str
     ...financeData,
     checkInTime,
     checkOutTime,
+    effectiveGroupId: financeData.effectiveGroupId, // ✅ تمرير المجموعة الفعالة لحفظها في السجل المالي
   });
 }
 
