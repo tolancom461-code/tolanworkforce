@@ -1101,6 +1101,7 @@ export const appRouter = router({
           if (!ctx.user) throw new Error("Not authenticated");
           
           const { attendanceEvents } = await import('../drizzle/schema');
+          const { getAdministrativeWorkDate } = await import('./attendance-logic');
           const database = await db.getDb();
           if (!database) throw new Error('Database not available');
           
@@ -1110,18 +1111,21 @@ export const appRouter = router({
             throw new Error('تاريخ غير صالح');
           }
           
+          // ✅ حساب تاريخ يوم العمل الإداري من وقت البصمة
+          const workDate = getAdministrativeWorkDate(eventTime);
+          
           // Insert check-in event
           await database.insert(attendanceEvents).values({
             workerId: input.workerId,
             eventType: 'check_in',
             eventTime: eventTime,
+            workDate: new Date(workDate + 'T00:00:00'), // ✅ إضافة تاريخ يوم العمل
             method: 'manual',
             note: input.note || 'تم إضافة الحضور يدوياً لمعالجة بصمة ناقصة',
           });
           
           // Try to recalculate finance if both check_in and check_out exist now
           try {
-            const workDate = eventTime.toLocaleDateString('en-CA');
             await db.processAttendanceToFinance(input.workerId, workDate);
           } catch (finError) {
             console.error('[addMissingCheckIn] Finance recalc failed (non-fatal):', finError);
@@ -1157,6 +1161,7 @@ export const appRouter = router({
           if (!ctx.user) throw new Error("Not authenticated");
           
           const { attendanceEvents } = await import('../drizzle/schema');
+          const { getAdministrativeWorkDate } = await import('./attendance-logic');
           const database = await db.getDb();
           if (!database) throw new Error('Database not available');
           
@@ -1166,11 +1171,15 @@ export const appRouter = router({
             throw new Error('تاريخ غير صالح');
           }
           
+          // ✅ حساب تاريخ يوم العمل الإداري من وقت البصمة
+          const workDate = getAdministrativeWorkDate(eventTime);
+          
           // Insert check-out event
           await database.insert(attendanceEvents).values({
             workerId: input.workerId,
             eventType: 'check_out',
             eventTime: eventTime,
+            workDate: new Date(workDate + 'T00:00:00'), // ✅ إضافة تاريخ يوم العمل
             method: 'manual',
             note: input.note || 'تم إضافة الانصراف يدوياً لمعالجة بصمة ناقصة',
           });
@@ -1178,8 +1187,8 @@ export const appRouter = router({
           // Auto-calculate finance after adding check_out
           // Use check_in's date as work date (handles night shifts crossing midnight)
           try {
-            const workDate = await db.getWorkDateForCheckOut(input.workerId, eventTime);
-            await db.processAttendanceToFinance(input.workerId, workDate);
+            const financeWorkDate = await db.getWorkDateForCheckOut(input.workerId, eventTime);
+            await db.processAttendanceToFinance(input.workerId, financeWorkDate);
           } catch (finError) {
             console.error('[addMissingCheckOut] Finance calc failed (non-fatal):', finError);
           }
