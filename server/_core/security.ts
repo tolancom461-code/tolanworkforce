@@ -152,7 +152,7 @@ export class RateLimiter {
 // Global rate limiters
 export const apiRateLimiter = new RateLimiter({
   windowMs: 60000, // 1 minute
-  maxRequests: 100,
+  maxRequests: 500,
 });
 
 export const loginRateLimiter = new RateLimiter({
