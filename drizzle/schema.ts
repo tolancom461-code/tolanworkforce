@@ -485,6 +485,8 @@ export const groupSchedules = mysqlTable("group_schedules", {
   startTime: varchar("start_time", { length: 10 }).notNull(), // HH:MM format
   endTime: varchar("end_time", { length: 10 }).notNull(), // HH:MM format
   requiredHours: decimal("required_hours", { precision: 4, scale: 2 }).notNull(),
+  // ✅ الراتب اليومي المخصص لهذا اليوم (NULL = استخدام الراتب الافتراضي للمجموعة)
+  dailyRate: decimal("daily_rate", { precision: 10, scale: 2 }),
   effectiveDate: date("effective_date"), // تاريخ بدء تطبيق الوردية (NULL = تطبيق فوري)
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),

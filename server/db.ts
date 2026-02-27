@@ -1516,6 +1516,15 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
         shiftStartTime = schedule.startTime;
         shiftEndTime = schedule.endTime;
         hasShiftDefined = true;
+        
+        // ✅ الراتب اليومي المخصص لهذا اليوم من جدول الورديات
+        // إذا كان موجوداً وأكبر من 0، يتم استخدامه بدلاً من الراتب الافتراضي للمجموعة
+        // إذا كان NULL أو 0، يتم تجاهله واستخدام المنطق القديم كما هو
+        const scheduleDailyRate = schedule.dailyRate ? safeParseDecimal(schedule.dailyRate) : null;
+        if (scheduleDailyRate && scheduleDailyRate > 0) {
+          groupDailyWage = scheduleDailyRate;
+          console.log('📅 راتب يومي مخصص من جدول الورديات: scheduleDailyRate =', scheduleDailyRate, 'ليوم', dayOfWeek);
+        }
       }
     }
   }
@@ -6174,6 +6183,7 @@ export async function saveWeeklySchedules(
     endTime: string;
     requiredHours: number;
     isActive: boolean;
+    dailyRate?: string; // ✅ الراتب اليومي المخصص (اختياري)
   }>,
   effectiveDate?: string
 ) {
@@ -6194,6 +6204,8 @@ export async function saveWeeklySchedules(
       endTime: schedule.endTime,
       requiredHours: schedule.requiredHours.toString(),
       isActive: schedule.isActive,
+      // ✅ حفظ الراتب اليومي المخصص (NULL إذا لم يتم تحديده)
+      dailyRate: schedule.dailyRate || null,
       effectiveDate: effectiveDate ? new Date(effectiveDate) : null,
     });
   }

@@ -27,6 +27,7 @@ interface DaySchedule {
   endTime: string;
   requiredHours: number;
   isActive: boolean;
+  dailyRate: string; // ✅ الراتب اليومي المخصص لهذا اليوم (فارغ = استخدام راتب المجموعة)
 }
 
 export default function WeeklyShifts() {
@@ -40,6 +41,7 @@ export default function WeeklyShifts() {
       endTime: '16:00',
       requiredHours: 8,
       isActive: true,
+      dailyRate: '', // فارغ = استخدام راتب المجموعة الافتراضي
     }))
   );
   const [showHistory, setShowHistory] = useState(false);
@@ -88,6 +90,7 @@ export default function WeeklyShifts() {
             endTime: existing.endTime || '16:00',
             requiredHours: Number(existing.requiredHours) || 8,
             isActive: existing.isActive !== false,
+            dailyRate: existing.dailyRate ? String(existing.dailyRate) : '',
           };
         }
         return {
@@ -96,6 +99,7 @@ export default function WeeklyShifts() {
           endTime: '16:00',
           requiredHours: 8,
           isActive: true,
+          dailyRate: '',
         };
       });
       setSchedules(loadedSchedules);
@@ -113,6 +117,15 @@ export default function WeeklyShifts() {
     setSchedules(prev =>
       prev.map(s =>
         s.dayOfWeek === dayOfWeek ? { ...s, [field]: value } : s
+      )
+    );
+  };
+
+  // ✅ تعديل الراتب اليومي المخصص ليوم معين
+  const handleDailyRateChange = (dayOfWeek: number, value: string) => {
+    setSchedules(prev =>
+      prev.map(s =>
+        s.dayOfWeek === dayOfWeek ? { ...s, dailyRate: value } : s
       )
     );
   };
@@ -148,6 +161,7 @@ export default function WeeklyShifts() {
         endTime: s.endTime,
         requiredHours: s.requiredHours,
         isActive: s.isActive,
+        dailyRate: s.dailyRate || undefined, // ✅ إرسال الراتب اليومي إذا كان محدداً
       })),
       effectiveDate: effectiveDate || undefined,
     });
@@ -331,7 +345,7 @@ export default function WeeklyShifts() {
                         schedule.isActive ? 'bg-background' : 'bg-muted/50'
                       }`}
                     >
-                      <div className="grid gap-4 md:grid-cols-5 items-end">
+                      <div className="grid gap-4 md:grid-cols-6 items-end">
                         <div className="space-y-2">
                           <Label className="text-base font-semibold">{day.name}</Label>
                           <div className="flex items-center gap-2">
@@ -374,6 +388,21 @@ export default function WeeklyShifts() {
                               {calculatedHours.toFixed(1)} ساعة
                             </span>
                           </div>
+                        </div>
+
+                        {/* ✅ حقل الراتب اليومي المخصص لهذا اليوم */}
+                        <div className="space-y-2">
+                          <Label>الراتب اليومي (ريال)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="افتراضي"
+                            value={schedule.dailyRate}
+                            onChange={(e) => handleDailyRateChange(day.id, e.target.value)}
+                            disabled={!schedule.isActive}
+                            className={schedule.dailyRate ? 'border-green-500' : ''}
+                          />
                         </div>
 
                         <div className="space-y-2">
@@ -447,6 +476,7 @@ export default function WeeklyShifts() {
                                 <span className="font-medium">{day.name}:</span>
                                 <span className="text-muted-foreground">
                                   {schedule.startTime} - {schedule.endTime}
+                                  {schedule.dailyRate ? ` (راتب: ${schedule.dailyRate} ريال)` : ''}
                                 </span>
                               </div>
                             );

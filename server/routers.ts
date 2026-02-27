@@ -3385,6 +3385,7 @@ export const appRouter = router({
           endTime: z.string(),
           requiredHours: z.number(),
           isActive: z.boolean(),
+          dailyRate: z.string().optional(), // ✅ الراتب اليومي المخصص (اختياري)
         })),
         effectiveDate: z.string().optional(),
       }))
