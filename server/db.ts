@@ -6954,7 +6954,6 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
     ? workDate.toLocaleDateString('en-CA') 
     : String(workDate).split('T')[0];
   // Use administrative work_date (5 AM boundary) instead of calendar date
-  const targetDate = new Date(dateStr + 'T00:00:00');
 
   // Get all workers (optionally filtered by group)
   const workerConditions = [eq(workers.status, 'active')];
@@ -6983,7 +6982,7 @@ export async function getAbsentWorkers(workDate: Date, groupId?: number) {
     .from(attendanceEvents)
     .where(
       and(
-        eq(attendanceEvents.workDate, targetDate),
+        eq(attendanceEvents.workDate, sql`${dateStr}`),
         eq(attendanceEvents.eventType, 'check_in')
       )
     )
@@ -7125,7 +7124,6 @@ export async function getPresentWorkers(workDateStr: string, groupId?: number, c
   if (!db) return [];
 
   // Use administrative work_date (5 AM boundary) instead of calendar date
-  const targetDate = new Date(workDateStr + 'T00:00:00');
 
   // Get all check-in events for this administrative date
   const checkIns = await db
@@ -7135,7 +7133,7 @@ export async function getPresentWorkers(workDateStr: string, groupId?: number, c
     })
     .from(attendanceEvents)
     .where(and(
-      eq(attendanceEvents.workDate, targetDate),
+      eq(attendanceEvents.workDate, sql`${workDateStr}`),
       eq(attendanceEvents.eventType, 'check_in')
     ));
 
@@ -7188,7 +7186,6 @@ export async function getLateWorkers(workDateStr: string, groupId?: number, cost
   if (!db) return [];
 
   // Use administrative work_date (5 AM boundary) instead of calendar date
-  const targetDate = new Date(workDateStr + 'T00:00:00');
   const dayOfWeek = new Date(workDateStr).getDay(); // 0=Sunday
 
   // Get all check-in events for this administrative date
@@ -7199,7 +7196,7 @@ export async function getLateWorkers(workDateStr: string, groupId?: number, cost
     })
     .from(attendanceEvents)
     .where(and(
-      eq(attendanceEvents.workDate, targetDate),
+      eq(attendanceEvents.workDate, sql`${workDateStr}`),
       eq(attendanceEvents.eventType, 'check_in')
     ));
 
@@ -7294,7 +7291,6 @@ export async function getAbsentWorkersWithDetails(workDateStr: string, groupId?:
   if (!db) return [];
 
   // Use administrative work_date (5 AM boundary) instead of calendar date
-  const targetDate = new Date(workDateStr + 'T00:00:00');
 
   // Get all active workers
   const workerConditions: any[] = [eq(workers.status, 'active')];
@@ -7324,7 +7320,7 @@ export async function getAbsentWorkersWithDetails(workDateStr: string, groupId?:
     .select({ workerId: attendanceEvents.workerId })
     .from(attendanceEvents)
     .where(and(
-      eq(attendanceEvents.workDate, targetDate),
+      eq(attendanceEvents.workDate, sql`${workDateStr}`),
       eq(attendanceEvents.eventType, 'check_in')
     ))
     .groupBy(attendanceEvents.workerId);
