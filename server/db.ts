@@ -1333,18 +1333,24 @@ export async function getAttendanceStats(startDate: Date, endDate: Date, groupId
     allWorkers = allWorkers.filter(w => w.groupId === groupId);
   }
   
-  // Get check-ins for the specified date range
+  // Use work_date (administrative day: 5 AM to 4:59 AM next day) instead of eventTime
+  // This ensures correct counting based on the administrative work day boundary
+  const workDateStr = startDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  
   const todayEvents = await db
     .select()
     .from(attendanceEvents)
     .where(and(
-      gte(attendanceEvents.eventTime, startDate),
-      lt(attendanceEvents.eventTime, endDate),
+      sql`DATE(${attendanceEvents.workDate}) = ${workDateStr}`,
       eq(attendanceEvents.eventType, 'check_in')
     ));
   
   const presentWorkerIds = new Set(todayEvents.map(e => e.workerId));
-  const presentToday = allWorkers.filter(w => presentWorkerIds.has(w.id)).length;
+  let presentWorkers = allWorkers.filter(w => presentWorkerIds.has(w.id));
+  if (groupId) {
+    presentWorkers = presentWorkers.filter(w => w.groupId === groupId);
+  }
+  const presentToday = presentWorkers.length;
   
   return {
     totalWorkers: allWorkers.length,
