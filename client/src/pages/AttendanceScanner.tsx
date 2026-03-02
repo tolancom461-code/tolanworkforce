@@ -73,7 +73,14 @@ export default function AttendanceScanner() {
   const { data: stats, refetch: refetchStats } = trpc.attendance.stats.useQuery({});
   const { data: groupsData } = trpc.groups.list.useQuery();
 
-  const todayStr = new Date().toLocaleDateString('en-CA');
+  // Administrative day logic: before 5 AM Riyadh time belongs to previous day
+  const _now = new Date();
+  const _riyadhHour = parseInt(
+    _now.toLocaleString('en-US', { timeZone: 'Asia/Riyadh', hour: 'numeric', hour12: false })
+  );
+  const _adminDate = new Date(_now);
+  if (_riyadhHour < 5) _adminDate.setDate(_adminDate.getDate() - 1);
+  const todayStr = _adminDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
   const { data: presentWorkers } = trpc.operationalDashboard.getPresentWorkers.useQuery(
     { workDateStr: todayStr, groupId: cardFilterGroupId },
     { enabled: cardDialog === 'present' }
