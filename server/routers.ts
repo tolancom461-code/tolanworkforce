@@ -1407,8 +1407,25 @@ export const appRouter = router({
         date: z.string().optional() // Format: YYYY-MM-DD
       }))
       .query(async ({ input }) => {
-        const targetDate = input.date ? new Date(input.date) : new Date();
-        targetDate.setHours(0, 0, 0, 0);
+        let targetDate: Date;
+        if (input.date) {
+          // If date provided explicitly, use it as-is (set to start of day in Riyadh time)
+          targetDate = new Date(input.date + 'T00:00:00+03:00');
+        } else {
+          // No date provided: apply administrative day logic
+          // If current time is before 5 AM (Riyadh), use yesterday's administrative date
+          const now = new Date();
+          const riyadhHour = parseInt(
+            now.toLocaleString('en-US', { timeZone: 'Asia/Riyadh', hour: 'numeric', hour12: false })
+          );
+          if (riyadhHour < 5) {
+            // Before 5 AM: belongs to previous administrative day
+            now.setDate(now.getDate() - 1);
+          }
+          // Set to start of that day in Riyadh time
+          const riyadhDateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
+          targetDate = new Date(riyadhDateStr + 'T00:00:00+03:00');
+        }
         const tomorrow = new Date(targetDate);
         tomorrow.setDate(tomorrow.getDate() + 1);
         return await db.getAttendanceStats(targetDate, tomorrow, input.groupId);
