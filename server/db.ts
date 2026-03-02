@@ -1335,7 +1335,8 @@ export async function getAttendanceStats(startDate: Date, endDate: Date, groupId
   
   // Use work_date (administrative day: 5 AM to 4:59 AM next day) instead of eventTime
   // This ensures correct counting based on the administrative work day boundary
-  const workDateStr = startDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  // Use Asia/Riyadh timezone to get the correct local date (NOT toISOString which returns UTC)
+  const workDateStr = startDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }); // YYYY-MM-DD in Riyadh time
   
   const todayEvents = await db
     .select()
