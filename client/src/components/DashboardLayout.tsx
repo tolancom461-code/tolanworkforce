@@ -174,7 +174,7 @@ const menuSections = [
       { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
       { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
       { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },
-      { icon: FileSearch, label: "تقرير مستحقات العمالة", path: "/finance/cost-center-report" },
+      // { icon: FileSearch, label: "تقرير مستحقات العمالة", path: "/finance/cost-center-report" }, // مخفي مؤقتاً
     ]
   },
   {
