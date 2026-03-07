@@ -113,6 +113,8 @@ export default function PayrollBatchDetails() {
       tableRows += `<tr class="group-total"><td colspan="2">إجمالي ${group.groupName}</td><td>${fmt(group.totals.base)}</td><td>${fmt(group.totals.deductions)}</td><td>${fmt(group.totals.bonuses)}</td><td>${fmt(group.totals.net)}</td><td></td></tr>`;
     });
     tableRows += `<tr class="grand-total"><td colspan="2">الإجمالي الكلي</td><td>${fmt(grandTotal.base)}</td><td>${fmt(grandTotal.deductions)}</td><td>${fmt(grandTotal.bonuses)}</td><td>${fmt(grandTotal.net)}</td><td></td></tr>`;
+    const totalNetWords = numberToArabicWords(grandTotal.net);
+    tableRows += `<tr class="amount-words"><td colspan="7" style="background:#f0f7ff;padding:10px 12px;font-size:13px;font-weight:600;color:#1a3c6e;border-top:2px solid #4a90d9;">المبلغ الإجمالي بالأحرف: ${totalNetWords}</td></tr>`;
     const periodStart = new Date(batch.batch.periodStart).toLocaleDateString('ar-SA');
     const periodEnd = new Date(batch.batch.periodEnd).toLocaleDateString('ar-SA');
     const printWindow = window.open('', '_blank');
