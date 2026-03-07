@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
+import { numberToArabicWords } from '@/lib/numberToArabicWords';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -260,6 +261,9 @@ export default function PayrollBatchHistory() {
               <td>${parseFloat(batchDetails.batch.totalBonuses?.toString() || '0').toFixed(2)}</td>
               <td>${(parseFloat(batchDetails.batch.totalAmount?.toString() || '0') - parseFloat(batchDetails.batch.totalDeductions?.toString() || '0') + parseFloat(batchDetails.batch.totalBonuses?.toString() || '0')).toFixed(2)}</td>
               <td></td>
+            </tr>
+            <tr>
+              <td colspan="9" style="background:#f0f7ff;padding:10px 12px;font-size:13px;font-weight:600;color:#1a3c6e;border-top:2px solid #4a90d9;">المبلغ الإجمالي بالأحرف: ${numberToArabicWords(parseFloat(batchDetails.batch.totalAmount?.toString() || '0') - parseFloat(batchDetails.batch.totalDeductions?.toString() || '0') + parseFloat(batchDetails.batch.totalBonuses?.toString() || '0'))}</td>
             </tr>
           </tbody>
         </table>
