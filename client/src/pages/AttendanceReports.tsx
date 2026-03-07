@@ -408,7 +408,7 @@ export default function AttendanceReports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {report.map((record, index) => (
+                  {report.filter(r => r.daysPresent > 0).map((record, index) => (
                     <TableRow key={record.workerId}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell className="font-medium">
