@@ -2831,7 +2831,7 @@ export async function createPayrollBatch(params: {
   }
 
   // Calculate batch totals
-  const totalAmount = batchItems.reduce((sum, item) => sum + parseFloat(item.netAmount), 0);
+  const totalAmount = batchItems.reduce((sum, item) => sum + parseFloat(item.baseAmount), 0);
   const totalDeductions = batchItems.reduce((sum, item) => sum + parseFloat(item.totalDeductions), 0);
   const totalBonuses = batchItems.reduce((sum, item) => sum + parseFloat(item.totalBonuses), 0);
 
@@ -3114,7 +3114,7 @@ async function recalculateBatchTotals(batchId: number) {
     .from(payrollBatchItems)
     .where(eq(payrollBatchItems.batchId, batchId));
 
-  const totalAmount = items.reduce((sum, item) => sum + parseFloat(item.netAmount || '0'), 0);
+  const totalAmount = items.reduce((sum, item) => sum + parseFloat(item.baseAmount || '0'), 0);
   const totalDeductions = items.reduce((sum, item) => sum + parseFloat(item.totalDeductions || '0'), 0);
   const totalBonuses = items.reduce((sum, item) => sum + parseFloat(item.totalBonuses || '0'), 0);
 
@@ -8849,7 +8849,7 @@ export async function applyAssignmentSettlements(params: {
         .from(payrollBatchItems)
         .where(eq(payrollBatchItems.batchId, targetBatch.id));
 
-      const targetTotalAmount = targetItems.reduce((sum, item) => sum + safeParseDecimal(item.netAmount), 0);
+      const targetTotalAmount = targetItems.reduce((sum, item) => sum + safeParseDecimal(item.baseAmount), 0);
       const targetTotalWorkers = targetItems.length;
 
       await db.update(payrollBatches)
@@ -8866,7 +8866,7 @@ export async function applyAssignmentSettlements(params: {
       .from(payrollBatchItems)
       .where(eq(payrollBatchItems.batchId, batchId));
 
-    const sourceTotalAmount = sourceItems.reduce((sum, item) => sum + safeParseDecimal(item.netAmount), 0);
+    const sourceTotalAmount = sourceItems.reduce((sum, item) => sum + safeParseDecimal(item.baseAmount), 0);
 
     await db.update(payrollBatches)
       .set({
