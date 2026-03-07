@@ -90,9 +90,10 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/operations', '/operations/notes-review', '/operations/supervisor-performance',
     '/cost-centers', '/temporary-assignments', '/profile',
   ],
-  // المحاسب: بدون لوحة التحكم، بدون سجل الحضور، بدون المستخدمين
+  // المحاسب: بدون لوحة التحكم، بدون المستخدمين، مع سجل الحضور وتقارير الحضور (استعراض فقط)
   accountant: [
     '/workers', '/groups',
+    '/attendance/log', '/attendance/reports',
     '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
     '/schedules/weekly', '/punches/review',
