@@ -20,6 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Printer, Eye, AlertCircle } from 'lucide-react';
+import { numberToArabicWords } from '@/lib/numberToArabicWords';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { toast } from 'sonner';
 import { useReactToPrint } from 'react-to-print';
@@ -363,6 +364,12 @@ export default function PayrollReport() {
                           <TableCell className="text-center">{totals.totalDeductions}</TableCell>
                           <TableCell className="text-center">{totals.totalBonuses}</TableCell>
                           <TableCell className="text-center">{totals.totalNet}</TableCell>
+                        </TableRow>
+                        {/* Total in words row */}
+                        <TableRow className="bg-gray-50">
+                          <TableCell colSpan={8} className="text-right text-sm font-semibold text-gray-700 py-3">
+                            المبلغ بالأحرف: {numberToArabicWords(parseFloat(totals.totalNet))}
+                          </TableCell>
                         </TableRow>
                       </>
                     )}

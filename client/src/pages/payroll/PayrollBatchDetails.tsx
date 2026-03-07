@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRoute, useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
+import { trpc } from '@/lib/trpc';
+import { numberToArabicWords } from '@/lib/numberToArabicWords';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -536,6 +537,9 @@ export default function PayrollBatchDetails() {
           <CardContent>
             <div className="text-2xl font-bold">
               {Number(batch.batch.totalAmount || 0).toLocaleString("ar-SA")} ر.س
+            </div>
+            <div className="text-xs text-muted-foreground mt-1 font-medium">
+              {numberToArabicWords(Number(batch.batch.totalAmount || 0))}
             </div>
           </CardContent>
         </Card>
