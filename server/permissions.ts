@@ -146,7 +146,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     labelAr: "محاسب مالي",
     // المحاسب: يستلم المسودة من الشؤون الإدارية ويعتمد أو يرفض
     // لا يملك: حذف، سجل حضور، لوحة تحكم، إنشاء دفعة، إرسال مسودة
-    pages: ["workers", "groups", "costCenters", "payroll", "reports", "settings", "operations", "operationsReview"],
+    pages: ["workers", "groups", "costCenters", "payroll", "reports", "settings", "operations", "operationsReview", "attendanceLog"],
     canCreateBatch: false,
     canDeleteBatch: false,
     canSubmitDraft: false, // لا يرسل المسودة - يستلمها فقط
@@ -158,8 +158,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canManageCostCenters: true,
     canManageUsers: false,
     canViewFinancialReports: true,
-    canViewAttendanceReports: false,
-    canViewAttendanceLog: false,
+    canViewAttendanceReports: true,
+    canViewAttendanceLog: true,
     canEditAttendanceLog: false,
     canViewExecutiveDashboard: false,
     canAccessOperations: true,
