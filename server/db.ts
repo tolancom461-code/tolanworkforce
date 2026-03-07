@@ -831,13 +831,18 @@ export async function changeUserPassword(userId: number, currentPassword: string
     throw new Error("User not found");
   }
   
-  // Verify current password (simplified - in production use proper hashing like bcrypt)
-  if (user.passwordHash && user.passwordHash !== currentPassword) {
+  // Verify current password using bcrypt
+  if (!user.passwordHash) {
+    throw new Error("هذا الحساب لا يملك كلمة مرور محلية");
+  }
+  const isValid = await verifyPassword(currentPassword, user.passwordHash);
+  if (!isValid) {
     throw new Error("كلمة المرور الحالية غير صحيحة");
   }
   
-  // Update password
-  await db.update(users).set({ passwordHash: newPassword, updatedAt: new Date() }).where(eq(users.id, userId));
+  // Hash new password before storing
+  const newHash = await hashPassword(newPassword);
+  await db.update(users).set({ passwordHash: newHash, updatedAt: new Date() }).where(eq(users.id, userId));
 }
 
 
