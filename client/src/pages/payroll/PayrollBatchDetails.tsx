@@ -533,15 +533,15 @@ export default function PayrollBatchDetails() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              إجمالي الرواتب
+              صافي الرواتب
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Number(batch.batch.totalAmount || 0).toLocaleString("ar-SA")} ر.س
+              {(Number(batch.batch.totalAmount || 0) - Number(batch.batch.totalDeductions || 0) + Number(batch.batch.totalBonuses || 0)).toLocaleString("ar-SA")} ر.س
             </div>
             <div className="text-xs text-muted-foreground mt-1 font-medium">
-              {numberToArabicWords(Number(batch.batch.totalAmount || 0))}
+              {numberToArabicWords(Number(batch.batch.totalAmount || 0) - Number(batch.batch.totalDeductions || 0) + Number(batch.batch.totalBonuses || 0))}
             </div>
           </CardContent>
         </Card>
