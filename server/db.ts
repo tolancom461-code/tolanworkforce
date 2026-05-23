@@ -3988,103 +3988,62 @@ export async function getPayrollReportByGroup(
   const db = await getDb();
   if (!db) return [];
 
-  // Use string-based date comparison to avoid timezone issues
-  // periodStart and periodEnd are YYYY-MM-DD strings
+  const { workers, groups, payrollBatches, payrollBatchItems } = await import('../drizzle/schema');
+
   const startDateStr = periodStart.split('T')[0];
   const endDateStr = periodEnd.split('T')[0];
 
-  // 1) Get daily finance records - use DATE() cast to avoid timezone issues
-  const conditions: any[] = [
-    sql`DATE(${workerDailyFinance.workDate}) >= ${startDateStr}`,
-    sql`DATE(${workerDailyFinance.workDate}) <= ${endDateStr}`,
-  ];
-  if (groupId) conditions.push(eq(workers.groupId, groupId));
-  if (costCenterId) conditions.push(eq(groups.costCenterId, costCenterId));
-
-  const whereConditions = and(...conditions);
-
-  const results = await db
+  const batchItems = await db
     .select({
       groupId: groups.id,
       groupName: groups.name,
       groupCode: groups.code,
       workerId: workers.id,
-      workerName: workers.fullName,
-      workerCode: workers.code,
-      baseAmount: workerDailyFinance.baseAmount,
-      deductions: workerDailyFinance.deductions,
-      bonuses: workerDailyFinance.bonuses,
+      basePay: payrollBatchItems.basePay,
+      additions: payrollBatchItems.additions,
+      deductions: payrollBatchItems.deductions,
+      netSalary: payrollBatchItems.netSalary,
     })
-    .from(workerDailyFinance)
-    .innerJoin(workers, eq(workerDailyFinance.workerId, workers.id))
+    .from(payrollBatchItems)
+    .innerJoin(payrollBatches, eq(payrollBatchItems.batchId, payrollBatches.id))
+    .innerJoin(workers, eq(payrollBatchItems.workerId, workers.id))
     .innerJoin(groups, eq(workers.groupId, groups.id))
-    .where(whereConditions);
+    .where(and(
+      sql,
+      sql,
+      inArray(payrollBatches.status, ['approved', 'paid']),
+      groupId ? eq(workers.groupId, groupId) : undefined,
+      costCenterId ? eq(groups.costCenterId, costCenterId) : undefined
+    ));
 
-  // 2) Get approved pay overrides for the same period
-  const overrideConditions = [
-    sql`DATE(${payOverrides.overrideDate}) >= ${startDateStr}`,
-    sql`DATE(${payOverrides.overrideDate}) <= ${endDateStr}`,
-    eq(payOverrides.status, 'approved'),
-  ];
-
-  const overrideResults = await db
-    .select({
-      workerId: payOverrides.workerId,
-      overrideType: payOverrides.overrideType,
-      amount: payOverrides.amount,
-      groupId: groups.id,
-    })
-    .from(payOverrides)
-    .innerJoin(workers, eq(payOverrides.workerId, workers.id))
-    .innerJoin(groups, eq(workers.groupId, groups.id))
-    .where(and(...overrideConditions));
-
-  // 3) Build per-worker override totals keyed by groupId
-  const overrideByGroup = new Map<number, { bonuses: number; deductions: number }>();
-  overrideResults.forEach((row) => {
-    // Apply same group/costCenter filters
-    if (groupId && row.groupId !== groupId) return;
-    if (costCenterId) {
-      // costCenter filter already applied via join, but double-check
-    }
-    const existing = overrideByGroup.get(row.groupId) || { bonuses: 0, deductions: 0 };
-    const amount = parseFloat(row.amount || '0');
-    if (row.overrideType === 'bonus') {
-      existing.bonuses += amount;
-    } else if (row.overrideType === 'deduction') {
-      existing.deductions += amount;
-    }
-    overrideByGroup.set(row.groupId, existing);
-  });
-
-  // 4) Group daily finance by group and calculate totals
   const groupMap = new Map<number, {
     groupName: string;
     groupCode: string;
-    workerCount: number;
+    workerIds: Set<number>;
     totalSalary: number;
     totalDeductions: number;
     totalBonuses: number;
     totalNet: number;
   }>();
 
-  results.forEach((row) => {
+  batchItems.forEach((row) => {
     const existing = groupMap.get(row.groupId);
-    const baseAmount = parseFloat(row.baseAmount || '0');
+    const baseAmount = parseFloat(row.basePay || '0');
     const deductions = parseFloat(row.deductions || '0');
-    const bonuses = parseFloat(row.bonuses || '0');
-    const netAmount = baseAmount - deductions + bonuses;
+    const bonuses = parseFloat(row.additions || '0');
+    const netAmount = parseFloat(row.netSalary || '0');
 
     if (existing) {
       existing.totalSalary += baseAmount;
       existing.totalDeductions += deductions;
       existing.totalBonuses += bonuses;
       existing.totalNet += netAmount;
+      existing.workerIds.add(row.workerId);
     } else {
       groupMap.set(row.groupId, {
         groupName: row.groupName,
         groupCode: row.groupCode,
-        workerCount: 1,
+        workerIds: new Set([row.workerId]),
         totalSalary: baseAmount,
         totalDeductions: deductions,
         totalBonuses: bonuses,
@@ -4093,43 +4052,14 @@ export async function getPayrollReportByGroup(
     }
   });
 
-  // 5) Add pay overrides to group totals
-  overrideByGroup.forEach((overrides, gId) => {
-    const group = groupMap.get(gId);
-    if (group) {
-      group.totalBonuses += overrides.bonuses;
-      group.totalDeductions += overrides.deductions;
-      group.totalNet += overrides.bonuses - overrides.deductions;
-    }
-  });
-
-  // 6) Count unique workers per group
-  const workerCountMap = new Map<number, Set<number>>();
-  results.forEach((row) => {
-    if (!workerCountMap.has(row.groupId)) {
-      workerCountMap.set(row.groupId, new Set());
-    }
-    workerCountMap.get(row.groupId)!.add(row.workerId);
-  });
-
-  // Update worker counts
-  workerCountMap.forEach((workerSet, gId) => {
-    const group = groupMap.get(gId);
-    if (group) {
-      group.workerCount = workerSet.size;
-    }
-  });
-
-  return Array.from(groupMap.entries()).map(([gId, data]) => ({
-    groupId: gId,
+  return Array.from(groupMap.values()).map(data => ({
     groupName: data.groupName,
     groupCode: data.groupCode,
-    workerCount: data.workerCount,
-    totalSalary: data.totalSalary.toFixed(2),
-    totalDeductions: data.totalDeductions.toFixed(2),
-    totalBonuses: data.totalBonuses.toFixed(2),
-    totalNet: data.totalNet.toFixed(2),
-    costCenterId: costCenterId,
+    workerCount: data.workerIds.size,
+    totalSalary: data.totalSalary,
+    totalDeductions: data.totalDeductions,
+    totalBonuses: data.totalBonuses,
+    totalNet: data.totalNet,
   }));
 }
 
@@ -4144,96 +4074,51 @@ export async function getPayrollReportByWorker(
   const db = await getDb();
   if (!db) return [];
 
-  // Use string-based date comparison to avoid timezone issues
+  const { workers, groups, payrollBatches, payrollBatchItems } = await import('../drizzle/schema');
+
   const startDateStr = periodStart.split('T')[0];
   const endDateStr = periodEnd.split('T')[0];
 
-  // 1) Get daily finance records - use DATE() cast to avoid timezone issues
-  const whereConditions = workerId
-    ? and(
-        sql`DATE(${workerDailyFinance.workDate}) >= ${startDateStr}`,
-        sql`DATE(${workerDailyFinance.workDate}) <= ${endDateStr}`,
-        eq(workers.id, workerId)
-      )
-    : and(
-        sql`DATE(${workerDailyFinance.workDate}) >= ${startDateStr}`,
-        sql`DATE(${workerDailyFinance.workDate}) <= ${endDateStr}`
-      );
-
-  const results = await db
+  const batchItems = await db
     .select({
       workerId: workers.id,
       workerName: workers.fullName,
       workerCode: workers.code,
       groupName: groups.name,
       groupCode: groups.code,
-      baseAmount: workerDailyFinance.baseAmount,
-      deductions: workerDailyFinance.deductions,
-      bonuses: workerDailyFinance.bonuses,
-      workDate: workerDailyFinance.workDate,
+      basePay: payrollBatchItems.basePay,
+      additions: payrollBatchItems.additions,
+      deductions: payrollBatchItems.deductions,
+      netSalary: payrollBatchItems.netSalary,
     })
-    .from(workerDailyFinance)
-    .innerJoin(workers, eq(workerDailyFinance.workerId, workers.id))
+    .from(payrollBatchItems)
+    .innerJoin(payrollBatches, eq(payrollBatchItems.batchId, payrollBatches.id))
+    .innerJoin(workers, eq(payrollBatchItems.workerId, workers.id))
     .leftJoin(groups, eq(workers.groupId, groups.id))
-    .where(whereConditions);
+    .where(and(
+      sql,
+      sql,
+      inArray(payrollBatches.status, ['approved', 'paid']),
+      workerId ? eq(workers.id, workerId) : undefined
+    ));
 
-  // 2) Get approved pay overrides for the same period
-  const overrideWhereConditions = workerId
-    ? and(
-        sql`DATE(${payOverrides.overrideDate}) >= ${startDateStr}`,
-        sql`DATE(${payOverrides.overrideDate}) <= ${endDateStr}`,
-        eq(payOverrides.status, 'approved'),
-        eq(payOverrides.workerId, workerId)
-      )
-    : and(
-        sql`DATE(${payOverrides.overrideDate}) >= ${startDateStr}`,
-        sql`DATE(${payOverrides.overrideDate}) <= ${endDateStr}`,
-        eq(payOverrides.status, 'approved')
-      );
-
-  const overrideResults = await db
-    .select({
-      workerId: payOverrides.workerId,
-      overrideType: payOverrides.overrideType,
-      amount: payOverrides.amount,
-      reason: payOverrides.reason,
-    })
-    .from(payOverrides)
-    .where(overrideWhereConditions);
-
-  // 3) Build per-worker override totals
-  const overrideByWorker = new Map<number, { bonuses: number; deductions: number; notes: string[] }>();
-  overrideResults.forEach((row) => {
-    const existing = overrideByWorker.get(row.workerId) || { bonuses: 0, deductions: 0, notes: [] };
-    const amount = parseFloat(row.amount || '0');
-    if (row.overrideType === 'bonus') {
-      existing.bonuses += amount;
-    } else if (row.overrideType === 'deduction') {
-      existing.deductions += amount;
-    }
-    if (row.reason) existing.notes.push(`${row.overrideType}: ${amount} - ${row.reason}`);
-    overrideByWorker.set(row.workerId, existing);
-  });
-
-  // 4) Group daily finance by worker and calculate totals
   const workerMap = new Map<number, {
     workerName: string;
     workerCode: string;
-    groupName: string | null;
-    groupCode: string | null;
+    groupName: string;
+    groupCode: string;
     totalSalary: number;
     totalDeductions: number;
     totalBonuses: number;
     totalNet: number;
-    overrideNotes: string[];
   }>();
 
-  results.forEach((row) => {
+  batchItems.forEach((row) => {
     const existing = workerMap.get(row.workerId);
-    const baseAmount = parseFloat(row.baseAmount || '0');
+    const baseAmount = parseFloat(row.basePay || '0');
     const deductions = parseFloat(row.deductions || '0');
-    const bonuses = parseFloat(row.bonuses || '0');
-    const netAmount = baseAmount - deductions + bonuses;
+    const bonuses = parseFloat(row.additions || '0');
+    const netAmount = parseFloat(row.netSalary || '0');
 
     if (existing) {
       existing.totalSalary += baseAmount;
@@ -4244,40 +4129,17 @@ export async function getPayrollReportByWorker(
       workerMap.set(row.workerId, {
         workerName: row.workerName,
         workerCode: row.workerCode,
-        groupName: row.groupName,
-        groupCode: row.groupCode,
+        groupName: row.groupName || 'N/A',
+        groupCode: row.groupCode || 'N/A',
         totalSalary: baseAmount,
         totalDeductions: deductions,
         totalBonuses: bonuses,
         totalNet: netAmount,
-        overrideNotes: [],
       });
     }
   });
 
-  // 5) Add pay overrides to worker totals
-  overrideByWorker.forEach((overrides, wId) => {
-    const worker = workerMap.get(wId);
-    if (worker) {
-      worker.totalBonuses += overrides.bonuses;
-      worker.totalDeductions += overrides.deductions;
-      worker.totalNet += overrides.bonuses - overrides.deductions;
-      worker.overrideNotes.push(...overrides.notes);
-    }
-  });
-
-  return Array.from(workerMap.entries()).map(([wId, data]) => ({
-    workerId: wId,
-    workerName: data.workerName,
-    workerCode: data.workerCode,
-    groupName: data.groupName || '-',
-    groupCode: data.groupCode || '-',
-    totalSalary: data.totalSalary.toFixed(2),
-    totalDeductions: data.totalDeductions.toFixed(2),
-    totalBonuses: data.totalBonuses.toFixed(2),
-    totalNet: data.totalNet.toFixed(2),
-    overrideNotes: data.overrideNotes.join(' | '),
-  }));
+  return Array.from(workerMap.values());
 }
 
 /**
