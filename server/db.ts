@@ -4008,14 +4008,13 @@ export async function getPayrollReportByGroup(
     .innerJoin(payrollBatches, eq(payrollBatchItems.batchId, payrollBatches.id))
     .innerJoin(workers, eq(payrollBatchItems.workerId, workers.id))
     .innerJoin(groups, eq(workers.groupId, groups.id))
-    .where(and(
-      sql,
-      sql,
+        .where(and(
+      gte(payrollBatches.periodStart, startDateStr),
+      lte(payrollBatches.periodEnd, endDateStr),
       inArray(payrollBatches.status, ['approved', 'paid']),
       groupId ? eq(workers.groupId, groupId) : undefined,
       costCenterId ? eq(groups.costCenterId, costCenterId) : undefined
     ));
-
   const groupMap = new Map<number, {
     groupName: string;
     groupCode: string;
@@ -4095,13 +4094,12 @@ export async function getPayrollReportByWorker(
     .innerJoin(payrollBatches, eq(payrollBatchItems.batchId, payrollBatches.id))
     .innerJoin(workers, eq(payrollBatchItems.workerId, workers.id))
     .leftJoin(groups, eq(workers.groupId, groups.id))
-    .where(and(
-      sql,
-      sql,
+        .where(and(
+      gte(payrollBatches.periodStart, startDateStr),
+      lte(payrollBatches.periodEnd, endDateStr),
       inArray(payrollBatches.status, ['approved', 'paid']),
       workerId ? eq(workers.id, workerId) : undefined
     ));
-
   const workerMap = new Map<number, {
     workerName: string;
     workerCode: string;
