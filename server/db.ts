@@ -4009,8 +4009,8 @@ export async function getPayrollReportByGroup(
     .innerJoin(workers, eq(payrollBatchItems.workerId, workers.id))
     .innerJoin(groups, eq(workers.groupId, groups.id))
         .where(and(
-      gte(payrollBatches.periodStart, startDateStr),
-      lte(payrollBatches.periodEnd, endDateStr),
+      lte(payrollBatches.periodStart, endDateStr),
+      gte(payrollBatches.periodEnd, startDateStr),
       inArray(payrollBatches.status, ['approved', 'paid']),
       groupId ? eq(workers.groupId, groupId) : undefined,
       costCenterId ? eq(groups.costCenterId, costCenterId) : undefined
@@ -4095,8 +4095,8 @@ export async function getPayrollReportByWorker(
     .innerJoin(workers, eq(payrollBatchItems.workerId, workers.id))
     .leftJoin(groups, eq(workers.groupId, groups.id))
         .where(and(
-      gte(payrollBatches.periodStart, startDateStr),
-      lte(payrollBatches.periodEnd, endDateStr),
+      lte(payrollBatches.periodStart, endDateStr),
+      gte(payrollBatches.periodEnd, startDateStr),
       inArray(payrollBatches.status, ['approved', 'paid']),
       workerId ? eq(workers.id, workerId) : undefined
     ));
