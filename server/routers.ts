@@ -4483,13 +4483,28 @@ export const appRouter = router({
   dailyPayrollReport: router({
     getReport: protectedProcedure
       .input(z.object({
-        startDate: z.string(),
-        endDate: z.string(),
-        costCenterId: z.number().optional().nullable(),
+        periodStart: z.string(),
+        periodEnd: z.string(),
+        costCenterId: z.number().optional(),
+        groupIds: z.array(z.number()).optional(),
       }))
       .query(async ({ input }) => {
         const { getDailyPayrollReport } = await import('./dailyPayrollReport');
-        return await getDailyPayrollReport(input.startDate, input.endDate, input.costCenterId);
+        return await getDailyPayrollReport(
+          input.periodStart,
+          input.periodEnd,
+          input.costCenterId ?? undefined,
+          input.groupIds
+        );
+      }),
+
+    getGroups: protectedProcedure
+      .input(z.object({
+        costCenterId: z.number().optional(),
+      }))
+      .query(async ({ input }) => {
+        const { getDailyPayrollGroups } = await import('./dailyPayrollReport');
+        return await getDailyPayrollGroups(input.costCenterId);
       }),
   }),
 });
