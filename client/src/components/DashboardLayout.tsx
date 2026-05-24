@@ -174,7 +174,7 @@ const menuSections = [
       { icon: FileText, label: "سجل دفعات الرواتب", path: "/finance/payroll/history" },
       { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
       { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
-      { icon: FileCheck, label: "كشف رواتب العمالة اليومية", path: "/finance/daily-payroll-report" },
+      { icon: FileCheck, label: "تقرير الرواتب اليومية", path: "/finance/daily-payroll-report" },
       { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },
       // { icon: FileSearch, label: "تقرير مستحقات العمالة", path: "/finance/cost-center-report" }, // مخفي مؤقتاً
     ]
