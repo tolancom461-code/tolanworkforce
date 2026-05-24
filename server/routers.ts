@@ -4478,6 +4478,20 @@ export const appRouter = router({
         });
       }
     }),
+
+  // Daily Payroll Report
+  dailyPayrollReport: router({
+    getReport: protectedProcedure
+      .input(z.object({
+        startDate: z.string(),
+        endDate: z.string(),
+        costCenterId: z.number().optional().nullable(),
+      }))
+      .query(async ({ input }) => {
+        const { getDailyPayrollReport } = await import('./dailyPayrollReport');
+        return await getDailyPayrollReport(input.startDate, input.endDate, input.costCenterId);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

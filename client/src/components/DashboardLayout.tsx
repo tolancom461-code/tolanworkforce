@@ -85,7 +85,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/dashboard', '/executive', '/workers', '/groups',
     '/attendance', '/attendance/log', '/attendance/reports', '/work-days',
     '/payroll/dashboard', '/payroll/batches', '/payroll/batches/create',
-    '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
+    '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports', '/finance/daily-payroll-report',
     '/schedules/weekly', '/punches/review',
     '/operations', '/operations/notes-review', '/operations/supervisor-performance',
     '/cost-centers', '/temporary-assignments', '/profile',
@@ -95,7 +95,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/workers', '/groups',
     '/attendance/log', '/attendance/reports',
     '/payroll/dashboard', '/payroll/batches',
-    '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports',
+    '/finance/payroll/history', '/finance/overrides', '/payroll-report', '/finance/reports', '/finance/daily-payroll-report',
     '/schedules/weekly', '/punches/review',
     '/operations', '/operations/notes-review', '/operations/supervisor-performance',
     '/cost-centers', '/temporary-assignments', '/profile',
@@ -103,7 +103,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
   // المراجع: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط) + سجل التدقيق
   auditor: [
     '/payroll/dashboard', '/payroll/batches',
-    '/finance/payroll/history', '/payroll-report', '/finance/reports',
+    '/finance/payroll/history', '/payroll-report', '/finance/reports', '/finance/daily-payroll-report',
     '/attendance/log', '/attendance/reports',
     '/audit-log',
     '/profile',
@@ -111,7 +111,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
   // المدير المالي: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط) + سجل التدقيق
   finance_manager: [
     '/payroll/dashboard', '/payroll/batches',
-    '/finance/payroll/history', '/payroll-report', '/finance/reports',
+    '/finance/payroll/history', '/payroll-report', '/finance/reports', '/finance/daily-payroll-report',
     '/finance/cost-center-report',
     '/attendance/log', '/attendance/reports',
     '/audit-log',
@@ -174,6 +174,7 @@ const menuSections = [
       { icon: FileText, label: "سجل دفعات الرواتب", path: "/finance/payroll/history" },
       { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
       { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
+      { icon: FileCheck, label: "كشف رواتب العمالة اليومية", path: "/finance/daily-payroll-report" },
       { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },
       // { icon: FileSearch, label: "تقرير مستحقات العمالة", path: "/finance/cost-center-report" }, // مخفي مؤقتاً
     ]
