@@ -492,3 +492,22 @@ export const groupSchedules = mysqlTable("group_schedules", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
+// ============================================
+// Payment Vouchers (سندات الصرف)
+// ============================================
+
+export const paymentVouchers = mysqlTable("payment_vouchers", {
+  id: int("id").autoincrement().primaryKey(),
+  voucherNumber: int("voucher_number").notNull().unique(),
+  costCenterId: int("cost_center_id").references(() => costCenters.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  voucherDate: date("voucher_date").notNull(),
+  recipientName: varchar("recipient_name", { length: 255 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  createdBy: int("created_by").references(() => users.id, { onDelete: 'set null', onUpdate: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PaymentVoucher = typeof paymentVouchers.$inferSelect;
+export type InsertPaymentVoucher = typeof paymentVouchers.$inferInsert;
