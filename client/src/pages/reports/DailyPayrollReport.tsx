@@ -251,8 +251,8 @@ export default function DailyPayrollReport() {
                       <th className="border border-gray-300 p-3 text-right">المجموعة</th>
                       <th className="border border-gray-300 p-3 text-center">عدد العمال</th>
                       <th className="border border-gray-300 p-3 text-center">المبلغ</th>
-                      <th className="border border-gray-300 p-3 text-center">إجمالي الاستقطاعات</th>
-                      <th className="border border-gray-300 p-3 text-center">إجمالي الحوافز</th>
+                      <th className="border border-gray-300 p-3 text-center">الخصومات</th>
+                      <th className="border border-gray-300 p-3 text-center">الإضافي</th>
                       <th className="border border-gray-300 p-3 text-center bg-blue-50">صافي المبلغ</th>
                     </tr>
                   </thead>
@@ -271,7 +271,7 @@ export default function DailyPayrollReport() {
                   </tbody>
                   <tfoot>
                     <tr className="bg-blue-900 text-white font-bold">
-                      <td colSpan={2} className="border border-blue-900 p-4 text-center text-lg">الإجمالي العام</td>
+                      <td colSpan={2} className="border border-blue-900 p-4 text-center text-lg">الإجمالي</td>
                       <td className="border border-blue-900 p-4 text-center text-lg">{reportData.reduce((s, r) => s + r.workerCount, 0)}</td>
                       <td className="border border-blue-900 p-4 text-center text-lg">{formatCurrency(totalSalary)}</td>
                       <td className="border border-blue-900 p-4 text-center text-lg">{formatCurrency(totalDeductions)}</td>
