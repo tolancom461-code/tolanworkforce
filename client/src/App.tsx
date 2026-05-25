@@ -57,6 +57,7 @@ import Backup from "./pages/Backup";
 import Migration from "./pages/Migration";
 import DatabaseConsole from "./pages/DatabaseConsole";
 import FinancialRecalculation from "./pages/FinancialRecalculation";
+import PaymentVoucher from "./pages/PaymentVoucher";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { lazy } from "react";
@@ -235,6 +236,11 @@ function Router() {
       <Route path="/finance/daily-payroll-report">
         <ProtectedRoute>
           <DailyPayrollReport />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/finance/payment-voucher">
+        <ProtectedRoute>
+          <PaymentVoucher />
         </ProtectedRoute>
       </Route>
       <Route path="/payroll-report" component={PayrollReport} />
