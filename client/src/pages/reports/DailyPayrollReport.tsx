@@ -250,7 +250,7 @@ export default function DailyPayrollReport() {
                       <th className="border border-gray-300 p-3 text-center w-12">#</th>
                       <th className="border border-gray-300 p-3 text-right">المجموعة</th>
                       <th className="border border-gray-300 p-3 text-center">عدد العمال</th>
-                      <th className="border border-gray-300 p-3 text-center">إجمالي الرواتب</th>
+                      <th className="border border-gray-300 p-3 text-center">المبلغ</th>
                       <th className="border border-gray-300 p-3 text-center">إجمالي الاستقطاعات</th>
                       <th className="border border-gray-300 p-3 text-center">إجمالي الحوافز</th>
                       <th className="border border-gray-300 p-3 text-center bg-blue-50">صافي المبلغ</th>
