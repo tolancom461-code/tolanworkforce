@@ -220,7 +220,11 @@ export default function DailyPayrollReport() {
 
               {/* منتصف: العنوان */}
               <div className="text-center">
-                <h1 className="text-2xl font-black mb-1">شركة تولان الدولية</h1>
+                <h1 className="text-2xl font-black mb-1">
+                  {selectedCostCenterId
+                    ? costCenters?.find(cc => cc.id === selectedCostCenterId)?.name || 'شركة تولان الدولية'
+                    : 'شركة تولان الدولية'}
+                </h1>
                 <h2 className="text-xl font-bold opacity-90">تقرير كشف رواتب العمالة اليومية</h2>
                 <div className="mt-2 inline-block bg-white/20 px-4 py-1 rounded-full text-sm">
                   للفترة من: <span className="font-bold">{startDate}</span> إلى: <span className="font-bold">{endDate}</span>
@@ -284,40 +288,22 @@ export default function DailyPayrollReport() {
                 </div>
 
                 {/* ===== التوقيعات ===== */}
-                <div className="grid grid-cols-6 gap-4 mt-16 text-center text-sm">
-                  
-                  <div className="flex flex-col items-center">
-                    <p className="font-bold text-blue-800 mb-2">إعداد</p>
-                    <div className="border-b-2 border-gray-400 w-full mt-12"></div>
+                <div className="grid grid-cols-3 gap-8 mt-16 text-center">
+                  <div className="space-y-12">
+                    <p className="font-bold border-b border-gray-400 pb-2">المحاسب المالي</p>
+                    <div className="h-16"></div>
+                    <p className="text-sm opacity-60">التوقيع والختم</p>
                   </div>
-
-                  <div className="flex flex-col items-center">
-                    <p className="font-bold text-blue-800 mb-2">مراجعة أولى</p>
-                    <div className="border-b-2 border-gray-400 w-full mt-12"></div>
+                  <div className="space-y-12">
+                    <p className="font-bold border-b border-gray-400 pb-2">المراجع المالي</p>
+                    <div className="h-16"></div>
+                    <p className="text-sm opacity-60">التوقيع والختم</p>
                   </div>
-
-                  <div className="flex flex-col items-center">
-                    <p className="font-bold text-blue-800 mb-2">المراجع المالي</p>
-                    <div className="border-b-2 border-gray-400 w-full mt-12"></div>
+                  <div className="space-y-12">
+                    <p className="font-bold border-b border-gray-400 pb-2">المدير المالي</p>
+                    <div className="h-16"></div>
+                    <p className="text-sm opacity-60">التوقيع والختم</p>
                   </div>
-
-                  <div className="flex flex-col items-center">
-                    <p className="font-bold text-blue-800 mb-2">رئيس الحسابات</p>
-                    <div className="border-b-2 border-gray-400 w-full mt-12"></div>
-                  </div>
-
-                  <div className="flex flex-col items-center">
-                    <p className="font-bold text-blue-800 mb-2">تدقيق ومراجعة</p>
-                    <div className="border-b-2 border-gray-400 w-full mt-12"></div>
-                    <p className="mt-2 text-gray-700">م. سعد الزكري</p>
-                  </div>
-
-                  <div className="flex flex-col items-center">
-                    <p className="font-bold text-blue-800 mb-2">الرئيس التنفيذي</p>
-                    <div className="border-b-2 border-gray-400 w-full mt-12"></div>
-                    <p className="mt-2 font-black text-gray-900">م. زكري بن عبدالله الزكري</p>
-                  </div>
-
                 </div>
               </>
             ) : (
