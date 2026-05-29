@@ -1578,10 +1578,25 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     ))
     .orderBy(attendanceEvents.eventTime);
   
-  // البحث عن أول حضور وآخر انصراف في هذا اليوم الإداري
+// البحث عن أول حضور وآخر انصراف في هذا اليوم الإداري
   const checkIn = allEvents.find(e => e.eventType === 'check_in') || null;
-  const checkOut = allEvents.reverse().find(e => e.eventType === 'check_out') || null;
-  
+  const checkOut = [...allEvents].reverse().find(e => e.eventType === 'check_out') || null;
+
+  // ✅ حساب مجموع دقائق العمل الفعلية من كل الجلسات
+  let totalActualMinutes = 0;
+  const unmatchedIns: any[] = [];
+  for (const event of allEvents) {
+    if (event.eventType === 'check_in') {
+      unmatchedIns.push(event);
+    } else if (event.eventType === 'check_out' && unmatchedIns.length > 0) {
+      const matchedIn = unmatchedIns.pop();
+      const mins = Math.round(
+        (new Date(event.eventTime).getTime() - new Date(matchedIn.eventTime).getTime()) / 60000
+      );
+      if (mins > 0) totalActualMinutes += mins;
+    }
+  }
+
   let lateMinutes = 0;
   let earlyLeaveMinutes = 0;
   let actualWorkMinutes = 0;
@@ -1593,8 +1608,8 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     const checkInTime = new Date(checkIn.eventTime);
     const checkOutTime = new Date(checkOut.eventTime);
     
-    // Raw work minutes (for attendance log display)
-    const rawWorkMinutes = Math.round((checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60));
+    // ✅ استخدام مجموع دقائق الجلسات بدلاً من الفارق بين أول دخول وآخر خروج
+    const rawWorkMinutes = totalActualMinutes;
     
   // Base amount = fixed daily wage
   console.log('🔍 DEBUG: Calculating baseAmount...');
