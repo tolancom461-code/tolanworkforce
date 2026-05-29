@@ -1278,16 +1278,17 @@ export const appRouter = router({
         workerId: z.number(),
         ipAddress: z.string().optional(),
         deviceInfo: z.string().optional(),
+        eventType: z.enum(['check_in', 'check_out']).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        // ✅ استخدام الدالة الذكية مع المنطق المتقدم
         const result = await db.recordAttendanceWithAdministrativeDay(
           input.workerId,
           'qr',
           undefined,
           ctx.user?.id,
           input.ipAddress,
-          input.deviceInfo
+          input.deviceInfo,
+          input.eventType
         );
         
         return result;
