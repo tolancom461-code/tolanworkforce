@@ -26,16 +26,22 @@ import { getDb } from "./db";
  * - 2024-01-15 23:00:00 → 2024-01-15 (مساءً، يعتبر من نفس اليوم)
  */
 export function getAdministrativeWorkDate(timestamp: Date): string {
-  const date = new Date(timestamp);
-  const hours = date.getHours();
+  // ✅ تحويل للتوقيت الرياض (UTC+3) بشكل صريح
+  const riyadhOffset = 3 * 60 * 60 * 1000; // 3 ساعات بالميلي ثانية
+  const riyadhTime = new Date(timestamp.getTime() + riyadhOffset);
   
-  // إذا كانت الساعة قبل 5 صباحاً، نطرح يوم واحد
+  const hours = riyadhTime.getUTCHours(); // ← الآن بتوقيت الرياض
+  
+  // إذا كانت الساعة قبل 5 صباحاً بتوقيت الرياض، نطرح يوم واحد
   if (hours < 5) {
-    date.setDate(date.getDate() - 1);
+    riyadhTime.setUTCDate(riyadhTime.getUTCDate() - 1);
   }
   
-  // إرجاع التاريخ بصيغة YYYY-MM-DD
-  return date.toLocaleDateString('en-CA');
+  // استخراج التاريخ بصيغة YYYY-MM-DD بتوقيت الرياض
+  const year = riyadhTime.getUTCFullYear();
+  const month = String(riyadhTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(riyadhTime.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
