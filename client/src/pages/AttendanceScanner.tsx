@@ -130,18 +130,19 @@ export default function AttendanceScanner() {
     }
   };
   
-  const handleConfirmAttendance = async () => {
+  // ✅ التعديل: الحارس يختار نوع البصمة بنفسه
+  const handleConfirmAttendance = async (chosenEventType: 'check_in' | 'check_out') => {
     if (!workerData) return;
     
     setIsProcessing(true);
     try {
-      // Get IP and Device Info
       const { ipAddress, deviceInfo } = await getDeviceAndNetworkInfo();
       
       const result = await confirmAttendanceMutation.mutateAsync({
         workerId: workerData.worker.id,
         ipAddress: ipAddress || undefined,
         deviceInfo,
+        eventType: chosenEventType,
       });
       
       setLastResult({
@@ -169,18 +170,14 @@ export default function AttendanceScanner() {
       }, 3000);
       
     } catch (error: any) {
-      // Show clear alert for punch errors
       const errorMessage = error.message || 'حدث خطأ أثناء التسجيل';
       
-      // Check error type and show appropriate message
       if (errorMessage.includes('حركتين متتاليتين')) {
-        // 60 seconds rule
         toast.error(errorMessage, {
           duration: 5000,
           description: 'يجب الانتظار دقيقة كاملة بين البصمتين',
         });
       } else if (errorMessage.includes('متتالي') || errorMessage.includes('مسجل ك')) {
-        // Duplicate check-in/check-out rule
         toast.error(errorMessage, {
           duration: 5000,
           description: 'يجب تسجيل الحضور والانصراف بالترتيب',
@@ -208,7 +205,7 @@ export default function AttendanceScanner() {
     return eventType === 'check_in' ? (
       <ArrowRightCircle className="h-12 w-12 text-green-600" />
     ) : (
-      <ArrowLeftCircle className="h-12 w-12 text-blue-600" />
+      <ArrowLeftCircle className="h-12 w-12 text-red-600" />
     );
   };
 
@@ -381,19 +378,15 @@ export default function AttendanceScanner() {
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center text-2xl">تأكيد {workerData && getEventTypeLabel(workerData.nextEventType)}</DialogTitle>
+            <DialogTitle className="text-center text-2xl">تسجيل بصمة</DialogTitle>
             <DialogDescription className="text-center">
-              يرجى التحقق من بيانات العامل قبل التأكيد
+              يرجى التحقق من بيانات العامل ثم اختر نوع البصمة
             </DialogDescription>
           </DialogHeader>
           
           {workerData && (
             <div className="space-y-6 py-4">
-              {/* Event Type Icon */}
-              <div className="flex justify-center">
-                {getEventTypeIcon(workerData.nextEventType)}
-              </div>
-              
+
               {/* Worker Info */}
               <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
                 <div className="flex items-center gap-3">
@@ -447,7 +440,6 @@ export default function AttendanceScanner() {
                   <div className="text-sm font-semibold mb-2">سجل اليوم:</div>
                   <div className="space-y-1 text-sm">
                     {workerData.todayEvents.map((event: any, index: number) => {
-                        // Handle both timestamp and eventTime fields
                         const eventDate = event.eventTime || event.timestamp;
                         const dateObj = typeof eventDate === 'string' ? new Date(eventDate) : eventDate;
                         const timeStr = isNaN(dateObj.getTime()) ? 'Invalid Date' : dateObj.toLocaleTimeString('ar-SA');
@@ -462,37 +454,46 @@ export default function AttendanceScanner() {
                 </div>
               )}
               
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="flex-1"
-                  onClick={handleCancelConfirm}
-                  disabled={isProcessing}
-                >
-                  <XCircle className="h-5 w-5 ml-2" />
-                  إلغاء
-                </Button>
+              {/* ✅ زر دخول أخضر + زر خروج أحمر */}
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   size="lg"
-                  className="flex-1"
-                  onClick={handleConfirmAttendance}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-6"
+                  onClick={() => handleConfirmAttendance('check_in')}
                   disabled={isProcessing}
                 >
                   {isProcessing ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin ml-2" />
-                      جاري التسجيل...
-                    </>
+                    <Loader2 className="h-5 w-5 animate-spin ml-2" />
                   ) : (
-                    <>
-                      <CheckCircle2 className="h-5 w-5 ml-2" />
-                      تأكيد {getEventTypeLabel(workerData.nextEventType)}
-                    </>
+                    <ArrowRightCircle className="h-6 w-6 ml-2" />
                   )}
+                  دخول
+                </Button>
+                <Button
+                  size="lg"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white text-lg py-6"
+                  onClick={() => handleConfirmAttendance('check_out')}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <Loader2 className="h-5 w-5 animate-spin ml-2" />
+                  ) : (
+                    <ArrowLeftCircle className="h-6 w-6 ml-2" />
+                  )}
+                  خروج
                 </Button>
               </div>
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full"
+                onClick={handleCancelConfirm}
+                disabled={isProcessing}
+              >
+                <XCircle className="h-5 w-5 ml-2" />
+                إلغاء
+              </Button>
+
             </div>
           )}
         </DialogContent>
