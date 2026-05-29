@@ -1,5 +1,6 @@
 import { eq, desc, and, or, like, gte, lt, lte, sql, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { getAdministrativeWorkDate } from './attendance-logic';
 import { 
   users, InsertUser, User,
   costCenters,
@@ -101,18 +102,18 @@ export function safeParseInt(value: unknown): number {
  */
 export function groupEventsByWorkDate(
   events: Array<{ workerId: number; eventType: string; eventTime: Date; id?: number; [key: string]: any }>
-): Record<string, Record<number, { checkIn?: any; checkOut?: any; events: any[] }>> {
+): Record<string, Record<number, { checkIn?: any; checkOut?: any; sessions: Array<{ checkIn?: any; checkOut?: any }>; events: any[] }>> {
   // Sort by time ascending
   const sorted = [...events].sort((a, b) => new Date(a.eventTime).getTime() - new Date(b.eventTime).getTime());
   
-  // Track: workDate -> workerId -> { checkIn, checkOut, events }
-  const result: Record<string, Record<number, { checkIn?: any; checkOut?: any; events: any[] }>> = {};
+  // Track: workDate -> workerId -> { checkIn, checkOut, sessions, events }
+  const result: Record<string, Record<number, { checkIn?: any; checkOut?: any; sessions: Array<{ checkIn?: any; checkOut?: any }>; events: any[] }>> = {};
   
   // Track unmatched check_ins per worker (stack: last check_in is most recent)
-  const unmatchedCheckIns: Map<number, Array<{ event: any; workDate: string }>> = new Map();
+  const unmatchedCheckIns: Map<number, Array<{ event: any; workDate: string; sessionIndex: number }>> = new Map();
   
   for (const event of sorted) {
-    const eventDate = new Date(event.eventTime).toLocaleDateString('en-CA');
+    const eventDate = getAdministrativeWorkDate(new Date(event.eventTime));
     
     if (event.eventType === 'check_in') {
       // Work date = check_in's calendar date (always)
@@ -120,16 +121,25 @@ export function groupEventsByWorkDate(
       
       if (!result[workDate]) result[workDate] = {};
       if (!result[workDate][event.workerId]) {
-        result[workDate][event.workerId] = { events: [] };
+        result[workDate][event.workerId] = { events: [], sessions: [] };
       }
-      result[workDate][event.workerId].checkIn = event;
+
+      // ✅ إضافة جلسة جديدة
+      const sessionIndex = result[workDate][event.workerId].sessions.length;
+      result[workDate][event.workerId].sessions.push({ checkIn: event });
+
+      // ✅ checkIn = أول دخول (للتوافق مع الكود القديم)
+      if (!result[workDate][event.workerId].checkIn) {
+        result[workDate][event.workerId].checkIn = event;
+      }
+
       result[workDate][event.workerId].events.push(event);
       
       // Track as unmatched
       if (!unmatchedCheckIns.has(event.workerId)) {
         unmatchedCheckIns.set(event.workerId, []);
       }
-      unmatchedCheckIns.get(event.workerId)!.push({ event, workDate });
+      unmatchedCheckIns.get(event.workerId)!.push({ event, workDate, sessionIndex });
       
     } else if (event.eventType === 'check_out') {
       // Find most recent unmatched check_in for this worker
@@ -142,33 +152,42 @@ export function groupEventsByWorkDate(
         
         if (!result[workDate]) result[workDate] = {};
         if (!result[workDate][event.workerId]) {
-          result[workDate][event.workerId] = { events: [] };
+          result[workDate][event.workerId] = { events: [], sessions: [] };
         }
+
+        // ✅ إغلاق الجلسة المفتوحة
+        result[workDate][event.workerId].sessions[matched.sessionIndex].checkOut = event;
+
+        // ✅ checkOut = آخر خروج (للتوافق مع الكود القديم)
         result[workDate][event.workerId].checkOut = event;
+
         result[workDate][event.workerId].events.push(event);
       } else {
         // Orphan check_out: use its own calendar date
         const workDate = eventDate;
         if (!result[workDate]) result[workDate] = {};
         if (!result[workDate][event.workerId]) {
-          result[workDate][event.workerId] = { events: [] };
+          result[workDate][event.workerId] = { events: [], sessions: [] };
         }
+
+        // ✅ جلسة يتيمة بدون دخول
+        result[workDate][event.workerId].sessions.push({ checkOut: event });
+
         result[workDate][event.workerId].checkOut = event;
         result[workDate][event.workerId].events.push(event);
       }
     }
   }
   
-  return result;
+return result;
 }
-
 /**
  * Get the work date for a check_out event by finding its matching check_in.
  * Returns the check_in's calendar date, or the check_out's date if no match found.
  */
 export async function getWorkDateForCheckOut(workerId: number, checkOutTime: Date): Promise<string> {
   const db = await getDb();
-  if (!db) return checkOutTime.toLocaleDateString('en-CA');
+  if (!db) return getAdministrativeWorkDate(checkOutTime);
   
   const { attendanceEvents } = await import('../drizzle/schema');
   
@@ -190,13 +209,12 @@ export async function getWorkDateForCheckOut(workerId: number, checkOutTime: Dat
     .limit(1);
   
   if (checkInEvents.length > 0) {
-    return new Date(checkInEvents[0].eventTime).toLocaleDateString('en-CA');
+    return getAdministrativeWorkDate(new Date(checkInEvents[0].eventTime));
   }
   
   // No matching check_in found, use check_out's date
-  return checkOutTime.toLocaleDateString('en-CA');
+  return getAdministrativeWorkDate(checkOutTime);
 }
-
 /**
  * Expand date range to include next-day check_outs for night shifts.
  * For a given date range, extends the end time to 10:00 AM the next day
@@ -1037,7 +1055,7 @@ export async function getTodayAttendanceWithPagination(groupId?: number, dateStr
     const workerEvent = events.find(e => e.workerId === wId);
     if (!workerEvent) continue;
     
-    workerMap.set(wId, {
+workerMap.set(wId, {
       workerId: wId,
       workerName: workerEvent.workerName,
       workerCode: workerEvent.workerCode,
@@ -1048,6 +1066,8 @@ export async function getTodayAttendanceWithPagination(groupId?: number, dateStr
       checkOutId: checkOutEvt?.id || null,
       checkOutTime: checkOutEvt?.eventTime || null,
       checkOutMethod: checkOutEvt?.method || null,
+      // ✅ كل الجلسات
+      sessions: data.sessions || [],
     });
   }
   
@@ -1059,12 +1079,10 @@ export async function getTodayAttendanceWithPagination(groupId?: number, dateStr
   
   return { data, total, totalPages };
 }
-
 // Keep old function for backward compatibility
 export async function getTodayAttendance(groupId?: number, dateStr?: string) {
   const db = await getDb();
   if (!db) return [];
-
   const { attendanceEvents, workers } = await import('../drizzle/schema');
   
   // Use provided date or default to today (local time Asia/Riyadh)
@@ -1117,6 +1135,8 @@ export async function getTodayAttendance(groupId?: number, dateStr?: string) {
       checkOutId: checkOutEvt?.id || null,
       checkOutTime: checkOutEvt?.eventTime || null,
       checkOutMethod: checkOutEvt?.method || null,
+      // ✅ كل الجلسات
+      sessions: data.sessions || [],
     });
   }
   
@@ -1792,8 +1812,9 @@ export async function updateAttendanceEvent(
   const [original] = await db.select().from(attendanceEvents).where(eq(attendanceEvents.id, eventId)).limit(1);
   if (!original) throw new Error("سجل الحضور غير موجود");
   
-  // Check if payroll batch exists for this date
-  const eventDate = new Date(original.eventTime).toLocaleDateString('en-CA');
+// Check if payroll batch exists for this date
+  // ✅ قاعدة 5 صباحاً: نستخدم اليوم الإداري بدلاً من التاريخ الميلادي
+  const eventDate = getAdministrativeWorkDate(new Date(original.eventTime));
   const batch = await checkPayrollBatchForDate(eventDate);
   if (batch) {
     throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
@@ -1819,7 +1840,8 @@ export async function updateAttendanceEvent(
   });
   
   // Recalculate daily finance
-  const workDate = new Date(original.eventTime).toLocaleDateString('en-CA');
+  // ✅ قاعدة 5 صباحاً: نستخدم اليوم الإداري بدلاً من التاريخ الميلادي
+  const workDate = getAdministrativeWorkDate(new Date(original.eventTime));
   await processAttendanceToFinance(original.workerId, workDate);
   
   return { success: true };
@@ -1831,8 +1853,12 @@ export async function getAttendanceEventsForEdit(workerId: number, workDate: str
 
   const { attendanceEvents } = await import('../drizzle/schema');
   
-  const dateStart = new Date(workDate + 'T00:00:00');
-  const dateEnd = new Date(workDate + 'T23:59:59.999');
+// ✅ قاعدة 5 صباحاً: اليوم الإداري يبدأ 5 صباحاً ويمتد حتى 4:59 صباحاً اليوم التالي
+  const dateStart = new Date(workDate + 'T05:00:00+03:00');
+  const nextDay1 = new Date(workDate);
+  nextDay1.setDate(nextDay1.getDate() + 1);
+  const nextDayStr1 = nextDay1.toLocaleDateString('en-CA');
+  const dateEnd = new Date(nextDayStr1 + 'T04:59:59+03:00');
   
   return await db
     .select()
@@ -1861,9 +1887,13 @@ export async function getAttendanceEventsByGroup(groupId: number, workDate: stri
   
   const workerIds = groupWorkers.map(w => w.id);
   
-  const dateStart = new Date(workDate + 'T00:00:00');
-  const dateEnd = new Date(workDate + 'T23:59:59.999');
-  
+// ✅ قاعدة 5 صباحاً: اليوم الإداري يبدأ 5 صباحاً ويمتد حتى 4:59 صباحاً اليوم التالي
+  const dateStart = new Date(workDate + 'T05:00:00+03:00');
+  const nextDay2 = new Date(workDate);
+  nextDay2.setDate(nextDay2.getDate() + 1);
+  const nextDayStr2 = nextDay2.toLocaleDateString('en-CA');
+  const dateEnd = new Date(nextDayStr2 + 'T04:59:59+03:00');
+    
   // Get all events for all workers in the group
   const events = await db
     .select({
@@ -6235,8 +6265,12 @@ export async function getCheckOutEventsByDate(date: string) {
   
   const { attendanceEvents } = await import('../drizzle/schema');
   
-  const startOfDay = new Date(`${date}T00:00:00`);
-  const endOfDay = new Date(`${date}T23:59:59`);
+  // ✅ قاعدة 5 صباحاً: اليوم الإداري يبدأ 5 صباحاً وينتهي 4:59 صباحاً اليوم التالي
+  const startOfDay = new Date(`${date}T05:00:00+03:00`);
+  const nextDay = new Date(date);
+  nextDay.setDate(nextDay.getDate() + 1);
+  const nextDayStr = nextDay.toLocaleDateString('en-CA');
+  const endOfDay = new Date(`${nextDayStr}T04:59:59+03:00`);
   
   return await db
     .select()
