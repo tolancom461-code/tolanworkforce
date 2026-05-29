@@ -31,8 +31,12 @@ export default function AttendanceLog() {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString('en-CA'));
   const [editingRecord, setEditingRecord] = useState<any>(null);
-  const [editCheckInTime, setEditCheckInTime] = useState('');
-  const [editCheckOutTime, setEditCheckOutTime] = useState('');
+  const [editingSessions, setEditingSessions] = useState<Array<{
+    checkInId: number | null;
+    checkOutId: number | null;
+    checkInTime: string;
+    checkOutTime: string;
+  }>>([]);
   const [editNote, setEditNote] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -155,25 +159,29 @@ export default function AttendanceLog() {
 
   const handleEditClick = (record: any) => {
     setEditingRecord(record);
-    
-    if (record.checkInTime) {
-      const checkInDate = new Date(record.checkInTime);
-      const hours = String(checkInDate.getHours()).padStart(2, '0');
-      const minutes = String(checkInDate.getMinutes()).padStart(2, '0');
-      setEditCheckInTime(`${hours}:${minutes}`);
-    } else {
-      setEditCheckInTime('');
-    }
-    
-    if (record.checkOutTime) {
-      const checkOutDate = new Date(record.checkOutTime);
-      const hours = String(checkOutDate.getHours()).padStart(2, '0');
-      const minutes = String(checkOutDate.getMinutes()).padStart(2, '0');
-      setEditCheckOutTime(`${hours}:${minutes}`);
-    } else {
-      setEditCheckOutTime('');
-    }
-    
+
+    const sessions = record.sessions && record.sessions.length > 0
+      ? record.sessions
+      : [{
+          checkIn: record.checkInTime ? { id: record.checkInId, eventTime: record.checkInTime } : null,
+          checkOut: record.checkOutTime ? { id: record.checkOutId, eventTime: record.checkOutTime } : null
+        }];
+
+    const builtSessions = sessions.map((s: any) => {
+      const formatT = (t: any) => {
+        if (!t) return '';
+        const d = new Date(t);
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      };
+      return {
+        checkInId: s.checkIn?.id || null,
+        checkOutId: s.checkOut?.id || null,
+        checkInTime: formatT(s.checkIn?.eventTime),
+        checkOutTime: formatT(s.checkOut?.eventTime),
+      };
+    });
+
+    setEditingSessions(builtSessions);
     setEditNote('');
     setIsEditDialogOpen(true);
   };
@@ -191,46 +199,43 @@ export default function AttendanceLog() {
     });
   };
 
+  // ✅ يعدل كل الجلسات
   const handleSaveEdit = () => {
-    if (!editingRecord) return;
+    if (!editingRecord || editingSessions.length === 0) return;
 
-    const originalDate = editingRecord.checkInTime || editingRecord.checkOutTime;
-    if (!originalDate) return;
-    
-    const baseDate = new Date(originalDate);
+    const baseDate = new Date(selectedDate);
     baseDate.setHours(0, 0, 0, 0);
 
-    if (editCheckInTime && editingRecord.checkInId) {
-      const [hours, minutes] = editCheckInTime.split(':');
-      const newCheckInTime = new Date(baseDate);
-      newCheckInTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-
-      updateEventMutation.mutate({
-        eventId: editingRecord.checkInId,
-        newTime: newCheckInTime.toISOString(),
-        internalNote: editNote
-      });
-    }
-
-    if (editCheckOutTime && editingRecord.checkOutId) {
-      const [hours, minutes] = editCheckOutTime.split(':');
-      const newCheckOutTime = new Date(baseDate);
-      newCheckOutTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-      
-      if (editCheckInTime) {
-        const [cinH, cinM] = editCheckInTime.split(':');
-        const checkInRef = new Date(baseDate);
-        checkInRef.setHours(parseInt(cinH), parseInt(cinM), 0, 0);
-        if (newCheckOutTime <= checkInRef) {
-          newCheckOutTime.setDate(newCheckOutTime.getDate() + 1);
-        }
+    for (const session of editingSessions) {
+      if (session.checkInTime && session.checkInId) {
+        const [h, m] = session.checkInTime.split(':');
+        const newTime = new Date(baseDate);
+        newTime.setHours(parseInt(h), parseInt(m), 0, 0);
+        updateEventMutation.mutate({
+          eventId: session.checkInId,
+          newTime: newTime.toISOString(),
+          internalNote: editNote
+        });
       }
 
-      updateEventMutation.mutate({
-        eventId: editingRecord.checkOutId,
-        newTime: newCheckOutTime.toISOString(),
-        internalNote: editNote
-      });
+      if (session.checkOutTime && session.checkOutId) {
+        const [h, m] = session.checkOutTime.split(':');
+        const newTime = new Date(baseDate);
+        newTime.setHours(parseInt(h), parseInt(m), 0, 0);
+
+        if (session.checkInTime) {
+          const [ih, im] = session.checkInTime.split(':');
+          const inRef = new Date(baseDate);
+          inRef.setHours(parseInt(ih), parseInt(im), 0, 0);
+          if (newTime <= inRef) newTime.setDate(newTime.getDate() + 1);
+        }
+
+        updateEventMutation.mutate({
+          eventId: session.checkOutId,
+          newTime: newTime.toISOString(),
+          internalNote: editNote
+        });
+      }
     }
   };
 
@@ -643,90 +648,84 @@ export default function AttendanceLog() {
         )}
       </Card>
 
-      {/* Edit Dialog */}
+      {/* ✅ Edit Dialog — يعرض كل الجلسات */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>تعديل سجل الحضور</DialogTitle>
             <DialogDescription>
               تعديل أوقات الحضور والانصراف للعامل: {editingRecord?.workerName}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+            {editingSessions.map((session, idx) => (
+              <div key={idx} className={`border rounded-lg p-4 ${idx > 0 ? 'border-blue-200 bg-blue-50/30' : ''}`}>
+                <p className="font-medium mb-3 text-sm text-muted-foreground">
+                  {idx === 0 ? 'الجلسة الأولى' : `↳ جلسة ${idx + 1}`}
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>وقت الحضور</Label>
+                    <Input
+                      type="time"
+                      value={session.checkInTime}
+                      onChange={(e) => {
+                        const updated = [...editingSessions];
+                        updated[idx] = { ...updated[idx], checkInTime: e.target.value };
+                        setEditingSessions(updated);
+                      }}
+                      disabled={!session.checkInId}
+                    />
+                    {!session.checkInId && <p className="text-xs text-muted-foreground">لا يوجد حضور</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>وقت الانصراف</Label>
+                    <Input
+                      type="time"
+                      value={session.checkOutTime}
+                      onChange={(e) => {
+                        const updated = [...editingSessions];
+                        updated[idx] = { ...updated[idx], checkOutTime: e.target.value };
+                        setEditingSessions(updated);
+                      }}
+                      disabled={!session.checkOutId}
+                    />
+                    {!session.checkOutId && <p className="text-xs text-muted-foreground">لا يوجد انصراف</p>}
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  {session.checkInId && (
+                    <Button variant="destructive" size="sm"
+                      onClick={() => handleDeleteClick(session.checkInId!, 'checkIn')}
+                      disabled={deletePunchMutation.isPending}>
+                      <Trash2 className="h-3 w-3 mr-1" />حذف الحضور
+                    </Button>
+                  )}
+                  {session.checkOutId && (
+                    <Button variant="destructive" size="sm"
+                      onClick={() => handleDeleteClick(session.checkOutId!, 'checkOut')}
+                      disabled={deletePunchMutation.isPending}>
+                      <Trash2 className="h-3 w-3 mr-1" />حذف الانصراف
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
             <div className="space-y-2">
-              <Label htmlFor="checkInTime">وقت الحضور</Label>
-              <Input
-                id="checkInTime"
-                type="time"
-                value={editCheckInTime}
-                onChange={(e) => setEditCheckInTime(e.target.value)}
-                disabled={!editingRecord?.checkInId}
-              />
-              {!editingRecord?.checkInId && (
-                <p className="text-sm text-muted-foreground">لم يتم تسجيل حضور بعد</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="checkOutTime">وقت الانصراف</Label>
-              <Input
-                id="checkOutTime"
-                type="time"
-                value={editCheckOutTime}
-                onChange={(e) => setEditCheckOutTime(e.target.value)}
-                disabled={!editingRecord?.checkOutId}
-              />
-              {!editingRecord?.checkOutId && (
-                <p className="text-sm text-muted-foreground">لم يتم تسجيل انصراف بعد</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="note">ملاحظة (اختياري)</Label>
-              <Input
-                id="note"
-                value={editNote}
-                onChange={(e) => setEditNote(e.target.value)}
-                placeholder="سبب التعديل..."
-              />
+              <Label>ملاحظة (اختياري)</Label>
+              <Input value={editNote} onChange={(e) => setEditNote(e.target.value)} placeholder="سبب التعديل..." />
             </div>
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <div className="flex gap-2 flex-1">
-              {editingRecord?.checkInId && (
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => handleDeleteClick(editingRecord.checkInId, 'checkIn')}
-                  disabled={deletePunchMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  حذف الحضور
-                </Button>
-              )}
-              {editingRecord?.checkOutId && (
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => handleDeleteClick(editingRecord.checkOutId, 'checkOut')}
-                  disabled={deletePunchMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  حذف الانصراف
-                </Button>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                إلغاء
-              </Button>
-              <Button onClick={handleSaveEdit} disabled={updateEventMutation.isPending}>
-                {updateEventMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-              </Button>
-            </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>إلغاء</Button>
+            <Button onClick={handleSaveEdit} disabled={updateEventMutation.isPending}>
+              {updateEventMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Absent Workers Dialog */}
+      {/* Absent Workers Dialog *//* Absent Workers Dialog */}
       <Dialog open={isAbsentDialogOpen} onOpenChange={setIsAbsentDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
