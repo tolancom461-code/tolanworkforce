@@ -160,7 +160,7 @@ export function analyzeTimestampForEventType(
  * 2. البحث عن آخر حضور في آخر 15 ساعة فقط
  * 3. إذا لم يوجد حضور في 15 ساعة، افتح حضور جديد
  * 4. إذا وجد حضور، سجل انصراف
- * 5. استخدام ذكاء الوردية لتحديد نوع البصمة تلقائياً في حالات معينة
+ * 5. إذا اختار الحارس نوع البصمة يدوياً، يتم استخدام اختياره مباشرة
  */
 export async function recordAttendanceWithAdministrativeDay(
   workerId: number,
@@ -168,7 +168,8 @@ export async function recordAttendanceWithAdministrativeDay(
   deviceId?: number,
   verifiedBy?: number,
   ipAddress?: string,
-  deviceInfo?: string
+  deviceInfo?: string,
+  forcedEventType?: 'check_in' | 'check_out'  // ✅ التعديل: اختيار الحارس
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -216,32 +217,37 @@ export async function recordAttendanceWithAdministrativeDay(
   
   let eventType: 'check_in' | 'check_out';
   let isAutomatic = false;
-  
-  // إذا لم يوجد حضور في آخر 15 ساعة، افتح حضور جديد
-  if (lastCheckIn.length === 0) {
-    eventType = 'check_in';
+
+  // ✅ التعديل: إذا اختار الحارس نوع البصمة يدوياً — نستخدم اختياره مباشرة
+  if (forcedEventType) {
+    eventType = forcedEventType;
   } else {
-    // يوجد حضور، تحقق من وجود انصراف له
-    const checkInId = lastCheckIn[0].id;
-    const checkInTime = lastCheckIn[0].eventTime;
-    
-    const matchingCheckOut = await db.select()
-      .from(attendanceEvents)
-      .where(
-        and(
-          eq(attendanceEvents.workerId, workerId),
-          eq(attendanceEvents.eventType, 'check_out'),
-          gte(attendanceEvents.eventTime, checkInTime)
-        )
-      )
-      .limit(1);
-    
-    // إذا لم يوجد انصراف، سجل انصراف
-    if (matchingCheckOut.length === 0) {
-      eventType = 'check_out';
-    } else {
-      // يوجد حضور وانصراف، افتح حضور جديد
+    // البرنامج يقرر تلقائياً
+    // إذا لم يوجد حضور في آخر 15 ساعة، افتح حضور جديد
+    if (lastCheckIn.length === 0) {
       eventType = 'check_in';
+    } else {
+      // يوجد حضور، تحقق من وجود انصراف له
+      const checkInTime = lastCheckIn[0].eventTime;
+
+      const matchingCheckOut = await db.select()
+        .from(attendanceEvents)
+        .where(
+          and(
+            eq(attendanceEvents.workerId, workerId),
+            eq(attendanceEvents.eventType, 'check_out'),
+            gte(attendanceEvents.eventTime, checkInTime)
+          )
+        )
+        .limit(1);
+
+      // إذا لم يوجد انصراف، سجل انصراف
+      if (matchingCheckOut.length === 0) {
+        eventType = 'check_out';
+      } else {
+        // يوجد حضور وانصراف، افتح حضور جديد
+        eventType = 'check_in';
+      }
     }
   }
   
