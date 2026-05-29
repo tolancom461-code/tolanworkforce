@@ -18,6 +18,11 @@ export default function PunchesReviewCenter() {
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [timeInput, setTimeInput] = useState("");
 
+  // ✅ حالات إضافة جلسة كاملة
+  const [sessionWorkerId, setSessionWorkerId] = useState<string>("");
+  const [sessionCheckIn, setSessionCheckIn] = useState("");
+  const [sessionCheckOut, setSessionCheckOut] = useState("");
+
   // Fetch incomplete attendance records
   const { data: incompleteRecords = [], isLoading, refetch } = (trpc.attendance as any).getForReview.useQuery({
     workDateStr: selectedDate,
@@ -25,6 +30,9 @@ export default function PunchesReviewCenter() {
 
   // Fetch groups for filter
   const { data: groups = [] } = trpc.groups.list.useQuery();
+
+  // ✅ جلب قائمة العمال لإضافة الجلسة
+  const { data: allWorkers = [] } = trpc.workers.list.useQuery();
 
   // Mutations
   const addCheckInMutation = trpc.attendance.addMissingCheckIn.useMutation({
@@ -57,6 +65,20 @@ export default function PunchesReviewCenter() {
     },
     onError: (error) => {
       toast.error(`فشل حذف البصمة: ${error.message}`);
+    },
+  });
+
+  // ✅ mutation إضافة جلسة كاملة
+  const addFullSessionMutation = (trpc.attendance as any).addFullSession.useMutation({
+    onSuccess: () => {
+      toast.success("تم إضافة الجلسة بنجاح");
+      refetch();
+      setSessionWorkerId("");
+      setSessionCheckIn("");
+      setSessionCheckOut("");
+    },
+    onError: (error: any) => {
+      toast.error(`فشل إضافة الجلسة: ${error.message}`);
     },
   });
 
@@ -113,7 +135,6 @@ export default function PunchesReviewCenter() {
         note: "تم الإضافة يدوياً من مركز مراجعة البصمات",
       });
     } else if (selectedRecord.actionType === 'delete') {
-      // Determine which event ID to delete based on what exists
       const eventId = selectedRecord.checkInId ?? selectedRecord.checkOutId;
       
       if (!eventId) {
@@ -126,6 +147,33 @@ export default function PunchesReviewCenter() {
         reason: "حذف من مركز مراجعة البصمات - بصمة خاطئة",
       });
     }
+  };
+
+  // ✅ إضافة جلسة كاملة
+  const handleAddFullSession = () => {
+    if (!sessionWorkerId || !sessionCheckIn || !sessionCheckOut) return;
+
+    const workDate = new Date(selectedDate);
+
+    const [inH, inM] = sessionCheckIn.split(':');
+    const checkInDate = new Date(workDate);
+    checkInDate.setHours(parseInt(inH), parseInt(inM), 0, 0);
+
+    const [outH, outM] = sessionCheckOut.split(':');
+    const checkOutDate = new Date(workDate);
+    checkOutDate.setHours(parseInt(outH), parseInt(outM), 0, 0);
+
+    // لو الخروج قبل الدخول — يعني تجاوز منتصف الليل
+    if (checkOutDate < checkInDate) {
+      checkOutDate.setDate(checkOutDate.getDate() + 1);
+    }
+
+    addFullSessionMutation.mutate({
+      workerId: parseInt(sessionWorkerId),
+      checkInTime: checkInDate.toISOString(),
+      checkOutTime: checkOutDate.toISOString(),
+      note: 'تم إضافة جلسة كاملة يدوياً',
+    });
   };
 
   return (
@@ -186,6 +234,66 @@ export default function PunchesReviewCenter() {
         <CardContent>
           <div className="text-3xl font-bold text-orange-700">{incompleteCount}</div>
           <p className="text-sm text-muted-foreground">بصمة تحتاج معالجة</p>
+        </CardContent>
+      </Card>
+
+      {/* ✅ إضافة جلسة كاملة */}
+      <Card className="mb-6 border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-700">
+            <Plus className="h-5 w-5" />
+            إضافة جلسة كاملة
+          </CardTitle>
+          <CardDescription>
+            إضافة دخول وخروج جديد لأي عامل في التاريخ المحدد أعلاه
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <Label>العامل</Label>
+              <Select value={sessionWorkerId} onValueChange={setSessionWorkerId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر العامل" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(allWorkers as any[]).map((w: any) => (
+                    <SelectItem key={w.id} value={w.id.toString()}>
+                      {w.fullName} ({w.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>وقت الدخول</Label>
+              <Input
+                type="time"
+                value={sessionCheckIn}
+                onChange={(e) => setSessionCheckIn(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>وقت الخروج</Label>
+              <Input
+                type="time"
+                value={sessionCheckOut}
+                onChange={(e) => setSessionCheckOut(e.target.value)}
+              />
+            </div>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={
+                !sessionWorkerId ||
+                !sessionCheckIn ||
+                !sessionCheckOut ||
+                addFullSessionMutation.isPending
+              }
+              onClick={handleAddFullSession}
+            >
+              {addFullSessionMutation.isPending ? 'جاري الحفظ...' : 'إضافة الجلسة'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
