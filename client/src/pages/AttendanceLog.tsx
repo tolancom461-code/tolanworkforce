@@ -78,7 +78,7 @@ export default function AttendanceLog() {
 
   // Get absent workers
   const { data: absentWorkers, refetch: refetchAbsent } = trpc.attendance.getAbsentWorkers.useQuery({
-    workDateStr: selectedDate, // Send as YYYY-MM-DD string for stable query key
+    workDateStr: selectedDate,
     groupId: absentFilterGroup !== 'all' ? parseInt(absentFilterGroup) : undefined
   });
 
@@ -109,7 +109,6 @@ export default function AttendanceLog() {
 
   const exportMutation = trpc.attendance.exportToExcel.useMutation({
     onSuccess: (result) => {
-      // Convert base64 to blob and download
       const binaryString = atob(result.data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -157,7 +156,6 @@ export default function AttendanceLog() {
   const handleEditClick = (record: any) => {
     setEditingRecord(record);
     
-    // Format check-in time
     if (record.checkInTime) {
       const checkInDate = new Date(record.checkInTime);
       const hours = String(checkInDate.getHours()).padStart(2, '0');
@@ -167,7 +165,6 @@ export default function AttendanceLog() {
       setEditCheckInTime('');
     }
     
-    // Format check-out time
     if (record.checkOutTime) {
       const checkOutDate = new Date(record.checkOutTime);
       const hours = String(checkOutDate.getHours()).padStart(2, '0');
@@ -197,15 +194,12 @@ export default function AttendanceLog() {
   const handleSaveEdit = () => {
     if (!editingRecord) return;
 
-    // Use the original event date to preserve the record's date
-    // Get the date from the original check-in or check-out time
     const originalDate = editingRecord.checkInTime || editingRecord.checkOutTime;
     if (!originalDate) return;
     
     const baseDate = new Date(originalDate);
     baseDate.setHours(0, 0, 0, 0);
 
-    // Update check-in if changed
     if (editCheckInTime && editingRecord.checkInId) {
       const [hours, minutes] = editCheckInTime.split(':');
       const newCheckInTime = new Date(baseDate);
@@ -218,13 +212,11 @@ export default function AttendanceLog() {
       });
     }
 
-    // Update check-out if changed
     if (editCheckOutTime && editingRecord.checkOutId) {
       const [hours, minutes] = editCheckOutTime.split(':');
       const newCheckOutTime = new Date(baseDate);
       newCheckOutTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       
-      // Handle overnight shifts: if check-out time is before check-in time, add one day
       if (editCheckInTime) {
         const [cinH, cinM] = editCheckInTime.split(':');
         const checkInRef = new Date(baseDate);
@@ -260,7 +252,6 @@ export default function AttendanceLog() {
       const baseDate = new Date(selectedDate);
       baseDate.setHours(0, 0, 0, 0);
 
-      // Add check-in
       const [checkInHours, checkInMinutes] = prepareCheckInTime.split(':');
       const checkInTime = new Date(baseDate);
       checkInTime.setHours(parseInt(checkInHours), parseInt(checkInMinutes), 0, 0);
@@ -270,12 +261,10 @@ export default function AttendanceLog() {
         note: prepareNote || 'تحضير يدوي'
       });
 
-      // Add check-out
       const [checkOutHours, checkOutMinutes] = prepareCheckOutTime.split(':');
       const checkOutTime = new Date(baseDate);
       checkOutTime.setHours(parseInt(checkOutHours), parseInt(checkOutMinutes), 0, 0);
       
-      // Handle overnight shifts: if check-out time is before check-in time, add one day
       if (checkOutTime <= checkInTime) {
         checkOutTime.setDate(checkOutTime.getDate() + 1);
       }
@@ -504,74 +493,98 @@ export default function AttendanceLog() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {todayLog.map((record) => (
-                    <TableRow key={record.workerId}>
-                      <TableCell className="font-medium">
-                        {record.workerName}
-                      </TableCell>
-                      <TableCell className="font-mono text-muted-foreground">
-                        {record.workerCode}
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        {record.checkInTime ? (
-                          <div className="flex items-center gap-2">
-                            <ArrowRightCircle className="h-4 w-4 text-green-600" />
-                            {formatTime(record.checkInTime)}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {getMethodBadge(record.checkInMethod)}
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        {record.checkOutTime ? (
-                          <div className="flex items-center gap-2">
-                            <ArrowLeftCircle className="h-4 w-4 text-orange-600" />
-                            {formatTime(record.checkOutTime)}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {getMethodBadge(record.checkOutMethod)}
-                      </TableCell>
-                      <TableCell className="font-mono font-semibold">
-                        {record.checkInTime && record.checkOutTime ? (
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-blue-600" />
-                            {(() => {
-                              let mins = Math.round((new Date(record.checkOutTime).getTime() - new Date(record.checkInTime).getTime()) / 60000);
-                              // Handle overnight shifts: if checkout appears before checkin, add 24 hours
-                              if (mins < 0) mins += 1440;
-                              return mins;
-                            })()} دقيقة
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {canEditAttendance && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditClick(record)}
-                            disabled={dateLockStatus?.isLocked}
-                            title={dateLockStatus?.isLocked ? `التاريخ مغلق - دفعة ${dateLockStatus.batch?.batchCode}` : 'تعديل سجل الحضور'}
-                          >
-                            {dateLockStatus?.isLocked ? (
-                              <Lock className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <Edit className="h-4 w-4" />
-                            )}
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {todayLog.map((record: any) => {
+                    // ✅ عرض كل الجلسات — لو عنده جلسات متعددة نعرضها كلها
+                    const sessions = record.sessions && record.sessions.length > 0
+                      ? record.sessions
+                      : [{
+                          checkIn: record.checkInTime ? {
+                            id: record.checkInId,
+                            eventTime: record.checkInTime,
+                            method: record.checkInMethod
+                          } : null,
+                          checkOut: record.checkOutTime ? {
+                            id: record.checkOutId,
+                            eventTime: record.checkOutTime,
+                            method: record.checkOutMethod
+                          } : null
+                        }];
+
+                    return sessions.map((session: any, sessionIndex: number) => (
+                      <TableRow
+                        key={`${record.workerId}-${sessionIndex}`}
+                        className={sessionIndex > 0 ? "bg-blue-50/30" : ""}
+                      >
+                        <TableCell className="font-medium">
+                          {sessionIndex === 0 ? record.workerName : (
+                            <span className="text-muted-foreground text-sm pr-4">
+                              ↳ جلسة {sessionIndex + 1}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-muted-foreground">
+                          {sessionIndex === 0 ? record.workerCode : ""}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {session.checkIn?.eventTime ? (
+                            <div className="flex items-center gap-2">
+                              <ArrowRightCircle className="h-4 w-4 text-green-600" />
+                              {formatTime(session.checkIn.eventTime)}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {getMethodBadge(session.checkIn?.method)}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {session.checkOut?.eventTime ? (
+                            <div className="flex items-center gap-2">
+                              <ArrowLeftCircle className="h-4 w-4 text-orange-600" />
+                              {formatTime(session.checkOut.eventTime)}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {getMethodBadge(session.checkOut?.method)}
+                        </TableCell>
+                        <TableCell className="font-mono font-semibold">
+                          {session.checkIn?.eventTime && session.checkOut?.eventTime ? (
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-blue-600" />
+                              {(() => {
+                                let mins = Math.round((new Date(session.checkOut.eventTime).getTime() - new Date(session.checkIn.eventTime).getTime()) / 60000);
+                                if (mins < 0) mins += 1440;
+                                return mins;
+                              })()} دقيقة
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {canEditAttendance && sessionIndex === 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditClick(record)}
+                              disabled={dateLockStatus?.isLocked}
+                              title={dateLockStatus?.isLocked ? `التاريخ مغلق - دفعة ${dateLockStatus.batch?.batchCode}` : 'تعديل سجل الحضور'}
+                            >
+                              {dateLockStatus?.isLocked ? (
+                                <Lock className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <Edit className="h-4 w-4" />
+                              )}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ));
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -723,7 +736,6 @@ export default function AttendanceLog() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            {/* Group Filter */}
             <div className="mb-4">
               <Label>فلترة حسب المجموعة</Label>
               <Select value={absentFilterGroup} onValueChange={setAbsentFilterGroup}>
