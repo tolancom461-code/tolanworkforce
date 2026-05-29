@@ -1210,6 +1210,87 @@ export const appRouter = router({
         }
       }),
     
+// Add a full session (check_in + check_out) for a worker
+addFullSession: protectedProcedure
+  .input(z.object({
+    workerId: z.number(),
+    checkInTime: z.string(),  // ISO string
+    checkOutTime: z.string(), // ISO string
+    note: z.string().optional(),
+  }))
+  .use(requirePermissionFlag('canEditAttendanceLog'))
+  .mutation(async ({ input, ctx }) => {
+    try {
+      if (!ctx.user) throw new Error("Not authenticated");
+      
+      const { attendanceEvents } = await import('../drizzle/schema');
+      const { getAdministrativeWorkDate } = await import('./attendance-logic');
+      const database = await db.getDb();
+      if (!database) throw new Error('Database not available');
+      
+      const checkInTime = new Date(input.checkInTime);
+      const checkOutTime = new Date(input.checkOutTime);
+      
+      if (isNaN(checkInTime.getTime()) || isNaN(checkOutTime.getTime())) {
+        throw new Error('تاريخ غير صالح');
+      }
+      
+      if (checkOutTime <= checkInTime) {
+        throw new Error('وقت الخروج يجب أن يكون بعد وقت الدخول');
+      }
+      
+      // حساب تاريخ اليوم الإداري
+      const workDate = getAdministrativeWorkDate(checkInTime);
+      
+      // إضافة بصمة الدخول
+      await database.insert(attendanceEvents).values({
+        workerId: input.workerId,
+        eventType: 'check_in',
+        eventTime: checkInTime,
+        workDate: workDate,
+        method: 'manual',
+        note: input.note || 'تم إضافة جلسة كاملة يدوياً',
+      });
+      
+      // إضافة بصمة الخروج
+      await database.insert(attendanceEvents).values({
+        workerId: input.workerId,
+        eventType: 'check_out',
+        eventTime: checkOutTime,
+        workDate: workDate,
+        method: 'manual',
+        note: input.note || 'تم إضافة جلسة كاملة يدوياً',
+      });
+      
+      // إعادة حساب المالية
+      try {
+        await db.processAttendanceToFinance(input.workerId, workDate);
+      } catch (finError) {
+        console.error('[addFullSession] Finance calc failed (non-fatal):', finError);
+      }
+      
+      // تسجيل في سجل التدقيق
+      const worker = await db.getWorkerById(input.workerId);
+      await db.logAudit({
+        userId: ctx.user.id,
+        action: 'ADD_FULL_SESSION',
+        tableName: 'attendance_events',
+        newValues: { 
+          workerId: input.workerId,
+          workerName: worker?.fullName,
+          checkInTime: input.checkInTime,
+          checkOutTime: input.checkOutTime,
+          workDate,
+        },
+      });
+      
+      return { success: true, message: 'تم إضافة الجلسة بنجاح', workDate };
+    } catch (error: any) {
+      console.error('[addFullSession] Error:', error);
+      throw new Error(error.message || 'فشل إضافة الجلسة');
+    }
+  }),
+
     // Delete an attendance event (for incorrect punches)
     deletePunchEvent: protectedProcedure
       .input(z.object({
