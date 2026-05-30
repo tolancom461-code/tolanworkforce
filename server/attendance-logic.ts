@@ -31,9 +31,10 @@ export function getAdministrativeWorkDate(timestamp: Date): string {
   const riyadhTime = new Date(timestamp.getTime() + riyadhOffset);
   
   const hours = riyadhTime.getUTCHours(); // ← الآن بتوقيت الرياض
+  const minutes = riyadhTime.getUTCMinutes();
   
-  // إذا كانت الساعة قبل 5 صباحاً بتوقيت الرياض، نطرح يوم واحد
-  if (hours < 5) {
+  // إذا كانت الساعة قبل 4:40 صباحاً بتوقيت الرياض، نطرح يوم واحد
+  if (hours < 4 || (hours === 4 && minutes < 40)) {
     riyadhTime.setUTCDate(riyadhTime.getUTCDate() - 1);
   }
   
