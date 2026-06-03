@@ -206,7 +206,13 @@ export default function DailyPayrollReport() {
         >
 
           {/* ===== الهيدر ===== */}
-          <div className="report-header bg-blue-800 text-white p-6 rounded-t-xl">
+<div
+  className={`report-header text-white p-6 rounded-t-xl ${
+    selectedCostCenterId === 2
+      ? 'bg-[#B92D38]'
+      : 'bg-blue-800'
+  }`}
+>
 
             <div className="relative flex justify-center items-start">
 
