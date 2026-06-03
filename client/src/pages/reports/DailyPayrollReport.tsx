@@ -208,7 +208,7 @@ export default function DailyPayrollReport() {
           {/* ===== الهيدر ===== */}
 <div
   className={`report-header text-white p-6 rounded-t-xl ${
-    selectedCostCenterId === 2
+    costCenters?.find(cc => cc.id === selectedCostCenterId)?.code === 'CC06'
       ? 'bg-[#B92D38]'
       : 'bg-blue-800'
   }`}
