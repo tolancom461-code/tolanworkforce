@@ -217,7 +217,7 @@ export default function DailyPayrollReport() {
             <div className="relative flex justify-center items-start">
 
               {/* يمين: بيانات التقرير */}
-              <div className="absolute right-0 text-sm space-y-1 bg-blue-700 rounded-lg p-3 min-w-[220px]">
+              <div className="absolute right-0 text-sm space-y-1 bg-white/10 backdrop-blur-sm rounded-lg p-3 min-w-[220px]">
 
                 <div className="flex justify-between gap-4">
                   <span className="opacity-80">تاريخ الإصدار:</span>
@@ -294,15 +294,78 @@ export default function DailyPayrollReport() {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-blue-900 text-white font-bold">
-                      <td colSpan={2} className="border border-blue-900 p-4 text-center text-lg">الإجمالي</td>
-                      <td className="border border-blue-900 p-4 text-center text-lg">{reportData.reduce((s, r) => s + r.workerCount, 0)}</td>
-                      <td className="border border-blue-900 p-4 text-center text-lg">{formatCurrency(totalSalary)}</td>
-                      <td className="border border-blue-900 p-4 text-center text-lg">{formatCurrency(totalDeductions)}</td>
-                      <td className="border border-blue-900 p-4 text-center text-lg">{formatCurrency(totalBonuses)}</td>
-                      <td className="border border-blue-900 p-4 text-center text-xl bg-blue-800">{formatCurrency(totalNet)}</td>
-                    </tr>
-                  </tfoot>
+
+  <tr
+    className={`text-white font-bold ${
+      costCenters?.find(cc => cc.id === selectedCostCenterId)?.code === 'CC06'
+        ? 'bg-[#B92D38]'
+        : 'bg-blue-900'
+    }`}
+  >
+
+    <td
+      colSpan={2}
+      className={`p-4 text-center text-lg border ${
+        costCenters?.find(cc => cc.id === selectedCostCenterId)?.code === 'CC06'
+          ? 'border-[#B92D38]'
+          : 'border-blue-900'
+      }`}
+    >
+      الإجمالي
+    </td>
+
+    <td
+      className={`p-4 text-center text-lg border ${
+        costCenters?.find(cc => cc.id === selectedCostCenterId)?.code === 'CC06'
+          ? 'border-[#B92D38]'
+          : 'border-blue-900'
+      }`}
+    >
+      {reportData.reduce((s, r) => s + r.workerCount, 0)}
+    </td>
+
+    <td
+      className={`p-4 text-center text-lg border ${
+        costCenters?.find(cc => cc.id === selectedCostCenterId)?.code === 'CC06'
+          ? 'border-[#B92D38]'
+          : 'border-blue-900'
+      }`}
+    >
+      {formatCurrency(totalSalary)}
+    </td>
+
+    <td
+      className={`p-4 text-center text-lg border ${
+        costCenters?.find(cc => cc.id === selectedCostCenterId)?.code === 'CC06'
+          ? 'border-[#B92D38]'
+          : 'border-blue-900'
+      }`}
+    >
+      {formatCurrency(totalDeductions)}
+    </td>
+
+    <td
+      className={`p-4 text-center text-lg border ${
+        costCenters?.find(cc => cc.id === selectedCostCenterId)?.code === 'CC06'
+          ? 'border-[#B92D38]'
+          : 'border-blue-900'
+      }`}
+    >
+      {formatCurrency(totalBonuses)}
+    </td>
+
+    <td
+      className={`p-4 text-center text-xl border ${
+        costCenters?.find(cc => cc.id === selectedCostCenterId)?.code === 'CC06'
+          ? 'bg-[#A32631] border-[#A32631]'
+          : 'bg-blue-800 border-blue-900'
+      }`}
+    >
+      {formatCurrency(totalNet)}
+    </td>
+
+  </tr>
+</tfoot>
                 </table>
 
                 {/* التفقيط */}
