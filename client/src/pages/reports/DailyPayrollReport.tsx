@@ -187,7 +187,10 @@ export default function DailyPayrollReport() {
       {/* زر الطباعة */}
       {reportData && reportData.length > 0 && (
         <div className="no-print flex justify-end mb-4">
-          <Button onClick={handlePrint} className="bg-blue-700 hover:bg-blue-800 text-white flex items-center gap-2">
+          <Button
+            onClick={handlePrint}
+            className="bg-blue-700 hover:bg-blue-800 text-white flex items-center gap-2"
+          >
             <Printer className="h-4 w-4" />
             طباعة التقرير
           </Button>
@@ -196,48 +199,62 @@ export default function DailyPayrollReport() {
 
       {/* محتوى التقرير القابل للطباعة */}
       {queryEnabled && (
-        <div ref={printRef} id="print-report" className="bg-white shadow-lg rounded-xl print-area">
+        <div
+          ref={printRef}
+          id="print-report"
+          className="bg-white shadow-lg rounded-xl print-area"
+        >
 
           {/* ===== الهيدر ===== */}
           <div className="report-header bg-blue-800 text-white p-6 rounded-t-xl">
-            <div className="flex justify-between items-start">
+
+            <div className="relative flex justify-center items-start">
 
               {/* يمين: بيانات التقرير */}
-              <div className="text-sm space-y-1 bg-blue-700 rounded-lg p-3 min-w-[220px]">
+              <div className="absolute right-0 text-sm space-y-1 bg-blue-700 rounded-lg p-3 min-w-[220px]">
+
                 <div className="flex justify-between gap-4">
                   <span className="opacity-80">تاريخ الإصدار:</span>
                   <span className="font-semibold">{issueDate}</span>
                 </div>
+
                 <div className="flex justify-between gap-4">
                   <span className="opacity-80">وقت الإصدار:</span>
                   <span className="font-semibold">{issueTime}</span>
                 </div>
+
                 <div className="flex justify-between gap-4">
                   <span className="opacity-80">رقم التقرير:</span>
                   <span className="font-semibold">{reportNumber}</span>
                 </div>
+
               </div>
 
               {/* منتصف: العنوان */}
               <div className="text-center">
+
                 <h1 className="text-2xl font-black mb-1">
                   حديقة الوطن - {selectedCostCenterId
                     ? costCenters?.find(cc => cc.id === selectedCostCenterId)?.name || 'شركة تولان الدولية'
                     : 'شركة تولان الدولية'}
                 </h1>
-                <h2 className="text-xl font-bold opacity-90">تقرير كشف العمالة اليومية</h2>
+
+                <h2 className="text-xl font-bold opacity-90">
+                  تقرير كشف العمالة اليومية
+                </h2>
+
                 <div className="mt-2 inline-block bg-white/20 px-4 py-1 rounded-full text-sm">
-                  للفترة من: <span className="font-bold">{startDate}</span> إلى: <span className="font-bold">{endDate}</span>
+                  للفترة من:
+                  <span className="font-bold"> {startDate} </span>
+                  إلى:
+                  <span className="font-bold"> {endDate} </span>
                 </div>
+
               </div>
 
-              {/*
-              <div className="w-[100px] h-[100px] bg-white rounded-xl flex items-center justify-center p-2">
-                <img src="/logo.png" alt="Tolan Logo" className="max-w-full max-h-full object-contain" />
-              </div>
-              */}
-              </div>
-              </div>
+            </div>
+
+          </div>
 
           {/* ===== المحتوى ===== */}
           <div className="p-8">
@@ -291,57 +308,78 @@ export default function DailyPayrollReport() {
 {/* ===== التوقيعات ===== */}
 <div className="grid grid-cols-6 gap-3 mt-12 text-center">
 
-  <div className="space-y-6">
-    <p className="font-bold text-sm border-b border-gray-400 pb-2">
-      إعداد
-    </p>
-    <div className="h-10"></div>
-    <p className="text-xs opacity-60">التوقيع </p>
-  </div>
+  <div className="space-y-3">
 
-  <div className="space-y-6">
-    <p className="font-bold text-sm border-b border-gray-400 pb-2">
-      مراجعة أولى
-    </p>
     <div className="h-10"></div>
-    <p className="text-xs opacity-60">التوقيع </p>
-  </div>
 
-  <div className="space-y-6">
-    <p className="font-bold text-sm border-b border-gray-400 pb-2">
-      المراجع المالي
-    </p>
-    <div className="h-10"></div>
-    <p className="text-xs opacity-60">التوقيع </p>
-  </div>
-
-  <div className="space-y-6">
-    <p className="font-bold text-sm border-b border-gray-400 pb-2">
-      رئيس الحسابات
-    </p>
-    <div className="h-10"></div>
-    <p className="text-xs opacity-60">التوقيع </p>
-  </div>
-
-  <div className="space-y-4">
-    <div className="border-b border-gray-400 pb-2">
+    <div className="border-t border-gray-400 pt-2">
       <p className="font-bold text-sm">
-        تدقيق ومراجعة
-      </p>
-      <p className="text-xs mt-1 whitespace-nowrap">
-        م. سعد الزكري
+        إعداد
       </p>
     </div>
 
-    <div className="h-10"></div>
-
-    <p className="text-xs opacity-60">
-      التوقيع 
-    </p>
   </div>
 
-  <div className="space-y-4">
-    <div className="border-b border-gray-400 pb-2">
+  <div className="space-y-3">
+
+    <div className="h-10"></div>
+
+    <div className="border-t border-gray-400 pt-2">
+      <p className="font-bold text-sm">
+        مراجعة أولى
+      </p>
+    </div>
+
+  </div>
+
+  <div className="space-y-3">
+
+    <div className="h-10"></div>
+
+    <div className="border-t border-gray-400 pt-2">
+      <p className="font-bold text-sm">
+        المراجع المالي
+      </p>
+    </div>
+
+  </div>
+
+  <div className="space-y-3">
+
+    <div className="h-10"></div>
+
+    <div className="border-t border-gray-400 pt-2">
+      <p className="font-bold text-sm">
+        رئيس الحسابات
+      </p>
+    </div>
+
+  </div>
+
+  <div className="space-y-3">
+
+    <div className="h-10"></div>
+
+    <div className="border-t border-gray-400 pt-2">
+
+      <p className="font-bold text-sm">
+        تدقيق ومراجعة
+      </p>
+
+      <p className="text-xs mt-1 whitespace-nowrap">
+        م. سعد الزكري
+      </p>
+
+    </div>
+
+  </div>
+
+  <div className="space-y-3">
+
+    <div className="h-10"></div>
+
+    <div className="border-t border-gray-400 pt-2">
+
       <p className="font-extrabold text-sm">
         الرئيس التنفيذي
       </p>
@@ -349,13 +387,9 @@ export default function DailyPayrollReport() {
       <p className="text-xs font-extrabold mt-1 whitespace-nowrap">
         م. زكري بن عبدالله الزكري
       </p>
+
     </div>
 
-    <div className="h-10"></div>
-
-    <p className="text-xs opacity-60">
-      التوقيع 
-    </p>
   </div>
 
 </div>
