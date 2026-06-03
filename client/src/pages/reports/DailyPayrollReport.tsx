@@ -231,12 +231,13 @@ export default function DailyPayrollReport() {
                 </div>
               </div>
 
-              {/* يسار: اللوجو */}
+              {/*
               <div className="w-[100px] h-[100px] bg-white rounded-xl flex items-center justify-center p-2">
                 <img src="/logo.png" alt="Tolan Logo" className="max-w-full max-h-full object-contain" />
               </div>
-            </div>
-          </div>
+              */}
+              </div>
+              </div>
 
           {/* ===== المحتوى ===== */}
           <div className="p-8">
