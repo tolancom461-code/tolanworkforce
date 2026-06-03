@@ -287,24 +287,77 @@ export default function DailyPayrollReport() {
                   <span className="text-lg font-black">{numberToArabicWords(totalNet)}</span>
                 </div>
 
-                {/* ===== التوقيعات ===== */}
-                <div className="grid grid-cols-3 gap-8 mt-16 text-center">
-                  <div className="space-y-12">
-                    <p className="font-bold border-b border-gray-400 pb-2">المحاسب المالي</p>
-                    <div className="h-16"></div>
-                    <p className="text-sm opacity-60">التوقيع والختم</p>
-                  </div>
-                  <div className="space-y-12">
-                    <p className="font-bold border-b border-gray-400 pb-2">المراجع المالي</p>
-                    <div className="h-16"></div>
-                    <p className="text-sm opacity-60">التوقيع والختم</p>
-                  </div>
-                  <div className="space-y-12">
-                    <p className="font-bold border-b border-gray-400 pb-2">المدير المالي</p>
-                    <div className="h-16"></div>
-                    <p className="text-sm opacity-60">التوقيع والختم</p>
-                  </div>
-                </div>
+{/* ===== التوقيعات ===== */}
+<div className="grid grid-cols-6 gap-3 mt-12 text-center">
+
+  <div className="space-y-6">
+    <p className="font-bold text-sm border-b border-gray-400 pb-2">
+      إعداد
+    </p>
+    <div className="h-10"></div>
+    <p className="text-xs opacity-60">التوقيع </p>
+  </div>
+
+  <div className="space-y-6">
+    <p className="font-bold text-sm border-b border-gray-400 pb-2">
+      مراجعة أولى
+    </p>
+    <div className="h-10"></div>
+    <p className="text-xs opacity-60">التوقيع </p>
+  </div>
+
+  <div className="space-y-6">
+    <p className="font-bold text-sm border-b border-gray-400 pb-2">
+      المراجع المالي
+    </p>
+    <div className="h-10"></div>
+    <p className="text-xs opacity-60">التوقيع </p>
+  </div>
+
+  <div className="space-y-6">
+    <p className="font-bold text-sm border-b border-gray-400 pb-2">
+      رئيس الحسابات
+    </p>
+    <div className="h-10"></div>
+    <p className="text-xs opacity-60">التوقيع </p>
+  </div>
+
+  <div className="space-y-4">
+    <div className="border-b border-gray-400 pb-2">
+      <p className="font-bold text-sm">
+        تدقيق ومراجعة
+      </p>
+      <p className="text-xs mt-1 whitespace-nowrap">
+        م. سعد الزكري
+      </p>
+    </div>
+
+    <div className="h-10"></div>
+
+    <p className="text-xs opacity-60">
+      التوقيع 
+    </p>
+  </div>
+
+  <div className="space-y-4">
+    <div className="border-b border-gray-400 pb-2">
+      <p className="font-extrabold text-sm">
+        الرئيس التنفيذي
+      </p>
+
+      <p className="text-xs font-extrabold mt-1 whitespace-nowrap">
+        م. زكري بن عبدالله الزكري
+      </p>
+    </div>
+
+    <div className="h-10"></div>
+
+    <p className="text-xs opacity-60">
+      التوقيع 
+    </p>
+  </div>
+
+</div>
               </>
             ) : (
               <div className="text-center py-16 text-gray-400">
