@@ -225,7 +225,7 @@ export default function DailyPayrollReport() {
                     ? costCenters?.find(cc => cc.id === selectedCostCenterId)?.name || 'شركة تولان الدولية'
                     : 'شركة تولان الدولية'}
                 </h1>
-                <h2 className="text-xl font-bold opacity-90">تقرير كشف رواتب العمالة اليومية</h2>
+                <h2 className="text-xl font-bold opacity-90">تقرير كشف العمالة اليومية</h2>
                 <div className="mt-2 inline-block bg-white/20 px-4 py-1 rounded-full text-sm">
                   للفترة من: <span className="font-bold">{startDate}</span> إلى: <span className="font-bold">{endDate}</span>
                 </div>
