@@ -8929,7 +8929,7 @@ export async function getAbsentWorkersForBatch(
   const presentWorkerIds = await db
     .select({ workerId: attendanceEvents.workerId })
     .from(attendanceEvents)
-    .where(eq(attendanceEvents.workDate, sql\`\${workDate}\`));
+    .where(eq(attendanceEvents.workDate, sql`${workDate}`));
 
   const presentIds = new Set(presentWorkerIds.map((r: any) => r.workerId));
 
