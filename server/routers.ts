@@ -3236,6 +3236,47 @@ newValues: { assignmentIds: input.assignmentIds, settlements: result.settlements
         if (!ctx.user) throw new Error("Not authenticated");
         return await db.updatePayrollItemNote(input.itemId, input.note);
       }),
+
+    // جلب العمال الغائبين عن الدفعة في تاريخ معين
+    getAbsentWorkersForBatch: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        workDate: z.string(),
+        batchId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getAbsentWorkersForBatch(input.groupId, input.workDate, input.batchId);
+      }),
+
+    // إضافة عامل جديد للدفعة مع بصماته
+    addWorkerToBatch: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        workerId: z.number(),
+        workDate: z.string(),
+        checkInTime: z.string(),
+        checkOutTime: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const batchDetails = await db.getPayrollBatchDetails(input.batchId);
+        if (!batchDetails) throw new TRPCError({ code: 'NOT_FOUND', message: 'الدفعة غير موجودة' });
+        if (batchDetails.batch.status !== 'draft') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن التعديل إلا في مسودة الدفعة' });
+        }
+        const result = await db.addWorkerToBatch({
+          ...input,
+          addedBy: ctx.user.id,
+        });
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'ADD_WORKER_TO_BATCH',
+          tableName: 'payroll_batch_items',
+          recordId: input.batchId,
+          newValues: { workerId: input.workerId, workDate: input.workDate },
+        });
+        return result;
+      }),
   }),   // ← هذا يغلق قسم payroll
 
   // Operational Flags
