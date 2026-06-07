@@ -8897,9 +8897,139 @@ export async function updatePayrollItemNote(itemId: number, note: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const { payrollItems } = await import('../drizzle/schema');
+  const { payrollBatchItems } = await import('../drizzle/schema');
 
-  await db.update(payrollItems).set({ notes: note }).where(eq(payrollItems.id, itemId));
+  await db.update(payrollBatchItems).set({ notes: note }).where(eq(payrollBatchItems.id, itemId));
 
-return { success: true };
+  return { success: true };
+}
+
+// ============================================
+// جلب العمال الغائبين عن الدفعة في تاريخ معين
+// ============================================
+
+export async function getAbsentWorkersForBatch(
+  groupId: number,
+  workDate: string,
+  batchId: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { workers, attendanceEvents, payrollBatchItems } = await import('../drizzle/schema');
+
+  // كل عمال المجموعة
+  const allWorkers = await db
+    .select({ id: workers.id, fullName: workers.fullName, code: workers.code })
+    .from(workers)
+    .where(eq(workers.groupId, groupId))
+    .orderBy(workers.fullName);
+
+  // العمال الذين لديهم بصمة في هذا التاريخ
+  const presentWorkerIds = await db
+    .select({ workerId: attendanceEvents.workerId })
+    .from(attendanceEvents)
+    .where(eq(attendanceEvents.workDate, sql\`\${workDate}\`));
+
+  const presentIds = new Set(presentWorkerIds.map((r: any) => r.workerId));
+
+  // العمال الموجودون أصلاً في الدفعة
+  const batchWorkerIds = await db
+    .select({ workerId: payrollBatchItems.workerId })
+    .from(payrollBatchItems)
+    .where(eq(payrollBatchItems.batchId, batchId));
+
+  const batchIds = new Set(batchWorkerIds.map((r: any) => r.workerId));
+
+  // العمال الغائبون: ليس لهم بصمة في هذا التاريخ وليسوا في الدفعة
+  const absentWorkers = allWorkers.filter(
+    (w: any) => !presentIds.has(w.id) && !batchIds.has(w.id)
+  );
+
+  return absentWorkers;
+}
+
+// ============================================
+// إضافة عامل جديد للدفعة مع بصماته
+// ============================================
+
+export async function addWorkerToBatch(params: {
+  batchId: number;
+  workerId: number;
+  workDate: string;
+  checkInTime: string;
+  checkOutTime: string;
+  addedBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { attendanceEvents, payrollBatchItems, payrollBatches, workers } = await import('../drizzle/schema');
+
+  const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, params.batchId)).limit(1);
+  if (!batch) throw new Error("الدفعة غير موجودة");
+  if (batch.status !== 'draft') throw new Error("لا يمكن التعديل إلا في مسودة الدفعة");
+
+  const [worker] = await db.select().from(workers).where(eq(workers.id, params.workerId)).limit(1);
+  if (!worker) throw new Error("العامل غير موجود");
+
+  // إضافة بصمة الحضور
+  await db.insert(attendanceEvents).values({
+    workerId: params.workerId,
+    eventType: 'check_in',
+    eventTime: new Date(params.checkInTime),
+    workDate: params.workDate,
+    method: 'manual_batch',
+    verifiedBy: params.addedBy,
+    note: 'تمت الإضافة يدوياً من دفعة الراتب',
+    isAutomatic: false,
+  });
+
+  // إضافة بصمة الانصراف
+  await db.insert(attendanceEvents).values({
+    workerId: params.workerId,
+    eventType: 'check_out',
+    eventTime: new Date(params.checkOutTime),
+    workDate: params.workDate,
+    method: 'manual_batch',
+    verifiedBy: params.addedBy,
+    note: 'تمت الإضافة يدوياً من دفعة الراتب',
+    isAutomatic: false,
+  });
+
+  // حساب المالية
+  await processAttendanceToFinance(params.workerId, params.workDate);
+  const financeData = await calculateDailyFinanceFromAttendance(params.workerId, params.workDate);
+
+  // إضافة العامل لجدول الدفعة
+  await db.insert(payrollBatchItems).values({
+    batchId: params.batchId,
+    workerId: params.workerId,
+    groupId: worker.groupId || null,
+    daysWorked: 1,
+    baseAmount: String(financeData.baseAmount || 0),
+    totalDeductions: String(financeData.deductions || 0),
+    totalBonuses: String(financeData.bonuses || 0),
+    netAmount: String((financeData.baseAmount || 0) - (financeData.deductions || 0) + (financeData.bonuses || 0)),
+    notes: null,
+  } as any);
+
+  // تحديث إجمالي الدفعة
+  const allItems = await db
+    .select()
+    .from(payrollBatchItems)
+    .where(eq(payrollBatchItems.batchId, params.batchId));
+
+  const totalAmount = allItems.reduce((sum: number, i: any) => sum + parseFloat(i.baseAmount || '0'), 0);
+  const totalDeductions = allItems.reduce((sum: number, i: any) => sum + parseFloat(i.totalDeductions || '0'), 0);
+  const totalBonuses = allItems.reduce((sum: number, i: any) => sum + parseFloat(i.totalBonuses || '0'), 0);
+
+  await db.update(payrollBatches).set({
+    totalWorkers: allItems.length,
+    totalAmount: totalAmount.toFixed(2) as any,
+    totalDeductions: totalDeductions.toFixed(2) as any,
+    totalBonuses: totalBonuses.toFixed(2) as any,
+  }).where(eq(payrollBatches.id, params.batchId));
+
+  return { success: true, workerName: worker.fullName };
 }
