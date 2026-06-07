@@ -57,6 +57,20 @@ export default function PayrollBatchDetails() {
     checkOutTime: "",
   });
 
+  // Add Attendance Dialog State
+  const [addAttendanceOpen, setAddAttendanceOpen] = useState(false);
+  const [addAttendanceWorker, setAddAttendanceWorker] = useState<any>(null);
+  const [addAttendanceForm, setAddAttendanceForm] = useState({
+    workDate: "",
+    eventType: "check_in" as "check_in" | "check_out",
+    eventTime: "",
+    note: "",
+  });
+
+  // Worker Note inline state
+  const [editingNoteItemId, setEditingNoteItemId] = useState<number | null>(null);
+  const [noteInputValue, setNoteInputValue] = useState("");
+
   // Assignment Settlement Dialog State
   const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
   const [pendingAssignments, setPendingAssignments] = useState<any[]>([]);
@@ -206,6 +220,62 @@ export default function PayrollBatchDetails() {
     },
   });
   const updateAttendanceMutation = trpc.attendance.updateEvent.useMutation();
+
+  const addManualAttendanceMutation = trpc.payroll.addManualAttendance.useMutation({
+    onSuccess: async () => {
+      toast.success("تمت إضافة البصمة بنجاح");
+      setAddAttendanceOpen(false);
+      setAddAttendanceForm({ workDate: "", eventType: "check_in", eventTime: "", note: "" });
+      utils.payroll.getDetails.invalidate({ batchId });
+      if (addAttendanceWorker) {
+        const periodStart = batch?.batch.periodStart instanceof Date
+          ? batch.batch.periodStart.toLocaleDateString('en-CA')
+          : new Date(batch!.batch.periodStart).toLocaleDateString('en-CA');
+        const periodEnd = batch?.batch.periodEnd instanceof Date
+          ? batch.batch.periodEnd.toLocaleDateString('en-CA')
+          : new Date(batch!.batch.periodEnd).toLocaleDateString('en-CA');
+        const data = await utils.client.payroll.getAttendanceForWorkerPeriod.query({
+          workerId: addAttendanceWorker.workerId,
+          periodStart,
+          periodEnd,
+        });
+        setDailyData(data);
+      }
+    },
+    onError: (error) => { toast.error(`خطأ: ${error.message}`); },
+  });
+
+  const updateAttendanceForBatchMutation = trpc.payroll.updateAttendanceForBatch.useMutation({
+    onSuccess: async () => {
+      toast.success("تم تحديث البصمة بنجاح");
+      setEditTimeDialogOpen(false);
+      utils.payroll.getDetails.invalidate({ batchId });
+      if (selectedWorker) {
+        const periodStart = batch?.batch.periodStart instanceof Date
+          ? batch.batch.periodStart.toLocaleDateString('en-CA')
+          : new Date(batch!.batch.periodStart).toLocaleDateString('en-CA');
+        const periodEnd = batch?.batch.periodEnd instanceof Date
+          ? batch.batch.periodEnd.toLocaleDateString('en-CA')
+          : new Date(batch!.batch.periodEnd).toLocaleDateString('en-CA');
+        const data = await utils.client.payroll.getAttendanceForWorkerPeriod.query({
+          workerId: selectedWorker.workerId,
+          periodStart,
+          periodEnd,
+        });
+        setDailyData(data);
+      }
+    },
+    onError: (error) => { toast.error(`خطأ: ${error.message}`); },
+  });
+
+  const updateWorkerNoteMutation = trpc.payroll.updateWorkerNote.useMutation({
+    onSuccess: () => {
+      toast.success("تم حفظ الملاحظة");
+      setEditingNoteItemId(null);
+      utils.payroll.getDetails.invalidate({ batchId });
+    },
+    onError: (error) => { toast.error(`خطأ: ${error.message}`); },
+  });
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -665,17 +735,62 @@ export default function PayrollBatchDetails() {
                       <TableCell className="font-bold">
                         {Number(item.netAmount).toLocaleString("ar-SA")} ر.س
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {item.notes || "-"}
+                      <TableCell className="text-sm text-muted-foreground min-w-[160px]">
+                        {canEdit && editingNoteItemId === item.id ? (
+                          <div className="flex gap-1 items-center">
+                            <input
+                              autoFocus
+                              className="border rounded px-2 py-1 text-sm w-full bg-background"
+                              value={noteInputValue}
+                              onChange={(e) => setNoteInputValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') updateWorkerNoteMutation.mutate({ itemId: item.id, note: noteInputValue });
+                                if (e.key === 'Escape') setEditingNoteItemId(null);
+                              }}
+                            />
+                            <Button size="sm" variant="ghost" className="h-7 px-1" onClick={() => updateWorkerNoteMutation.mutate({ itemId: item.id, note: noteInputValue })}>✓</Button>
+                            <Button size="sm" variant="ghost" className="h-7 px-1" onClick={() => setEditingNoteItemId(null)}>✕</Button>
+                          </div>
+                        ) : (
+                          <span
+                            className={canEdit ? "cursor-pointer hover:text-foreground hover:underline" : ""}
+                            title={canEdit ? "اضغط لتعديل الملاحظة" : ""}
+                            onClick={() => {
+                              if (!canEdit) return;
+                              setEditingNoteItemId(item.id);
+                              setNoteInputValue(item.notes || "");
+                            }}
+                          >
+                            {item.notes || (canEdit ? <span className="text-muted-foreground/50 italic">أضف ملاحظة...</span> : "-")}
+                          </span>
+                        )}
                       </TableCell>
                       {canEdit && (
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7 px-2 text-blue-600 border-blue-300 hover:bg-blue-50"
+                              onClick={() => {
+                                setAddAttendanceWorker(item);
+                                setAddAttendanceForm({
+                                  workDate: new Date(batch!.batch.periodStart).toLocaleDateString('en-CA'),
+                                  eventType: "check_in",
+                                  eventTime: "",
+                                  note: "",
+                                });
+                                setAddAttendanceOpen(true);
+                              }}
+                              title="إضافة بصمة يدوية"
+                            >
+                              + تحضير
+                            </Button>
+                            <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleOpenDailyDetails(item)}
-                              title="تفاصيل الأيام"
+                              title="تفاصيل الأيام وتعديل الأوقات"
                             >
                               <Calendar className="h-4 w-4" />
                             </Button>
@@ -683,7 +798,7 @@ export default function PayrollBatchDetails() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEdit(item)}
-                              title="تعديل"
+                              title="تعديل المبالغ"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -930,51 +1045,33 @@ export default function PayrollBatchDetails() {
             <Button 
               onClick={async () => {
                 if (!editingDay) return;
-                
                 try {
-                  // Update check-in if changed
+                  const date = new Date(editingDay.date).toLocaleDateString('en-CA');
                   if (editTimeForm.checkInTime && editingDay.checkIn) {
-                    const date = new Date(editingDay.date).toLocaleDateString('en-CA');
-                    const newCheckInTime = `${date}T${editTimeForm.checkInTime}:00`;
-                    
-                    await updateAttendanceMutation.mutateAsync({
+                    await updateAttendanceForBatchMutation.mutateAsync({
+                      batchId,
                       eventId: editingDay.checkIn.id,
-                      newTime: newCheckInTime,
-                      internalNote: "تم التعديل من تفاصيل دفعة الراتب",
+                      newTime: `${date}T${editTimeForm.checkInTime}:00`,
+                      note: "تم التعديل من دفعة الراتب",
                     });
                   }
-                  
-                  // Update check-out if changed
                   if (editTimeForm.checkOutTime && editingDay.checkOut) {
-                    const date = new Date(editingDay.date).toLocaleDateString('en-CA');
-                    const newCheckOutTime = `${date}T${editTimeForm.checkOutTime}:00`;
-                    
-                    await updateAttendanceMutation.mutateAsync({
+                    await updateAttendanceForBatchMutation.mutateAsync({
+                      batchId,
                       eventId: editingDay.checkOut.id,
-                      newTime: newCheckOutTime,
-                      internalNote: "تم التعديل من تفاصيل دفعة الراتب",
+                      newTime: `${date}T${editTimeForm.checkOutTime}:00`,
+                      note: "تم التعديل من دفعة الراتب",
                     });
                   }
-                  
                   toast.success("تم حفظ التعديلات بنجاح");
                   setEditTimeDialogOpen(false);
-                  
-                  // Refresh data
-                  if (selectedWorker) {
-                    const data = await utils.payroll.getAttendanceForWorkerPeriod.fetch({
-                      workerId: selectedWorker.workerId,
-                      periodStart: batch?.batch?.periodStart?.toLocaleDateString('en-CA') || '',
-                      periodEnd: batch?.batch?.periodEnd?.toLocaleDateString('en-CA') || '',
-                    });
-                    setDailyData(data);
-                  }
                 } catch (error: any) {
                   toast.error(error.message || "حدث خطأ أثناء حفظ التعديلات");
                 }
               }}
-              disabled={updateAttendanceMutation.isPending}
+              disabled={updateAttendanceForBatchMutation.isPending}
             >
-              {updateAttendanceMutation.isPending ? (
+              {updateAttendanceForBatchMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 ml-2 animate-spin" />
                   جاري الحفظ...
@@ -997,6 +1094,88 @@ export default function PayrollBatchDetails() {
         </CardContent>
       </Card>
     </div>
+
+      {/* Add Manual Attendance Dialog */}
+      <Dialog open={addAttendanceOpen} onOpenChange={setAddAttendanceOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة بصمة يدوية — {addAttendanceWorker?.workerName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>التاريخ</Label>
+              <input
+                type="date"
+                className="border rounded px-3 py-2 text-sm w-full bg-background"
+                value={addAttendanceForm.workDate}
+                min={batch?.batch.periodStart instanceof Date
+                  ? batch.batch.periodStart.toLocaleDateString('en-CA')
+                  : new Date(batch?.batch.periodStart || '').toLocaleDateString('en-CA')}
+                max={batch?.batch.periodEnd instanceof Date
+                  ? batch.batch.periodEnd.toLocaleDateString('en-CA')
+                  : new Date(batch?.batch.periodEnd || '').toLocaleDateString('en-CA')}
+                onChange={(e) => setAddAttendanceForm(p => ({ ...p, workDate: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>نوع البصمة</Label>
+              <div className="flex gap-3">
+                <Button
+                  variant={addAttendanceForm.eventType === 'check_in' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAddAttendanceForm(p => ({ ...p, eventType: 'check_in' }))}
+                >
+                  حضور
+                </Button>
+                <Button
+                  variant={addAttendanceForm.eventType === 'check_out' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setAddAttendanceForm(p => ({ ...p, eventType: 'check_out' }))}
+                >
+                  انصراف
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>الوقت</Label>
+              <Input
+                type="time"
+                value={addAttendanceForm.eventTime}
+                onChange={(e) => setAddAttendanceForm(p => ({ ...p, eventTime: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>ملاحظة (اختياري)</Label>
+              <Input
+                placeholder="سبب الإضافة اليدوية..."
+                value={addAttendanceForm.note}
+                onChange={(e) => setAddAttendanceForm(p => ({ ...p, note: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddAttendanceOpen(false)}>إلغاء</Button>
+            <Button
+              disabled={!addAttendanceForm.workDate || !addAttendanceForm.eventTime || addManualAttendanceMutation.isPending}
+              onClick={() => {
+                if (!addAttendanceWorker || !addAttendanceForm.workDate || !addAttendanceForm.eventTime) return;
+                addManualAttendanceMutation.mutate({
+                  batchId,
+                  workerId: addAttendanceWorker.workerId,
+                  workDate: addAttendanceForm.workDate,
+                  eventType: addAttendanceForm.eventType,
+                  eventTime: `${addAttendanceForm.workDate}T${addAttendanceForm.eventTime}:00`,
+                  note: addAttendanceForm.note || undefined,
+                });
+              }}
+            >
+              {addManualAttendanceMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 ml-2 animate-spin" />جاري الإضافة...</>
+              ) : ("إضافة البصمة")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Assignment Settlement Dialog */}
       <Dialog open={settlementDialogOpen} onOpenChange={setSettlementDialogOpen}>
