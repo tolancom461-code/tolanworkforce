@@ -3155,13 +3155,90 @@ addFullSession: protectedProcedure
           action: 'APPLY_ASSIGNMENT_SETTLEMENTS',
           tableName: 'assignment_settlements',
           recordId: input.batchId,
-          newValues: { assignmentIds: input.assignmentIds, settlements: result.settlements },
+newValues: { assignmentIds: input.assignmentIds, settlements: result.settlements },
         });
         return result;
       }),
-  }),
 
-  // Operational Flags (البلاغات التشغيلية)
+    // ✅ جديد: إضافة بصمة يدوية من داخل مسودة الراتب
+    addManualAttendance: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        workerId: z.number(),
+        workDate: z.string(),
+        eventType: z.enum(['check_in', 'check_out']),
+        eventTime: z.string(),
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const batchDetails = await db.getPayrollBatchDetails(input.batchId);
+        if (!batchDetails) throw new TRPCError({ code: 'NOT_FOUND', message: 'الدفعة غير موجودة' });
+        if (batchDetails.batch.status !== 'draft') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن تعديل الحضور إلا في مسودة الدفعة' });
+        }
+        const result = await db.addManualAttendanceForBatch({
+          workerId: input.workerId,
+          workDate: input.workDate,
+          eventType: input.eventType,
+          eventTime: input.eventTime,
+          addedBy: ctx.user.id,
+          note: input.note,
+        });
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'ADD_MANUAL_ATTENDANCE_BATCH',
+          tableName: 'attendance_events',
+          recordId: result.eventId,
+          newValues: { workerId: input.workerId, workDate: input.workDate, eventType: input.eventType, eventTime: input.eventTime },
+        });
+        return result;
+      }),
+
+    // ✅ جديد: تعديل وقت بصمة من داخل مسودة الراتب
+    updateAttendanceForBatch: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        eventId: z.number(),
+        newTime: z.string(),
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const batchDetails = await db.getPayrollBatchDetails(input.batchId);
+        if (!batchDetails) throw new TRPCError({ code: 'NOT_FOUND', message: 'الدفعة غير موجودة' });
+        if (batchDetails.batch.status !== 'draft') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن تعديل الحضور إلا في مسودة الدفعة' });
+        }
+        const result = await db.updateAttendanceEventForBatch({
+          eventId: input.eventId,
+          newTime: input.newTime,
+          updatedBy: ctx.user.id,
+          note: input.note,
+        });
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'UPDATE_ATTENDANCE_BATCH',
+          tableName: 'attendance_events',
+          recordId: input.eventId,
+          newValues: { newTime: input.newTime, note: input.note },
+        });
+        return result;
+      }),
+
+    // ✅ جديد: تحديث ملاحظة عامل في دفعة الراتب
+    updateWorkerNote: protectedProcedure
+      .input(z.object({
+        itemId: z.number(),
+        note: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        return await db.updatePayrollItemNote(input.itemId, input.note);
+      }),
+  }),   // ← هذا يغلق قسم payroll
+
+  // Operational Flags
   // Attendance Status Types
   attendanceStatus: router({
     list: protectedProcedure.query(async () => {
