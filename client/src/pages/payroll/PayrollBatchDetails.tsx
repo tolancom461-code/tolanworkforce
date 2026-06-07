@@ -71,6 +71,15 @@ export default function PayrollBatchDetails() {
   const [editingNoteItemId, setEditingNoteItemId] = useState<number | null>(null);
   const [noteInputValue, setNoteInputValue] = useState("");
 
+  // Add Worker To Batch Dialog State
+  const [addWorkerOpen, setAddWorkerOpen] = useState(false);
+  const [addWorkerGroup, setAddWorkerGroup] = useState<any>(null);
+  const [addWorkerDate, setAddWorkerDate] = useState("");
+  const [absentWorkers, setAbsentWorkers] = useState<any[]>([]);
+  const [selectedAbsentWorker, setSelectedAbsentWorker] = useState<any>(null);
+  const [addWorkerForm, setAddWorkerForm] = useState({ checkInTime: "", checkOutTime: "" });
+  const [isLoadingAbsent, setIsLoadingAbsent] = useState(false);
+
   // Assignment Settlement Dialog State
   const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
   const [pendingAssignments, setPendingAssignments] = useState<any[]>([]);
@@ -276,6 +285,48 @@ export default function PayrollBatchDetails() {
     },
     onError: (error) => { toast.error(`خطأ: ${error.message}`); },
   });
+
+  const addWorkerToBatchMutation = trpc.payroll.addWorkerToBatch.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تمت إضافة ${data.workerName} للدفعة بنجاح`);
+      setAddWorkerOpen(false);
+      setSelectedAbsentWorker(null);
+      setAddWorkerForm({ checkInTime: "", checkOutTime: "" });
+      setAbsentWorkers([]);
+      utils.payroll.getDetails.invalidate({ batchId });
+    },
+    onError: (error) => { toast.error(`خطأ: ${error.message}`); },
+  });
+
+  const handleOpenAddWorker = (group: any) => {
+    setAddWorkerGroup(group);
+    setAddWorkerDate(
+      batch?.batch.periodStart instanceof Date
+        ? batch.batch.periodStart.toLocaleDateString('en-CA')
+        : new Date(batch!.batch.periodStart).toLocaleDateString('en-CA')
+    );
+    setAbsentWorkers([]);
+    setSelectedAbsentWorker(null);
+    setAddWorkerForm({ checkInTime: "", checkOutTime: "" });
+    setAddWorkerOpen(true);
+  };
+
+  const handleFetchAbsentWorkers = async (date: string, groupId: number) => {
+    setIsLoadingAbsent(true);
+    try {
+      const result = await utils.client.payroll.getAbsentWorkersForBatch.query({
+        groupId,
+        workDate: date,
+        batchId,
+      });
+      setAbsentWorkers(result);
+      setSelectedAbsentWorker(null);
+    } catch (error: any) {
+      toast.error(`خطأ في جلب العمال: ${error.message}`);
+    } finally {
+      setIsLoadingAbsent(false);
+    }
+  };
 
   const handleEdit = (item: any) => {
     setEditingItem(item);
@@ -704,6 +755,16 @@ export default function PayrollBatchDetails() {
                     <TableCell className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-primary" />
                       {group.groupName} ({group.summary.count} عامل)
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-6 px-2 mr-2 text-green-600 border-green-300 hover:bg-green-50 font-normal"
+                          onClick={() => handleOpenAddWorker(group)}
+                        >
+                          + إضافة عامل
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell>
                       {group.summary.totalBase.toLocaleString("ar-SA", { maximumFractionDigits: 2 })} ر.س
@@ -1094,6 +1155,113 @@ export default function PayrollBatchDetails() {
         </CardContent>
       </Card>
     </div>
+
+      {/* Add Worker To Batch Dialog */}
+      <Dialog open={addWorkerOpen} onOpenChange={setAddWorkerOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة عامل للدفعة — {addWorkerGroup?.groupName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>التاريخ</Label>
+              <input
+                type="date"
+                className="border rounded px-3 py-2 text-sm w-full bg-background"
+                value={addWorkerDate}
+                min={batch?.batch.periodStart instanceof Date
+                  ? batch.batch.periodStart.toLocaleDateString('en-CA')
+                  : new Date(batch?.batch.periodStart || '').toLocaleDateString('en-CA')}
+                max={batch?.batch.periodEnd instanceof Date
+                  ? batch.batch.periodEnd.toLocaleDateString('en-CA')
+                  : new Date(batch?.batch.periodEnd || '').toLocaleDateString('en-CA')}
+                onChange={(e) => {
+                  setAddWorkerDate(e.target.value);
+                  setAbsentWorkers([]);
+                  setSelectedAbsentWorker(null);
+                }}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!addWorkerDate || isLoadingAbsent}
+                onClick={() => handleFetchAbsentWorkers(addWorkerDate, addWorkerGroup?.groupId)}
+                className="w-full"
+              >
+                {isLoadingAbsent ? (
+                  <><Loader2 className="h-4 w-4 ml-2 animate-spin" />جاري البحث...</>
+                ) : ("عرض العمال الغائبين")}
+              </Button>
+            </div>
+
+            {absentWorkers.length > 0 && (
+              <div className="space-y-2">
+                <Label>اختر العامل</Label>
+                <select
+                  className="border rounded px-3 py-2 text-sm w-full bg-background"
+                  value={selectedAbsentWorker?.id || ""}
+                  onChange={(e) => {
+                    const w = absentWorkers.find((w: any) => w.id === Number(e.target.value));
+                    setSelectedAbsentWorker(w || null);
+                  }}
+                >
+                  <option value="">-- اختر عاملاً --</option>
+                  {absentWorkers.map((w: any) => (
+                    <option key={w.id} value={w.id}>{w.fullName} — {w.code}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {absentWorkers.length === 0 && !isLoadingAbsent && addWorkerDate && (
+              <p className="text-sm text-muted-foreground text-center py-2">
+                اضغط "عرض العمال الغائبين" لجلب القائمة
+              </p>
+            )}
+
+            {selectedAbsentWorker && (
+              <>
+                <div className="space-y-2">
+                  <Label>وقت الحضور</Label>
+                  <Input
+                    type="time"
+                    value={addWorkerForm.checkInTime}
+                    onChange={(e) => setAddWorkerForm(p => ({ ...p, checkInTime: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>وقت الانصراف</Label>
+                  <Input
+                    type="time"
+                    value={addWorkerForm.checkOutTime}
+                    onChange={(e) => setAddWorkerForm(p => ({ ...p, checkOutTime: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddWorkerOpen(false)}>إلغاء</Button>
+            <Button
+              disabled={!selectedAbsentWorker || !addWorkerForm.checkInTime || !addWorkerForm.checkOutTime || addWorkerToBatchMutation.isPending}
+              onClick={() => {
+                if (!selectedAbsentWorker || !addWorkerDate || !addWorkerForm.checkInTime || !addWorkerForm.checkOutTime) return;
+                addWorkerToBatchMutation.mutate({
+                  batchId,
+                  workerId: selectedAbsentWorker.id,
+                  workDate: addWorkerDate,
+                  checkInTime: `${addWorkerDate}T${addWorkerForm.checkInTime}:00`,
+                  checkOutTime: `${addWorkerDate}T${addWorkerForm.checkOutTime}:00`,
+                });
+              }}
+            >
+              {addWorkerToBatchMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 ml-2 animate-spin" />جاري الإضافة...</>
+              ) : ("إضافة للدفعة")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Manual Attendance Dialog */}
       <Dialog open={addAttendanceOpen} onOpenChange={setAddAttendanceOpen}>
