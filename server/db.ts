@@ -8814,9 +8814,92 @@ export async function applyAssignmentSettlements(params: {
     });
   }
 
-  return {
+return {
     success: true,
     message: `تم تطبيق ${appliedSettlements.length} تسوية بنجاح`,
     settlements: appliedSettlements,
   };
+}
+
+// ============================================
+// إضافة / تعديل بصمات يدوية من داخل مسودة الراتب
+// ============================================
+
+export async function addManualAttendanceForBatch(params: {
+  workerId: number;
+  workDate: string;
+  eventType: 'check_in' | 'check_out';
+  eventTime: string;
+  addedBy: number;
+  note?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { attendanceEvents, workers } = await import('../drizzle/schema');
+
+  const [worker] = await db.select().from(workers).where(eq(workers.id, params.workerId)).limit(1);
+  if (!worker) throw new Error("العامل غير موجود");
+
+  const eventTime = new Date(params.eventTime);
+
+  const result = await db.insert(attendanceEvents).values({
+    workerId: params.workerId,
+    eventType: params.eventType,
+    eventTime,
+    workDate: params.workDate,
+    method: 'manual_batch',
+    verifiedBy: params.addedBy,
+    note: params.note || 'تمت الإضافة يدوياً من دفعة الراتب',
+    isAutomatic: false,
+  });
+
+  try {
+    await processAttendanceToFinance(params.workerId, params.workDate);
+  } catch (error) {
+    console.error('Error recalculating finance after manual punch:', error);
+  }
+
+  return { success: true, eventId: result[0].insertId };
+}
+
+export async function updateAttendanceEventForBatch(params: {
+  eventId: number;
+  newTime: string;
+  updatedBy: number;
+  note?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { attendanceEvents } = await import('../drizzle/schema');
+
+  const [original] = await db.select().from(attendanceEvents).where(eq(attendanceEvents.id, params.eventId)).limit(1);
+  if (!original) throw new Error("سجل الحضور غير موجود");
+
+  await db.update(attendanceEvents).set({
+    eventTime: new Date(params.newTime),
+    note: params.note || 'تم التعديل يدوياً من دفعة الراتب',
+    verifiedBy: params.updatedBy,
+  }).where(eq(attendanceEvents.id, params.eventId));
+
+  const workDate = original.workDate || getAdministrativeWorkDate(new Date(original.eventTime));
+  try {
+    await processAttendanceToFinance(original.workerId, workDate);
+  } catch (error) {
+    console.error('Error recalculating finance after update:', error);
+  }
+
+  return { success: true };
+}
+
+export async function updatePayrollItemNote(itemId: number, note: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { payrollItems } = await import('../drizzle/schema');
+
+  await db.update(payrollItems).set({ notes: note }).where(eq(payrollItems.id, itemId));
+
+return { success: true };
 }
