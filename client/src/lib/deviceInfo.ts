@@ -6,24 +6,31 @@
 /**
  * Get the user's public IP address
  * Uses a free IP lookup service
+ * - إذا لم يرد السيرفر خلال 3 ثوانٍ يُكمل بدون IP
  */
 export async function getPublicIP(): Promise<string | null> {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+
     const response = await fetch('https://api.ipify.org?format=json', {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
       },
+      signal: controller.signal,
     });
-    
+
+    clearTimeout(timeout);
+
     if (!response.ok) {
       throw new Error('Failed to fetch IP');
     }
-    
+
     const data = await response.json();
     return data.ip || null;
   } catch (error) {
-    console.error('Error fetching IP address:', error);
+    // انتهى الـ timeout أو فشل الاتصال — يكمل بدون IP بصمت
     return null;
   }
 }
