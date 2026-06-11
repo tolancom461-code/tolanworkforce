@@ -1702,6 +1702,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
           // إعفاء أول 5 دقائق — إذا تجاوز الـ 5 يُخصم كامل الدقائق
           if (lateMinutes > 5) {
           deductions += minuteCost * lateMinutes * (groupLatePenaltyRate / 100);
+          }
         }
         if (earlyLeaveMinutes > 0 && groupEarlyLeavePenaltyRate) {
           deductions += minuteCost * earlyLeaveMinutes * (groupEarlyLeavePenaltyRate / 100);
