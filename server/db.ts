@@ -1699,7 +1699,8 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
         const minuteCost = groupDailyWage / groupWorkMinutes;
         
         if (lateMinutes > 0 && groupLatePenaltyRate) {
-          // penaltyRate is percentage: 200% = double the minute cost
+          // إعفاء أول 5 دقائق — إذا تجاوز الـ 5 يُخصم كامل الدقائق
+          if (lateMinutes > 5) {
           deductions += minuteCost * lateMinutes * (groupLatePenaltyRate / 100);
         }
         if (earlyLeaveMinutes > 0 && groupEarlyLeavePenaltyRate) {
