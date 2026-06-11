@@ -1644,8 +1644,9 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
         if (groupDailyWage && requiredHours > 0) {
           // Calculate minute rate (more accurate than hourly rate)
           const minuteRate = groupDailyWage / requiredMinutes;
-          // Deduct missing minutes
-          deductions = minuteRate * missingMinutes;
+          // Deduct missing minutes with penalty rate
+          const penaltyRate = groupEarlyLeavePenaltyRate ? groupEarlyLeavePenaltyRate / 100 : 1;
+          deductions = minuteRate * missingMinutes * penaltyRate;
         }
       }
     }
