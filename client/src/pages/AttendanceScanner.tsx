@@ -536,9 +536,34 @@ export default function AttendanceScanner() {
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <User className="h-4 w-4 text-primary" />
                         </div>
-                        <span className="font-medium">{w.workerName}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{w.workerName}</span>
+                          <span className="font-mono text-xs text-muted-foreground">{w.workerCode}</span>
+                        </div>
                       </div>
-                      <span className="font-mono text-sm text-muted-foreground">{w.workerCode}</span>
+                      {cardDialog === 'present' && (
+                        <div className="flex items-center gap-3 text-xs">
+                          <div className="flex flex-col items-center">
+                            <span className="text-muted-foreground">حضور</span>
+                            <span className="font-mono font-medium text-green-600">
+                              {w.checkInTime
+                                ? new Date(w.checkInTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+                                : '—'}
+                            </span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-muted-foreground">انصراف</span>
+                            <span className={`font-mono font-medium ${w.checkOutTime ? 'text-blue-600' : 'text-orange-500'}`}>
+                              {w.checkOutTime
+                                ? new Date(w.checkOutTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+                                : 'لم ينصرف بعد'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {cardDialog !== 'present' && (
+                        <span className="font-mono text-sm text-muted-foreground">{w.workerCode}</span>
+                      )}
                     </div>
                   ))}
                 </div>
