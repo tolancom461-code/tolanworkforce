@@ -7069,17 +7069,19 @@ export async function getPresentWorkers(workDateStr: string, groupId?: number, c
 
   // Use administrative work_date (5 AM boundary) instead of calendar date
 
-  // Get all check-in events for this administrative date
-  const checkIns = await db
+  // Get all check-in and check-out events for this administrative date
+  const allEvents = await db
     .select({
       workerId: attendanceEvents.workerId,
       eventTime: attendanceEvents.eventTime,
+      eventType: attendanceEvents.eventType,
     })
     .from(attendanceEvents)
-    .where(and(
-      eq(attendanceEvents.workDate, sql`${workDateStr}`),
-      eq(attendanceEvents.eventType, 'check_in')
-    ));
+    .where(
+      eq(attendanceEvents.workDate, sql`${workDateStr}`)
+    );
+
+  const checkIns = allEvents.filter(e => e.eventType === 'check_in');
 
   if (checkIns.length === 0) return [];
 
@@ -7108,17 +7110,25 @@ export async function getPresentWorkers(workDateStr: string, groupId?: number, c
     workersList = workersList.filter(w => w.costCenterId === costCenterId);
   }
 
-  // Map check-in times
+// Map check-in and check-out times
   const checkInMap = new Map<number, Date>();
-  for (const ci of checkIns) {
-    if (!checkInMap.has(ci.workerId) || ci.eventTime < checkInMap.get(ci.workerId)!) {
-      checkInMap.set(ci.workerId, ci.eventTime);
+  const checkOutMap = new Map<number, Date>();
+  for (const e of allEvents) {
+    if (e.eventType === 'check_in') {
+      if (!checkInMap.has(e.workerId) || e.eventTime < checkInMap.get(e.workerId)!) {
+        checkInMap.set(e.workerId, e.eventTime);
+      }
+    } else if (e.eventType === 'check_out') {
+      if (!checkOutMap.has(e.workerId) || e.eventTime > checkOutMap.get(e.workerId)!) {
+        checkOutMap.set(e.workerId, e.eventTime);
+      }
     }
   }
 
   return workersList.map(w => ({
     ...w,
     checkInTime: checkInMap.get(w.workerId) || null,
+    checkOutTime: checkOutMap.get(w.workerId) || null,
   }));
 }
 
