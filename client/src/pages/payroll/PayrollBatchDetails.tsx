@@ -137,7 +137,7 @@ export default function PayrollBatchDetails() {
     });
     tableRows += `<tr class="grand-total"><td colspan="2">الإجمالي الكلي</td><td>${fmt(grandTotal.base)}</td><td>${fmt(grandTotal.deductions)}</td><td>${fmt(grandTotal.bonuses)}</td><td>${fmt(grandTotal.net)}</td><td></td></tr>`;
     const totalNetWords = numberToArabicWords(grandTotal.net);
-    tableRows += `<tr class="amount-words"><td colspan="7" style="background:#f0f7ff;padding:10px 12px;font-size:13px;font-weight:600;color:#1a3c6e;border-top:2px solid #4a90d9;">المبلغ الإجمالي بالأحرف: ${totalNetWords}</td></tr>`;
+    tableRows += `<tr class="amount-words"><td colspan="7" style="background:#f0f7ff;padding:10px 12px;font-size:13px;font-weight:600;color:#1a3c6e;border-top:2px solid #4a90d9;"> الإجمالي بالأحرف: ${totalNetWords}</td></tr>`;
     const periodStart = new Date(batch.batch.periodStart).toLocaleDateString('ar-SA');
     const periodEnd = new Date(batch.batch.periodEnd).toLocaleDateString('ar-SA');
     const printWindow = window.open('', '_blank');
@@ -159,7 +159,7 @@ export default function PayrollBatchDetails() {
       @media print { body { padding: 10px; } }
     </style></head><body>
       <div class="header">
-        <h1>كشف رواتب العمال اليومية</h1>
+        <h1>كشف يوميات العمال اليومية</h1>
         <p>رمز الدفعة: ${batch.batch.batchCode}</p>
       </div>
       <div class="meta">
@@ -167,7 +167,7 @@ export default function PayrollBatchDetails() {
         <span>الحالة: ${batch.batch.status === 'approved' ? 'موافق عليها' : batch.batch.status}</span>
       </div>
       <table>
-        <thead><tr><th>#</th><th>العامل</th><th>الراتب الأساسي</th><th>الخصومات</th><th>المكافآت</th><th>الصافي</th><th>ملاحظات</th></tr></thead>
+        <thead><tr><th>#</th><th>العامل</th><th>المبلغ</th><th>الخصومات</th><th>الاضافي</th><th>الصافي</th><th>ملاحظات</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table>
       <div class="footer">تم إنشاء هذا الكشف بواسطة نظام إدارة العمالة اليومية — تاريخ الطباعة: ${new Date().toLocaleDateString('ar-SA')} | وقت الطباعة: ${new Date().toLocaleTimeString('ar-SA')}</div>
@@ -739,7 +739,7 @@ export default function PayrollBatchDetails() {
             <TableHeader>
               <TableRow>
                 <TableHead>اسم العامل / المجموعة</TableHead>
-                <TableHead>الراتب الأساسي</TableHead>
+                <TableHead>المبلغ</TableHead>
                 <TableHead>الخصومات</TableHead>
                 <TableHead>الإضافات</TableHead>
                 <TableHead>الصافي</TableHead>
@@ -887,7 +887,7 @@ export default function PayrollBatchDetails() {
               <Input value={editingItem?.workerName || ""} disabled />
             </div>
             <div>
-              <Label htmlFor="baseAmount">الراتب الأساسي</Label>
+              <Label htmlFor="baseAmount">المبلغ</Label>
               <Input
                 id="baseAmount"
                 type="number"
