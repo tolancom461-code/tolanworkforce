@@ -3476,12 +3476,30 @@ export async function getBatchesByStatus(
   if (!db) return [];
 
   let query = db
-    .select()
+    .select({
+      id: payrollBatches.id,
+      batchCode: payrollBatches.batchCode,
+      periodStart: payrollBatches.periodStart,
+      periodEnd: payrollBatches.periodEnd,
+      status: payrollBatches.status,
+      totalAmount: payrollBatches.totalAmount,
+      totalWorkers: payrollBatches.totalWorkers,
+      totalDeductions: payrollBatches.totalDeductions,
+      totalBonuses: payrollBatches.totalBonuses,
+      costCenterId: payrollBatches.costCenterId,
+      groupId: payrollBatches.groupId,
+      createdAt: payrollBatches.createdAt,
+      createdBy: payrollBatches.createdBy,
+      approvedBy: payrollBatches.approvedBy,
+      approvedAt: payrollBatches.approvedAt,
+      rejectionCount: payrollBatches.rejectionCount,
+      isUnlocked: payrollBatches.isUnlocked,
+      costCenterName: sql<string>`COALESCE(${costCenters.name}, 'All')`,
+    })
     .from(payrollBatches)
+    .leftJoin(costCenters, eq(payrollBatches.costCenterId, costCenters.id))
     .orderBy(desc(payrollBatches.createdAt));
-
-  let batches = await query;
-
+  
   // Filter by status
   if (status) {
     batches = batches.filter(b => b.status === status);
