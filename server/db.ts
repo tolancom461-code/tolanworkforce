@@ -1719,8 +1719,8 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
       }
     }
     
-    // Round deductions
-    deductions = Math.round(deductions * 100) / 100;
+    // Round deductions to nearest whole riyal (49 halala or less → down, 50+ → up)
+    deductions = Math.round(deductions);
     
     // ⚠️ CAP: Deductions cannot exceed base amount (net >= 0)
     if (deductions > baseAmount) {
