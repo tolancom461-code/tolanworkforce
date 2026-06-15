@@ -126,6 +126,7 @@ export default function PayrollBatchCreateSimple() {
         periodEnd,
         costCenterId: parseInt(costCenterId),
         refreshFinanceRecords,
+        groupIds: selectedGroupIds,
         items: aggregateResult.map((item: any) => ({
           workerId: item.workerId,
           baseAmount: item.baseAmount,
