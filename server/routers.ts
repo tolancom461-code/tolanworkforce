@@ -3087,12 +3087,14 @@ addFullSession: protectedProcedure
         costCenterId: z.number(),
         periodStart: z.string(),
         periodEnd: z.string(),
+        groupIds: z.array(z.number()).optional(),
       }))
       .mutation(async ({ input }) => {
         return await db.aggregatePayrollDataByCostCenter(
           input.costCenterId,
           input.periodStart,
-          input.periodEnd
+          input.periodEnd,
+          input.groupIds
         );
       }),
     
