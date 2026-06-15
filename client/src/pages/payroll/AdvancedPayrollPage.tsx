@@ -38,7 +38,7 @@ export default function AdvancedPayrollPage() {
   // Mutations
   const createBatchMutation = trpc.payroll.createBatch.useMutation({
     onSuccess: (data) => {
-      toast.success('تم إنشاء دفعة الرواتب بنجاح');
+      toast.success('تم إنشاء دفعة العمال بنجاح');
       setLocation(`/payroll/batches/${data.batchId}`);
     },
     onError: (error) => {
@@ -153,8 +153,8 @@ export default function AdvancedPayrollPage() {
   return (
     <div className="container py-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">نظام الرواتب المتقدم</h1>
-        <p className="text-muted-foreground mt-2">حساب وإدارة رواتب الموظفين بمرونة عالية</p>
+        <h1 className="text-3xl font-bold">نظام العمال المتقدم</h1>
+        <p className="text-muted-foreground mt-2">حساب وإدارة العمال الموظفين بمرونة عالية</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
