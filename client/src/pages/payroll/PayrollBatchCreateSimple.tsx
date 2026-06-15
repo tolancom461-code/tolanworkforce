@@ -107,14 +107,14 @@ export default function PayrollBatchCreateSimple() {
       });
 
       console.log("=== Batch created ===", batch);
-      setSuccess(`تم إنشاء دفعة رواتب بنجاح! رقم الدفعة: ${batch.batchId}`);
+      setSuccess(`تم إنشاء دفعة العمال بنجاح! رقم الدفعة: ${batch.batchId}`);
       
       setTimeout(() => {
         setLocation(`/payroll/batches/${batch.batchId}`);
       }, 2000);
     } catch (err: any) {
       console.error("=== Error ===", err);
-      setError(err.message || "حدث خطأ أثناء إنشاء دفعة الرواتب");
+      setError(err.message || "حدث خطأ أثناء إنشاء دفعة العمال");
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,7 @@ export default function PayrollBatchCreateSimple() {
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
       <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "20px" }}>
-        إنشاء دفعة رواتب جديدة
+        إنشاء دفعة العمال جديدة
       </h1>
 
       {hasPendingFlags && (
@@ -143,7 +143,7 @@ export default function PayrollBatchCreateSimple() {
             ⚠️ تنبيه: يوجد {pendingFlagsCount} ملاحظة تشغيلية معلقة
           </div>
           <p style={{ color: "#856404", margin: 0 }}>
-            لا يمكن إنشاء دفعة رواتب قبل معالجة جميع الملاحظات التشغيلية المعلقة. يرجى مراجعتها واعتمادها أولاً.
+            لا يمكن إنشاء دفعة العمال قبل معالجة جميع الملاحظات التشغيلية المعلقة. يرجى مراجعتها واعتمادها أولاً.
           </p>
           <Link href="/operations/notes-review">
             <span
@@ -200,10 +200,10 @@ export default function PayrollBatchCreateSimple() {
                 marginBottom: "4px",
               }}
             >
-              تحديث السجلات المالية (الرواتب والورديات) بناءً على الإعدادات الحالية
+              تحديث السجلات المالية (العمال والورديات) بناءً على الإعدادات الحالية
             </label>
             <p style={{ margin: 0, fontSize: "14px", color: "#555" }}>
-              سيتم إعادة حساب السجلات المالية غير المعتمدة فقط بناءً على أحدث رواتب وورديات في المجموعات
+              سيتم إعادة حساب السجلات المالية غير المعتمدة فقط بناءً على أحدث العمال وورديات في المجموعات
             </p>
           </div>
         </div>
@@ -325,7 +325,7 @@ export default function PayrollBatchCreateSimple() {
             cursor: loading ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "جاري الاحتساب..." : "احتساب وإنشاء دفعة رواتب"}
+          {loading ? "جاري الاحتساب..." : "احتساب وإنشاء دفعة العمال"}
         </button>
       </form>
     </div>
