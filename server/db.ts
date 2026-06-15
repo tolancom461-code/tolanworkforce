@@ -1549,13 +1549,13 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
         shiftEndTime = schedule.endTime;
         hasShiftDefined = true;
         
-        // ✅ الراتب اليومي المخصص لهذا اليوم من جدول الورديات
-        // إذا كان موجوداً وأكبر من 0، يتم استخدامه بدلاً من الراتب الافتراضي للمجموعة
+        // ✅ المبلغ اليومي المخصص لهذا اليوم من جدول الورديات
+        // إذا كان موجوداً وأكبر من 0، يتم استخدامه بدلاً من المبلغ الافتراضي للمجموعة
         // إذا كان NULL أو 0، يتم تجاهله واستخدام المنطق القديم كما هو
         const scheduleDailyRate = schedule.dailyRate ? safeParseDecimal(schedule.dailyRate) : null;
         if (scheduleDailyRate && scheduleDailyRate > 0) {
           groupDailyWage = scheduleDailyRate;
-          console.log('📅 راتب يومي مخصص من جدول الورديات: scheduleDailyRate =', scheduleDailyRate, 'ليوم', dayOfWeek);
+          console.log('📅 مبلغ يومي مخصص من جدول الورديات: scheduleDailyRate =', scheduleDailyRate, 'ليوم', dayOfWeek);
         }
       }
     }
@@ -1835,7 +1835,7 @@ export async function updateAttendanceEvent(
   const eventDate = getAdministrativeWorkDate(new Date(original.eventTime));
   const batch = await checkPayrollBatchForDate(eventDate);
   if (batch) {
-    throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+    throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة العمال. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
   }
   
   // Update event
@@ -2103,7 +2103,7 @@ export async function addFinanceEntry(
   // Check if payroll batch exists for this date
   const batch = await checkPayrollBatchForDate(workDate);
   if (batch) {
-    throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+    throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة العمال. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
   }
 
   const { workerDailyFinance } = await import('../drizzle/schema');
@@ -2541,7 +2541,7 @@ export async function getAllFinancialReportsSummary(
 }
 
 // ============================================
-// Payroll Batch Functions (دفعات الرواتب)
+// Payroll Batch Functions (دفعات العمال)
 // ============================================
 
 /**
@@ -3603,7 +3603,7 @@ export async function setFullDayOverride(
   // Check if payroll batch exists for this date (prevent both enable and disable)
   const batch = await checkPayrollBatchForDate(workDate);
   if (batch) {
-    throw new Error(`لا يمكن تعديل اعتماد الحضور الكامل بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+    throw new Error(`لا يمكن تعديل اعتماد الحضور الكامل بعد إنشاء دفعة العمال. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
   }
 
   const { workerDailyFinance } = await import('../drizzle/schema');
@@ -3710,7 +3710,7 @@ export async function forceUnlockPayroll(batchId: number, reason: string, userId
   
   // Get batch
   const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
-  if (!batch) throw new Error("دفعة الراتب غير موجودة");
+  if (!batch) throw new Error("دفعة العمال غير موجودة");
   
   // Update batch to unlocked
   await db.update(payrollBatches).set({
@@ -3730,7 +3730,7 @@ export async function forceUnlockPayroll(batchId: number, reason: string, userId
     newValues: JSON.stringify({ isUnlocked: true, unlockReason: reason }),
   });
   
-  return { success: true, message: 'تم إلغاء قفل دفعة الراتب بنجاح' };
+  return { success: true, message: 'تم إلغاء قفل دفعة العمال بنجاح' };
 }
 
 // Re-lock payroll batch
@@ -3742,7 +3742,7 @@ export async function relockPayroll(batchId: number, userId: number) {
   
   // Get batch
   const [batch] = await db.select().from(payrollBatches).where(eq(payrollBatches.id, batchId)).limit(1);
-  if (!batch) throw new Error("دفعة الراتب غير موجودة");
+  if (!batch) throw new Error("دفعة العمال غير موجودة");
   
   // Update batch to locked
   await db.update(payrollBatches).set({
@@ -3762,7 +3762,7 @@ export async function relockPayroll(batchId: number, userId: number) {
     newValues: JSON.stringify({ isUnlocked: false }),
   });
   
-  return { success: true, message: 'تم إعادة قفل دفعة الراتب بنجاح' };
+  return { success: true, message: 'تم إعادة قفل دفعة العمال بنجاح' };
 }
 
 
@@ -5472,7 +5472,7 @@ export async function getAttendanceSummaryByCostCenter(
 
 
 // ============================================
-// Advanced Payroll System (نظام الرواتب المتقدم)
+// Advanced Payroll System (نظام العمال المتقدم)
 // ============================================
 
 /**
@@ -6123,7 +6123,7 @@ export async function saveWeeklySchedules(
     endTime: string;
     requiredHours: number;
     isActive: boolean;
-    dailyRate?: string; // ✅ الراتب اليومي المخصص (اختياري)
+    dailyRate?: string; // ✅ المبلغ اليومي المخصص (اختياري)
   }>,
   effectiveDate?: string
 ) {
@@ -6144,7 +6144,7 @@ export async function saveWeeklySchedules(
       endTime: schedule.endTime,
       requiredHours: schedule.requiredHours.toString(),
       isActive: schedule.isActive,
-      // ✅ حفظ الراتب اليومي المخصص (NULL إذا لم يتم تحديده)
+      // ✅ حفظ المبلغ اليومي المخصص (NULL إذا لم يتم تحديده)
       dailyRate: schedule.dailyRate || null,
       effectiveDate: effectiveDate ? new Date(effectiveDate) : null,
     });
@@ -7988,8 +7988,8 @@ export async function getBackupTableInfo() {
     { name: 'groups', label: 'المجموعات', table: groups },
     { name: 'cost_centers', label: 'مراكز التكلفة', table: costCenters },
     { name: 'attendance_events', label: 'سجل الحضور', table: attendanceEvents },
-    { name: 'payroll_batches', label: 'دفعات الرواتب', table: payrollBatches },
-    { name: 'payroll_batch_items', label: 'عناصر الرواتب', table: payrollBatchItems },
+    { name: 'payroll_batches', label: 'دفعات العمال', table: payrollBatches },
+    { name: 'payroll_batch_items', label: 'عناصر المبلغ', table: payrollBatchItems },
     { name: 'operational_flags', label: 'البلاغات التشغيلية', table: operationalFlags },
     { name: 'temporary_assignments', label: 'الانتدابات المؤقتة', table: temporaryAssignments },
     { name: 'audit_log', label: 'سجل التدقيق', table: auditLog },
@@ -8855,7 +8855,7 @@ return {
 }
 
 // ============================================
-// إضافة / تعديل بصمات يدوية من داخل مسودة الراتب
+// إضافة / تعديل بصمات يدوية من داخل مسودة العمال
 // ============================================
 
 export async function addManualAttendanceForBatch(params: {
@@ -8883,7 +8883,7 @@ export async function addManualAttendanceForBatch(params: {
     workDate: params.workDate,
     method: 'manual_batch',
     verifiedBy: params.addedBy,
-    note: params.note || 'تمت الإضافة يدوياً من دفعة الراتب',
+    note: params.note || 'تمت الإضافة يدوياً من دفعة العمال',
     isAutomatic: false,
   });
 
@@ -8912,7 +8912,7 @@ export async function updateAttendanceEventForBatch(params: {
 
   await db.update(attendanceEvents).set({
     eventTime: new Date(params.newTime),
-    note: params.note || 'تم التعديل يدوياً من دفعة الراتب',
+    note: params.note || 'تم التعديل يدوياً من دفعة العمال',
     verifiedBy: params.updatedBy,
   }).where(eq(attendanceEvents.id, params.eventId));
 
@@ -9014,7 +9014,7 @@ export async function addWorkerToBatch(params: {
     workDate: params.workDate,
     method: 'manual_batch',
     verifiedBy: params.addedBy,
-    note: 'تمت الإضافة يدوياً من دفعة الراتب',
+    note: 'تمت الإضافة يدوياً من دفعة العمال',
     isAutomatic: false,
   });
 
@@ -9026,7 +9026,7 @@ export async function addWorkerToBatch(params: {
     workDate: params.workDate,
     method: 'manual_batch',
     verifiedBy: params.addedBy,
-    note: 'تمت الإضافة يدوياً من دفعة الراتب',
+    note: 'تمت الإضافة يدوياً من دفعة العمال',
     isAutomatic: false,
   });
 
