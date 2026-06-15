@@ -142,7 +142,7 @@ export default function PayrollBatchDetails() {
     const periodEnd = new Date(batch.batch.periodEnd).toLocaleDateString('ar-SA');
     const printWindow = window.open('', '_blank');
     if (!printWindow) { toast.error('يرجى السماح بالنوافذ المنبثقة'); return; }
-    printWindow.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف رواتب - ${batch.batch.batchCode}</title><style>
+    printWindow.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف العمال - ${batch.batch.batchCode}</title><style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding: 20px; direction: rtl; color: #333; }
       .header { text-align: center; margin-bottom: 20px; }
@@ -548,7 +548,7 @@ export default function PayrollBatchDetails() {
             العودة
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">دفعة رواتب #{batch.batch.batchCode}</h1>
+            <h1 className="text-3xl font-bold">دفعة العمال #{batch.batch.batchCode}</h1>
             <p className="text-muted-foreground">
               {new Date(batch.batch.periodStart).toLocaleDateString("ar-SA")} -{" "}
               {new Date(batch.batch.periodEnd).toLocaleDateString("ar-SA")}
@@ -654,7 +654,7 @@ export default function PayrollBatchDetails() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              صافي الرواتب
+              الصافي 
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -670,7 +670,7 @@ export default function PayrollBatchDetails() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              متوسط الراتب
+              المتوسط 
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1095,7 +1095,7 @@ export default function PayrollBatchDetails() {
               </div>
               
               <div className="text-xs text-muted-foreground bg-muted p-3 rounded">
-                <strong>ملاحظة:</strong> سيتم تحديث سجلات الحضور وإعادة حساب الدقائق والرواتب تلقائياً بعد الحفظ.
+                <strong>ملاحظة:</strong> سيتم تحديث سجلات الحضور وإعادة حساب الدقائق والمبلغ تلقائياً بعد الحفظ.
               </div>
             </div>
           )}
@@ -1113,7 +1113,7 @@ export default function PayrollBatchDetails() {
                       batchId,
                       eventId: editingDay.checkIn.id,
                       newTime: `${date}T${editTimeForm.checkInTime}:00`,
-                      note: "تم التعديل من دفعة الراتب",
+                      note: "تم التعديل من دفعة العمال",
                     });
                   }
                   if (editTimeForm.checkOutTime && editingDay.checkOut) {
@@ -1121,7 +1121,7 @@ export default function PayrollBatchDetails() {
                       batchId,
                       eventId: editingDay.checkOut.id,
                       newTime: `${date}T${editTimeForm.checkOutTime}:00`,
-                      note: "تم التعديل من دفعة الراتب",
+                      note: "تم التعديل من دفعة العمال",
                     });
                   }
                   toast.success("تم حفظ التعديلات بنجاح");
