@@ -2396,15 +2396,16 @@ addFullSession: protectedProcedure
           throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية إنشاء دفعات العمال' });
         }
         
-        // === شرط 1: منع تكرار الدفعة لنفس الفترة ومركز التكلفة ===
+        // === شرط 1: منع تكرار الدفعة لنفس الفترة ومركز التكلفة والمجموعات ===
         const duplicateCheck = await db.checkDuplicatePayrollBatch(
           input.periodStart,
           input.periodEnd,
-          input.costCenterId ?? null
+          input.costCenterId ?? null,
+          input.groupIds  // ✅ تمرير المجموعات المختارة للتحقق من التداخل
         );
         if (duplicateCheck.isDuplicate) {
           throw new Error(
-            `لا يمكن إنشاء دفعة العمال. توجد دفعة سابقة (${duplicateCheck.existingBatchCode}) لنفس الفترة (${input.periodStart} - ${input.periodEnd}) ونفس مركز التكلفة.\n\nالحالة: ${duplicateCheck.existingStatus}\n\nلا يمكن إنشاء دفعة مكررة لنفس البيانات.`
+            `لا يمكن إنشاء دفعة العمال. توجد دفعة سابقة (${duplicateCheck.existingBatchCode}) تحتوي على مجموعات متداخلة مع مجموعاتك المختارة لنفس الفترة.\n\nالحالة: ${duplicateCheck.existingStatus}\n\nيرجى إزالة المجموعات المكررة أو اختيار مجموعات مختلفة.`
           );
         }
         
