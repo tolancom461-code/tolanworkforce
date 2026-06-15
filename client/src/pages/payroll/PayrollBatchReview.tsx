@@ -178,7 +178,7 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
           <div>
             <h1 className="text-3xl font-bold">{roleTitle}</h1>
             <p className="text-muted-foreground">
-              دفعة رواتب #{batch.batch.batchCode}
+              دفعة اليومية #{batch.batch.batchCode}
             </p>
           </div>
         </div>
@@ -216,7 +216,7 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              إجمالي الرواتب
+              إجمالي المبلغ
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -229,7 +229,7 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              متوسط الراتب
+              المتوسط 
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -301,7 +301,7 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>اسم العامل</TableHead>
-                <TableHead>الراتب الأساسي</TableHead>
+                <TableHead> المبلغ</TableHead>
                 <TableHead>الخصومات</TableHead>
                 <TableHead>الإضافات</TableHead>
                 <TableHead>الصافي</TableHead>
@@ -365,7 +365,7 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
             <DialogTitle>تأكيد الاعتماد</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            هل أنت متأكد من اعتماد دفعة الرواتب #{batch.batch.batchCode}؟
+            هل أنت متأكد من اعتماد دفعة العمال #{batch.batch.batchCode}؟
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowApproveDialog(false)}>
