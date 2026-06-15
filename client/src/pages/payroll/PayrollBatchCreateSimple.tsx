@@ -9,15 +9,40 @@ export default function PayrollBatchCreateSimple() {
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
   const [costCenterId, setCostCenterId] = useState("");
+  const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [refreshFinanceRecords, setRefreshFinanceRecords] = useState(true); // ✅ تفعيل إعادة الحساب تلقائياً
 
   const { data: costCenters } = trpc.costCenters.list.useQuery();
+  const { data: costCenterGroups } = trpc.groups.listByCostCenter.useQuery(
+    { costCenterId: costCenterId ? parseInt(costCenterId) : undefined },
+    { enabled: !!costCenterId }
+  );
   const { data: recentChanges } = trpc.groupSchedules.getRecentChanges.useQuery({ hoursThreshold: 24 });
   const { data: pendingFlagsCount } = (trpc as any).operationalDashboard?.getPendingCount?.useQuery?.() || { data: 0 };
   const hasPendingFlags = (pendingFlagsCount ?? 0) > 0;
+  // Auto-select all groups when cost center changes
+  const handleCostCenterChange = (value: string) => {
+    setCostCenterId(value);
+    setSelectedGroupIds([]);
+  };
+
+  const handleToggleGroup = (groupId: number) => {
+    setSelectedGroupIds(prev =>
+      prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedGroupIds((costCenterGroups || []).map((g: any) => g.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedGroupIds([]);
+  };
+
   const aggregateMutation = trpc.payroll.aggregatePayrollDataByCostCenter.useMutation();
   const createBatchMutation = trpc.payroll.createBatch.useMutation();
 
@@ -31,6 +56,11 @@ export default function PayrollBatchCreateSimple() {
 
     if (!periodStart || !periodEnd || !costCenterId) {
       setError("يرجى ملء جميع الحقول");
+      return;
+    }
+
+    if (selectedGroupIds.length === 0) {
+      setError("يرجى تحديد مجموعة واحدة على الأقل");
       return;
     }
     
@@ -79,6 +109,7 @@ export default function PayrollBatchCreateSimple() {
         periodStart,
         periodEnd,
         costCenterId: parseInt(costCenterId),
+        groupIds: selectedGroupIds,
       });
 
       console.log("=== Aggregate result ===", aggregateResult);
@@ -262,7 +293,7 @@ export default function PayrollBatchCreateSimple() {
             value={costCenterId}
             onChange={(e) => {
               console.log("costCenterId changed:", e.target.value);
-              setCostCenterId(e.target.value);
+              handleCostCenterChange(e.target.value);
             }}
             style={{
               width: "100%",
@@ -281,6 +312,66 @@ export default function PayrollBatchCreateSimple() {
             ))}
           </select>
         </div>
+
+        {/* ③ اختيار المجموعات — تظهر بعد اختيار مركز التكلفة */}
+        {costCenterId && costCenterGroups && costCenterGroups.length > 0 && (
+          <div style={{ border: "1px solid #ddd", borderRadius: "8px", padding: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+              <label style={{ fontWeight: "600", fontSize: "15px" }}>
+                المجموعات ({selectedGroupIds.length} / {costCenterGroups.length} محددة)
+              </label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #0066cc", borderRadius: "4px", background: "#fff", color: "#0066cc", cursor: "pointer" }}
+                >
+                  تحديد الكل
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeselectAll}
+                  style={{ padding: "4px 10px", fontSize: "13px", border: "1px solid #aaa", borderRadius: "4px", background: "#fff", color: "#555", cursor: "pointer" }}
+                >
+                  إلغاء الكل
+                </button>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {costCenterGroups.map((group: any) => (
+                <label
+                  key={group.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    background: selectedGroupIds.includes(group.id) ? "#e3f2fd" : "#f9f9f9",
+                    border: selectedGroupIds.includes(group.id) ? "1px solid #2196f3" : "1px solid #eee",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedGroupIds.includes(group.id)}
+                    onChange={() => handleToggleGroup(group.id)}
+                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                  />
+                  <span style={{ fontWeight: selectedGroupIds.includes(group.id) ? "600" : "400" }}>
+                    {group.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {costCenterId && !costCenterGroups?.length && (
+          <div style={{ padding: "12px", background: "#fff3cd", border: "1px solid #ffc107", borderRadius: "6px", color: "#856404" }}>
+            لا توجد مجموعات مرتبطة بهذا مركز التكلفة
+          </div>
+        )}
 
         {error && (
           <div
