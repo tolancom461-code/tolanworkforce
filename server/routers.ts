@@ -1681,7 +1681,7 @@ addFullSession: protectedProcedure
         const eventDate = new Date(event.eventTime).toLocaleDateString('en-CA');
         const batch = await db.checkPayrollBatchForDate(eventDate);
         if (batch) {
-          throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+          throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة العمال. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
         }
         
         const updateResult = await db.updateAttendanceEvent(
@@ -1796,7 +1796,7 @@ addFullSession: protectedProcedure
         // Check if payroll batch exists for this date
         const batch = await db.checkPayrollBatchForDate(input.workDate);
         if (batch) {
-          throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+          throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة العمال. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
         }
         
         return await db.addFinanceEntry(
@@ -1902,7 +1902,7 @@ addFullSession: protectedProcedure
         const eventDate = new Date(event.eventTime).toLocaleDateString('en-CA');
         const batch = await db.checkPayrollBatchForDate(eventDate);
         if (batch) {
-          throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+          throw new Error(`لا يمكن تعديل الحضور بعد إنشاء دفعة العمال. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
         }
                const result = await db.updateAttendanceEvent(
           input.eventId,
@@ -1945,7 +1945,7 @@ addFullSession: protectedProcedure
         // Check if payroll batch exists for this date
         const batch = await db.checkPayrollBatchForDate(input.overrideDate);
         if (batch) {
-          throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة الراتب. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
+          throw new Error(`لا يمكن إضافة خصومات أو إضافات بعد إنشاء دفعة العمال. يجب حذف المسودة أولاً (دفعة رقم: ${batch.batchCode})`);
         }
         
         // Get worker name for audit log
@@ -2392,7 +2392,7 @@ addFullSession: protectedProcedure
         const userRole = ctx.user.role as UserRole;
         const perms = ROLE_PERMISSIONS[userRole];
         if (!perms?.canCreateBatch) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية إنشاء دفعات الرواتب' });
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية إنشاء دفعات العمال' });
         }
         
         // === شرط 1: منع تكرار الدفعة لنفس الفترة ومركز التكلفة ===
@@ -2403,7 +2403,7 @@ addFullSession: protectedProcedure
         );
         if (duplicateCheck.isDuplicate) {
           throw new Error(
-            `لا يمكن إنشاء دفعة الرواتب. توجد دفعة سابقة (${duplicateCheck.existingBatchCode}) لنفس الفترة (${input.periodStart} - ${input.periodEnd}) ونفس مركز التكلفة.\n\nالحالة: ${duplicateCheck.existingStatus}\n\nلا يمكن إنشاء دفعة مكررة لنفس البيانات.`
+            `لا يمكن إنشاء دفعة العمال. توجد دفعة سابقة (${duplicateCheck.existingBatchCode}) لنفس الفترة (${input.periodStart} - ${input.periodEnd}) ونفس مركز التكلفة.\n\nالحالة: ${duplicateCheck.existingStatus}\n\nلا يمكن إنشاء دفعة مكررة لنفس البيانات.`
           );
         }
         
@@ -2415,7 +2415,7 @@ addFullSession: protectedProcedure
         );
         if (pendingFlagsCount > 0) {
           throw new Error(
-            `لا يمكن إنشاء دفعة الرواتب. يوجد ${pendingFlagsCount} ملاحظة تشغيلية معلقة لنفس الفترة ومركز التكلفة تحتاج للمعالجة.\n\nيرجى مراجعة واعتماد جميع الملاحظات التشغيلية المعلقة في صفحة "معالجات الملاحظات التشغيلية" قبل إنشاء دفعة الرواتب.`
+            `لا يمكن إنشاء دفعة العمال. يوجد ${pendingFlagsCount} ملاحظة تشغيلية معلقة لنفس الفترة ومركز التكلفة تحتاج للمعالجة.\n\nيرجى مراجعة واعتماد جميع الملاحظات التشغيلية المعلقة في صفحة "معالجات الملاحظات التشغيلية" قبل إنشاء دفعة الرواتب.`
           );
         }
         
@@ -2439,7 +2439,7 @@ addFullSession: protectedProcedure
           const moreText = moreCount > 0 ? `\n... و ${moreCount} سجل آخر` : '';
           
           throw new Error(
-            `لا يمكن إنشاء دفعة الرواتب. يوجد ${incompleteCheck.incompleteCount} سجل حضور ناقص لنفس الفترة ومركز التكلفة يحتاج للمعالجة:\n\n${errorDetails}${moreText}\n\nيرجى مراجعة البصمات الناقصة في "مركز مراجعة البصمات" قبل إنشاء دفعة الرواتب.`
+            `لا يمكن إنشاء دفعة العمال. يوجد ${incompleteCheck.incompleteCount} سجل حضور ناقص لنفس الفترة ومركز التكلفة يحتاج للمعالجة:\n\n${errorDetails}${moreText}\n\nيرجى مراجعة البصمات الناقصة في "مركز مراجعة البصمات" قبل إنشاء دفعة العمال.`
           );
         }
         
@@ -2696,7 +2696,7 @@ addFullSession: protectedProcedure
         } else {
           // حذف المسودات: super_admin + admin_affairs
           if (ctx.user.role !== 'super_admin' && ctx.user.role !== 'admin_affairs') {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'لا تملك صلاحية حذف دفعات الرواتب' });
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'لا تملك صلاحية حذف دفعات العمال' });
           }
           const result2 = await db.deleteBatch(input.batchId, false);
           await db.logAudit({ userId: ctx.user.id, action: 'DELETE_PAYROLL_BATCH', tableName: 'payroll_batches', recordId: input.batchId });
@@ -2713,7 +2713,7 @@ addFullSession: protectedProcedure
         // Get batch details
         const batchDetails = await db.getPayrollBatchDetails(input.batchId);
         const batch = batchDetails.batch;
-        if (!batch) throw new Error('دفعة الراتب غير موجودة');
+        if (!batch) throw new Error('دفعة العمال غير موجودة');
         
         // Get all workers in this batch
         const items = batchDetails.items;
@@ -2940,7 +2940,7 @@ addFullSession: protectedProcedure
         const groups = Object.values(groupedItems || {});
         
         // Add table header
-        const headerRow = worksheet.addRow(['اسم العامل / المجموعة', 'الراتب الأساسي', 'الخصومات', 'الإضافات', 'الصافي', 'أيام العمل', 'ملاحظات']);
+        const headerRow = worksheet.addRow(['اسم العامل / المجموعة', ' المبلغ', 'الخصومات', 'الإضافات', 'الصافي', 'أيام العمل', 'ملاحظات']);
         headerRow.font = { bold: true };
         headerRow.fill = {
           type: 'pattern',
@@ -3160,7 +3160,7 @@ newValues: { assignmentIds: input.assignmentIds, settlements: result.settlements
         return result;
       }),
 
-    // ✅ جديد: إضافة بصمة يدوية من داخل مسودة الراتب
+    // ✅ جديد: إضافة بصمة يدوية من داخل مسودة الدفعة
     addManualAttendance: protectedProcedure
       .input(z.object({
         batchId: z.number(),
@@ -3195,7 +3195,7 @@ newValues: { assignmentIds: input.assignmentIds, settlements: result.settlements
         return result;
       }),
 
-    // ✅ جديد: تعديل وقت بصمة من داخل مسودة الراتب
+    // ✅ جديد: تعديل وقت بصمة من داخل مسودة الدفعة
     updateAttendanceForBatch: protectedProcedure
       .input(z.object({
         batchId: z.number(),
@@ -3226,7 +3226,7 @@ newValues: { assignmentIds: input.assignmentIds, settlements: result.settlements
         return result;
       }),
 
-    // ✅ جديد: تحديث ملاحظة عامل في دفعة الراتب
+    // ✅ جديد: تحديث ملاحظة عامل في دفعة الدفعة
     updateWorkerNote: protectedProcedure
       .input(z.object({
         itemId: z.number(),
@@ -3611,7 +3611,7 @@ newValues: { assignmentIds: input.assignmentIds, settlements: result.settlements
           endTime: z.string(),
           requiredHours: z.number(),
           isActive: z.boolean(),
-          dailyRate: z.string().optional(), // ✅ الراتب اليومي المخصص (اختياري)
+          dailyRate: z.string().optional(), // ✅ المبلغ اليومي المخصص (اختياري)
         })),
         effectiveDate: z.string().optional(),
       }))
