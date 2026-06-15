@@ -2375,6 +2375,7 @@ addFullSession: protectedProcedure
         groupId: z.number().optional(),
         costCenterId: z.number().optional(),
         refreshFinanceRecords: z.boolean().optional(), // ✅ NEW: إعادة حساب السجلات المالية
+        groupIds: z.array(z.number()).optional(), // ✅ المجموعات المختارة
         items: z.array(z.object({
           workerId: z.number(),
           baseAmount: z.string(),
