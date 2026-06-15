@@ -2554,6 +2554,7 @@ export async function createPayrollBatch(params: {
   costCenterId?: number | null;
   createdBy: number;
   refreshFinanceRecords?: boolean; // ✅ NEW: إعادة حساب السجلات المالية قبل إنشاء الدفعة
+  groupIds?: number[]; // ✅ المجموعات المختارة
   items: Array<{
     workerId: number;
     baseAmount: string;
@@ -2753,7 +2754,11 @@ export async function createPayrollBatch(params: {
       
       // 1. جلب جميع المجموعات في مركز التكلفة هذا
       const groupsInCC = await db.select({ id: groups.id }).from(groups).where(eq(groups.costCenterId, params.costCenterId));
-      const groupIdsInCC = groupsInCC.map(g => g.id);
+      const allGroupIdsInCC = groupsInCC.map(g => g.id);
+      // ✅ فلترة حسب المجموعات المختارة إن وُجدت
+      const groupIdsInCC = params.groupIds && params.groupIds.length > 0
+        ? allGroupIdsInCC.filter(id => params.groupIds!.includes(id))
+        : allGroupIdsInCC;
       
       if (groupIdsInCC.length > 0) {
         // 2. جلب السجلات المالية التي effective_group_id تنتمي لهذا المركز
