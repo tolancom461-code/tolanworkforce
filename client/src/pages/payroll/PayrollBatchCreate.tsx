@@ -103,7 +103,7 @@ export default function PayrollBatchCreate() {
 
   const createMutation = trpc.payroll.createBatch.useMutation({
     onSuccess: (data) => {
-      toast.success("تم إنشاء دفعة الرواتب بنجاح");
+      toast.success("تم إنشاء دفعة العمال بنجاح");
       setLocation(`/payroll/batches/${data.batchId}`);
     },
     onError: (error) => {
@@ -291,7 +291,7 @@ export default function PayrollBatchCreate() {
     }
 
     if (unresolvedData && unresolvedData.count > 0) {
-      toast.error(`لا يمكن إنشاء دفعة الرواتب. يوجد ${unresolvedData.count} بلاغ تشغيلي غير معالج.`);
+      toast.error(`لا يمكن إنشاء دفعة العمال. يوجد ${unresolvedData.count} بلاغ تشغيلي غير معالج.`);
       return;
     }
 
@@ -335,7 +335,7 @@ export default function PayrollBatchCreate() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            إنشاء مسودة رواتب جديدة
+            إنشاء مسودة العمال جديدة
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -564,10 +564,10 @@ export default function PayrollBatchCreate() {
                       htmlFor="refreshFinanceRecords"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                     >
-                      تحديث السجلات المالية (الرواتب والورديات) بناءً على الإعدادات الحالية
+                      تحديث السجلات المالية (العمال والورديات) بناءً على الإعدادات الحالية
                     </label>
                     <p className="text-xs text-muted-foreground mt-1">
-                      سيتم إعادة حساب السجلات المالية غير المعتمدة فقط بناءً على أحدث رواتب وورديات في المجموعات
+                      سيتم إعادة حساب السجلات المالية غير المعتمدة فقط بناءً على أحدث العمال وورديات في المجموعات
                     </p>
                   </div>
                 </div>
@@ -587,7 +587,7 @@ export default function PayrollBatchCreate() {
                   ) : (
                     <>
                       <CheckCircle2 className="mr-2 h-4 w-4" />
-                      إنشاء دفعة الرواتب
+                      إنشاء دفعة العمال
                     </>
                   )}
                 </Button>
