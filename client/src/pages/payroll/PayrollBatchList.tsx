@@ -185,7 +185,7 @@ export default function PayrollBatchList() {
   return (
     <div className="container py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">دفعات الرواتب</h1>
+        <h1 className="text-3xl font-bold">دفعات اليومية</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="h-4 w-4 ml-2" />
