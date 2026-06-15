@@ -7470,7 +7470,8 @@ export async function getPendingOperationalFlagsForPeriod(
 export async function checkDuplicatePayrollBatch(
   periodStart: string,
   periodEnd: string,
-  costCenterId: number | null
+  costCenterId: number | null,
+  selectedGroupIds?: number[] // ✅ المجموعات المختارة للدفعة الجديدة
 ): Promise<{ isDuplicate: boolean; existingBatchCode: string | null; existingStatus: string | null }> {
   const db = await getDb();
   if (!db) return { isDuplicate: false, existingBatchCode: null, existingStatus: null };
@@ -7490,16 +7491,22 @@ export async function checkDuplicatePayrollBatch(
     conditions.push(sql`${payrollBatches.costCenterId} IS NULL`);
   }
 
-  const existing = await db
+  const existingBatches = await db
     .select({
       batchCode: payrollBatches.batchCode,
       status: payrollBatches.status,
+      id: payrollBatches.id,
     })
     .from(payrollBatches)
-    .where(and(...conditions))
-    .limit(1);
+    .where(and(...conditions));
 
-  if (existing.length > 0) {
+  if (existingBatches.length === 0) {
+    return { isDuplicate: false, existingBatchCode: null, existingStatus: null };
+  }
+
+  // ✅ إذا لم تُحدد مجموعات → تعامل كالسابق (أي دفعة موجودة = تكرار)
+  if (!selectedGroupIds || selectedGroupIds.length === 0) {
+    const existing = existingBatches[0];
     const statusMap: Record<string, string> = {
       'draft': 'مسودة',
       'under_accountant_review': 'قيد مراجعة المحاسب',
@@ -7511,11 +7518,46 @@ export async function checkDuplicatePayrollBatch(
     };
     return {
       isDuplicate: true,
-      existingBatchCode: existing[0].batchCode,
-      existingStatus: statusMap[existing[0].status || ''] || existing[0].status,
+      existingBatchCode: existing.batchCode,
+      existingStatus: statusMap[existing.status || ''] || existing.status,
     };
   }
 
+  // ✅ إذا حُددت مجموعات → تحقق من التداخل مع الدفعات الموجودة
+  for (const existingBatch of existingBatches) {
+    // جلب عمال الدفعة الموجودة ومجموعاتهم
+    const existingItems = await db
+      .select({ groupId: payrollBatchItems.groupId })
+      .from(payrollBatchItems)
+      .where(eq(payrollBatchItems.batchId, existingBatch.id));
+
+    const existingGroupIds = new Set(
+      existingItems.map(i => i.groupId).filter(Boolean)
+    );
+
+    // هل يوجد تداخل بين المجموعات الجديدة والمجموعات الموجودة؟
+    const hasOverlap = selectedGroupIds.some(id => existingGroupIds.has(id));
+
+    if (hasOverlap) {
+      const overlappingGroupIds = selectedGroupIds.filter(id => existingGroupIds.has(id));
+      const statusMap: Record<string, string> = {
+        'draft': 'مسودة',
+        'under_accountant_review': 'قيد مراجعة المحاسب',
+        'under_financial_review': 'قيد المراجعة المالية',
+        'under_accounts_manager_review': 'قيد مراجعة المدير المالي',
+        'approved': 'معتمدة',
+        'rejected_final': 'مرفوضة',
+        'paid': 'مدفوعة',
+      };
+      return {
+        isDuplicate: true,
+        existingBatchCode: existingBatch.batchCode,
+        existingStatus: statusMap[existingBatch.status || ''] || existingBatch.status,
+      };
+    }
+  }
+
+  // لا يوجد تداخل → يُسمح بالإنشاء
   return { isDuplicate: false, existingBatchCode: null, existingStatus: null };
 }
 
