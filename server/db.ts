@@ -6159,7 +6159,8 @@ export async function saveWeeklySchedules(
 export async function aggregatePayrollDataByCostCenter(
   costCenterId: number,
   periodStart: string,
-  periodEnd: string
+  periodEnd: string,
+  selectedGroupIds?: number[]  // ✅ المجموعات المختارة — إذا لم تُحدد يتم جلب الكل
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -6171,8 +6172,14 @@ export async function aggregatePayrollDataByCostCenter(
     .select()
     .from(groups)
     .where(eq(groups.costCenterId, costCenterId));
+
+  // ✅ إذا تم تحديد مجموعات معينة → نفلتر، وإلا نأخذ الكل
+  const targetGroupIds = selectedGroupIds && selectedGroupIds.length > 0
+    ? groupsInCostCenter.filter(g => selectedGroupIds.includes(g.id)).map(g => g.id)
+    : groupsInCostCenter.map(g => g.id);
+
   // Then, get all workers in these groups
-  const groupIds = groupsInCostCenter.map(g => g.id);
+  const groupIds = targetGroupIds;
   const workersInCostCenter = groupIds.length > 0
     ? await db.select().from(workers).where(inArray(workers.groupId, groupIds))
     : [];
