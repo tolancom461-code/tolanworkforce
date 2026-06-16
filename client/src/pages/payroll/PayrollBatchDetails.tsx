@@ -138,8 +138,16 @@ export default function PayrollBatchDetails() {
     tableRows += `<tr class="grand-total"><td colspan="2">الإجمالي الكلي</td><td>${fmt(grandTotal.base)}</td><td>${fmt(grandTotal.deductions)}</td><td>${fmt(grandTotal.bonuses)}</td><td>${fmt(grandTotal.net)}</td><td></td></tr>`;
     const totalNetWords = numberToArabicWords(grandTotal.net);
     tableRows += `<tr class="amount-words"><td colspan="7" style="background:#f0f7ff;padding:10px 12px;font-size:13px;font-weight:600;color:#1a3c6e;border-top:2px solid #4a90d9;"> الإجمالي بالأحرف: ${totalNetWords}</td></tr>`;
-    const periodStart = new Date(batch.batch.periodStart).toLocaleDateString('ar-SA');
-    const periodEnd = new Date(batch.batch.periodEnd).toLocaleDateString('ar-SA');
+    const periodStartDateObj = new Date(batch.batch.periodStart);
+    const periodEndDateObj = new Date(batch.batch.periodEnd);
+    const periodStart = periodStartDateObj.toLocaleDateString('ar-SA');
+    const periodEnd = periodEndDateObj.toLocaleDateString('ar-SA');
+
+    const isSameDay = periodStartDateObj.toLocaleDateString('en-CA') === periodEndDateObj.toLocaleDateString('en-CA');
+    const dayNameAr = periodStartDateObj.toLocaleDateString('ar-SA', { weekday: 'long' });
+    const periodDisplay = isSameDay
+      ? `${periodStart} (${dayNameAr})`
+      : `${periodStart} إلى ${periodEnd}`;
     const printWindow = window.open('', '_blank');
     if (!printWindow) { toast.error('يرجى السماح بالنوافذ المنبثقة'); return; }
     printWindow.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>كشف العمال - ${batch.batch.batchCode}</title><style>
@@ -163,7 +171,7 @@ export default function PayrollBatchDetails() {
         <p>رمز الدفعة: ${batch.batch.batchCode}</p>
       </div>
       <div class="meta">
-        <span>الفترة: ${periodStart} إلى ${periodEnd}</span>
+        <span>الفترة: ${periodDisplay}</span>
         <span>الحالة: ${batch.batch.status === 'approved' ? 'موافق عليها' : batch.batch.status}</span>
       </div>
       <table>
