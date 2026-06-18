@@ -501,39 +501,7 @@ function DashboardLayoutContent({
       </Sidebar>
 
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation('/home', { replace: true })}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-            title="العودة للرئيسية"
-          >
-            <HomeIcon className="h-4 w-4" />
-            <span className="hidden sm:inline text-sm">الرئيسية</span>
-          </Button>
-          <div className="flex-1" />
-          
-          {/* User info and logout */}
-          <div className="flex items-center gap-2">
-            <span className="hidden md:inline text-sm text-muted-foreground">
-              {user?.fullName}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => logout()}
-              className="flex items-center gap-2"
-              title="تسجيل الخروج"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">تسجيل الخروج</span>
-            </Button>
-            <ThemeToggle />
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto p-0">
+        <main className="flex-1 overflow-auto">
           {children}
         </main>
       </SidebarInset>
