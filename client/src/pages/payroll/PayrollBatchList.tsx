@@ -101,7 +101,7 @@ export default function PayrollBatchList() {
             <TableHead>مركز التكلفة</TableHead>
             <TableHead>الفترة</TableHead>
             <TableHead className="hidden">عدد العمال</TableHead>
-            <TableHead className="hidden">الإجمالي</TableHead>
+            <TableHead>الصافي</TableHead>
             <TableHead>الحالة</TableHead>
             <TableHead>تاريخ الإنشاء</TableHead>
             <TableHead>الإجراءات</TableHead>
@@ -117,7 +117,9 @@ export default function PayrollBatchList() {
                 {new Date(batch.periodEnd).toLocaleDateString("ar-SA")}
               </TableCell>
               <TableCell className="hidden">{batch.workerCount}</TableCell>
-              <TableCell className="hidden">{Number(batch.totalAmount).toLocaleString("ar-SA")} ر.س</TableCell>
+              <TableCell>
+                {(Number(batch.totalAmount || 0) - Number(batch.totalDeductions || 0) + Number(batch.totalBonuses || 0)).toLocaleString("ar-SA")} ر.س
+              </TableCell>
               <TableCell>
                 <StatusBadge status={batch.status} />
               </TableCell>
