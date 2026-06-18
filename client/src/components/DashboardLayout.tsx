@@ -290,6 +290,8 @@ export default function DashboardLayout({
       style={
         {
           "--sidebar-width": `${sidebarWidth}px`,
+          height: "100vh",
+          overflow: "hidden",
         } as CSSProperties
       }
     >
@@ -498,7 +500,7 @@ function DashboardLayoutContent({
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset>
+      <SidebarInset className="flex flex-col h-screen overflow-hidden">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Button
@@ -531,7 +533,7 @@ function DashboardLayoutContent({
             <ThemeToggle />
           </div>
         </header>
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto p-0">
           {children}
         </main>
       </SidebarInset>
