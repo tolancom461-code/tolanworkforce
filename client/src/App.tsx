@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -60,6 +60,7 @@ import FinancialRecalculation from "./pages/FinancialRecalculation";
 import PaymentVoucher from "./pages/PaymentVoucher";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import DashboardLayout from "./components/DashboardLayout";
 import { lazy } from "react";
 import LazyPage from "./components/LazyPage";
 
@@ -292,10 +293,28 @@ function App() {
       <ThemeProvider defaultTheme="light" switchable>
         <TooltipProvider>
           <Toaster richColors position="top-center" />
-          <Router />
+          <AppWithLayout />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
+  );
+}
+
+// الصفحات التي لا تحتاج Sidebar
+const NO_SIDEBAR_PATHS = ['/', '/home', '/local-login', '/workers/'];
+
+function AppWithLayout() {
+  const [location] = useLocation();
+  const noSidebar = location === '/' || location === '/home' || location === '/local-login' || location.endsWith('/card');
+  
+  if (noSidebar) {
+    return <Router />;
+  }
+  
+  return (
+    <DashboardLayout>
+      <Router />
+    </DashboardLayout>
   );
 }
 
