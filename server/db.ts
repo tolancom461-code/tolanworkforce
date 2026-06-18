@@ -3202,7 +3202,10 @@ export async function submitBatchForReview(batchId: number, userId: number) {
     throw new Error("يمكن إرسال المسودات فقط للمراجعة");
   }
 
-  await db
+    // ✅ إعادة حساب الإجمالي قبل الإرسال
+    await recalculateBatchTotals(batchId);
+
+    await db
     .update(payrollBatches)
     .set({
       status: 'under_accountant_review',
@@ -3242,6 +3245,9 @@ export async function accountantApproveBatch(batchId: number, reviewerId: number
   if (batch.status !== 'under_accountant_review') {
     throw new Error("Batch is not under accountant review");
   }
+
+  // ✅ إعادة حساب الإجمالي قبل الإرسال
+  await recalculateBatchTotals(batchId);
 
   await db
     .update(payrollBatches)
@@ -3326,6 +3332,8 @@ export async function financialReviewerApproveBatch(batchId: number, reviewerId:
     throw new Error("Batch is not under financial review");
   }
 
+  // ✅ إعادة حساب الإجمالي قبل الإرسال
+  await recalculateBatchTotals(batchId);
   await db
     .update(payrollBatches)
     .set({
