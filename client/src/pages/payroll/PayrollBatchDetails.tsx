@@ -667,10 +667,10 @@ export default function PayrollBatchDetails() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(Number(batch.batch.totalAmount || 0) - Number(batch.batch.totalDeductions || 0) + Number(batch.batch.totalBonuses || 0)).toLocaleString("ar-SA")} ر.س
+              {(batch.items || []).reduce((sum: number, item: any) => sum + parseFloat(item.netAmount || '0'), 0).toLocaleString("ar-SA")} ر.س
             </div>
             <div className="text-xs text-muted-foreground mt-1 font-medium">
-              {numberToArabicWords(Number(batch.batch.totalAmount || 0) - Number(batch.batch.totalDeductions || 0) + Number(batch.batch.totalBonuses || 0))}
+              {numberToArabicWords((batch.items || []).reduce((sum: number, item: any) => sum + parseFloat(item.netAmount || '0'), 0))}
             </div>
           </CardContent>
         </Card>
