@@ -221,7 +221,7 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Number(batch.batch.totalAmount || 0).toLocaleString("ar-SA")} ر.س
+              {(batch.items || []).reduce((sum: number, item: any) => sum + parseFloat(item.netAmount || '0'), 0).toLocaleString("ar-SA")} ر.س
             </div>
           </CardContent>
         </Card>
@@ -235,7 +235,7 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
           <CardContent>
             <div className="text-2xl font-bold">
               {(batch.batch.totalWorkers || 0) > 0
-                ? (Number(batch.batch.totalAmount || 0) / (batch.batch.totalWorkers || 1)).toLocaleString("ar-SA", {
+                ? ((batch.items || []).reduce((sum: number, item: any) => sum + parseFloat(item.netAmount || '0'), 0) / (batch.batch.totalWorkers || 1)).toLocaleString("ar-SA", {
                     maximumFractionDigits: 0,
                   })
                 : 0}{" "}
