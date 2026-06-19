@@ -178,7 +178,7 @@ export default function PaymentVoucher() {
           {/* هيدر السند */}
           <div className="bg-blue-800 text-white px-6 py-4 flex justify-between items-center">
             <div>
-              <p className="text-xs opacity-70 mb-0.5">حديقة الوطن</p>
+          {/* <p className="text-xs opacity-70 mb-0.5">حديقة الوطن</p> */}
               <p className="text-lg font-black">{companyName}</p>
             </div>
             <div className="text-center">
@@ -191,7 +191,7 @@ export default function PaymentVoucher() {
               </div>
               <div className="flex justify-between gap-3 mt-1">
                 <span className="opacity-70">التاريخ:</span>
-                <span className="font-bold">{formatDate(voucherDate)}</span>
+                <span className="font-bold">{new Date(voucherDate).toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
               </div>
             </div>
           </div>
