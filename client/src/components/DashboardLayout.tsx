@@ -112,10 +112,6 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
   auditor: [
     '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/payroll-report', '/finance/reports', '/finance/daily-payroll-report',
-    '/finance/payment-voucher',
-    '/finance/payment-voucher',
-    '/finance/payment-voucher',
-    '/finance/payment-voucher',
     '/attendance/log', '/attendance/reports',
     '/audit-log',
     '/profile',
@@ -124,10 +120,6 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
   finance_manager: [
     '/payroll/dashboard', '/payroll/batches',
     '/finance/payroll/history', '/payroll-report', '/finance/reports', '/finance/daily-payroll-report',
-    '/finance/payment-voucher',
-    '/finance/payment-voucher',
-    '/finance/payment-voucher',
-    '/finance/payment-voucher',
     '/finance/cost-center-report',
     '/attendance/log', '/attendance/reports',
     '/audit-log',
