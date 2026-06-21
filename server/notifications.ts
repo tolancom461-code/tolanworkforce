@@ -1,7 +1,7 @@
 import webpush from "web-push";
 import * as db from "./db";
 import { notifications, pushSubscriptions, users } from "../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 
 // Configure web-push with VAPID keys
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
@@ -82,6 +82,12 @@ export async function sendNotification(params: {
 }
 
 /**
+ * Roles that should be CC'd on every workflow notification
+ * (الأدمن = super_admin, المالك = الإدارة العليا executive)
+ */
+export const ADMIN_OWNER_ROLES = ['super_admin', 'executive'];
+
+/**
  * Send notification to multiple users based on their role
  */
 export async function sendNotificationToRole(params: {
@@ -112,4 +118,63 @@ export async function sendNotificationToRole(params: {
   } catch (error) {
     console.error('[Notification] Error sending to role:', error);
   }
+}
+
+/**
+ * Send a notification to every user belonging to any of several roles.
+ * Duplicate users (e.g. a user matched by more than one role) are only notified once.
+ */
+export async function sendNotificationToRoles(params: {
+  roles: string[];
+  title: string;
+  message: string;
+  type?: NotificationType;
+  link?: string;
+}) {
+  try {
+    const database = await db.getDb();
+    if (!database) return;
+
+    const uniqueRoles = [...new Set(params.roles)];
+    if (uniqueRoles.length === 0) return;
+
+    const targetUsers = await database
+      .select({ id: users.id })
+      .from(users)
+      .where(and(inArray(users.role, uniqueRoles as any), eq(users.isActive, 1)));
+
+    const uniqueUserIds = [...new Set(targetUsers.map(u => u.id))];
+
+    for (const userId of uniqueUserIds) {
+      await sendNotification({
+        userId,
+        title: params.title,
+        message: params.message,
+        type: params.type,
+        link: params.link,
+      });
+    }
+  } catch (error) {
+    console.error('[Notification] Error sending to roles:', error);
+  }
+}
+
+/**
+ * Convenience wrapper: notify a specific "next actor" role for a workflow stage,
+ * always CC'ing the admin/owner roles (super_admin + executive) as well.
+ */
+export async function notifyStageAndAdmins(params: {
+  stageRole: string;
+  title: string;
+  message: string;
+  type?: NotificationType;
+  link?: string;
+}) {
+  await sendNotificationToRoles({
+    roles: [params.stageRole, ...ADMIN_OWNER_ROLES],
+    title: params.title,
+    message: params.message,
+    type: params.type,
+    link: params.link,
+  });
 }
