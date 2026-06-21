@@ -66,6 +66,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { PWAInstallButton } from "./PWAInstallButton";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -484,6 +485,9 @@ function DashboardLayoutContent({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <PWAInstallButton />
             </SidebarMenuItem>
             <SidebarMenuItem>
               <ThemeToggle />
