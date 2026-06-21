@@ -20,8 +20,11 @@ import {
   temporaryAssignments,
   assignmentSettlements,
   deductionRules,
-  auditLog
+  auditLog,
+  notifications,
+  pushSubscriptions
 } from "../drizzle/schema";
+import { sendNotification } from './notifications';
 import { inArray, isNull, isNotNull, between } from "drizzle-orm";
 
 // Rename Worker type to avoid conflict with Web Worker
@@ -3948,6 +3951,20 @@ export async function approveBatch(batchId: number, userId: number) {
     })
     .where(eq(payrollBatches.id, batchId));
   
+  // Send notifications to stakeholders
+  const stakeholders = [batch.createdBy, batch.accountantApprovedBy, batch.auditorApprovedBy].filter(id => id !== null) as number[];
+  const uniqueStakeholders = [...new Set(stakeholders)];
+  
+  for (const stakeholderId of uniqueStakeholders) {
+    await sendNotification({
+      userId: stakeholderId,
+      title: "✅ تم اعتماد الدفعة",
+      message: `تم الاعتماد النهائي للدفعة ${batch.batchCode} من قبل المدير المالي.`,
+      type: 'success',
+      link: `/payroll/batches/${batchId}`
+    });
+  }
+  
   return { success: true };
 }
 
@@ -3975,6 +3992,20 @@ export async function rejectBatch(batchId: number, userId: number, reason: strin
       updatedAt: new Date(),
     })
     .where(eq(payrollBatches.id, batchId));
+  
+  // Send notifications to stakeholders
+  const stakeholders = [batch.createdBy, batch.accountantApprovedBy, batch.auditorApprovedBy].filter(id => id !== null) as number[];
+  const uniqueStakeholders = [...new Set(stakeholders)];
+  
+  for (const stakeholderId of uniqueStakeholders) {
+    await sendNotification({
+      userId: stakeholderId,
+      title: "❌ تم رفض الدفعة",
+      message: `تم رفض الدفعة ${batch.batchCode} من قبل المدير المالي. السبب: ${reason}`,
+      type: 'error',
+      link: `/payroll/batches/${batchId}`
+    });
+  }
   
   return { success: true };
 }
@@ -9127,4 +9158,71 @@ export async function addWorkerToBatch(params: {
   }).where(eq(payrollBatches.id, params.batchId));
 
   return { success: true, workerName: worker.fullName };
+}
+
+// ============================================
+// Notification Functions
+// ============================================
+
+export async function getNotifications(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(50);
+}
+
+export async function getUnreadNotificationsCount(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, 0)));
+  return Number(result[0]?.count || 0);
+}
+
+export async function markNotificationAsRead(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(notifications)
+    .set({ isRead: 1 })
+    .where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+}
+
+export async function markAllNotificationsAsRead(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(notifications)
+    .set({ isRead: 1 })
+    .where(eq(notifications.userId, userId));
+}
+
+export async function savePushSubscription(userId: number, subscription: any) {
+  const db = await getDb();
+  if (!db) return;
+  
+  // Check if subscription already exists
+  const existing = await db
+    .select()
+    .from(pushSubscriptions)
+    .where(and(
+      eq(pushSubscriptions.userId, userId),
+      eq(pushSubscriptions.endpoint, subscription.endpoint)
+    ))
+    .limit(1);
+    
+  if (existing.length > 0) return;
+
+  await db.insert(pushSubscriptions).values({
+    userId,
+    endpoint: subscription.endpoint,
+    p256dh: subscription.keys.p256dh,
+    auth: subscription.keys.auth,
+  });
 }

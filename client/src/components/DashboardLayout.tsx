@@ -67,6 +67,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { PWAInstallButton } from "./PWAInstallButton";
+import { NotificationBell } from "./NotificationBell";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -485,6 +486,9 @@ function DashboardLayoutContent({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <NotificationBell />
             </SidebarMenuItem>
             <SidebarMenuItem>
               <PWAInstallButton />
