@@ -36,45 +36,7 @@ export function NotificationBell() {
     }
   });
 
-  const getVapidKey = trpc.notifications.getVapidPublicKey.useQuery();
-  const saveSubscription = trpc.notifications.savePushSubscription.useMutation();
 
-  useEffect(() => {
-    if ('serviceWorker' in navigator && getVapidKey.data) {
-      registerPush();
-    }
-  }, [getVapidKey.data]);
-
-  const registerPush = async () => {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-      
-      if (!subscription) {
-        // Request permission if not already granted
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return;
-
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: getVapidKey.data
-        });
-      }
-
-      const subJSON = subscription.toJSON();
-      if (subJSON.endpoint && subJSON.keys?.p256dh && subJSON.keys?.auth) {
-        saveSubscription.mutate({
-          endpoint: subJSON.endpoint,
-          keys: {
-            p256dh: subJSON.keys.p256dh,
-            auth: subJSON.keys.auth
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Push registration failed:', error);
-    }
-  };
 
   const handleNotificationClick = (notification: any) => {
     if (!notification.isRead) {

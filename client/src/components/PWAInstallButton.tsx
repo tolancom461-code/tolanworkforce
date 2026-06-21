@@ -13,40 +13,64 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PWAInstallButton() {
-  const [installPrompt, setInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // التحقق إذا كان التطبيق مثبتاً مسبقاً
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    // 1. Check if already installed
+    if (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone) {
       setIsInstalled(true);
-      return;
     }
 
+    // 2. Listen for the install prompt
     const handler = (e: Event) => {
+      console.log("PWA Install prompt triggered");
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
 
+    // 3. Listen for successful installation
+    const appInstalledHandler = () => {
+      console.log("PWA was installed");
+      setIsInstalled(true);
+      setInstallPrompt(null);
+    };
+    window.addEventListener("appinstalled", appInstalledHandler);
+
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", appInstalledHandler);
     };
   }, []);
 
   const handleInstall = async () => {
-    if (!installPrompt) return;
-    await installPrompt.prompt();
-    const { outcome } = await installPrompt.userChoice;
-    if (outcome === "accepted") {
-      setInstallPrompt(null);
-      setIsInstalled(true);
+    if (!installPrompt) {
+      console.log("No install prompt available");
+      // Fallback for browsers that don't support beforeinstallprompt (like Safari)
+      if (/iPhone|iPad|iPod/.test(navigator.userAgent) && !(window.navigator as any).standalone) {
+        alert("لتثبيت التطبيق على iPhone: اضغط على زر 'مشاركة' ثم اختر 'إضافة للشاشة الرئيسية'");
+      } else {
+        alert("تثبيت التطبيق متاح عبر قائمة المتصفح (Install App)");
+      }
+      return;
+    }
+    
+    try {
+      await installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
+      if (outcome === "accepted") {
+        setInstallPrompt(null);
+        setIsInstalled(true);
+      }
+    } catch (err) {
+      console.error("Error during PWA installation:", err);
     }
   };
 
-  // إخفاء الزر إذا كان التطبيق مثبتاً مسبقاً
+  // Hide button if already installed
   if (isInstalled) return null;
 
   return (

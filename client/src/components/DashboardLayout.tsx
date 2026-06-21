@@ -68,6 +68,7 @@ import {
 import { ThemeToggle } from "./ThemeToggle";
 import { PWAInstallButton } from "./PWAInstallButton";
 import { NotificationBell } from "./NotificationBell";
+import { PushNotificationToggle } from "./PushNotificationToggle";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -489,6 +490,9 @@ function DashboardLayoutContent({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <NotificationBell />
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <PushNotificationToggle />
             </SidebarMenuItem>
             <SidebarMenuItem>
               <PWAInstallButton />
