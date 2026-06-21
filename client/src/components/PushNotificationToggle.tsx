@@ -56,8 +56,16 @@ export function PushNotificationToggle() {
         }
       } else {
         // Subscribe
+        if (getVapidKey.isLoading) {
+          // Key is still being fetched from the server; wait briefly and retry once
+          await getVapidKey.refetch();
+        }
+
         if (!getVapidKey.data) {
-          throw new Error("VAPID key not found");
+          toast.error("الإشعارات الفورية غير مفعّلة", {
+            description: "لم يتم إعداد مفاتيح VAPID على الخادم بعد. يرجى التواصل مع مسؤول النظام لتفعيل هذه الميزة.",
+          });
+          return;
         }
 
         const permission = await Notification.requestPermission();
