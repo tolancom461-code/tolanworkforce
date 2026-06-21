@@ -293,6 +293,6 @@ export function getSecurityHeaders() {
   return {
     ...CSPHeaders,
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(self)',
   };
 }
