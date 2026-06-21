@@ -505,6 +505,13 @@ function DashboardLayoutContent({
       </Sidebar>
 
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
+        {/* شريط علوي يظهر فقط على الجوال (أقل من 768px) ليتيح فتح القائمة الجانبية،
+            لأن القائمة بكاملها تختفي داخل لوحة منزلقة على الشاشات الصغيرة ولا طريقة
+            لفتحها بدون هذا الزر */}
+        <header className="md:hidden flex items-center gap-2 border-b px-3 py-2 shrink-0">
+          <SidebarTrigger />
+          <span className="font-semibold text-sm">TolanWorkforce</span>
+        </header>
         <main className="flex-1 overflow-auto">
           {children}
         </main>
