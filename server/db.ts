@@ -24,7 +24,7 @@ import {
   notifications,
   pushSubscriptions
 } from "../drizzle/schema";
-import { sendNotification } from './notifications';
+import { sendNotification, sendNotificationToRoles, notifyStageAndAdmins, ADMIN_OWNER_ROLES } from './notifications';
 import { inArray, isNull, isNotNull, between } from "drizzle-orm";
 
 // Rename Worker type to avoid conflict with Web Worker
@@ -2929,6 +2929,15 @@ export async function createPayrollBatch(params: {
       await db.insert(payrollBatchItems).values(itemToInsert as any);
   }
 
+  // 🔔 إشعار الأدمن والإدارة العليا فور إنشاء الدفعة كمسودة
+  await sendNotificationToRoles({
+    roles: ADMIN_OWNER_ROLES,
+    title: "📝 تم إنشاء دفعة رواتب جديدة",
+    message: `تم إنشاء دفعة رواتب جديدة برقم ${finalBatchCode} للفترة من ${params.periodStart} إلى ${params.periodEnd} (${batchItems.length} عامل) وهي الآن بانتظار الإرسال للمحاسب.`,
+    type: 'info',
+    link: `/payroll/batches/${batchId}`,
+  });
+
   return { batchId, batchCode: finalBatchCode };
 }
 
@@ -3225,6 +3234,15 @@ export async function submitBatchForReview(batchId: number, userId: number) {
       newStatus: 'under_accountant_review',
     });
   }
+
+  // 🔔 إشعار المحاسب (وكذلك الأدمن/الإدارة العليا) بوصول دفعة جديدة للمراجعة
+  await notifyStageAndAdmins({
+    stageRole: 'accountant',
+    title: "📤 دفعة رواتب بانتظار المراجعة المحاسبية",
+    message: `تم إرسال الدفعة ${batch.batchCode} إليك للمراجعة المحاسبية.`,
+    type: 'info',
+    link: `/payroll/batches/${batchId}`,
+  });
 
   return { success: true };
 }
@@ -3893,6 +3911,15 @@ export async function submitBatchToAccounting(batchId: number, userId: number) {
     })
     .where(eq(payrollBatches.id, batchId));
   
+  // 🔔 إشعار المحاسب (وكذلك الأدمن/الإدارة العليا) بوصول دفعة جديدة للمراجعة
+  await notifyStageAndAdmins({
+    stageRole: 'accountant',
+    title: "📤 دفعة رواتب بانتظار المراجعة المحاسبية",
+    message: `تم إرسال الدفعة ${batch.batchCode} إليك للمراجعة المحاسبية.`,
+    type: 'info',
+    link: `/payroll/batches/${batchId}`,
+  });
+  
   return { success: true };
 }
 
@@ -3912,6 +3939,15 @@ export async function submitBatchToFinalReview(batchId: number, userId: number, 
     })
     .where(eq(payrollBatches.id, batchId));
   
+  // 🔔 إشعار المراجع المالي (وكذلك الأدمن/الإدارة العليا) باعتماد المحاسب وإرسال الدفعة إليه
+  await notifyStageAndAdmins({
+    stageRole: 'auditor',
+    title: "📤 دفعة رواتب بانتظار المراجعة المالية",
+    message: `اعتمد المحاسب الدفعة ${batch.batchCode} وأُرسلت إليك للمراجعة المالية.`,
+    type: 'info',
+    link: `/payroll/batches/${batchId}`,
+  });
+  
   return { success: true };
 }
 
@@ -3930,6 +3966,15 @@ export async function submitBatchForApproval(batchId: number, userId: number, re
       updatedAt: new Date(),
     })
     .where(eq(payrollBatches.id, batchId));
+  
+  // 🔔 إشعار المدير المالي (وكذلك الأدمن/الإدارة العليا) باعتماد المراجع وإرسال الدفعة إليه للاعتماد النهائي
+  await notifyStageAndAdmins({
+    stageRole: 'finance_manager',
+    title: "📤 دفعة رواتب بانتظار الاعتماد النهائي",
+    message: `اعتمد المراجع المالي الدفعة ${batch.batchCode} وأُرسلت إليك للاعتماد النهائي.`,
+    type: 'info',
+    link: `/payroll/batches/${batchId}`,
+  });
   
   return { success: true };
 }
@@ -3964,6 +4009,15 @@ export async function approveBatch(batchId: number, userId: number) {
       link: `/payroll/batches/${batchId}`
     });
   }
+
+  // 🔔 إشعار الأدمن والإدارة العليا أيضًا بالاعتماد النهائي
+  await sendNotificationToRoles({
+    roles: ADMIN_OWNER_ROLES,
+    title: "✅ تم اعتماد الدفعة",
+    message: `تم الاعتماد النهائي للدفعة ${batch.batchCode} من قبل المدير المالي.`,
+    type: 'success',
+    link: `/payroll/batches/${batchId}`,
+  });
   
   return { success: true };
 }
@@ -3983,6 +4037,14 @@ export async function rejectBatch(batchId: number, userId: number, reason: strin
   
   const rejectionCount = (batch.rejectionCount || 0) + 1;
   
+  // تحديد الجهة التي رفضت الدفعة بناءً على المرحلة الحالية قبل الإرجاع للمسودة
+  const rejectorLabel: Record<string, string> = {
+    under_accountant_review: 'المحاسب المالي',
+    under_financial_review: 'المراجع المالي',
+    under_accounts_manager_review: 'المدير المالي',
+  };
+  const rejectedByText = rejectorLabel[batch.status] || 'أحد المراجعين';
+  
   // Return batch to draft status for editing/deletion
   await db.update(payrollBatches)
     .set({
@@ -4001,11 +4063,20 @@ export async function rejectBatch(batchId: number, userId: number, reason: strin
     await sendNotification({
       userId: stakeholderId,
       title: "❌ تم رفض الدفعة",
-      message: `تم رفض الدفعة ${batch.batchCode} من قبل المدير المالي. السبب: ${reason}`,
+      message: `تم رفض الدفعة ${batch.batchCode} من قبل ${rejectedByText}. السبب: ${reason}`,
       type: 'error',
       link: `/payroll/batches/${batchId}`
     });
   }
+
+  // 🔔 إشعار الأدمن والإدارة العليا أيضًا بالرفض
+  await sendNotificationToRoles({
+    roles: ADMIN_OWNER_ROLES,
+    title: "❌ تم رفض الدفعة",
+    message: `تم رفض الدفعة ${batch.batchCode} من قبل ${rejectedByText}. السبب: ${reason}`,
+    type: 'error',
+    link: `/payroll/batches/${batchId}`,
+  });
   
   return { success: true };
 }
