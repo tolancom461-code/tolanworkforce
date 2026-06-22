@@ -19,8 +19,12 @@ export function NotificationBell() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   
-  const { data: notifications = [] } = trpc.notifications.list.useQuery();
-  const { data: unreadCount = 0 } = trpc.notifications.unreadCount.useQuery();
+  const { data: notifications = [] } = trpc.notifications.list.useQuery(undefined, {
+    refetchInterval: 30000, // تحديث تلقائي كل 30 ثانية حتى تظهر الإشعارات الجديدة دون الحاجة لتحديث الصفحة
+  });
+  const { data: unreadCount = 0 } = trpc.notifications.unreadCount.useQuery(undefined, {
+    refetchInterval: 30000,
+  });
   
   const markAsRead = trpc.notifications.markAsRead.useMutation({
     onSuccess: () => {
