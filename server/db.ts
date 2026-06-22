@@ -25,7 +25,26 @@ import {
   pushSubscriptions
 } from "../drizzle/schema";
 import { sendNotification, sendNotificationToRoles, notifyStageAndAdmins, ADMIN_OWNER_ROLES } from './notifications';
+import { getRoleLabel } from './permissions';
 import { inArray, isNull, isNotNull, between } from "drizzle-orm";
+
+/**
+ * جلب الاسم الكامل ومسمى الدور العربي لمستخدم معين
+ * يُستخدم في نصوص الإشعارات لإظهار من قام بكل إجراء
+ */
+async function getActorLabel(db: any, userId: number): Promise<string> {
+  try {
+    const [user] = await db.select({ fullName: users.fullName, role: users.role })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user) return 'مستخدم غير معروف';
+    const roleAr = getRoleLabel(user.role, 'ar');
+    return `${user.fullName} (${roleAr})`;
+  } catch {
+    return 'مستخدم';
+  }
+}
 
 // Rename Worker type to avoid conflict with Web Worker
 import type { Worker as DbWorker } from "../drizzle/schema";
@@ -2930,10 +2949,11 @@ export async function createPayrollBatch(params: {
   }
 
   // 🔔 إشعار الأدمن والإدارة العليا فور إنشاء الدفعة كمسودة
+  const creatorLabel = await getActorLabel(db, params.createdBy);
   await sendNotificationToRoles({
     roles: ADMIN_OWNER_ROLES,
     title: "📝 تم إنشاء دفعة رواتب جديدة",
-    message: `تم إنشاء دفعة رواتب جديدة برقم ${finalBatchCode} للفترة من ${params.periodStart} إلى ${params.periodEnd} (${batchItems.length} عامل) وهي الآن بانتظار الإرسال للمحاسب.`,
+    message: `أنشأ ${creatorLabel} دفعة رواتب جديدة برقم ${finalBatchCode} للفترة من ${params.periodStart} إلى ${params.periodEnd} (${batchItems.length} عامل) — بانتظار الإرسال للمحاسب.`,
     type: 'info',
     link: `/payroll/batches/${batchId}`,
   });
@@ -3236,10 +3256,11 @@ export async function submitBatchForReview(batchId: number, userId: number) {
   }
 
   // 🔔 إشعار المحاسب (وكذلك الأدمن/الإدارة العليا) بوصول دفعة جديدة للمراجعة
+  const senderLabel = await getActorLabel(db, userId);
   await notifyStageAndAdmins({
     stageRole: 'accountant',
     title: "📤 دفعة رواتب بانتظار المراجعة المحاسبية",
-    message: `تم إرسال الدفعة ${batch.batchCode} إليك للمراجعة المحاسبية.`,
+    message: `أرسل ${senderLabel} الدفعة ${batch.batchCode} للمراجعة المحاسبية.`,
     type: 'info',
     link: `/payroll/batches/${batchId}`,
   });
@@ -3912,10 +3933,11 @@ export async function submitBatchToAccounting(batchId: number, userId: number) {
     .where(eq(payrollBatches.id, batchId));
   
   // 🔔 إشعار المحاسب (وكذلك الأدمن/الإدارة العليا) بوصول دفعة جديدة للمراجعة
+  const senderLabel2 = await getActorLabel(db, userId);
   await notifyStageAndAdmins({
     stageRole: 'accountant',
     title: "📤 دفعة رواتب بانتظار المراجعة المحاسبية",
-    message: `تم إرسال الدفعة ${batch.batchCode} إليك للمراجعة المحاسبية.`,
+    message: `أرسل ${senderLabel2} الدفعة ${batch.batchCode} للمراجعة المحاسبية.`,
     type: 'info',
     link: `/payroll/batches/${batchId}`,
   });
@@ -3940,10 +3962,11 @@ export async function submitBatchToFinalReview(batchId: number, userId: number, 
     .where(eq(payrollBatches.id, batchId));
   
   // 🔔 إشعار المراجع المالي (وكذلك الأدمن/الإدارة العليا) باعتماد المحاسب وإرسال الدفعة إليه
+  const accountantLabel = await getActorLabel(db, userId);
   await notifyStageAndAdmins({
     stageRole: 'auditor',
     title: "📤 دفعة رواتب بانتظار المراجعة المالية",
-    message: `اعتمد المحاسب الدفعة ${batch.batchCode} وأُرسلت إليك للمراجعة المالية.`,
+    message: `اعتمد ${accountantLabel} الدفعة ${batch.batchCode} وأرسلها للمراجعة المالية.`,
     type: 'info',
     link: `/payroll/batches/${batchId}`,
   });
@@ -3968,10 +3991,11 @@ export async function submitBatchForApproval(batchId: number, userId: number, re
     .where(eq(payrollBatches.id, batchId));
   
   // 🔔 إشعار المدير المالي (وكذلك الأدمن/الإدارة العليا) باعتماد المراجع وإرسال الدفعة إليه للاعتماد النهائي
+  const auditorLabel = await getActorLabel(db, userId);
   await notifyStageAndAdmins({
     stageRole: 'finance_manager',
     title: "📤 دفعة رواتب بانتظار الاعتماد النهائي",
-    message: `اعتمد المراجع المالي الدفعة ${batch.batchCode} وأُرسلت إليك للاعتماد النهائي.`,
+    message: `اعتمد ${auditorLabel} الدفعة ${batch.batchCode} وأرسلها للاعتماد النهائي.`,
     type: 'info',
     link: `/payroll/batches/${batchId}`,
   });
@@ -3997,6 +4021,7 @@ export async function approveBatch(batchId: number, userId: number) {
     .where(eq(payrollBatches.id, batchId));
   
   // Send notifications to stakeholders
+  const approverLabel = await getActorLabel(db, userId);
   const stakeholders = [batch.createdBy, batch.accountantApprovedBy, batch.auditorApprovedBy].filter(id => id !== null) as number[];
   const uniqueStakeholders = [...new Set(stakeholders)];
   
@@ -4004,7 +4029,7 @@ export async function approveBatch(batchId: number, userId: number) {
     await sendNotification({
       userId: stakeholderId,
       title: "✅ تم اعتماد الدفعة",
-      message: `تم الاعتماد النهائي للدفعة ${batch.batchCode} من قبل المدير المالي.`,
+      message: `اعتمد ${approverLabel} الدفعة ${batch.batchCode} اعتمادًا نهائيًا.`,
       type: 'success',
       link: `/payroll/batches/${batchId}`
     });
@@ -4014,7 +4039,7 @@ export async function approveBatch(batchId: number, userId: number) {
   await sendNotificationToRoles({
     roles: ADMIN_OWNER_ROLES,
     title: "✅ تم اعتماد الدفعة",
-    message: `تم الاعتماد النهائي للدفعة ${batch.batchCode} من قبل المدير المالي.`,
+    message: `اعتمد ${approverLabel} الدفعة ${batch.batchCode} اعتمادًا نهائيًا.`,
     type: 'success',
     link: `/payroll/batches/${batchId}`,
   });
@@ -4056,6 +4081,7 @@ export async function rejectBatch(batchId: number, userId: number, reason: strin
     .where(eq(payrollBatches.id, batchId));
   
   // Send notifications to stakeholders
+  const rejectorLabel2 = await getActorLabel(db, userId);
   const stakeholders = [batch.createdBy, batch.accountantApprovedBy, batch.auditorApprovedBy].filter(id => id !== null) as number[];
   const uniqueStakeholders = [...new Set(stakeholders)];
   
@@ -4063,7 +4089,7 @@ export async function rejectBatch(batchId: number, userId: number, reason: strin
     await sendNotification({
       userId: stakeholderId,
       title: "❌ تم رفض الدفعة",
-      message: `تم رفض الدفعة ${batch.batchCode} من قبل ${rejectedByText}. السبب: ${reason}`,
+      message: `رفض ${rejectorLabel2} الدفعة ${batch.batchCode}. السبب: ${reason}`,
       type: 'error',
       link: `/payroll/batches/${batchId}`
     });
@@ -4073,7 +4099,7 @@ export async function rejectBatch(batchId: number, userId: number, reason: strin
   await sendNotificationToRoles({
     roles: ADMIN_OWNER_ROLES,
     title: "❌ تم رفض الدفعة",
-    message: `تم رفض الدفعة ${batch.batchCode} من قبل ${rejectedByText}. السبب: ${reason}`,
+    message: `رفض ${rejectorLabel2} الدفعة ${batch.batchCode}. السبب: ${reason}`,
     type: 'error',
     link: `/payroll/batches/${batchId}`,
   });
