@@ -247,7 +247,7 @@ export default function PayrollBatchHistory() {
               <th>أيام العمل</th>
               <th>المستحق</th>
               <th>الخصومات</th>
-              <th>المكافآت</th>
+              <th>الاضافي</th>
               <th>الصافي</th>
               <th>توقيع المستلم</th>
             </tr>
@@ -255,7 +255,7 @@ export default function PayrollBatchHistory() {
           <tbody>
             ${groupsHtml}
             <tr class="total-row">
-              <td colspan="4">الإجمالي الكلي</td>
+              <td colspan="4">الإجمالي </td>
               <td>${parseFloat(batchDetails.batch.totalAmount?.toString() || '0').toFixed(2)}</td>
               <td>${parseFloat(batchDetails.batch.totalDeductions?.toString() || '0').toFixed(2)}</td>
               <td>${parseFloat(batchDetails.batch.totalBonuses?.toString() || '0').toFixed(2)}</td>
@@ -639,7 +639,7 @@ export default function PayrollBatchHistory() {
                     <TableHead className="text-right">أيام العمل</TableHead>
                     <TableHead className="text-right">المستحق</TableHead>
                     <TableHead className="text-right">الخصومات</TableHead>
-                    <TableHead className="text-right">المكافآت</TableHead>
+                    <TableHead className="text-right">الاضافي</TableHead>
                     <TableHead className="text-right">الصافي</TableHead>
                     <TableHead className="text-right w-[120px]">توقيع المستلم</TableHead>
                   </TableRow>
