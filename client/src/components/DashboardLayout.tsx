@@ -178,14 +178,14 @@ const menuSections = [
     ]
   },
   {
-    label: "\u{1F4B0} إدارة الرواتب والمالية",
+    label: "\u{1F4B0} الإدارة المالية",
     items: [
-      { icon: Banknote, label: "لوحة تحكم الرواتب", path: "/payroll/dashboard", color: "text-green-600" },
-      { icon: DollarSign, label: "دفعات الرواتب", path: "/payroll/batches" },
-      { icon: FileText, label: "سجل دفعات الرواتب", path: "/finance/payroll/history" },
+      { icon: Banknote, label: "لوحة التحكم المالية", path: "/payroll/dashboard", color: "text-green-600" },
+      { icon: DollarSign, label: "دفعات العماله", path: "/payroll/batches" },
+      { icon: FileText, label: "سجل دفعات العماله", path: "/finance/payroll/history" },
       { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
-      // { icon: FileCheck, label: "تقارير الرواتب", path: "/payroll-report" },
-      { icon: FileCheck, label: "تقرير الرواتب اليومية", path: "/finance/daily-payroll-report" },
+      // { icon: FileCheck, label: "تقارير العماله", path: "/payroll-report" },
+      { icon: FileCheck, label: "تقرير العماله اليومي", path: "/finance/daily-payroll-report" },
       { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },
       { icon: FileText, label: "سند صرف", path: "/finance/payment-voucher" },
       // { icon: FileSearch, label: "تقرير مستحقات العمالة", path: "/finance/cost-center-report" }, // مخفي مؤقتاً
