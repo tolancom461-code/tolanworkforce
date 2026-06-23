@@ -212,7 +212,7 @@ export default function PayrollBatchHistory() {
     printWindow.document.write(`
       <html dir="rtl" lang="ar">
       <head>
-        <title>كشف رواتب - ${batchDetails.batch.batchCode}</title>
+        <title>كشف عمالة - ${batchDetails.batch.batchCode}</title>
         <style>
           body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; padding: 20px; direction: rtl; }
           table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -231,7 +231,7 @@ export default function PayrollBatchHistory() {
       </head>
       <body>
         <div class="header">
-          <h2>كشف رواتب العمال اليومية</h2>
+          <h2>كشف العمالة اليومية</h2>
           <p>رمز الدفعة: ${batchDetails.batch.batchCode}</p>
         </div>
         <div class="info-row">
@@ -293,7 +293,7 @@ export default function PayrollBatchHistory() {
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'دفعات الرواتب');
+    XLSX.utils.book_append_sheet(wb, ws, 'دفعات العمالة');
     XLSX.writeFile(wb, `payroll-batches-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
@@ -305,7 +305,7 @@ export default function PayrollBatchHistory() {
     const content = `
       <html>
         <head>
-          <title>سجل دفعات الرواتب</title>
+          <title>سجل دفعات العمالة</title>
           <style>
             body { font-family: Arial, sans-serif; direction: rtl; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -315,7 +315,7 @@ export default function PayrollBatchHistory() {
           </style>
         </head>
         <body>
-          <h1>سجل دفعات الرواتب</h1>
+          <h1>سجل دفعات العمالة</h1>
           <table>
             <thead>
               <tr>
@@ -352,7 +352,7 @@ export default function PayrollBatchHistory() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">سجل دفعات الرواتب</h1>
+        <h1 className="text-3xl font-bold">سجل دفعات العمالة</h1>
         <div className="flex gap-2">
           <Button onClick={handleExport} variant="outline" size="sm">
             <Download className="w-4 h-4 ml-2" />
@@ -466,7 +466,7 @@ export default function PayrollBatchHistory() {
           {isLoading ? (
             <div className="text-center py-8">جاري التحميل...</div>
           ) : batches.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">لا توجد دفعات رواتب</div>
+            <div className="text-center py-8 text-gray-500">لا توجد دفعات عمالة</div>
           ) : (
             <>
               <div className="overflow-x-auto">
