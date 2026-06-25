@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -8,16 +8,17 @@ import { Building2, Users, Clock, BarChart3, Shield, Zap, LogOut } from 'lucide-
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 export default function LandingPage() {
   const [, setLocation] = useLocation();
+  const { t, toggleLanguage, language } = useLanguage();
   // Get user data directly from trpc
   const { data: user } = trpc.auth.me.useQuery();
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
-      toast.success('تم تسجيل الخروج بنجاح');
-      // Reload page to clear auth state
+      toast.success(t.login.logoutSuccess);
       window.location.href = '/';
     },
   });
@@ -37,22 +38,21 @@ export default function LandingPage() {
     e.preventDefault();
     
     if (!username.trim() || !password.trim()) {
-      toast.error('يرجى إدخال اسم المستخدم وكلمة المرور');
+      toast.error(t.login.emptyFields);
       return;
     }
 
     setIsLoading(true);
     try {
       await loginMutation.mutateAsync({ username, password, rememberMe });
-      toast.success('تم تسجيل الدخول بنجاح');
+      toast.success(t.login.loginSuccess);
       setShowLoginDialog(false);
       
-      // Wait a bit for cookie to be set, then do full page reload
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 500);
     } catch (error: any) {
-      toast.error(error.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
+      toast.error(error.message || t.login.loginError);
     } finally {
       setIsLoading(false);
     }
@@ -61,33 +61,33 @@ export default function LandingPage() {
   const features = [
     {
       icon: Users,
-      title: 'إدارة العمال',
-      description: 'إدارة شاملة لبيانات العمال والموظفين مع إمكانية التصنيف والبحث السريع'
+      title: t.landing.features.attendance.title,
+      description: t.landing.features.attendance.description,
     },
     {
       icon: Clock,
-      title: 'تسجيل الحضور',
-      description: 'نظام متطور لتسجيل الحضور والانصراف باستخدام QR Code أو الإدخال اليدوي'
+      title: t.landing.features.payroll.title,
+      description: t.landing.features.payroll.description,
     },
     {
       icon: BarChart3,
-      title: 'التقارير والإحصائيات',
-      description: 'تقارير تفصيلية عن الحضور والغياب والتأخير مع إمكانية التصدير'
+      title: t.landing.features.reports.title,
+      description: t.landing.features.reports.description,
     },
     {
       icon: Building2,
-      title: 'إدارة المجموعات',
-      description: 'تنظيم العمال في مجموعات ومراكز تكلفة لسهولة الإدارة والمتابعة'
+      title: t.landing.features.security.title,
+      description: t.landing.features.security.description,
     },
     {
       icon: Shield,
-      title: 'الأمان والخصوصية',
-      description: 'نظام آمن لحماية بيانات العمال مع صلاحيات وصول محددة'
+      title: t.landing.features.realtime.title,
+      description: t.landing.features.realtime.description,
     },
     {
       icon: Zap,
-      title: 'سريع وسهل',
-      description: 'واجهة مستخدم بسيطة وسريعة تدعم اللغة العربية بالكامل'
+      title: t.landing.features.mobile.title,
+      description: t.landing.features.mobile.description,
     }
   ];
 
@@ -102,32 +102,38 @@ export default function LandingPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">TolanWorkforce</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">نظام إدارة القوى العاملة</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t.landing.systemTitle}</p>
             </div>
           </div>
-          {user ? (
-            <div className="flex items-center gap-3">
-              <span className="hidden md:inline text-sm text-gray-600 dark:text-gray-300">
-                {user.fullName}
-              </span>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                size="lg"
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                تسجيل الخروج
-              </Button>
-              <Button onClick={() => setLocation('/dashboard')} size="lg">
-                لوحة التحكم
-              </Button>
-            </div>
-          ) : (
-            <Button onClick={() => setShowLoginDialog(true)} size="lg">
-              تسجيل دخول
+          <div className="flex items-center gap-2">
+            {/* Language Toggle */}
+            <Button variant="ghost" size="sm" onClick={toggleLanguage} className="text-sm">
+              🌐 {t.general.switchLanguage}
             </Button>
-          )}
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="hidden md:inline text-sm text-gray-600 dark:text-gray-300">
+                  {user.fullName}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={handleLogout}
+                  size="lg"
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  {t.general.logout}
+                </Button>
+                <Button onClick={() => setLocation('/dashboard')} size="lg">
+                  {t.navItems.home}
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={() => setShowLoginDialog(true)} size="lg">
+                {t.login.submit}
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -135,21 +141,20 @@ export default function LandingPage() {
       <section className="container mx-auto px-4 py-20 text-center">
         <div className="max-w-3xl mx-auto space-y-6">
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
-            نظام إدارة القوى العاملة
+            {t.landing.systemTitle}
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-              الشامل والمتطور
+              {t.landing.systemSubtitle}
             </span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
-            حل متكامل لإدارة الموظفين والعمال مع نظام حضور ذكي وتقارير تفصيلية.
-            سهل الاستخدام، آمن، وموثوق.
+            {t.landing.systemDescription}
           </p>
           <div className="flex gap-4 justify-center pt-4">
             <Button onClick={() => setShowLoginDialog(true)} size="lg" className="text-lg px-8 py-6">
-              ابدأ الآن
+              {t.landing.startNow}
             </Button>
             <Button variant="outline" size="lg" className="text-lg px-8 py-6">
-              اعرف المزيد
+              {t.landing.learnMore}
             </Button>
           </div>
         </div>
@@ -159,10 +164,10 @@ export default function LandingPage() {
       <section className="container mx-auto px-4 py-20">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            مميزات النظام
+            {t.landing.featuresTitle}
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            كل ما تحتاجه لإدارة القوى العاملة بكفاءة وفعالية
+            {t.landing.featuresSubtitle}
           </p>
         </div>
         
@@ -189,15 +194,15 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8 text-center text-white">
             <div>
               <div className="text-5xl font-bold mb-2">99.9%</div>
-              <div className="text-lg opacity-90">وقت التشغيل</div>
+              <div className="text-lg opacity-90">{t.landing.uptime}</div>
             </div>
             <div>
               <div className="text-5xl font-bold mb-2">24/7</div>
-              <div className="text-lg opacity-90">دعم فني</div>
+              <div className="text-lg opacity-90">{t.landing.support}</div>
             </div>
             <div>
               <div className="text-5xl font-bold mb-2">100%</div>
-              <div className="text-lg opacity-90">أمان البيانات</div>
+              <div className="text-lg opacity-90">{t.landing.dataSecurity}</div>
             </div>
           </div>
         </div>
@@ -207,13 +212,13 @@ export default function LandingPage() {
       <section className="container mx-auto px-4 py-20 text-center">
         <div className="max-w-2xl mx-auto space-y-6">
           <h2 className="text-4xl font-bold text-gray-900 dark:text-white">
-            جاهز للبدء؟
+            {t.landing.readyToStart}
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            ابدأ في إدارة القوى العاملة بكفاءة أعلى اليوم
+            {t.landing.readyDesc}
           </p>
           <Button onClick={() => setShowLoginDialog(true)} size="lg" className="text-lg px-8 py-6">
-            تسجيل دخول الآن
+            {t.landing.loginNow}
           </Button>
         </div>
       </section>
@@ -221,7 +226,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t bg-gray-50 dark:bg-gray-900 py-8">
         <div className="container mx-auto px-4 text-center text-gray-600 dark:text-gray-400">
-          <p>© 2026 TolanWorkforce. جميع الحقوق محفوظة.</p>
+          <p>{t.landing.allRightsReserved}</p>
         </div>
       </footer>
 
@@ -229,18 +234,18 @@ export default function LandingPage() {
       <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl">تسجيل الدخول</DialogTitle>
+            <DialogTitle className="text-2xl">{t.login.title}</DialogTitle>
             <DialogDescription>
-              أدخل اسم المستخدم وكلمة المرور للوصول إلى النظام
+              {t.login.description}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleLogin} className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="username">اسم المستخدم</Label>
+              <Label htmlFor="username">{t.login.username}</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="أدخل اسم المستخدم"
+                placeholder={t.login.usernamePlaceholder}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
@@ -248,11 +253,11 @@ export default function LandingPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور</Label>
+              <Label htmlFor="password">{t.login.password}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="أدخل كلمة المرور"
+                placeholder={t.login.passwordPlaceholder}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
@@ -268,11 +273,11 @@ export default function LandingPage() {
                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
               />
               <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
-                تذكرني لمدة 30 يوماً
+                {t.login.rememberMe}
               </Label>
             </div>
             <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-              {isLoading ? 'جاري التحقق...' : 'دخول'}
+              {isLoading ? t.login.loading : t.login.submit}
             </Button>
           </form>
         </DialogContent>

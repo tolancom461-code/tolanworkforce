@@ -1,15 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>TolanWorkforce - نظام إدارة القوى العاملة</title>
+    <title>TolanWorkforce - نظام إدارة القوى العاملة | Workforce Management</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <script>
-      // التقاط حدث "beforeinstallprompt" في أقرب لحظة ممكنة (قبل React وقبل تسجيل الدخول)
+      // Set language direction from localStorage before React loads
+      (function() {
+        var lang = localStorage.getItem('language') || 'ar';
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      })();
       // لأن المتصفح يطلق هذا الحدث مرة واحدة فقط ولا يعيد إطلاقه إذا فاتنا الاستماع له.
       window.__pwaInstallEvent = null;
       window.addEventListener("beforeinstallprompt", function (e) {

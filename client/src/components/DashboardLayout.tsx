@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -150,84 +151,84 @@ function isPathAllowed(role: UserRoleType, path: string): boolean {
   });
 }
 
-// تصنيف القوائم حسب الأدوار والوظائف
-const menuSections = [
+// تصنيف القوائم حسب الأدوار والوظائف - dynamic based on language
+function getMenuSections(t: any) {
+  return [
   {
-    label: "\u{1F4CA} لوحات التحكم",
+    label: t.nav.dashboards,
     items: [
-      { icon: LayoutDashboard, label: "الرئيسية", path: "/dashboard" },
-      { icon: TrendingUp, label: "لوحة المدير", path: "/executive" },
-      { icon: DollarSign, label: "لوحة الإدارة العليا", path: "/executive/finance" },
+      { icon: LayoutDashboard, label: t.navItems.home, path: "/dashboard" },
+      { icon: TrendingUp, label: t.navItems.managerDashboard, path: "/executive" },
+      { icon: DollarSign, label: t.navItems.executiveFinance, path: "/executive/finance" },
     ]
   },
   {
-    label: "\u{1F465} إدارة الموارد البشرية",
+    label: t.nav.hrManagement,
     items: [
-      { icon: Users, label: "المستخدمين", path: "/users" },
-      { icon: UsersRound, label: "العمال", path: "/workers" },
-      { icon: Briefcase, label: "المجموعات", path: "/groups" },
+      { icon: Users, label: t.navItems.users, path: "/users" },
+      { icon: UsersRound, label: t.navItems.workers, path: "/workers" },
+      { icon: Briefcase, label: t.navItems.groups, path: "/groups" },
     ]
   },
   {
-    label: "\u23F0 إدارة الحضور والانصراف",
+    label: t.nav.attendanceManagement,
     items: [
-      { icon: QrCode, label: "تسجيل الحضور", path: "/attendance" },
-      { icon: ClipboardList, label: "سجل الحضور", path: "/attendance/log" },
-      { icon: FileText, label: "تقارير الحضور", path: "/attendance/reports" },
-      { icon: Clock, label: "أيام العمل", path: "/work-days" },
+      { icon: QrCode, label: t.navItems.attendanceScanner, path: "/attendance" },
+      { icon: ClipboardList, label: t.navItems.attendanceLog, path: "/attendance/log" },
+      { icon: FileText, label: t.navItems.attendanceReports, path: "/attendance/reports" },
+      { icon: Clock, label: t.navItems.workDays, path: "/work-days" },
     ]
   },
   {
-    label: "\u{1F4B0} الإدارة المالية",
+    label: t.nav.financialManagement,
     items: [
-      { icon: Banknote, label: "لوحة التحكم المالية", path: "/payroll/dashboard", color: "text-green-600" },
-      { icon: DollarSign, label: "دفعات العماله", path: "/payroll/batches" },
-      { icon: FileText, label: "سجل دفعات العماله", path: "/finance/payroll/history" },
-      { icon: Wallet, label: "التجاوزات المالية", path: "/finance/overrides" },
-      // { icon: FileCheck, label: "تقارير العماله", path: "/payroll-report" },
-      { icon: FileCheck, label: "تقرير العماله اليومي", path: "/finance/daily-payroll-report" },
-      { icon: TrendingUp, label: "التقارير المالية", path: "/finance/reports" },
-      { icon: FileText, label: "سند صرف", path: "/finance/payment-voucher" },
-      // { icon: FileSearch, label: "تقرير مستحقات العمالة", path: "/finance/cost-center-report" }, // مخفي مؤقتاً
+      { icon: Banknote, label: t.navItems.payrollDashboard, path: "/payroll/dashboard", color: "text-green-600" },
+      { icon: DollarSign, label: t.navItems.payrollBatches, path: "/payroll/batches" },
+      { icon: FileText, label: t.navItems.payrollHistory, path: "/finance/payroll/history" },
+      { icon: Wallet, label: t.navItems.payOverrides, path: "/finance/overrides" },
+      { icon: FileCheck, label: t.navItems.dailyPayrollReport, path: "/finance/daily-payroll-report" },
+      { icon: TrendingUp, label: t.navItems.financialReports, path: "/finance/reports" },
+      { icon: FileText, label: t.navItems.paymentVoucher, path: "/finance/payment-voucher" },
     ]
   },
   {
-    label: "\u23F3 إدارة الورديات والجداول",
+    label: t.nav.shiftsManagement,
     items: [
-      { icon: Clock, label: "الورديات الأسبوعية", path: "/schedules/weekly", color: "text-purple-600" },
+      { icon: Clock, label: t.navItems.weeklyShifts, path: "/schedules/weekly", color: "text-purple-600" },
     ]
   },
   {
-    label: "\u2713 مراجعة البصمات",
+    label: t.nav.punchesReview,
     items: [
-      { icon: ClipboardCheck, label: "مركز مراجعة البصمات", path: "/punches/review", color: "text-orange-600" },
+      { icon: ClipboardCheck, label: t.navItems.punchesReviewCenter, path: "/punches/review", color: "text-orange-600" },
     ]
   },
   {
-    label: "\u2699\uFE0F العمليات التشغيلية",
+    label: t.nav.operations,
     items: [
-      { icon: AlertCircle, label: "لوحة العمليات", path: "/operations", color: "text-blue-600" },
-      { icon: ClipboardCheck, label: "معالجات الملاحظات", path: "/operations/notes-review", color: "text-amber-600" },
-      { icon: ShieldCheck, label: "متابعة أداء المشرفين", path: "/operations/supervisor-performance", color: "text-teal-600" },
+      { icon: AlertCircle, label: t.navItems.operationsDashboard, path: "/operations", color: "text-blue-600" },
+      { icon: ClipboardCheck, label: t.navItems.notesReview, path: "/operations/notes-review", color: "text-amber-600" },
+      { icon: ShieldCheck, label: t.navItems.supervisorPerformance, path: "/operations/supervisor-performance", color: "text-teal-600" },
     ]
   },
   {
-    label: "\u{1F4CB} البيانات المرجعية",
+    label: t.nav.referenceData,
     items: [
-      { icon: Building2, label: "مراكز التكلفة", path: "/cost-centers" },
-      { icon: ArrowLeftRight, label: "الانتدابات المؤقتة", path: "/temporary-assignments", color: "text-cyan-600" },
+      { icon: Building2, label: t.navItems.costCenters, path: "/cost-centers" },
+      { icon: ArrowLeftRight, label: t.navItems.temporaryAssignments, path: "/temporary-assignments", color: "text-cyan-600" },
     ]
   },
   {
-    label: "\u2699\uFE0F \u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645",
+    label: t.nav.systemSettings,
     items: [
-      { icon: Shield, label: "سجل التدقيق", path: "/audit-log", color: "text-red-600" },
-      { icon: HardDrive, label: "\u0627\u0644\u0646\u0633\u062e \u0627\u0644\u0627\u062d\u062a\u064a\u0627\u0637\u064a", path: "/backup", color: "text-blue-600" },
-      { icon: ShieldCheck, label: "\u0625\u0639\u0627\u062f\u0629 \u0645\u0632\u0627\u0645\u0646\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0627\u0644\u064a\u0629", path: "/financial-recalculation", color: "text-green-600" },
-      { icon: Settings, label: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u062e\u0635\u064a", path: "/profile" },
+      { icon: Shield, label: t.navItems.auditLog, path: "/audit-log", color: "text-red-600" },
+      { icon: HardDrive, label: t.navItems.backup, path: "/backup", color: "text-blue-600" },
+      { icon: ShieldCheck, label: t.navItems.financialRecalculation, path: "/financial-recalculation", color: "text-green-600" },
+      { icon: Settings, label: t.navItems.profile, path: "/profile" },
     ]
   },
-];
+];}
+
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const SIDEBAR_COLLAPSED_SECTIONS_KEY = "sidebar-collapsed-sections";
@@ -245,6 +246,7 @@ export default function DashboardLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -260,11 +262,8 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              تسجيل الدخول مطلوب
+              {t.login.title}
             </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              يتطلب الوصول إلى هذه اللوحة المصادقة. انقر للمتابعة إلى صفحة تسجيل الدخول.
-            </p>
           </div>
           <Button
             onClick={() => {
@@ -273,7 +272,7 @@ export default function DashboardLayout({
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            الذهاب إلى لوحة التحكم
+            {t.general.profile}
           </Button>
         </div>
       </div>
@@ -322,6 +321,7 @@ function DashboardLayoutContent({
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
+  const { t, toggleLanguage, isRTL } = useLanguage();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -348,6 +348,7 @@ function DashboardLayoutContent({
   
   // تصفية القائمة حسب دور المستخدم
   const userRole = (user?.role || 'guard') as UserRoleType;
+  const menuSections = getMenuSections(t);
   const filteredMenuSections = menuSections
     .map(section => ({
       ...section,
@@ -404,7 +405,7 @@ function DashboardLayoutContent({
             </div>
             <div className="flex flex-col gap-0.5 leading-none">
               <span className="font-semibold">TolanWorkforce</span>
-              <span className="text-xs text-muted-foreground">نظام إدارة القوى العاملة</span>
+              <span className="text-xs text-muted-foreground">{isRTL ? 'نظام إدارة القوى العاملة' : 'Workforce Management'}</span>
             </div>
           </div>
         </SidebarHeader>
@@ -479,11 +480,11 @@ function DashboardLayoutContent({
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setLocation("/profile")}>
                     <User className="mr-2 h-4 w-4" />
-                    <span>الملف الشخصي</span>
+                    <span>{t.general.profile}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => logout()}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>تسجيل الخروج</span>
+                    <span>{t.general.logout}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -499,6 +500,12 @@ function DashboardLayoutContent({
             </SidebarMenuItem>
             <SidebarMenuItem>
               <ThemeToggle />
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={toggleLanguage} className="gap-2">
+                <span className="text-sm font-medium">🌐</span>
+                <span className="text-sm">{t.general.switchLanguage}</span>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
