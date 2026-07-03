@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-export function PWAInstallButton() {
+export function PWAInstallButton({ iconOnly = false }: { iconOnly?: boolean } = {}) {
   // ✅ نقرأ الحدث من المتغير العام الذي يُلتقط مبكرًا في index.html
   // (قبل أن يُحمَّل React وقبل تسجيل الدخول)، بدل الاعتماد فقط على
   // useEffect هذا المكوّن الذي قد يُركَّب بعد فوات حدث beforeinstallprompt.
@@ -105,12 +105,20 @@ export function PWAInstallButton() {
       <TooltipTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
+          size={iconOnly ? "icon" : "sm"}
           onClick={handleInstall}
-          className="h-9 gap-1.5 rounded-lg hover:bg-accent px-2 text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300"
+          className={
+            iconOnly
+              ? "h-9 w-9 rounded-lg hover:bg-accent text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300"
+              : "h-9 gap-1.5 rounded-lg hover:bg-accent px-2 text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300"
+          }
         >
           <Download className="h-4 w-4" />
-          <span>تثبيت</span>
+          {iconOnly ? (
+            <span className="sr-only">تثبيت</span>
+          ) : (
+            <span>تثبيت</span>
+          )}
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">

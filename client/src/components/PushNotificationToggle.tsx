@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 
-export function PushNotificationToggle() {
+export function PushNotificationToggle({ iconOnly = false }: { iconOnly?: boolean } = {}) {
 
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,14 +116,22 @@ export function PushNotificationToggle() {
       <TooltipTrigger asChild>
         <Button
           variant="ghost"
-          size="sm"
+          size={iconOnly ? "icon" : "sm"}
           onClick={toggleNotifications}
           disabled={isLoading}
-          className={`h-9 gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors ${
-            isSubscribed 
-              ? "text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20" 
-              : "text-slate-500 hover:bg-accent"
-          }`}
+          className={
+            iconOnly
+              ? `h-9 w-9 rounded-lg transition-colors ${
+                  isSubscribed
+                    ? "text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+                    : "text-slate-500 hover:bg-accent"
+                }`
+              : `h-9 gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors ${
+                  isSubscribed
+                    ? "text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+                    : "text-slate-500 hover:bg-accent"
+                }`
+          }
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -132,7 +140,11 @@ export function PushNotificationToggle() {
           ) : (
             <BellOff className="h-4 w-4" />
           )}
-          <span>{isSubscribed ? "مفعلة" : "تفعيل"}</span>
+          {iconOnly ? (
+            <span className="sr-only">{isSubscribed ? "مفعلة" : "تفعيل"}</span>
+          ) : (
+            <span>{isSubscribed ? "مفعلة" : "تفعيل"}</span>
+          )}
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">

@@ -31,6 +31,11 @@ import {
 } from "@/components/ui/collapsible";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { 
   LayoutDashboard, 
   LogOut, 
@@ -64,7 +69,8 @@ import {
   FileSearch,
   ArrowLeftRight,
   HardDrive,
-  ShieldCheck
+  ShieldCheck,
+  Globe
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { PWAInstallButton } from "./PWAInstallButton";
@@ -495,22 +501,28 @@ function DashboardLayoutContent({
               </DropdownMenu>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <NotificationBell />
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <PushNotificationToggle />
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <PWAInstallButton />
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <ThemeToggle />
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={toggleLanguage} className="gap-2">
-                <span className="text-sm font-medium">🌐</span>
-                <span className="text-sm">{t.general.switchLanguage}</span>
-              </SidebarMenuButton>
+              <div className="grid grid-cols-3 gap-1 justify-items-center py-1">
+                <NotificationBell />
+                <PushNotificationToggle iconOnly />
+                <PWAInstallButton iconOnly />
+                <ThemeToggle />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleLanguage}
+                      className="h-9 w-9 rounded-lg hover:bg-accent"
+                    >
+                      <Globe className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+                      <span className="sr-only">{t.general.switchLanguage}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>{t.general.switchLanguage}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
