@@ -397,7 +397,12 @@ function DashboardLayoutContent({
 
   return (
     <>
-      <Sidebar ref={sidebarRef} collapsible="icon" className="border-l">
+      <Sidebar
+        ref={sidebarRef}
+        collapsible="icon"
+        side="right"
+        wrapperClassName={!isRTL ? "md:order-2" : undefined}
+      >
         <SidebarHeader className="border-b px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

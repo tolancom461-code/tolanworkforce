@@ -2441,11 +2441,12 @@ addFullSession: protectedProcedure
           );
         }
         
-        // === شرط 2: فحص البلاغات التشغيلية المعلقة لنفس الفترة ومركز التكلفة ===
+        // === شرط 2: فحص البلاغات التشغيلية المعلقة لنفس الفترة ومركز التكلفة (مقصور على المجموعات المختارة) ===
         const pendingFlagsCount = await db.getPendingOperationalFlagsForPeriod(
           input.periodStart,
           input.periodEnd,
-          input.costCenterId ?? null
+          input.costCenterId ?? null,
+          input.groupIds
         );
         if (pendingFlagsCount > 0) {
           throw new Error(
@@ -2460,7 +2461,8 @@ addFullSession: protectedProcedure
         const incompleteCheck = await db.checkIncompleteAttendanceForPeriodAndCostCenter(
           startDate,
           endDate,
-          input.costCenterId ?? null
+          input.costCenterId ?? null,
+          input.groupIds
         );
         
         if (incompleteCheck.hasIncomplete) {
@@ -3310,6 +3312,49 @@ newValues: { assignmentIds: input.assignmentIds, settlements: result.settlements
           tableName: 'payroll_batch_items',
           recordId: input.batchId,
           newValues: { workerId: input.workerId, workDate: input.workDate },
+        });
+        return result;
+      }),
+
+    // جلب العمال الحاضرين فعلياً في مجموعة (قد تنتمي لمركز تكلفة آخر) بتاريخ معين
+    // تُستخدم في نافذة "إضافة عامل من مركز آخر"
+    getPresentWorkersForGroupDate: protectedProcedure
+      .input(z.object({
+        groupId: z.number(),
+        workDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getPresentWorkersForGroupOnDate(input.groupId, input.workDate);
+      }),
+
+    // إضافة عامل من مركز/مجموعة أخرى إلى الدفعة الحالية ليوم واحد (عبر انتداب مؤقت تلقائي)
+    addWorkerFromOtherGroup: protectedProcedure
+      .input(z.object({
+        batchId: z.number(),
+        targetGroupId: z.number(),
+        workerId: z.number(),
+        workDate: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const batchDetails = await db.getPayrollBatchDetails(input.batchId);
+        if (!batchDetails) throw new TRPCError({ code: 'NOT_FOUND', message: 'الدفعة غير موجودة' });
+        if (batchDetails.batch.status !== 'draft') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن التعديل إلا في مسودة الدفعة' });
+        }
+        const result = await db.addWorkerFromOtherGroup({
+          batchId: input.batchId,
+          targetGroupId: input.targetGroupId,
+          workerId: input.workerId,
+          workDate: input.workDate,
+          addedBy: ctx.user.id,
+        });
+        await db.logAudit({
+          userId: ctx.user.id,
+          action: 'ADD_WORKER_FROM_OTHER_GROUP_TO_BATCH',
+          tableName: 'payroll_batch_items',
+          recordId: input.batchId,
+          newValues: { workerId: input.workerId, workDate: input.workDate, targetGroupId: input.targetGroupId },
         });
         return result;
       }),

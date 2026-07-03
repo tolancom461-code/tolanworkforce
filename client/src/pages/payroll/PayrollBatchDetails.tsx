@@ -80,6 +80,16 @@ export default function PayrollBatchDetails() {
   const [addWorkerForm, setAddWorkerForm] = useState({ checkInTime: "", checkOutTime: "" });
   const [isLoadingAbsent, setIsLoadingAbsent] = useState(false);
 
+  // Add Worker From Other Group/Cost Center Dialog State
+  const [addFromOtherOpen, setAddFromOtherOpen] = useState(false);
+  const [addFromOtherTargetGroup, setAddFromOtherTargetGroup] = useState<any>(null); // المجموعة الهدف داخل الدفعة الحالية
+  const [addFromOtherDate, setAddFromOtherDate] = useState("");
+  const [addFromOtherCostCenterId, setAddFromOtherCostCenterId] = useState("");
+  const [addFromOtherSourceGroupId, setAddFromOtherSourceGroupId] = useState("");
+  const [presentWorkers, setPresentWorkers] = useState<any[]>([]);
+  const [selectedPresentWorker, setSelectedPresentWorker] = useState<any>(null);
+  const [isLoadingPresentWorkers, setIsLoadingPresentWorkers] = useState(false);
+
   // Assignment Settlement Dialog State
   const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
   const [pendingAssignments, setPendingAssignments] = useState<any[]>([]);
@@ -334,6 +344,66 @@ export default function PayrollBatchDetails() {
     } finally {
       setIsLoadingAbsent(false);
     }
+  };
+
+  // ===== إضافة عامل من مركز/مجموعة أخرى =====
+  const { data: allCostCenters } = trpc.costCenters.list.useQuery();
+  const { data: otherCostCenterGroups } = trpc.groups.listByCostCenter.useQuery(
+    { costCenterId: addFromOtherCostCenterId ? parseInt(addFromOtherCostCenterId) : undefined },
+    { enabled: !!addFromOtherCostCenterId }
+  );
+
+  const addWorkerFromOtherGroupMutation = trpc.payroll.addWorkerFromOtherGroup.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تمت إضافة ${data.workerName} للدفعة بنجاح (عبر انتداب مؤقت ليوم واحد)`);
+      setAddFromOtherOpen(false);
+      setAddFromOtherCostCenterId("");
+      setAddFromOtherSourceGroupId("");
+      setPresentWorkers([]);
+      setSelectedPresentWorker(null);
+      utils.payroll.getDetails.invalidate({ batchId });
+    },
+    onError: (error) => { toast.error(`خطأ: ${error.message}`); },
+  });
+
+  const handleOpenAddFromOther = (group: any) => {
+    setAddFromOtherTargetGroup(group);
+    setAddFromOtherDate(
+      batch?.batch.periodStart instanceof Date
+        ? batch.batch.periodStart.toLocaleDateString('en-CA')
+        : new Date(batch!.batch.periodStart).toLocaleDateString('en-CA')
+    );
+    setAddFromOtherCostCenterId("");
+    setAddFromOtherSourceGroupId("");
+    setPresentWorkers([]);
+    setSelectedPresentWorker(null);
+    setAddFromOtherOpen(true);
+  };
+
+  const handleFetchPresentWorkers = async (date: string, groupId: number) => {
+    setIsLoadingPresentWorkers(true);
+    try {
+      const result = await utils.client.payroll.getPresentWorkersForGroupDate.query({
+        groupId,
+        workDate: date,
+      });
+      setPresentWorkers(result);
+      setSelectedPresentWorker(null);
+    } catch (error: any) {
+      toast.error(`خطأ في جلب العمال: ${error.message}`);
+    } finally {
+      setIsLoadingPresentWorkers(false);
+    }
+  };
+
+  const handleConfirmAddFromOther = () => {
+    if (!selectedPresentWorker || !addFromOtherDate || !addFromOtherTargetGroup) return;
+    addWorkerFromOtherGroupMutation.mutate({
+      batchId,
+      targetGroupId: addFromOtherTargetGroup.groupId,
+      workerId: selectedPresentWorker.id,
+      workDate: addFromOtherDate,
+    });
   };
 
   const handleEdit = (item: any) => {
@@ -771,6 +841,16 @@ export default function PayrollBatchDetails() {
                           onClick={() => handleOpenAddWorker(group)}
                         >
                           + إضافة عامل
+                        </Button>
+                      )}
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-6 px-2 mr-1 text-blue-600 border-blue-300 hover:bg-blue-50 font-normal"
+                          onClick={() => handleOpenAddFromOther(group)}
+                        >
+                          🔀 إضافة من مركز آخر
                         </Button>
                       )}
                     </TableCell>
@@ -1266,6 +1346,129 @@ export default function PayrollBatchDetails() {
               {addWorkerToBatchMutation.isPending ? (
                 <><Loader2 className="h-4 w-4 ml-2 animate-spin" />جاري الإضافة...</>
               ) : ("إضافة للدفعة")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Worker From Other Cost Center/Group Dialog */}
+      <Dialog open={addFromOtherOpen} onOpenChange={setAddFromOtherOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة عامل من مركز آخر — إلى {addFromOtherTargetGroup?.groupName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              يتم نقل العامل ليوم واحد فقط عبر انتداب مؤقت تلقائي. سيُحتسب أجر ذلك اليوم هنا، ولن يُحتسب له في مركزه الأصلي.
+            </p>
+
+            <div className="space-y-2">
+              <Label>التاريخ</Label>
+              <input
+                type="date"
+                className="border rounded px-3 py-2 text-sm w-full bg-background"
+                value={addFromOtherDate}
+                min={batch?.batch.periodStart instanceof Date
+                  ? batch.batch.periodStart.toLocaleDateString('en-CA')
+                  : new Date(batch?.batch.periodStart || '').toLocaleDateString('en-CA')}
+                max={batch?.batch.periodEnd instanceof Date
+                  ? batch.batch.periodEnd.toLocaleDateString('en-CA')
+                  : new Date(batch?.batch.periodEnd || '').toLocaleDateString('en-CA')}
+                onChange={(e) => {
+                  setAddFromOtherDate(e.target.value);
+                  setPresentWorkers([]);
+                  setSelectedPresentWorker(null);
+                }}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>مركز التكلفة</Label>
+              <select
+                className="border rounded px-3 py-2 text-sm w-full bg-background"
+                value={addFromOtherCostCenterId}
+                onChange={(e) => {
+                  setAddFromOtherCostCenterId(e.target.value);
+                  setAddFromOtherSourceGroupId("");
+                  setPresentWorkers([]);
+                  setSelectedPresentWorker(null);
+                }}
+              >
+                <option value="">-- اختر مركز التكلفة --</option>
+                {allCostCenters?.map((cc: any) => (
+                  <option key={cc.id} value={cc.id}>{cc.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {addFromOtherCostCenterId && (
+              <div className="space-y-2">
+                <Label>المجموعة</Label>
+                <select
+                  className="border rounded px-3 py-2 text-sm w-full bg-background"
+                  value={addFromOtherSourceGroupId}
+                  onChange={(e) => {
+                    setAddFromOtherSourceGroupId(e.target.value);
+                    setPresentWorkers([]);
+                    setSelectedPresentWorker(null);
+                  }}
+                >
+                  <option value="">-- اختر المجموعة --</option>
+                  {otherCostCenterGroups?.map((g: any) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {addFromOtherSourceGroupId && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!addFromOtherDate || isLoadingPresentWorkers}
+                onClick={() => handleFetchPresentWorkers(addFromOtherDate, parseInt(addFromOtherSourceGroupId))}
+                className="w-full"
+              >
+                {isLoadingPresentWorkers ? (
+                  <><Loader2 className="h-4 w-4 ml-2 animate-spin" />جاري البحث...</>
+                ) : ("عرض العمال الحاضرين")}
+              </Button>
+            )}
+
+            {presentWorkers.length > 0 && (
+              <div className="space-y-2">
+                <Label>اختر العامل</Label>
+                <select
+                  className="border rounded px-3 py-2 text-sm w-full bg-background"
+                  value={selectedPresentWorker?.id || ""}
+                  onChange={(e) => {
+                    const w = presentWorkers.find((w: any) => w.id === Number(e.target.value));
+                    setSelectedPresentWorker(w || null);
+                  }}
+                >
+                  <option value="">-- اختر عاملاً --</option>
+                  {presentWorkers.map((w: any) => (
+                    <option key={w.id} value={w.id}>{w.fullName} — {w.code}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {addFromOtherSourceGroupId && presentWorkers.length === 0 && !isLoadingPresentWorkers && (
+              <p className="text-sm text-muted-foreground text-center py-2">
+                اضغط "عرض العمال الحاضرين" لجلب القائمة
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddFromOtherOpen(false)}>إلغاء</Button>
+            <Button
+              disabled={!selectedPresentWorker || addWorkerFromOtherGroupMutation.isPending}
+              onClick={handleConfirmAddFromOther}
+            >
+              {addWorkerFromOtherGroupMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 ml-2 animate-spin" />جاري النقل...</>
+              ) : ("نقل وإضافة للدفعة")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -156,6 +156,7 @@ function Sidebar({
   collapsible = "offcanvas",
   disableTransition = false,
   className,
+  wrapperClassName,
   children,
   ...props
 }: React.ComponentProps<"div"> & {
@@ -163,6 +164,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
   disableTransition?: boolean;
+  wrapperClassName?: string;
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
@@ -208,7 +210,7 @@ function Sidebar({
 
   return (
     <div
-      className="group peer text-sidebar-foreground hidden md:block"
+      className={cn("group peer text-sidebar-foreground hidden md:block", wrapperClassName)}
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
       data-variant={variant}
