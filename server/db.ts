@@ -7801,10 +7801,10 @@ export async function getTemporaryAssignments(filters?: {
     conditions.push(eq(temporaryAssignments.status, filters.status as any));
   }
   if (filters?.startDate) {
-    conditions.push(gte(temporaryAssignments.startDate, new Date(filters.startDate)));
+    conditions.push(gte(temporaryAssignments.startDate, filters.startDate.split('T')[0]));
   }
   if (filters?.endDate) {
-    conditions.push(lte(temporaryAssignments.endDate, new Date(filters.endDate)));
+    conditions.push(lte(temporaryAssignments.endDate, filters.endDate.split('T')[0]));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -7986,8 +7986,8 @@ export async function getWorkerAssignmentsInPeriod(
       and(
         eq(temporaryAssignments.workerId, workerId),
         eq(temporaryAssignments.status, 'active'),
-        lte(temporaryAssignments.startDate, new Date(periodEnd)),
-        gte(temporaryAssignments.endDate, new Date(periodStart))
+        lte(temporaryAssignments.startDate, periodEnd.split('T')[0]),
+        gte(temporaryAssignments.endDate, periodStart.split('T')[0])
       )
     );
 
@@ -8027,8 +8027,8 @@ export async function getAssignmentsToCostCenter(
       and(
         eq(temporaryAssignments.toCostCenterId, costCenterId),
         eq(temporaryAssignments.status, 'active'),
-        lte(temporaryAssignments.startDate, new Date(periodEnd)),
-        gte(temporaryAssignments.endDate, new Date(periodStart))
+        lte(temporaryAssignments.startDate, periodEnd.split('T')[0]),
+        gte(temporaryAssignments.endDate, periodStart.split('T')[0])
       )
     );
 
@@ -8060,8 +8060,8 @@ export async function getAssignmentsFromCostCenter(
       and(
         eq(temporaryAssignments.fromCostCenterId, costCenterId),
         eq(temporaryAssignments.status, 'active'),
-        lte(temporaryAssignments.startDate, new Date(periodEnd)),
-        gte(temporaryAssignments.endDate, new Date(periodStart))
+        lte(temporaryAssignments.startDate, periodEnd.split('T')[0]),
+        gte(temporaryAssignments.endDate, periodStart.split('T')[0])
       )
     );
 
@@ -8556,6 +8556,8 @@ export async function getEffectiveGroupForWorkerOnDate(
 
   const { temporaryAssignments, workers } = await import('../drizzle/schema');
 
+  const dateStr = date.split('T')[0];
+
   // Check for active assignment on this date
   const assignment = await db
     .select({
@@ -8566,8 +8568,8 @@ export async function getEffectiveGroupForWorkerOnDate(
       and(
         eq(temporaryAssignments.workerId, workerId),
         eq(temporaryAssignments.status, 'active'),
-        lte(temporaryAssignments.startDate, new Date(date)),
-        gte(temporaryAssignments.endDate, new Date(date))
+        lte(temporaryAssignments.startDate, dateStr),
+        gte(temporaryAssignments.endDate, dateStr)
       )
     )
     .limit(1);
@@ -8768,8 +8770,8 @@ export async function checkBatchAssignments(batchId: number) {
       and(
         inArray(temporaryAssignments.workerId, workerIds),
         eq(temporaryAssignments.status, 'active'),
-        lte(temporaryAssignments.startDate, new Date(periodEnd + 'T00:00:00')),
-        gte(temporaryAssignments.endDate, new Date(periodStart + 'T00:00:00'))
+        lte(temporaryAssignments.startDate, periodEnd.split('T')[0]),
+        gte(temporaryAssignments.endDate, periodStart.split('T')[0])
       )
     );
 
