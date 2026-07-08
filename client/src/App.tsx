@@ -54,6 +54,9 @@ import WeeklyShifts from "./pages/WeeklyShifts";
 import PunchesReviewCenter from "./pages/PunchesReviewCenter";
 import Backfill from "./pages/Backfill";
 import TemporaryAssignments from "./pages/TemporaryAssignments";
+import Operations from "./pages/Operations";
+import RestaurantsManagement from "./pages/RestaurantsManagement";
+import RestaurantCostReport from "./pages/RestaurantCostReport";
 import Backup from "./pages/Backup";
 import Migration from "./pages/Migration";
 import DatabaseConsole from "./pages/DatabaseConsole";
@@ -140,6 +143,21 @@ function Router() {
       <Route path="/temporary-assignments">
         <ProtectedRoute>
           <TemporaryAssignments />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/operations/staffing">
+        <ProtectedRoute>
+          <Operations />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/operations/restaurants">
+        <ProtectedRoute>
+          <RestaurantsManagement />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/operations/cost-report">
+        <ProtectedRoute>
+          <RestaurantCostReport />
         </ProtectedRoute>
       </Route>
       <Route path="/backup">

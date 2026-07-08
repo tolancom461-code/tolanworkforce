@@ -885,7 +885,9 @@ export default function PayrollBatchDetails() {
                         {Number(item.netAmount).toLocaleString("ar-SA")} ر.س
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground min-w-[160px]">
-                        {canEdit && editingNoteItemId === item.id ? (
+                        {item.restaurantNames ? (
+                          <span className="text-foreground">🍽️ {item.restaurantNames}</span>
+                        ) : canEdit && editingNoteItemId === item.id ? (
                           <div className="flex gap-1 items-center">
                             <input
                               autoFocus

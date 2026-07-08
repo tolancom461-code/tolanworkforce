@@ -144,6 +144,38 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
     role === "financial_reviewer" ? "مراجعة المراجع المالي" :
     "اعتماد مدير الحسابات";
 
+  // ✅ تجميع العمال حسب المجموعة (نفس نظام صفحة المسودة)
+  const groupedItems = (batch.items || []).reduce((acc: any, item: any) => {
+    const groupKey = item.groupId || 'unknown';
+    if (!acc[groupKey]) {
+      acc[groupKey] = {
+        groupId: item.groupId,
+        groupName: item.groupName || 'مجموعة غير محددة',
+        workers: [],
+        summary: {
+          count: 0,
+          totalBase: 0,
+          totalDeductions: 0,
+          totalBonuses: 0,
+          totalNet: 0,
+          totalLateMinutes: 0,
+          totalEarlyLeaveMinutes: 0,
+        },
+      };
+    }
+    acc[groupKey].workers.push(item);
+    acc[groupKey].summary.count += 1;
+    acc[groupKey].summary.totalBase += parseFloat(item.baseAmount || '0');
+    acc[groupKey].summary.totalDeductions += parseFloat(item.totalDeductions || '0');
+    acc[groupKey].summary.totalBonuses += parseFloat(item.totalBonuses || '0');
+    acc[groupKey].summary.totalNet += parseFloat(item.netAmount || '0');
+    acc[groupKey].summary.totalLateMinutes += Number(item.lateMinutes || 0);
+    acc[groupKey].summary.totalEarlyLeaveMinutes += Number(item.earlyLeaveMinutes || 0);
+    return acc;
+  }, {});
+
+  const groupedList: any[] = Object.values(groupedItems || {});
+
   const getNoteIcon = (type: NoteType) => {
     switch (type) {
       case "critical":
@@ -297,7 +329,7 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
           <CardTitle>تفاصيل العمال</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <Table className="text-center">
             <TableHeader>
               <TableRow>
                 <TableHead>اسم العامل</TableHead>
@@ -305,27 +337,58 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
                 <TableHead>الخصومات</TableHead>
                 <TableHead>الإضافات</TableHead>
                 <TableHead>الصافي</TableHead>
+                <TableHead>دقائق التأخير</TableHead>
+                <TableHead>ناقص الدوام</TableHead>
                 <TableHead>ملاحظات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {batch.items?.map((item: any) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.workerName}</TableCell>
-                  <TableCell>{Number(item.baseAmount).toLocaleString("ar-SA")} ر.س</TableCell>
-                  <TableCell className="text-red-600">
-                    {Number(item.totalDeductions).toLocaleString("ar-SA")} ر.س
-                  </TableCell>
-                  <TableCell className="text-green-600">
-                    {Number(item.totalBonuses).toLocaleString("ar-SA")} ر.س
-                  </TableCell>
-                  <TableCell className="font-bold">
-                    {Number(item.netAmount).toLocaleString("ar-SA")} ر.س
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {item.notes || "-"}
-                  </TableCell>
-                </TableRow>
+              {groupedList.map((group: any) => (
+                <>
+                  <TableRow key={`group-${group.groupId}`} className="bg-muted/50 font-semibold">
+                    <TableCell colSpan={8}>
+                      {group.groupName} ({group.summary.count} عامل)
+                    </TableCell>
+                  </TableRow>
+                  {group.workers.map((item: any) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.workerName}</TableCell>
+                      <TableCell>{Number(item.baseAmount).toLocaleString("ar-SA")} ر.س</TableCell>
+                      <TableCell className="text-red-600">
+                        {Number(item.totalDeductions).toLocaleString("ar-SA")} ر.س
+                      </TableCell>
+                      <TableCell className="text-green-600">
+                        {Number(item.totalBonuses).toLocaleString("ar-SA")} ر.س
+                      </TableCell>
+                      <TableCell className="font-bold">
+                        {Number(item.netAmount).toLocaleString("ar-SA")} ر.س
+                      </TableCell>
+                      <TableCell className={Number(item.lateMinutes || 0) > 0 ? "text-red-600" : ""}>
+                        {Number(item.lateMinutes || 0)} دقيقة
+                      </TableCell>
+                      <TableCell className={Number(item.earlyLeaveMinutes || 0) > 0 ? "text-red-600" : ""}>
+                        {Number(item.earlyLeaveMinutes || 0)} دقيقة
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {item.restaurantNames || item.notes || "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow key={`total-${group.groupId}`} className="bg-muted/30 font-semibold border-t-2">
+                    <TableCell>إجمالي {group.groupName}</TableCell>
+                    <TableCell>{group.summary.totalBase.toLocaleString("ar-SA")} ر.س</TableCell>
+                    <TableCell className="text-red-600">
+                      {group.summary.totalDeductions.toLocaleString("ar-SA")} ر.س
+                    </TableCell>
+                    <TableCell className="text-green-600">
+                      {group.summary.totalBonuses.toLocaleString("ar-SA")} ر.س
+                    </TableCell>
+                    <TableCell>{group.summary.totalNet.toLocaleString("ar-SA")} ر.س</TableCell>
+                    <TableCell>{group.summary.totalLateMinutes} دقيقة</TableCell>
+                    <TableCell>{group.summary.totalEarlyLeaveMinutes} دقيقة</TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                </>
               ))}
             </TableBody>
           </Table>

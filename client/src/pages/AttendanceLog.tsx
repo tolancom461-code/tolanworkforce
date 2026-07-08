@@ -494,6 +494,7 @@ export default function AttendanceLog() {
                     <TableHead className="text-right">وقت الانصراف</TableHead>
                     <TableHead className="text-right">طريقة الانصراف</TableHead>
                     <TableHead className="text-right">دقائق العمل</TableHead>
+                    <TableHead className="text-right">ساعات العمل</TableHead>
                     <TableHead className="text-right">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -565,6 +566,20 @@ export default function AttendanceLog() {
                                 if (mins < 0) mins += 1440;
                                 return mins;
                               })()} دقيقة
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono font-semibold">
+                          {session.checkIn?.eventTime && session.checkOut?.eventTime ? (
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-blue-600" />
+                              {(() => {
+                                let mins = Math.round((new Date(session.checkOut.eventTime).getTime() - new Date(session.checkIn.eventTime).getTime()) / 60000);
+                                if (mins < 0) mins += 1440;
+                                return (mins / 60).toLocaleString("ar-SA", { maximumFractionDigits: 2 });
+                              })()} ساعة
                             </div>
                           ) : (
                             <span className="text-muted-foreground">-</span>

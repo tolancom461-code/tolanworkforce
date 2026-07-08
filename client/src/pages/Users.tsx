@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Loader2, UserPlus, Pencil, Trash2, Search, Shield } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
-// تعريف الأدوار الـ 8
+// تعريف الأدوار
 const ROLES = [
   { value: 'guard', label: 'حارس', description: 'تسجيل الحضور والانصراف فقط', color: 'bg-gray-500' },
   { value: 'supervisor_tolan', label: 'مشرف تولان', description: 'العمليات التشغيلية - مراكز تكلفة تولان (CC001-CC005)', color: 'bg-blue-500' },
@@ -24,6 +24,7 @@ const ROLES = [
   { value: 'auditor', label: 'مراجع مالي', description: 'اعتماد/رفض الدفعات من المحاسب (المرحلة 2) - بدون حذف', color: 'bg-amber-500' },
   { value: 'finance_manager', label: 'مدير مالي', description: 'الاعتماد النهائي/رفض الدفعات من المراجع (المرحلة 3) - بدون حذف', color: 'bg-purple-500' },
   { value: 'executive', label: 'إدارة عليا', description: 'لوحات التحكم فقط (استعراض)', color: 'bg-indigo-500' },
+  { value: 'restaurant_operations', label: 'تشغيل مطاعم', description: 'صلاحية صفحتي التشغيل وإدارة المطاعم فقط', color: 'bg-orange-500' },
   { value: 'super_admin', label: 'سوبر أدمن', description: 'جميع الصلاحيات بدون استثناء', color: 'bg-red-500' },
 ] as const;
 
@@ -40,7 +41,8 @@ function getRoleBadgeVariant(role: string): "default" | "secondary" | "destructi
     case 'finance_manager':
     case 'executive': return 'outline';
     case 'supervisor_tolan':
-    case 'supervisor_malqa': return 'secondary';
+    case 'supervisor_malqa':
+    case 'restaurant_operations': return 'secondary';
     default: return 'secondary';
   }
 }

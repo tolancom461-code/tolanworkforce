@@ -70,7 +70,10 @@ import {
   ArrowLeftRight,
   HardDrive,
   ShieldCheck,
-  Globe
+  Globe,
+  ListChecks,
+  UtensilsCrossed,
+  BarChart3
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { PWAInstallButton } from "./PWAInstallButton";
@@ -83,7 +86,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 
 // تعريف الصفحات المسموحة لكل دور
-type UserRoleType = 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin';
+type UserRoleType = 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin' | 'restaurant_operations';
 
 const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
   // الحارس: فقط تسجيل الحضور (بدون سجل الحضور وبدون تقارير الحضور)
@@ -102,7 +105,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/finance/payment-voucher',
     '/schedules/weekly', '/punches/review',
     '/operations', '/operations/notes-review', '/operations/supervisor-performance',
-    '/cost-centers', '/temporary-assignments', '/profile',
+    '/cost-centers', '/temporary-assignments', '/operations/staffing', '/operations/restaurants', '/operations/cost-report', '/profile',
   ],
   // المحاسب: بدون لوحة التحكم، بدون المستخدمين، مع سجل الحضور وتقارير الحضور (استعراض فقط)
   accountant: [
@@ -116,7 +119,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/finance/payment-voucher',
     '/schedules/weekly', '/punches/review',
     '/operations', '/operations/notes-review', '/operations/supervisor-performance',
-    '/cost-centers', '/temporary-assignments', '/profile',
+    '/cost-centers', '/temporary-assignments', '/operations/staffing', '/operations/restaurants', '/operations/cost-report', '/profile',
   ],
   // المراجع: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط) + سجل التدقيق
   auditor: [
@@ -137,6 +140,8 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/profile',
   ],
   executive: ['/executive/finance', '/profile'],
+  // تشغيل مطاعم: فقط صفحتَي التشغيل وإدارة المطاعم، لا غير
+  restaurant_operations: ['/operations/staffing', '/operations/restaurants', '/profile'],
   super_admin: 'all',
 };
 
@@ -222,6 +227,9 @@ function getMenuSections(t: any) {
     items: [
       { icon: Building2, label: t.navItems.costCenters, path: "/cost-centers" },
       { icon: ArrowLeftRight, label: t.navItems.temporaryAssignments, path: "/temporary-assignments", color: "text-cyan-600" },
+      { icon: ListChecks, label: t.navItems.staffingOperations, path: "/operations/staffing", color: "text-orange-600" },
+      { icon: UtensilsCrossed, label: t.navItems.restaurantsManagement, path: "/operations/restaurants", color: "text-pink-600" },
+      { icon: BarChart3, label: t.navItems.restaurantCostReport, path: "/operations/cost-report", color: "text-indigo-600" },
     ]
   },
   {

@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, index, foreignKey, int, decimal, date, mysqlEnum, text, timestamp, varchar, tinyint } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, index, foreignKey, int, decimal, date, mysqlEnum, text, timestamp, varchar, tinyint, unique } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 
 export const assignmentSettlements = mysqlTable("assignment_settlements", {
@@ -125,6 +125,30 @@ export const groupSchedules = mysqlTable("group_schedules", {
 },
 (table) => [
 	index("idx_group_day").on(table.groupId, table.dayOfWeek),
+]);
+
+export const restaurants = mysqlTable("restaurants", {
+	id: int().autoincrement().notNull(),
+	name: varchar({ length: 255 }).notNull(),
+	isActive: tinyint("is_active").default(1),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const dailyWorkAssignments = mysqlTable("daily_work_assignments", {
+	id: int().autoincrement().notNull(),
+	workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	restaurantId: int("restaurant_id").notNull().references(() => restaurants.id, { onDelete: "restrict", onUpdate: "cascade" } ),
+	// you can use { mode: 'date' }, if you want to have Date as type for this column
+	workDate: date("work_date", { mode: 'string' }).notNull(),
+	assignedBy: int("assigned_by").references(() => users.id, { onDelete: "set null", onUpdate: "cascade" } ),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("idx_dwa_restaurant_date").on(table.restaurantId, table.workDate),
+	index("idx_dwa_date").on(table.workDate),
+	unique("uq_worker_workdate").on(table.workerId, table.workDate),
 ]);
 
 export const groups = mysqlTable("groups", {
@@ -437,7 +461,7 @@ export const users = mysqlTable("users", {
 	roleId: int("role_id"),
 	isActive: tinyint("is_active").default(1),
 	loginMethod: varchar({ length: 64 }),
-	role: mysqlEnum(['guard','supervisor','supervisor_tolan','supervisor_malqa','admin_affairs','accountant','auditor','finance_manager','executive','super_admin']).default('guard').notNull(),
+	role: mysqlEnum(['guard','supervisor','supervisor_tolan','supervisor_malqa','admin_affairs','accountant','auditor','finance_manager','executive','super_admin','restaurant_operations']).default('guard').notNull(),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	lastSignedIn: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),

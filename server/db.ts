@@ -22,7 +22,9 @@ import {
   deductionRules,
   auditLog,
   notifications,
-  pushSubscriptions
+  pushSubscriptions,
+  restaurants,
+  dailyWorkAssignments
 } from "../drizzle/schema";
 import { sendNotification, sendNotificationToRoles, notifyStageAndAdmins, ADMIN_OWNER_ROLES } from './notifications';
 import { getRoleLabel } from './permissions';
@@ -3109,6 +3111,74 @@ export async function getPayrollBatchDetails(batchId: number) {
     .leftJoin(groups, eq(workers.groupId, groups.id))
     .where(eq(payrollBatchItems.batchId, batchId));
 
+  // ✅ مجموع دقائق التأخير والخروج المبكر لكل عامل خلال فترة الدفعة
+  let itemsWithAttendanceStats = items;
+  if (items.length > 0) {
+    const workerIds = items.map(i => i.workerId).filter((id): id is number => id !== null);
+    if (workerIds.length > 0) {
+      const attendanceStats = await db
+        .select({
+          workerId: workerDailyFinance.workerId,
+          totalLateMinutes: sql<number>`COALESCE(SUM(${workerDailyFinance.lateMinutes}), 0)`,
+          totalEarlyLeaveMinutes: sql<number>`COALESCE(SUM(${workerDailyFinance.earlyLeaveMinutes}), 0)`,
+        })
+        .from(workerDailyFinance)
+        .where(
+          and(
+            inArray(workerDailyFinance.workerId, workerIds),
+            gte(workerDailyFinance.workDate, batch.periodStart),
+            lte(workerDailyFinance.workDate, batch.periodEnd)
+          )
+        )
+        .groupBy(workerDailyFinance.workerId);
+
+      const statsByWorker = new Map(
+        attendanceStats.map(s => [s.workerId, s])
+      );
+
+      itemsWithAttendanceStats = items.map(item => ({
+        ...item,
+        lateMinutes: statsByWorker.get(item.workerId)?.totalLateMinutes || 0,
+        earlyLeaveMinutes: statsByWorker.get(item.workerId)?.totalEarlyLeaveMinutes || 0,
+      }));
+    }
+  }
+
+  // ✅ أسماء المطاعم المُعيَّنة لكل عامل خلال فترة الدفعة (لعرضها تلقائياً بدل الملاحظات اليدوية)
+  let itemsWithRestaurants = itemsWithAttendanceStats;
+  if (itemsWithAttendanceStats.length > 0) {
+    const workerIdsForRestaurants = itemsWithAttendanceStats.map((i: any) => i.workerId).filter((id: any): id is number => id !== null);
+    if (workerIdsForRestaurants.length > 0) {
+      const restaurantRows = await db
+        .selectDistinct({
+          workerId: dailyWorkAssignments.workerId,
+          restaurantName: restaurants.name,
+        })
+        .from(dailyWorkAssignments)
+        .leftJoin(restaurants, eq(dailyWorkAssignments.restaurantId, restaurants.id))
+        .where(
+          and(
+            inArray(dailyWorkAssignments.workerId, workerIdsForRestaurants),
+            gte(dailyWorkAssignments.workDate, batch.periodStart),
+            lte(dailyWorkAssignments.workDate, batch.periodEnd)
+          )
+        );
+
+      const restaurantNamesByWorker = new Map<number, string[]>();
+      for (const row of restaurantRows) {
+        if (!row.restaurantName) continue;
+        const list = restaurantNamesByWorker.get(row.workerId) || [];
+        if (!list.includes(row.restaurantName)) list.push(row.restaurantName);
+        restaurantNamesByWorker.set(row.workerId, list);
+      }
+
+      itemsWithRestaurants = itemsWithAttendanceStats.map((item: any) => ({
+        ...item,
+        restaurantNames: (restaurantNamesByWorker.get(item.workerId) || []).join('، ') || null,
+      }));
+    }
+  }
+
   // Get notes
   const notes = await db
     .select()
@@ -3125,7 +3195,7 @@ export async function getPayrollBatchDetails(batchId: number) {
 
   return {
     batch,
-    items,
+    items: itemsWithRestaurants,
     notes,
     corrections,
   };
@@ -3553,7 +3623,8 @@ let query = db
   })
   .from(payrollBatches)
   .leftJoin(costCenters, eq(payrollBatches.costCenterId, costCenters.id))
-  .orderBy(desc(payrollBatches.createdAt));
+  // ✅ الترتيب حسب تاريخ بداية الفترة (أول تاريخ في "من - إلى") بدل تاريخ الإنشاء
+  .orderBy(desc(payrollBatches.periodStart));
 
 let batches = await query;
   
@@ -3600,6 +3671,32 @@ let batches = await query;
   }
   if (filters?.endDate) {
     batches = batches.filter(b => new Date(b.periodEnd) <= filters.endDate!);
+  }
+
+  // ✅ العنوان الديناميكي: أسماء المجموعات الفعلية الموجودة داخل كل دفعة
+  if (batches.length > 0) {
+    const batchIds = batches.map(b => b.id);
+    const groupRows = await db
+      .selectDistinct({
+        batchId: payrollBatchItems.batchId,
+        groupName: groups.name,
+      })
+      .from(payrollBatchItems)
+      .leftJoin(groups, eq(payrollBatchItems.groupId, groups.id))
+      .where(inArray(payrollBatchItems.batchId, batchIds));
+
+    const groupNamesByBatch = new Map<number, string[]>();
+    for (const row of groupRows) {
+      if (!row.groupName) continue;
+      const list = groupNamesByBatch.get(row.batchId) || [];
+      if (!list.includes(row.groupName)) list.push(row.groupName);
+      groupNamesByBatch.set(row.batchId, list);
+    }
+
+    batches = batches.map(b => ({
+      ...b,
+      groupNames: (groupNamesByBatch.get(b.id) || []).join('، ') || '-',
+    }));
   }
 
   return batches;
@@ -3855,7 +3952,7 @@ export async function createLocalUser(data: {
   email?: string;
   phone?: string;
   isActive?: boolean;
-  role?: 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin';
+  role?: 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin' | 'restaurant_operations';
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -4714,7 +4811,7 @@ export async function checkUnresolvedFlags(workerId?: number, groupId?: number, 
  * NOTE: All users have full permissions now.
  */
 
-export async function updateUserRole(userId: number, role: 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin') {
+export async function updateUserRole(userId: number, role: 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_affairs' | 'accountant' | 'auditor' | 'finance_manager' | 'executive' | 'super_admin' | 'restaurant_operations') {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   await db
@@ -9464,6 +9561,299 @@ export async function addWorkerFromOtherGroup(params: {
   }).where(eq(payrollBatches.id, params.batchId));
 
   return { success: true, workerName: worker.fullName };
+}
+
+// ============================================
+// المطاعم (Restaurants) - إدارة القائمة الأساسية
+// ============================================
+
+export async function getAllRestaurants(includeInactive = false) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = includeInactive ? [] : [eq(restaurants.isActive, 1)];
+
+  return await db
+    .select()
+    .from(restaurants)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(restaurants.name);
+}
+
+export async function createRestaurant(name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("اسم المطعم مطلوب");
+
+  const existing = await db
+    .select()
+    .from(restaurants)
+    .where(eq(restaurants.name, trimmed))
+    .limit(1);
+  if (existing.length > 0) throw new Error("يوجد مطعم بنفس الاسم مسبقاً");
+
+  const result = await db.insert(restaurants).values({ name: trimmed });
+  return { id: (result as any).insertId, name: trimmed };
+}
+
+export async function updateRestaurant(id: number, params: { name?: string; isActive?: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const updateData: any = {};
+  if (params.name !== undefined) updateData.name = params.name.trim();
+  if (params.isActive !== undefined) updateData.isActive = params.isActive ? 1 : 0;
+
+  await db.update(restaurants).set(updateData).where(eq(restaurants.id, id));
+  return { success: true };
+}
+
+export async function deleteRestaurant(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // لا نحذف نهائياً إن كان له تعيينات سابقة (حفاظاً على السجل التاريخي)، بل نعطّله فقط
+  const hasAssignments = await db
+    .select({ id: dailyWorkAssignments.id })
+    .from(dailyWorkAssignments)
+    .where(eq(dailyWorkAssignments.restaurantId, id))
+    .limit(1);
+
+  if (hasAssignments.length > 0) {
+    await db.update(restaurants).set({ isActive: 0 }).where(eq(restaurants.id, id));
+    return { success: true, softDeleted: true };
+  }
+
+  await db.delete(restaurants).where(eq(restaurants.id, id));
+  return { success: true, softDeleted: false };
+}
+
+// ============================================
+// صفحة "التشغيل" - تعيينات العمل اليومية
+// ============================================
+
+/**
+ * جلب عمال مجموعة معينة مع تعيينهم الحالي (إن وُجد) لتاريخ معين
+ * تُستخدم في صفحة التشغيل لعرض قائمة العمال وحالة كل منهم
+ */
+export async function getWorkersWithAssignmentForGroupDate(groupId: number, workDate: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { attendanceEvents } = await import('../drizzle/schema');
+
+  const groupWorkers = await db
+    .select({ id: workers.id, fullName: workers.fullName, code: workers.code })
+    .from(workers)
+    .where(eq(workers.groupId, groupId))
+    .orderBy(workers.fullName);
+
+  if (groupWorkers.length === 0) return [];
+
+  const allWorkerIds = groupWorkers.map(w => w.id);
+
+  // ✅ فقط العمال الحاضرون فعلياً في هذا التاريخ (لديهم بصمة حضور)
+  const presentEvents = await db
+    .select({ workerId: attendanceEvents.workerId })
+    .from(attendanceEvents)
+    .where(
+      and(
+        inArray(attendanceEvents.workerId, allWorkerIds),
+        eq(attendanceEvents.workDate, workDate),
+        eq(attendanceEvents.eventType, 'check_in')
+      )
+    );
+  const presentWorkerIds = new Set(presentEvents.map(e => e.workerId));
+
+  const presentGroupWorkers = groupWorkers.filter(w => presentWorkerIds.has(w.id));
+  if (presentGroupWorkers.length === 0) return [];
+
+  const workerIds = presentGroupWorkers.map(w => w.id);
+
+  const existingAssignments = await db
+    .select({
+      workerId: dailyWorkAssignments.workerId,
+      restaurantId: dailyWorkAssignments.restaurantId,
+      restaurantName: restaurants.name,
+    })
+    .from(dailyWorkAssignments)
+    .leftJoin(restaurants, eq(dailyWorkAssignments.restaurantId, restaurants.id))
+    .where(
+      and(
+        inArray(dailyWorkAssignments.workerId, workerIds),
+        eq(dailyWorkAssignments.workDate, workDate)
+      )
+    );
+
+  const assignmentByWorker = new Map(existingAssignments.map(a => [a.workerId, a]));
+
+  return presentGroupWorkers.map(w => ({
+    ...w,
+    currentRestaurantId: assignmentByWorker.get(w.id)?.restaurantId || null,
+    currentRestaurantName: assignmentByWorker.get(w.id)?.restaurantName || null,
+  }));
+}
+
+/**
+ * حفظ/تحديث تعيين عامل لمطعم في تاريخ معين (مطعم واحد فقط لكل عامل لكل يوم)
+ */
+export async function upsertDailyWorkAssignment(params: {
+  workerId: number;
+  restaurantId: number;
+  workDate: string;
+  assignedBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const existing = await db
+    .select()
+    .from(dailyWorkAssignments)
+    .where(
+      and(
+        eq(dailyWorkAssignments.workerId, params.workerId),
+        eq(dailyWorkAssignments.workDate, params.workDate)
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    await db
+      .update(dailyWorkAssignments)
+      .set({ restaurantId: params.restaurantId, assignedBy: params.assignedBy })
+      .where(eq(dailyWorkAssignments.id, existing[0].id));
+    return { success: true, updated: true };
+  }
+
+  await db.insert(dailyWorkAssignments).values({
+    workerId: params.workerId,
+    restaurantId: params.restaurantId,
+    workDate: params.workDate,
+    assignedBy: params.assignedBy,
+  });
+  return { success: true, updated: false };
+}
+
+/**
+ * إزالة تعيين عامل من مطعم في تاريخ معين
+ */
+export async function removeDailyWorkAssignment(workerId: number, workDate: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .delete(dailyWorkAssignments)
+    .where(
+      and(
+        eq(dailyWorkAssignments.workerId, workerId),
+        eq(dailyWorkAssignments.workDate, workDate)
+      )
+    );
+  return { success: true };
+}
+
+/**
+ * جلب أسماء المطاعم التي عمل بها عامل معين خلال فترة زمنية (لعرضها كملاحظة مرجعية في الدفعة)
+ */
+export async function getRestaurantNamesForWorkerPeriod(workerId: number, periodStart: string, periodEnd: string): Promise<string> {
+  const db = await getDb();
+  if (!db) return '';
+
+  const rows = await db
+    .selectDistinct({ name: restaurants.name })
+    .from(dailyWorkAssignments)
+    .leftJoin(restaurants, eq(dailyWorkAssignments.restaurantId, restaurants.id))
+    .where(
+      and(
+        eq(dailyWorkAssignments.workerId, workerId),
+        gte(dailyWorkAssignments.workDate, periodStart),
+        lte(dailyWorkAssignments.workDate, periodEnd)
+      )
+    );
+
+  return rows.map(r => r.name).filter(Boolean).join('، ');
+}
+
+// ============================================
+// تقرير تكاليف المطاعم
+// ============================================
+
+/**
+ * تقرير تكلفة العمالة لكل مطعم خلال فترة زمنية، مبني من السجل المالي اليومي
+ * مربوطاً بتعيينات العمل اليومية (وليس من دفعات الرواتب مباشرة، لأنها مجمّعة لفترة كاملة)
+ */
+export async function getRestaurantCostReport(startDate: string, endDate: string) {
+  const db = await getDb();
+  if (!db) return { restaurants: [], unassigned: null };
+
+  // كل السجلات المالية اليومية ضمن الفترة، مربوطة بتعيين المطعم لنفس اليوم (إن وُجد)
+  const rows = await db
+    .select({
+      workerId: workerDailyFinance.workerId,
+      workDate: workerDailyFinance.workDate,
+      netAmount: workerDailyFinance.netAmount,
+      restaurantId: dailyWorkAssignments.restaurantId,
+      restaurantName: restaurants.name,
+    })
+    .from(workerDailyFinance)
+    .leftJoin(
+      dailyWorkAssignments,
+      and(
+        eq(workerDailyFinance.workerId, dailyWorkAssignments.workerId),
+        eq(workerDailyFinance.workDate, dailyWorkAssignments.workDate)
+      )
+    )
+    .leftJoin(restaurants, eq(dailyWorkAssignments.restaurantId, restaurants.id))
+    .where(
+      and(
+        gte(workerDailyFinance.workDate, startDate),
+        lte(workerDailyFinance.workDate, endDate)
+      )
+    );
+
+  const byRestaurant = new Map<number, { restaurantId: number; restaurantName: string; workerIds: Set<number>; totalCost: number }>();
+  let unassignedWorkerIds = new Set<number>();
+  let unassignedCost = 0;
+
+  for (const row of rows) {
+    const cost = parseFloat(row.netAmount || '0');
+    if (row.restaurantId && row.restaurantName) {
+      if (!byRestaurant.has(row.restaurantId)) {
+        byRestaurant.set(row.restaurantId, {
+          restaurantId: row.restaurantId,
+          restaurantName: row.restaurantName,
+          workerIds: new Set(),
+          totalCost: 0,
+        });
+      }
+      const entry = byRestaurant.get(row.restaurantId)!;
+      entry.workerIds.add(row.workerId);
+      entry.totalCost += cost;
+    } else {
+      // ✅ عامل حاضر فعلياً لكن بلا تعيين مطعم لذلك اليوم — يُعرض في فئة "غير محدد" منفصلة
+      unassignedWorkerIds.add(row.workerId);
+      unassignedCost += cost;
+    }
+  }
+
+  const restaurantsResult = Array.from(byRestaurant.values())
+    .map(r => ({
+      restaurantId: r.restaurantId,
+      restaurantName: r.restaurantName,
+      workerCount: r.workerIds.size,
+      totalCost: Math.round(r.totalCost * 100) / 100,
+    }))
+    .sort((a, b) => b.totalCost - a.totalCost);
+
+  return {
+    restaurants: restaurantsResult,
+    unassigned: unassignedWorkerIds.size > 0 ? {
+      workerCount: unassignedWorkerIds.size,
+      totalCost: Math.round(unassignedCost * 100) / 100,
+    } : null,
+  };
 }
 
 // ============================================

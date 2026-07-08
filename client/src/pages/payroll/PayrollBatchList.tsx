@@ -98,6 +98,7 @@ export default function PayrollBatchList() {
         <TableHeader>
           <TableRow>
             <TableHead>رقم الدفعة</TableHead>
+            <TableHead className="w-[480px]">العنوان</TableHead>
             <TableHead>مركز التكلفة</TableHead>
             <TableHead>الفترة</TableHead>
             <TableHead className="hidden">عدد العمال</TableHead>
@@ -111,6 +112,9 @@ export default function PayrollBatchList() {
           {batches.map((batch) => (
             <TableRow key={batch.id}>
               <TableCell className="font-medium">{batch.batchCode}</TableCell>
+              <TableCell className="w-[480px] whitespace-normal break-words leading-snug text-[9.8px]">
+                {batch.groupNames || "-"}
+              </TableCell>
               <TableCell>{batch.costCenterName}</TableCell>
               <TableCell>
                 {new Date(batch.periodStart).toLocaleDateString("ar-SA")} -{" "}
