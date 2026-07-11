@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
@@ -14,6 +14,7 @@ export default function PayrollBatchCreateSimple() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [refreshFinanceRecords, setRefreshFinanceRecords] = useState(true); // ✅ تفعيل إعادة الحساب تلقائياً
+  const [pendingGroupIdFromLink, setPendingGroupIdFromLink] = useState<number | null>(null);
 
   const { data: costCenters } = trpc.costCenters.list.useQuery();
   const { data: costCenterGroups } = trpc.groups.listByCostCenter.useQuery(
@@ -23,6 +24,29 @@ export default function PayrollBatchCreateSimple() {
   const { data: recentChanges } = trpc.groupSchedules.getRecentChanges.useQuery({ hoursThreshold: 24 });
   const { data: pendingFlagsCount } = (trpc as any).operationalDashboard?.getPendingCount?.useQuery?.() || { data: 0 };
   const hasPendingFlags = (pendingFlagsCount ?? 0) > 0;
+
+  // ✅ تعبئة تلقائية عند القدوم من "تقرير تغطية المجموعات" برابط يحتوي معاملات جاهزة
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qCostCenterId = params.get('costCenterId');
+    const qGroupId = params.get('groupId');
+    const qPeriodStart = params.get('periodStart');
+    const qPeriodEnd = params.get('periodEnd');
+
+    if (qPeriodStart) setPeriodStart(qPeriodStart);
+    if (qPeriodEnd) setPeriodEnd(qPeriodEnd);
+    if (qCostCenterId) setCostCenterId(qCostCenterId);
+    if (qGroupId) setPendingGroupIdFromLink(parseInt(qGroupId));
+  }, []);
+
+  // بعد تحميل مجموعات مركز التكلفة المُعبَّأ تلقائياً، حدّد المجموعة المطلوبة تحديداً
+  useEffect(() => {
+    if (pendingGroupIdFromLink && costCenterGroups?.some((g: any) => g.id === pendingGroupIdFromLink)) {
+      setSelectedGroupIds([pendingGroupIdFromLink]);
+      setPendingGroupIdFromLink(null);
+    }
+  }, [costCenterGroups, pendingGroupIdFromLink]);
+
   // Auto-select all groups when cost center changes
   const handleCostCenterChange = (value: string) => {
     setCostCenterId(value);

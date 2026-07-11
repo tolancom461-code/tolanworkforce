@@ -1530,16 +1530,12 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   
   if (effectiveGroupId) {
     const [group] = await db.select().from(groups).where(eq(groups.id, effectiveGroupId)).limit(1);
-    console.log('🔍 DEBUG: effectiveGroupId =', effectiveGroupId);
-    console.log('🔍 DEBUG: group =', group);
     if (group) {
       if (group.dailyRate) {
         dailyRate = dailyRate || safeParseDecimal(group.dailyRate);
       }
       // Load group settings
-      console.log('🔍 DEBUG: group.dailyWage RAW =', group.dailyWage, 'TYPE =', typeof group.dailyWage);
       groupDailyWage = group.dailyWage ? safeParseDecimal(group.dailyWage) : null;
-      console.log('🔍 DEBUG: groupDailyWage PARSED =', groupDailyWage);
       groupWorkMinutes = safeParseInt(group.workMinutes);
       groupLatePenaltyRate = group.latePenaltyRate ? safeParseDecimal(group.latePenaltyRate) : null;
       groupEarlyLeavePenaltyRate = group.earlyLeavePenaltyRate ? safeParseDecimal(group.earlyLeavePenaltyRate) : null;
@@ -1579,7 +1575,6 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
         const scheduleDailyRate = schedule.dailyRate ? safeParseDecimal(schedule.dailyRate) : null;
         if (scheduleDailyRate && scheduleDailyRate > 0) {
           groupDailyWage = scheduleDailyRate;
-          console.log('📅 مبلغ يومي مخصص من جدول الورديات: scheduleDailyRate =', scheduleDailyRate, 'ليوم', dayOfWeek);
         }
       }
     }
@@ -1636,11 +1631,8 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     const rawWorkMinutes = totalActualMinutes;
     
   // Base amount = fixed daily wage
-  console.log('🔍 DEBUG: Calculating baseAmount...');
-  console.log('🔍 DEBUG: groupDailyWage =', groupDailyWage, 'dailyRate =', dailyRate);
   if (groupDailyWage && groupDailyWage > 0) {
     baseAmount = groupDailyWage;
-    console.log('🔍 DEBUG: baseAmount = groupDailyWage =', baseAmount);
     } else if (dailyRate > 0) {
       baseAmount = dailyRate;
     }
@@ -1760,14 +1752,10 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     actualWorkMinutes = 0;
   } else if (checkIn && !checkOut) {
     // ✅ Has check-in but no check-out yet → Worker is present, give full daily wage
-    console.log('🔍 DEBUG: Worker has check-in but no check-out → giving full baseAmount');
-    console.log('🔍 DEBUG: groupDailyWage =', groupDailyWage, 'dailyRate =', dailyRate);
     if (groupDailyWage && groupDailyWage > 0) {
       baseAmount = groupDailyWage;
-      console.log('🔍 DEBUG: baseAmount = groupDailyWage =', baseAmount);
     } else if (dailyRate > 0) {
       baseAmount = dailyRate;
-      console.log('🔍 DEBUG: baseAmount = dailyRate =', baseAmount);
     }
     // No penalties can be calculated without check-out time
     actualWorkMinutes = 0;
@@ -2571,6 +2559,26 @@ export async function getAllFinancialReportsSummary(
 /**
  * Create a new payroll batch
  */
+/**
+ * عدّاد ذري آمن (atomic) للرقم التسلسلي السنوي لدفعات الرواتب.
+ * يستخدم نمط INSERT ... ON DUPLICATE KEY UPDATE + LAST_INSERT_ID() الآمن للتزامن في MySQL/TiDB،
+ * بحيث يستحيل فنياً أن تحصل دفعتان على نفس الرقم حتى لو أُنشئتا في نفس اللحظة بالضبط.
+ */
+async function getNextBatchSequence(year: number): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.execute(sql`
+    INSERT INTO payroll_batch_sequences (year, counter)
+    VALUES (${year}, 1)
+    ON DUPLICATE KEY UPDATE counter = LAST_INSERT_ID(counter + 1)
+  `);
+
+  const result: any = await db.execute(sql`SELECT LAST_INSERT_ID() as seq`);
+  const rows = Array.isArray(result) ? result[0] : (result.rows || result);
+  return Number(rows[0].seq);
+}
+
 export async function createPayrollBatch(params: {
   periodStart: string;
   periodEnd: string;
@@ -2728,31 +2736,14 @@ export async function createPayrollBatch(params: {
   // ✅ 1. توحيد التواريخ - تحويل إلى YYYY-MM-DD فقط
   const periodStartDate = params.periodStart.split('T')[0];
   const periodEndDate = params.periodEnd.split('T')[0];
-  // Generate batch code with format: Batch-YYYY-MM-SEQ-RAND
+  // ✅ ترقيم الدفعات الجديد: PR + آخر رقمين من السنة + رقم تسلسلي من 4 خانات (تصفير سنوي)
+  // مثال: أول دفعة في 2026 → PR260001، الدفعة رقم 25 في نفس السنة → PR260025
+  // يُستخدم عدّاد ذري آمن (getNextBatchSequence) لضمان عدم تكرار الرقم عند التزامن
   const now = new Date();
   const year = now.getFullYear();
-  const monthPad = String(now.getMonth() + 1).padStart(2, '0');
-  const batchCode = `Batch-${year}-${monthPad}`;
-  
-  // Get sequence number for this month
-  const monthStart = new Date(year, now.getMonth(), 1);
-  const monthEnd = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
-  
-  let allBatches: any[] = [];
-  try {
-    allBatches = await db.select().from(payrollBatches);
-  } catch (error) {
-    console.error('[createPayrollBatch] Error fetching batches:', error);
-    allBatches = [];
-  }
-  const batchesThisMonth = allBatches.filter(batch => {
-    const createdAt = new Date(batch.createdAt);
-    return createdAt >= monthStart && createdAt <= monthEnd;
-  });
-  const sequence = String(batchesThisMonth.length + 1).padStart(3, '0');
-  // Add random suffix to avoid collisions during concurrent test runs
-  const randSuffix = Math.random().toString(36).substring(2, 6);
-  const finalBatchCode = `${batchCode}-${sequence}-${randSuffix}`;
+  const yearShort = String(year).slice(-2);
+  const sequence = await getNextBatchSequence(year);
+  const finalBatchCode = `PR${yearShort}${String(sequence).padStart(4, '0')}`;
 
   // If items are empty, calculate from workerDailyFinance
   let batchItems: Array<{
@@ -9566,6 +9557,128 @@ export async function addWorkerFromOtherGroup(params: {
 // ============================================
 // المطاعم (Restaurants) - إدارة القائمة الأساسية
 // ============================================
+
+// ============================================
+// تقرير تغطية المجموعات (المجموعات التي فاتها إنشاء دفعة رواتب)
+// ============================================
+
+/**
+ * لكل مجموعة لديها حضور فعلي: يقارن "آخر يوم شملته أي دفعة رواتب" بـ"آخر يوم حضور فعلي مسجَّل"
+ * ويعرض فقط المجموعات التي لديها فجوة (أيام عمل حقيقية لم تُدرج بعد في أي دفعة).
+ * إذا لم يُنشأ لها أي دفعة إطلاقاً من قبل، تُحسب الفجوة من أول يوم حضور مسجَّل لها في النظام.
+ */
+export async function getGroupCoverageReport(filters?: {
+  startDate?: string;
+  endDate?: string;
+  groupId?: number;
+  costCenterId?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const groupConditions = [];
+  if (filters?.groupId) groupConditions.push(eq(groups.id, filters.groupId));
+  if (filters?.costCenterId) groupConditions.push(eq(groups.costCenterId, filters.costCenterId));
+
+  const allGroups = await db
+    .select({
+      id: groups.id,
+      name: groups.name,
+      costCenterId: groups.costCenterId,
+      costCenterName: costCenters.name,
+    })
+    .from(groups)
+    .leftJoin(costCenters, eq(groups.costCenterId, costCenters.id))
+    .where(groupConditions.length > 0 ? and(...groupConditions) : undefined);
+
+  if (allGroups.length === 0) return [];
+
+  const groupIds = allGroups.map(g => g.id);
+
+  // ✅ كل فترات كل الدفعات (غير المرفوضة نهائياً) لكل مجموعة — وليس آخر دفعة فقط
+  const batchRows = await db
+    .select({
+      groupId: payrollBatchItems.groupId,
+      periodStart: payrollBatches.periodStart,
+      periodEnd: payrollBatches.periodEnd,
+    })
+    .from(payrollBatchItems)
+    .innerJoin(payrollBatches, eq(payrollBatchItems.batchId, payrollBatches.id))
+    .where(
+      and(
+        inArray(payrollBatchItems.groupId, groupIds),
+        ne(payrollBatches.status, 'rejected_final')
+      )
+    );
+
+  const batchRangesByGroup = new Map<number, Array<{ start: string; end: string }>>();
+  for (const row of batchRows) {
+    if (!row.groupId) continue;
+    const ranges = batchRangesByGroup.get(row.groupId) || [];
+    ranges.push({ start: row.periodStart, end: row.periodEnd });
+    batchRangesByGroup.set(row.groupId, ranges);
+  }
+
+  // كل أيام الحضور الفعلي (فيها بصمة حضور حقيقية) لكل مجموعة، ضمن فترة الفلترة إن حُددت
+  const attendanceConditions = [
+    inArray(workers.groupId, groupIds),
+    isNotNull(workerDailyFinance.checkInTime),
+  ];
+  if (filters?.startDate) attendanceConditions.push(gte(workerDailyFinance.workDate, filters.startDate));
+  if (filters?.endDate) attendanceConditions.push(lte(workerDailyFinance.workDate, filters.endDate));
+
+  const attendanceRows = await db
+    .select({
+      groupId: workers.groupId,
+      workDate: workerDailyFinance.workDate,
+    })
+    .from(workerDailyFinance)
+    .innerJoin(workers, eq(workerDailyFinance.workerId, workers.id))
+    .where(and(...attendanceConditions));
+
+  const datesByGroup = new Map<number, Set<string>>();
+  for (const row of attendanceRows) {
+    if (!row.groupId) continue;
+    const dates = datesByGroup.get(row.groupId) || new Set<string>();
+    dates.add(row.workDate);
+    datesByGroup.set(row.groupId, dates);
+  }
+
+  // هل هذا اليوم مُغطى بأي دفعة (بغض النظر عن ترتيبها الزمني)؟
+  const isDateCovered = (ranges: Array<{ start: string; end: string }>, date: string) =>
+    ranges.some(r => date >= r.start && date <= r.end);
+
+  const results: Array<{
+    groupId: number;
+    groupName: string;
+    costCenterId: number | null;
+    costCenterName: string | null;
+    missingDates: string[]; // كل يوم فيه حضور فعلي ولم يُدرج ضمن أي دفعة، مرتب تصاعدياً
+  }> = [];
+
+  for (const g of allGroups) {
+    const dates = datesByGroup.get(g.id);
+    if (!dates || dates.size === 0) continue; // لا يوجد أي حضور لهذه المجموعة إطلاقاً — لا داعي لعرضها
+
+    const ranges = batchRangesByGroup.get(g.id) || [];
+    const missingDates = Array.from(dates)
+      .filter(d => !isDateCovered(ranges, d))
+      .sort((a, b) => a.localeCompare(b));
+
+    if (missingDates.length === 0) continue; // كل أيامها مُغطاة، لا داعي لعرضها
+
+    results.push({
+      groupId: g.id,
+      groupName: g.name,
+      costCenterId: g.costCenterId,
+      costCenterName: g.costCenterName,
+      missingDates,
+    });
+  }
+
+  results.sort((a, b) => b.missingDates.length - a.missingDates.length);
+  return results;
+}
 
 export async function getAllRestaurants(includeInactive = false) {
   const db = await getDb();

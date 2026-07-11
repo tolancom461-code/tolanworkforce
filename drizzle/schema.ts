@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, index, foreignKey, int, decimal, date, mysqlEnum, text, timestamp, varchar, tinyint, unique } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, index, foreignKey, int, decimal, date, mysqlEnum, text, timestamp, varchar, tinyint, unique, primaryKey } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 
 export const assignmentSettlements = mysqlTable("assignment_settlements", {
@@ -125,6 +125,14 @@ export const groupSchedules = mysqlTable("group_schedules", {
 },
 (table) => [
 	index("idx_group_day").on(table.groupId, table.dayOfWeek),
+]);
+
+export const payrollBatchSequences = mysqlTable("payroll_batch_sequences", {
+	year: int().notNull(),
+	counter: int().default(0).notNull(),
+},
+(table) => [
+	primaryKey({ columns: [table.year] }),
 ]);
 
 export const restaurants = mysqlTable("restaurants", {

@@ -75,6 +75,7 @@ const LazyPayrollBatches = lazy(() => import("./pages/PayrollBatches"));
 const LazyUsers = lazy(() => import("./pages/Users"));
 const LazyDashboard = lazy(() => import("./pages/Dashboard"));
 const LazyPayrollBatchList = lazy(() => import("./pages/payroll/PayrollBatchList"));
+const LazyGroupCoverageReport = lazy(() => import("./pages/payroll/GroupCoverageReport"));
 const LazyPayrollBatchCreateSimple = lazy(() => import("./pages/payroll/PayrollBatchCreateSimple"));
 const LazyPayrollBatchDetails = lazy(() => import("./pages/payroll/PayrollBatchDetails"));
 
@@ -223,6 +224,13 @@ function Router() {
         <ProtectedRoute>
           <LazyPage>
             <LazyPayrollBatchList />
+          </LazyPage>
+        </ProtectedRoute>
+      </Route>
+      <Route path="/payroll/batches/coverage">
+        <ProtectedRoute>
+          <LazyPage>
+            <LazyGroupCoverageReport />
           </LazyPage>
         </ProtectedRoute>
       </Route>

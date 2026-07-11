@@ -2632,6 +2632,18 @@ addFullSession: protectedProcedure
       .query(async ({ input }) => {
         return await db.getBatchesByStatus(input.status);
       }),
+
+    // تقرير تغطية المجموعات: المجموعات التي فاتها إنشاء دفعة رواتب حسب الحضور الفعلي
+    getGroupCoverageReport: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        groupId: z.number().optional(),
+        costCenterId: z.number().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await db.getGroupCoverageReport(input);
+      }),
     
     // Get batch details
     getDetails: protectedProcedure
