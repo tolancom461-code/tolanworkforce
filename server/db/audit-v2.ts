@@ -57,6 +57,21 @@ function redactSecrets<T>(input: T): T {
   return input;
 }
 
+
+function formatMySqlDateTime(value?: string | Date | null): string | null {
+  if (value === null || value === undefined) return null;
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 23).replace('T', ' ');
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value)) {
+    return value.replace('T', ' ').replace(/Z$/, '').slice(0, 23);
+  }
+
+  return value;
+}
+
 // ============================================================
 // لقطة هوية المنفذ (actor_snapshot) — FR-006
 // تُحفظ ثابتة وقت العملية، ولا تتأثر بتعديل حساب المستخدم لاحقاً.
@@ -231,7 +246,7 @@ export async function logAuditV2(params: LogAuditV2Params): Promise<{ eventUuid:
 
     await db.insert(auditLogV2).values({
       eventUuid,
-      businessEventAt: params.businessEventAt ?? null,
+      businessEventAt: formatMySqlDateTime(params.businessEventAt),
       actionCategory: params.actionCategory,
       actionName: params.actionName,
       description: params.description,
@@ -253,9 +268,9 @@ export async function logAuditV2(params: LogAuditV2Params): Promise<{ eventUuid:
       changedFields,
       reasonCode: params.reasonCode ?? null,
       reasonText: params.reasonText ?? null,
-      recordCreatedAt: params.recordCreatedAt ?? null,
-      recordUpdatedAt: params.recordUpdatedAt ?? null,
-      recordDeletedAt: params.recordDeletedAt ?? null,
+      recordCreatedAt: formatMySqlDateTime(params.recordCreatedAt),
+      recordUpdatedAt: formatMySqlDateTime(params.recordUpdatedAt),
+      recordDeletedAt: formatMySqlDateTime(params.recordDeletedAt),
       metadata: params.metadata ?? null,
       legacyAuditId: params.legacyAuditId ?? null,
       rowHash,

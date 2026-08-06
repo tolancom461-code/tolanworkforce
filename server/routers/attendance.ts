@@ -505,7 +505,7 @@ addFullSession: protectedProcedure
             afterValues: null,
             reasonText: input.reason,
             businessEventAt: typeof oldEvent.eventTime === 'string' ? oldEvent.eventTime : new Date(oldEvent.eventTime).toISOString(),
-            recordDeletedAt: new Date().toISOString(),
+            recordDeletedAt: new Date().toISOString().slice(0, 23).replace('T', ' '),
             tx,
           });
         });

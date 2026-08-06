@@ -217,6 +217,7 @@ export async function getDb() {
           idleTimeout: 60000,        // Close idle connections after 60s
           enableKeepAlive: true,     // Keep connections alive
           keepAliveInitialDelay: 30000, // First keepalive after 30s
+          dateStrings: true,
         }
       });
       console.log('[Database] Connection pool initialized (limit: 5, idle timeout: 60s)');

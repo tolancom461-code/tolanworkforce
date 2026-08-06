@@ -4,7 +4,8 @@ process.env.TZ = 'Asia/Riyadh';
 
 import express from "express";
 import { sql } from "drizzle-orm";
-import { createServer } from "http";
+import { createServer } from "https";
+import fs from "fs";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
@@ -53,7 +54,7 @@ function startMemoryLogging() {
 
 async function startServer() {
   const app = express();
-  const server = createServer(app);
+  const server = createServer({ key: fs.readFileSync("/app/certs/key.pem"), cert: fs.readFileSync("/app/certs/cert.pem") }, app);
 
   // ==========================================
   // SECURITY MIDDLEWARE
