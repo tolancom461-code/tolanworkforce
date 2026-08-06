@@ -1,0 +1,15 @@
+services:
+  hr-app:
+    build: .
+    container_name: hr-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8081:3000"
+    networks:
+      - default
+      - hr-db_default
+networks:
+  hr-db_default:
+    external: true
