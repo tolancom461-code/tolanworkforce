@@ -109,8 +109,8 @@ const ROLE_LABELS: Record<string, string> = {
   finance_manager: 'المدير المالي',
   guard: 'حارس',
   executive: 'الإدارة العليا',
-  supervisor_tolan: 'مشرف طولان',
-  supervisor_malqa: 'مشرف ملقا',
+  supervisor_tolan: 'موظف تشغيل تولان',
+  supervisor_malqa: 'موظف تشغيل الملقا',
   data_entry: 'مدخل بيانات',
 };
 

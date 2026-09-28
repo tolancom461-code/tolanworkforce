@@ -26,8 +26,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { SelectSkeleton, FilterSkeleton } from "@/components/SkeletonLoader";
 
+const ALL_BATCHES_PAGE_SIZE = 20;
+
 export default function PayrollBatchList() {
   const [activeTab, setActiveTab] = useState("all");
+  const [allPage, setAllPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     costCenterId: undefined as number | undefined,
@@ -46,15 +49,15 @@ export default function PayrollBatchList() {
   if (filters.startDate) queryParams.startDate = filters.startDate;
   if (filters.endDate) queryParams.endDate = filters.endDate;
   
-  const { data: paginatedBatches, isLoading: loadingAll } = trpc.payroll.listBatches.useQuery({
+  const { data: allBatches, isLoading: loadingAll } = trpc.payroll.listBatches.useQuery({
     ...queryParams,
-    page: 1,
-    limit: 100,
+    page: allPage,
+    limit: ALL_BATCHES_PAGE_SIZE,
   });
-  const allBatches = paginatedBatches?.data || [];
   const { data: draftBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "draft", ...queryParams });
-  const { data: pendingBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "under_accountant_review", ...queryParams });
-  const { data: approvedBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "approved", ...queryParams });
+  const { data: accountantReviewBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "under_accountant_review", ...queryParams });
+  const { data: financialReviewBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "under_financial_review", ...queryParams });
+  const { data: finalApprovalBatches } = trpc.payroll.listBatchesByStatus.useQuery({ status: "under_accounts_manager_review", ...queryParams });
 
   const deleteMutation = trpc.payroll.deleteBatch.useMutation({
     onSuccess: () => {
@@ -156,7 +159,7 @@ export default function PayrollBatchList() {
                     <Link href={`/payroll/batches/${batch.id}/manager-review`}>
                       <Button size="sm">
                         <Eye className="h-4 w-4 ml-2" />
-                        اعتماد مدير الحسابات
+                        اعتماد المدير المالي
                       </Button>
                     </Link>
                   )}
@@ -219,6 +222,7 @@ export default function PayrollBatchList() {
                       ...filters,
                       costCenterId: value === "all" ? undefined : Number(value),
                     });
+                    setAllPage(1);
                   }}
                 >
                   <SelectTrigger>
@@ -242,7 +246,10 @@ export default function PayrollBatchList() {
                 <Input
                   type="date"
                   value={filters.startDate}
-                  onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                  onChange={(e) => {
+                    setFilters({ ...filters, startDate: e.target.value });
+                    setAllPage(1);
+                  }}
                 />
               </div>
 
@@ -252,7 +259,10 @@ export default function PayrollBatchList() {
                 <Input
                   type="date"
                   value={filters.endDate}
-                  onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                  onChange={(e) => {
+                    setFilters({ ...filters, endDate: e.target.value });
+                    setAllPage(1);
+                  }}
                 />
               </div>
             </div>
@@ -268,6 +278,7 @@ export default function PayrollBatchList() {
                     startDate: "",
                     endDate: "",
                   });
+                  setAllPage(1);
                 }}
               >
                 إعادة تعيين الفلاتر
@@ -278,11 +289,12 @@ export default function PayrollBatchList() {
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">الكل ({allBatches?.length || 0})</TabsTrigger>
+        <TabsList className="w-full">
+          <TabsTrigger value="all">الكل</TabsTrigger>
           <TabsTrigger value="draft">المسودات ({draftBatches?.length || 0})</TabsTrigger>
-          <TabsTrigger value="pending">قيد المراجعة ({pendingBatches?.length || 0})</TabsTrigger>
-          <TabsTrigger value="approved">المعتمدة ({approvedBatches?.length || 0})</TabsTrigger>
+          <TabsTrigger value="accountant-review">المراجعة المحاسبية ({accountantReviewBatches?.length || 0})</TabsTrigger>
+          <TabsTrigger value="financial-review">المراجعة المالية ({financialReviewBatches?.length || 0})</TabsTrigger>
+          <TabsTrigger value="final-approval">الاعتماد النهائي ({finalApprovalBatches?.length || 0})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all">
@@ -290,7 +302,38 @@ export default function PayrollBatchList() {
             <CardHeader>
               <CardTitle>جميع الدفعات</CardTitle>
             </CardHeader>
-            <CardContent>{renderBatchTable(allBatches, true)}</CardContent>
+            <CardContent>
+              {renderBatchTable(allBatches?.data, true)}
+              {(allBatches?.totalPages || 0) > 1 && (
+                <div className="mt-4 flex items-center justify-between gap-4 border-t pt-4">
+                  <div className="text-sm text-muted-foreground">
+                    الصفحة {allBatches?.page || 1} من {allBatches?.totalPages || 1}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAllPage((page) => Math.max(1, page - 1))}
+                      disabled={(allBatches?.page || 1) <= 1}
+                    >
+                      السابق
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setAllPage((page) =>
+                          Math.min(allBatches?.totalPages || 1, page + 1)
+                        )
+                      }
+                      disabled={(allBatches?.page || 1) >= (allBatches?.totalPages || 1)}
+                    >
+                      التالي
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
 
@@ -303,21 +346,30 @@ export default function PayrollBatchList() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="pending">
+        <TabsContent value="accountant-review">
           <Card>
             <CardHeader>
-              <CardTitle>قيد المراجعة</CardTitle>
+              <CardTitle>المراجعة المحاسبية</CardTitle>
             </CardHeader>
-            <CardContent>{renderBatchTable(pendingBatches)}</CardContent>
+            <CardContent>{renderBatchTable(accountantReviewBatches)}</CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="approved">
+        <TabsContent value="financial-review">
           <Card>
             <CardHeader>
-              <CardTitle>المعتمدة</CardTitle>
+              <CardTitle>المراجعة المالية</CardTitle>
             </CardHeader>
-            <CardContent>{renderBatchTable(approvedBatches)}</CardContent>
+            <CardContent>{renderBatchTable(financialReviewBatches)}</CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="final-approval">
+          <Card>
+            <CardHeader>
+              <CardTitle>الاعتماد النهائي</CardTitle>
+            </CardHeader>
+            <CardContent>{renderBatchTable(finalApprovalBatches)}</CardContent>
           </Card>
         </TabsContent>
       </Tabs>

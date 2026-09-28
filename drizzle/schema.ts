@@ -490,18 +490,42 @@ export const payrollBatchSequences = mysqlTable("payroll_batch_sequences", {
 	primaryKey({ columns: [table.year] }),
 ]);
 
+export const operationalDepartments = mysqlTable("operational_departments", {
+	id: int().autoincrement().notNull(),
+	name: varchar({ length: 255 }).notNull(),
+	isActive: tinyint("is_active").default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	uniqueIndex("uq_operational_departments_name").on(table.name),
+]);
+
 export const restaurants = mysqlTable("restaurants", {
 	id: int().autoincrement().notNull(),
 	name: varchar({ length: 255 }).notNull(),
+	// المرحلة الأولى للتشغيل: الجدول التاريخي للمطاعم أصبح يمثل موقع تشغيل مرتبطاً بمركز تكلفة.
+	costCenterId: int("cost_center_id").references(() => costCenters.id, { onDelete: "set null", onUpdate: "cascade" } ),
+	// تصنيف تشغيلي مرن (مطاعم / نظافة / ألعاب / ...). لا يدخل في حساب الرواتب.
+	operationalDepartmentId: int("operational_department_id").references(() => operationalDepartments.id, { onDelete: "set null", onUpdate: "cascade" } ),
+	// حقل تاريخي للتوافق مع البيانات والتقارير السابقة. المواقع الجديدة تُنشأ كـ site.
+	siteType: mysqlEnum("site_type", ['restaurant','site']).default('restaurant').notNull(),
 	isActive: tinyint("is_active").default(1),
 	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-});
+},
+(table) => [
+	index("idx_restaurants_cost_center").on(table.costCenterId),
+	index("idx_restaurants_operational_department").on(table.operationalDepartmentId),
+]);
 
 export const dailyWorkAssignments = mysqlTable("daily_work_assignments", {
 	id: int().autoincrement().notNull(),
 	workerId: int("worker_id").notNull().references(() => workers.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	restaurantId: int("restaurant_id").notNull().references(() => restaurants.id, { onDelete: "restrict", onUpdate: "cascade" } ),
+	// Snapshot تشغيلي للمجموعة التي ظهر تحتها العامل، والمجموعة المنقول إليها إن وجدت.
+	sourceGroupId: int("source_group_id").references(() => groups.id, { onDelete: "set null", onUpdate: "cascade" } ),
+	operationalGroupId: int("operational_group_id").references(() => groups.id, { onDelete: "set null", onUpdate: "cascade" } ),
 	// you can use { mode: 'date' }, if you want to have Date as type for this column
 	workDate: date("work_date", { mode: 'string' }).notNull(),
 	assignedBy: int("assigned_by").references(() => users.id, { onDelete: "set null", onUpdate: "cascade" } ),
@@ -511,7 +535,66 @@ export const dailyWorkAssignments = mysqlTable("daily_work_assignments", {
 (table) => [
 	index("idx_dwa_restaurant_date").on(table.restaurantId, table.workDate),
 	index("idx_dwa_date").on(table.workDate),
+	index("idx_dwa_source_group_date").on(table.sourceGroupId, table.workDate),
+	index("idx_dwa_operational_group_date").on(table.operationalGroupId, table.workDate),
 	unique("uq_worker_workdate").on(table.workerId, table.workDate),
+]);
+
+// ============================================
+// إغلاق اليوم التشغيلي واعتماد توزيعات العمال
+// بدأ تطبيق هذه الدورة من 2026-09-16؛ الأيام الأقدم تبقى تاريخية ولا تتأثر.
+// ============================================
+export const operationalDays = mysqlTable("operational_days", {
+	id: int().autoincrement().notNull(),
+	workDate: date("work_date", { mode: 'string' }).notNull(),
+	// الإغلاق التشغيلي مستقل لكل مركز تكلفة في نفس التاريخ.
+	costCenterId: int("cost_center_id").references(() => costCenters.id, { onDelete: "restrict", onUpdate: "cascade" } ),
+	status: mysqlEnum(['open','closed']).default('open').notNull(),
+	// يزداد عند كل إعادة فتح. revision = 0 يعني أن اليوم لم يُعد فتحه بعد.
+	revision: int().default(0).notNull(),
+	closedBy: int("closed_by").references(() => users.id, { onDelete: "set null", onUpdate: "cascade" } ),
+	closedAt: timestamp("closed_at", { mode: 'string' }),
+	reopenedBy: int("reopened_by").references(() => users.id, { onDelete: "set null", onUpdate: "cascade" } ),
+	reopenedAt: timestamp("reopened_at", { mode: 'string' }),
+	reopenReason: varchar("reopen_reason", { length: 500 }),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	uniqueIndex("uq_operational_days_date_cost_center").on(table.workDate, table.costCenterId),
+	index("idx_operational_days_status_date").on(table.status, table.workDate),
+	index("idx_operational_days_status_date_cost_center").on(table.status, table.workDate, table.costCenterId),
+	index("idx_operational_days_cost_center").on(table.costCenterId),
+]);
+
+export const operationalDayEvents = mysqlTable("operational_day_events", {
+	id: int().autoincrement().notNull(),
+	workDate: date("work_date", { mode: 'string' }).notNull(),
+	// نطاق الحدث هو نفس مركز التكلفة الذي يملك إغلاق اليوم.
+	costCenterId: int("cost_center_id").references(() => costCenters.id, { onDelete: "restrict", onUpdate: "cascade" } ),
+	eventType: mysqlEnum("event_type", ['closed','reopened','assignment_changed','group_called','emergency_called','games_closed','restaurants_closed']).notNull(),
+	// مفتاح ثابت للسجلات التشغيلية النهائية؛ يبقى NULL لأحداث الإغلاق/إعادة الفتح التاريخية.
+	eventKey: varchar("event_key", { length: 100 }),
+	revision: int().default(0).notNull(),
+	groupId: int("group_id").references(() => groups.id, { onDelete: "set null", onUpdate: "cascade" } ),
+	workerId: int("worker_id").references(() => workers.id, { onDelete: "set null", onUpdate: "cascade" } ),
+	actorUserId: int("actor_user_id").references(() => users.id, { onDelete: "set null", onUpdate: "cascade" } ),
+	// الوقت الفعلي للحدث. work_date يبقى تاريخ اليوم التشغيلي حتى لو وقع الحدث بعد منتصف الليل.
+	eventAt: datetime("event_at", { mode: 'string' }),
+	beforeValues: json("before_values"),
+	afterValues: json("after_values"),
+	note: varchar({ length: 500 }),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+},
+(table) => [
+	index("idx_operational_day_events_date_revision").on(table.workDate, table.revision),
+	index("idx_operational_day_events_date_cost_center_revision").on(table.workDate, table.costCenterId, table.revision),
+	index("idx_operational_day_events_cost_center").on(table.costCenterId),
+	index("idx_operational_day_events_group").on(table.groupId),
+	index("idx_operational_day_events_worker").on(table.workerId),
+	index("idx_operational_day_events_event_at").on(table.eventAt),
+	index("idx_operational_day_events_actor").on(table.actorUserId),
+	uniqueIndex("uq_operational_day_events_final_record").on(table.workDate, table.costCenterId, table.eventKey),
 ]);
 
 export const groups = mysqlTable("groups", {
@@ -530,6 +613,7 @@ export const groups = mysqlTable("groups", {
 	latePenaltyRate: decimal("late_penalty_rate", { precision: 5, scale: 2 }),
 	earlyLeavePenaltyRate: decimal("early_leave_penalty_rate", { precision: 5, scale: 2 }),
 	isFlexibleSchedule: tinyint("is_flexible_schedule").default(0),
+	isOperationalAssignmentExempt: tinyint("is_operational_assignment_exempt").default(0).notNull(),
 	requiredHours: decimal("required_hours", { precision: 4, scale: 2 }).default('8.00'),
 },
 (table) => [
@@ -820,12 +904,27 @@ export const userCostCenters = mysqlTable("user_cost_centers", {
 	id: int().autoincrement().notNull(),
 	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" } ),
 	costCenterId: int("cost_center_id").notNull().references(() => costCenters.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	// 1 = المستخدم يرى جميع مجموعات المركز (بما فيها أي مجموعة تضاف لاحقاً).
+	// 0 = المستخدم يرى فقط المجموعات المحددة في user_operation_groups.
+	allGroups: tinyint("all_groups").default(1).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 },
 (table) => [
 	index("idx_user_cc_user_id").on(table.userId),
 	index("idx_user_cc_cost_center_id").on(table.costCenterId),
 	index("idx_user_cc_unique").on(table.userId, table.costCenterId),
+]);
+
+export const userOperationGroups = mysqlTable("user_operation_groups", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	groupId: int("group_id").notNull().references(() => groups.id, { onDelete: "cascade", onUpdate: "cascade" } ),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+},
+(table) => [
+	index("idx_user_operation_groups_user").on(table.userId),
+	index("idx_user_operation_groups_group").on(table.groupId),
+	uniqueIndex("uq_user_operation_groups_user_group").on(table.userId, table.groupId),
 ]);
 
 export const userPermissions = mysqlTable("user_permissions", {

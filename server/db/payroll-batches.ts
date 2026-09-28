@@ -25,7 +25,8 @@ import {
   pushSubscriptions,
   restaurants,
   dailyWorkAssignments,
-  deductionEntries
+  deductionEntries,
+  operationalDayEvents
 } from "../../drizzle/schema";
 import { sendNotification, sendNotificationToRoles, notifyStageAndAdmins, ADMIN_OWNER_ROLES } from '../notifications';
 import { getRoleLabel } from '../permissions';
@@ -39,6 +40,7 @@ import { getDailyFinanceRecords } from './finance-entries';
 import { cleanupOrphanFinanceRecords } from './daily-finance-entries';
 import { getEffectiveGroupForWorkerOnDate } from './recalculation';
 import { getActorLabel } from './_shared';
+import { aggregatePayrollDataByCostCenter } from './auto-finance';
 
 // ============================================
 // Payroll Batch Functions (دفعات العمال)
@@ -246,85 +248,36 @@ export async function createPayrollBatch(params: {
   
   // ✅ FIX: عندما يكون refreshFinanceRecords=true، نعيد قراءة البيانات من قاعدة البيانات
   // بعد إعادة الحساب بدلاً من استخدام القيم القديمة المرسلة من الواجهة
-  const shouldReadFromDB = !params.items || params.items.length === 0 || params.refreshFinanceRecords === true;
+  const shouldReadFromDB = !!params.costCenterId || !params.items || params.items.length === 0 || params.refreshFinanceRecords === true;
   
   if (shouldReadFromDB) {
     console.log('[createPayrollBatch] Reading fresh finance data from DB (refreshFinanceRecords=' + params.refreshFinanceRecords + ', items.length=' + (params.items?.length || 0) + ')');
     
-    // ✅ NEW: تجميع العمال حسب effective_group_id من السجلات المالية
+    // Phase 2: cost-center batches are built from daily effective-group decisions.
     if (params.costCenterId) {
-      console.log(`[createPayrollBatch] Using effective_group_id logic for CC ${params.costCenterId}`);
-      
-      // 1. جلب جميع المجموعات في مركز التكلفة هذا
-      const groupsInCC = await db.select({ id: groups.id }).from(groups).where(eq(groups.costCenterId, params.costCenterId));
-      const allGroupIdsInCC = groupsInCC.map(g => g.id);
-      // ✅ فلترة حسب المجموعات المختارة إن وُجدت
-      const groupIdsInCC = params.groupIds && params.groupIds.length > 0
-        ? allGroupIdsInCC.filter(id => params.groupIds!.includes(id))
-        : allGroupIdsInCC;
-      
-      if (groupIdsInCC.length > 0) {
-        // 2. جلب السجلات المالية التي effective_group_id تنتمي لهذا المركز
-        const financeRecords = await db
-          .select({
-            workerId: workerDailyFinance.workerId,
-            baseAmount: workerDailyFinance.baseAmount,
-            deductions: workerDailyFinance.deductions,
-            bonuses: workerDailyFinance.bonuses,
-            netAmount: workerDailyFinance.netAmount,
-            effectiveGroupId: workerDailyFinance.effectiveGroupId,
-          })
-          .from(workerDailyFinance)
-          .where(
-            and(
-              sql`${workerDailyFinance.workDate} >= ${periodStartDate}`,
-              sql`${workerDailyFinance.workDate} <= ${periodEndDate}`,
-              inArray(workerDailyFinance.effectiveGroupId, groupIdsInCC)
-            )
-          );
-        
-        // 3. تجميع حسب العامل
-        const workerMap = new Map<number, { baseAmount: number; deductions: number; bonuses: number; netAmount: number; daysWorked: number; groupId: number | null }>();
-        
-        for (const rec of financeRecords) {
-          const existing = workerMap.get(rec.workerId);
-          const base = parseFloat(rec.baseAmount || '0');
-          const ded = parseFloat(rec.deductions || '0');
-          const bon = parseFloat(rec.bonuses || '0');
-          const net = parseFloat(rec.netAmount || '0');
-          
-          if (existing) {
-            existing.baseAmount += base;
-            existing.deductions += ded;
-            existing.bonuses += bon;
-            existing.netAmount += net;
-            existing.daysWorked += 1;
-            // استخدام آخر مجموعة فعالة
-            existing.groupId = rec.effectiveGroupId;
-          } else {
-            workerMap.set(rec.workerId, {
-              baseAmount: base,
-              deductions: ded,
-              bonuses: bon,
-              netAmount: net,
-              daysWorked: 1,
-              groupId: rec.effectiveGroupId,
-            });
-          }
-        }
-        
-        for (const [wId, data] of workerMap) {
-          batchItems.push({
-            workerId: wId,
-            groupId: data.groupId,
-            daysWorked: data.daysWorked,
-            baseAmount: data.baseAmount.toFixed(2),
-            totalDeductions: data.deductions.toFixed(2),
-            totalBonuses: data.bonuses.toFixed(2),
-            netAmount: data.netAmount.toFixed(2),
-          });
-          console.log(`[createPayrollBatch] Worker ${wId}: base=${data.baseAmount}, net=${data.netAmount}, days=${data.daysWorked}, group=${data.groupId}`);
-        }
+      console.log(`[createPayrollBatch] Using day-by-day effective group logic for CC ${params.costCenterId}`);
+
+      const aggregated = await aggregatePayrollDataByCostCenter(
+        params.costCenterId,
+        periodStartDate,
+        periodEndDate,
+        params.groupIds
+      );
+
+      batchItems = aggregated.map((item) => ({
+        workerId: item.workerId,
+        groupId: item.groupId,
+        daysWorked: item.daysWorked,
+        baseAmount: item.baseAmount,
+        totalDeductions: item.deductions,
+        totalBonuses: item.bonuses,
+        netAmount: item.netAmount,
+      }));
+
+      for (const item of batchItems) {
+        console.log(
+          `[createPayrollBatch] Worker ${item.workerId}: base=${item.baseAmount}, net=${item.netAmount}, days=${item.daysWorked}, group=${item.groupId ?? 'mixed'}`
+        );
       }
     } else {
       // المسار الأصلي: بدون مركز تكلفة محدد
@@ -389,11 +342,41 @@ export async function createPayrollBatch(params: {
   // ✅ الحسومات الإدارية (شاشة "الحسومات"): نجلب كل حسم معتمد وغير مُرحّل بعد
   // ضمن فترة هذه الدفعة، لعمال هذه الدفعة تحديداً، وندمجه في حقل "الحسومات" الخاص بكل عامل
   const batchWorkerIds = batchItems.map((item) => item.workerId);
-  const approvedDeductions = await getApprovedUnpostedDeductionsForPeriod(
+  const approvedDeductionsForWorkers = await getApprovedUnpostedDeductionsForPeriod(
     batchWorkerIds,
     params.periodStart,
     params.periodEnd
   );
+
+  // A worker may belong to more than one cost center inside the same payroll period.
+  // Route each administrative deduction by its own due date so the deduction is posted
+  // to the batch that owns the worker on that exact day, not simply to whichever batch
+  // happens to be created first.
+  let approvedDeductions = approvedDeductionsForWorkers;
+  if (params.costCenterId && approvedDeductionsForWorkers.length > 0) {
+    const allowedGroupRows = await db
+      .select({ id: groups.id })
+      .from(groups)
+      .where(eq(groups.costCenterId, params.costCenterId));
+    const allowedGroupIds = new Set(
+      allowedGroupRows
+        .map((group) => group.id)
+        .filter((id) => !params.groupIds?.length || params.groupIds.includes(id))
+    );
+
+    const routedDeductions = await Promise.all(
+      approvedDeductionsForWorkers.map(async (deduction) => {
+        const effectiveGroupId = await getEffectiveGroupForWorkerOnDate(
+          deduction.workerId,
+          deduction.dueDate
+        );
+        return effectiveGroupId && allowedGroupIds.has(effectiveGroupId) ? deduction : null;
+      })
+    );
+    approvedDeductions = routedDeductions.filter(
+      (deduction): deduction is (typeof approvedDeductionsForWorkers)[number] => !!deduction
+    );
+  }
 
   const otherDeductionsByWorker = new Map<number, number>();
   for (const d of approvedDeductions) {
@@ -621,7 +604,11 @@ export async function getPayrollBatchDetails(batchId: number) {
       workerId: payrollBatchItems.workerId,
       workerCode: workers.code,
       workerName: sql<string>`COALESCE(${workers.fullName}, 'Unknown')`,
-      groupId: workers.groupId,
+      // Use the group stored on the payroll item because it represents the
+      // effective payroll group used when this batch was created. For legacy
+      // items that predate group_id population, fall back to the worker's
+      // current/base group so older batches keep their existing display.
+      groupId: sql<number | null>`COALESCE(${payrollBatchItems.groupId}, ${workers.groupId})`,
       groupName: sql<string>`COALESCE(${groups.name}, 'Unknown')`,
       daysWorked: payrollBatchItems.daysWorked,
       baseAmount: payrollBatchItems.baseAmount,
@@ -632,50 +619,121 @@ export async function getPayrollBatchDetails(batchId: number) {
     })
     .from(payrollBatchItems)
     .leftJoin(workers, eq(payrollBatchItems.workerId, workers.id))
-    .leftJoin(groups, eq(workers.groupId, groups.id))
+    .leftJoin(
+      groups,
+      eq(sql`COALESCE(${payrollBatchItems.groupId}, ${workers.groupId})`, groups.id)
+    )
     .where(eq(payrollBatchItems.batchId, batchId));
 
-  // ✅ مجموع دقائق التأخير والخروج المبكر لكل عامل خلال فترة الدفعة
+  // ✅ إحصاءات الحضور والمواقع يجب أن تتبع الأيام التي دخلت فعلياً في هذه الدفعة.
+  // دفعة مركز تكلفة قد تحتوي عاملاً نُقل بين مراكز خلال نفس الفترة؛ لذلك لا يجوز
+  // جمع كل أيام العامل في الفترة وعرض مواقع/دقائق تخص مركزاً آخر.
   let itemsWithAttendanceStats = items;
+  let scopedDatesByWorker = new Map<number, Set<string>>();
+
   if (items.length > 0) {
     const workerIds = items.map(i => i.workerId).filter((id): id is number => id !== null);
+
     if (workerIds.length > 0) {
-      const attendanceStats = await db
-        .select({
-          workerId: workerDailyFinance.workerId,
-          totalLateMinutes: sql<number>`COALESCE(SUM(${workerDailyFinance.lateMinutes}), 0)`,
-          totalEarlyLeaveMinutes: sql<number>`COALESCE(SUM(${workerDailyFinance.earlyLeaveMinutes}), 0)`,
-        })
-        .from(workerDailyFinance)
-        .where(
-          and(
-            inArray(workerDailyFinance.workerId, workerIds),
-            gte(workerDailyFinance.workDate, batch.periodStart),
-            lte(workerDailyFinance.workDate, batch.periodEnd)
+      if (batch.costCenterId || batch.groupId) {
+        // effective_group_id هو نفس الجسر اليومي الذي بُنيت منه دفعات مراكز التكلفة.
+        // نستخدم مجموعة العامل الأساسية كـ fallback للسجلات التاريخية التي سبقت تعبئة الحقل.
+        const financeEffectiveGroupId = sql<number | null>`COALESCE(${workerDailyFinance.effectiveGroupId}, ${workers.groupId})`;
+        const financeRows = await db
+          .select({
+            workerId: workerDailyFinance.workerId,
+            workDate: workerDailyFinance.workDate,
+            effectiveGroupId: financeEffectiveGroupId,
+            effectiveCostCenterId: groups.costCenterId,
+            lateMinutes: workerDailyFinance.lateMinutes,
+            earlyLeaveMinutes: workerDailyFinance.earlyLeaveMinutes,
+          })
+          .from(workerDailyFinance)
+          .leftJoin(workers, eq(workerDailyFinance.workerId, workers.id))
+          .leftJoin(groups, eq(financeEffectiveGroupId, groups.id))
+          .where(
+            and(
+              inArray(workerDailyFinance.workerId, workerIds),
+              gte(workerDailyFinance.workDate, batch.periodStart),
+              lte(workerDailyFinance.workDate, batch.periodEnd)
+            )
+          );
+
+        const itemByWorker = new Map(items.map(item => [item.workerId, item]));
+        const statsByWorker = new Map<number, { totalLateMinutes: number; totalEarlyLeaveMinutes: number }>();
+
+        for (const row of financeRows) {
+          const item = itemByWorker.get(row.workerId);
+          if (!item) continue;
+
+          // إذا كانت الدفعة مرتبطة بمجموعة واحدة صراحةً، فهذه هي الحدود الأدق.
+          // وإلا فدفعة مركز التكلفة تأخذ فقط الأيام التي كانت مجموعتها الفعالة تابعة لذلك المركز.
+          const belongsToBatch = batch.groupId
+            ? row.effectiveGroupId === batch.groupId
+            : batch.costCenterId
+              ? row.effectiveCostCenterId === batch.costCenterId
+              : true;
+
+          if (!belongsToBatch) continue;
+
+          const dates = scopedDatesByWorker.get(row.workerId) || new Set<string>();
+          dates.add(row.workDate);
+          scopedDatesByWorker.set(row.workerId, dates);
+
+          const stats = statsByWorker.get(row.workerId) || {
+            totalLateMinutes: 0,
+            totalEarlyLeaveMinutes: 0,
+          };
+          stats.totalLateMinutes += Number(row.lateMinutes || 0);
+          stats.totalEarlyLeaveMinutes += Number(row.earlyLeaveMinutes || 0);
+          statsByWorker.set(row.workerId, stats);
+        }
+
+        itemsWithAttendanceStats = items.map(item => ({
+          ...item,
+          lateMinutes: statsByWorker.get(item.workerId)?.totalLateMinutes || 0,
+          earlyLeaveMinutes: statsByWorker.get(item.workerId)?.totalEarlyLeaveMinutes || 0,
+        }));
+      } else {
+        // حافظ على سلوك الدفعات القديمة/العامة التي لم تكن مرتبطة بمركز أو مجموعة.
+        const attendanceStats = await db
+          .select({
+            workerId: workerDailyFinance.workerId,
+            totalLateMinutes: sql<number>`COALESCE(SUM(${workerDailyFinance.lateMinutes}), 0)`,
+            totalEarlyLeaveMinutes: sql<number>`COALESCE(SUM(${workerDailyFinance.earlyLeaveMinutes}), 0)`,
+          })
+          .from(workerDailyFinance)
+          .where(
+            and(
+              inArray(workerDailyFinance.workerId, workerIds),
+              gte(workerDailyFinance.workDate, batch.periodStart),
+              lte(workerDailyFinance.workDate, batch.periodEnd)
+            )
           )
-        )
-        .groupBy(workerDailyFinance.workerId);
+          .groupBy(workerDailyFinance.workerId);
 
-      const statsByWorker = new Map(
-        attendanceStats.map(s => [s.workerId, s])
-      );
-
-      itemsWithAttendanceStats = items.map(item => ({
-        ...item,
-        lateMinutes: statsByWorker.get(item.workerId)?.totalLateMinutes || 0,
-        earlyLeaveMinutes: statsByWorker.get(item.workerId)?.totalEarlyLeaveMinutes || 0,
-      }));
+        const statsByWorker = new Map(attendanceStats.map(s => [s.workerId, s]));
+        itemsWithAttendanceStats = items.map(item => ({
+          ...item,
+          lateMinutes: statsByWorker.get(item.workerId)?.totalLateMinutes || 0,
+          earlyLeaveMinutes: statsByWorker.get(item.workerId)?.totalEarlyLeaveMinutes || 0,
+        }));
+      }
     }
   }
 
-  // ✅ أسماء المطاعم المُعيَّنة لكل عامل خلال فترة الدفعة (لعرضها تلقائياً بدل الملاحظات اليدوية)
+  // ✅ أسماء مواقع التشغيل المعروضة في تفاصيل الدفعة تتبع نفس الأيام المالية الخاصة بالدفعة.
   let itemsWithRestaurants = itemsWithAttendanceStats;
   if (itemsWithAttendanceStats.length > 0) {
-    const workerIdsForRestaurants = itemsWithAttendanceStats.map((i: any) => i.workerId).filter((id: any): id is number => id !== null);
+    const workerIdsForRestaurants = itemsWithAttendanceStats
+      .map((i: any) => i.workerId)
+      .filter((id: any): id is number => id !== null);
+
     if (workerIdsForRestaurants.length > 0) {
       const restaurantRows = await db
         .selectDistinct({
           workerId: dailyWorkAssignments.workerId,
+          workDate: dailyWorkAssignments.workDate,
           restaurantName: restaurants.name,
         })
         .from(dailyWorkAssignments)
@@ -691,6 +749,14 @@ export async function getPayrollBatchDetails(batchId: number) {
       const restaurantNamesByWorker = new Map<number, string[]>();
       for (const row of restaurantRows) {
         if (!row.restaurantName) continue;
+
+        // في دفعات مراكز التكلفة/المجموعة نعرض الموقع فقط إذا كان تاريخ التعيين
+        // من الأيام التي دخلت فعلياً في البند المالي لهذه الدفعة.
+        if ((batch.costCenterId || batch.groupId)) {
+          const allowedDates = scopedDatesByWorker.get(row.workerId);
+          if (!allowedDates?.has(row.workDate)) continue;
+        }
+
         const list = restaurantNamesByWorker.get(row.workerId) || [];
         if (!list.includes(row.restaurantName)) list.push(row.restaurantName);
         restaurantNamesByWorker.set(row.workerId, list);
@@ -701,6 +767,77 @@ export async function getPayrollBatchDetails(batchId: number) {
         restaurantNames: (restaurantNamesByWorker.get(item.workerId) || []).join('، ') || null,
       }));
     }
+  }
+
+  // معلومات تشغيلية للعرض فقط داخل مسودة/تفاصيل الدفعة.
+  // لا تدخل هذه السجلات في أي حساب مالي أو حضور.
+  let groupCalls: Array<{ id: number; workDate: string; groupId: number | null; eventAt: string | null }> = [];
+  let emergencyCallsByWorker = new Map<number, Array<{
+    id: number;
+    workDate: string;
+    groupId: number | null;
+    eventAt: string | null;
+    reason: string | null;
+  }>>();
+
+  if (itemsWithRestaurants.length > 0) {
+    const itemGroupIds = new Set(
+      itemsWithRestaurants.map((item: any) => item.groupId).filter((id: any): id is number => !!id)
+    );
+    const itemWorkerIds = new Set(
+      itemsWithRestaurants.map((item: any) => item.workerId).filter((id: any): id is number => !!id)
+    );
+
+    const operationalRows = await db
+      .select({
+        id: operationalDayEvents.id,
+        workDate: operationalDayEvents.workDate,
+        eventType: operationalDayEvents.eventType,
+        groupId: operationalDayEvents.groupId,
+        workerId: operationalDayEvents.workerId,
+        eventAt: operationalDayEvents.eventAt,
+        note: operationalDayEvents.note,
+      })
+      .from(operationalDayEvents)
+      .where(
+        and(
+          gte(operationalDayEvents.workDate, batch.periodStart),
+          lte(operationalDayEvents.workDate, batch.periodEnd),
+          inArray(operationalDayEvents.eventType, ['group_called', 'emergency_called'])
+        )
+      )
+      .orderBy(operationalDayEvents.workDate, operationalDayEvents.eventAt, operationalDayEvents.id);
+
+    groupCalls = operationalRows
+      .filter((row) => row.eventType === 'group_called' && !!row.groupId && itemGroupIds.has(row.groupId))
+      .map((row) => ({
+        id: row.id,
+        workDate: row.workDate,
+        groupId: row.groupId,
+        eventAt: row.eventAt,
+      }));
+
+    for (const row of operationalRows) {
+      if (row.eventType !== 'emergency_called' || !row.workerId || !itemWorkerIds.has(row.workerId)) continue;
+      if (batch.costCenterId || batch.groupId) {
+        const allowedDates = scopedDatesByWorker.get(row.workerId);
+        if (allowedDates && !allowedDates.has(row.workDate)) continue;
+      }
+      const calls = emergencyCallsByWorker.get(row.workerId) || [];
+      calls.push({
+        id: row.id,
+        workDate: row.workDate,
+        groupId: row.groupId,
+        eventAt: row.eventAt,
+        reason: row.note || null,
+      });
+      emergencyCallsByWorker.set(row.workerId, calls);
+    }
+
+    itemsWithRestaurants = itemsWithRestaurants.map((item: any) => ({
+      ...item,
+      emergencyCalls: emergencyCallsByWorker.get(item.workerId) || [],
+    }));
   }
 
   // Get notes — مع الاسم الكامل لكاتب الملاحظة (وليس اسم المستخدم)
@@ -732,6 +869,7 @@ export async function getPayrollBatchDetails(batchId: number) {
     items: itemsWithRestaurants,
     notes,
     corrections,
+    operationalInfo: { groupCalls },
   };
 }
 

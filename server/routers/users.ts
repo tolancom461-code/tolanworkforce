@@ -142,6 +142,7 @@ export const usersRouter = router({
       .input(z.object({
         userId: z.number(),
         role: z.enum(['guard', 'supervisor_tolan', 'supervisor_malqa', 'admin_affairs', 'accountant', 'auditor', 'finance_manager', 'executive', 'super_admin', 'restaurant_operations', 'data_entry']),
+        reason: z.string().trim().min(1, 'سبب تغيير دور المستخدم إلزامي'),
       }))
       .use(requireRole('super_admin'))
       .mutation(async ({ input, ctx }) => {
@@ -158,7 +159,7 @@ export const usersRouter = router({
           tableName: 'users',
           recordId: input.userId,
           oldValues: oldUser ? { role: oldUser.role } : null,
-          newValues: { role: input.role },
+          newValues: { role: input.role, reason: input.reason },
         });
         return { success: true };
       }),
@@ -203,10 +204,65 @@ export const usersRouter = router({
         return { success: true };
       }),
     
+    // Assign operational cost centers + allowed groups to supervisor
+    assignOperationScope: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        scopes: z.array(z.object({
+          costCenterId: z.number(),
+          allGroups: z.boolean(),
+          groupIds: z.array(z.number()),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        const userRole = ctx.user.role as UserRole;
+        if (userRole !== 'super_admin' && userRole !== 'admin_affairs') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية تعيين نطاق مجموعات التشغيل' });
+        }
+
+        const before = await db.getUserOperationScope(input.userId);
+        const database = await db.getDb();
+        if (!database) throw new Error('Database not available');
+        await database.transaction(async (tx: any) => {
+          await db.assignUserOperationScope(input.userId, input.scopes, tx);
+          await db.logAudit({
+            userId: ctx.user!.id,
+            action: 'ASSIGN_OPERATION_GROUP_SCOPE',
+            tableName: 'users',
+            recordId: input.userId,
+            oldValues: { scopes: before },
+            newValues: { scopes: input.scopes },
+            tx,
+          });
+        });
+        return { success: true };
+      }),
+
+    getUserOperationScope: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        const role = String(ctx.user.role);
+        if (input.userId !== ctx.user.id && role !== 'super_admin' && role !== 'admin_affairs') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكنك عرض نطاق مجموعات مستخدم آخر' });
+        }
+        return await db.getUserOperationScope(input.userId);
+      }),
+
     // Get user's assigned cost centers
     getUserCostCenters: protectedProcedure
       .input(z.object({ userId: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
+        const role = String(ctx.user.role);
+        if (
+          input.userId !== ctx.user.id &&
+          role !== 'super_admin' &&
+          role !== 'admin_affairs'
+        ) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكنك عرض مراكز تكلفة مستخدم آخر' });
+        }
         return await db.getUserCostCenters(input.userId);
       }),
     

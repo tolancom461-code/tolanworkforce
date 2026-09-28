@@ -24,6 +24,7 @@ import {
   notifications,
   pushSubscriptions,
   restaurants,
+  operationalDepartments,
   dailyWorkAssignments
 } from "../../drizzle/schema";
 import { sendNotification, sendNotificationToRoles, notifyStageAndAdmins, ADMIN_OWNER_ROLES } from '../notifications';
@@ -155,54 +156,257 @@ export async function getGroupCoverageReport(filters?: {
   return results;
 }
 
-export async function getAllRestaurants(includeInactive = false) {
+export async function getAllOperationalDepartments(includeInactive = false) {
   const db = await getDb();
   if (!db) return [];
 
-  const conditions = includeInactive ? [] : [eq(restaurants.isActive, 1)];
-
   return await db
-    .select()
-    .from(restaurants)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(restaurants.name);
+    .select({
+      id: operationalDepartments.id,
+      name: operationalDepartments.name,
+      isActive: operationalDepartments.isActive,
+      createdAt: operationalDepartments.createdAt,
+      updatedAt: operationalDepartments.updatedAt,
+    })
+    .from(operationalDepartments)
+    .where(includeInactive ? undefined : eq(operationalDepartments.isActive, 1))
+    .orderBy(operationalDepartments.name);
 }
 
-export async function createRestaurant(name: string) {
+export async function createOperationalDepartment(name: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const trimmed = name.trim();
-  if (!trimmed) throw new Error("اسم المطعم مطلوب");
+  if (!trimmed) throw new Error("اسم القسم التشغيلي مطلوب");
 
   const existing = await db
-    .select()
-    .from(restaurants)
-    .where(eq(restaurants.name, trimmed))
+    .select({ id: operationalDepartments.id })
+    .from(operationalDepartments)
+    .where(eq(operationalDepartments.name, trimmed))
     .limit(1);
-  if (existing.length > 0) throw new Error("يوجد مطعم بنفس الاسم مسبقاً");
+  if (existing.length > 0) throw new Error("يوجد قسم تشغيلي بنفس الاسم مسبقاً");
 
-  const result = await db.insert(restaurants).values({ name: trimmed });
+  const result = await db.insert(operationalDepartments).values({ name: trimmed });
   return { id: (result as any).insertId, name: trimmed };
 }
 
-export async function updateRestaurant(id: number, params: { name?: string; isActive?: boolean }) {
+export async function updateOperationalDepartment(id: number, params: { name?: string; isActive?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const [current] = await db
+    .select()
+    .from(operationalDepartments)
+    .where(eq(operationalDepartments.id, id))
+    .limit(1);
+  if (!current) throw new Error("القسم التشغيلي غير موجود");
+
   const updateData: any = {};
-  if (params.name !== undefined) updateData.name = params.name.trim();
+  if (params.name !== undefined) {
+    const trimmed = params.name.trim();
+    if (!trimmed) throw new Error("اسم القسم التشغيلي مطلوب");
+    const duplicate = await db
+      .select({ id: operationalDepartments.id })
+      .from(operationalDepartments)
+      .where(and(eq(operationalDepartments.name, trimmed), ne(operationalDepartments.id, id)))
+      .limit(1);
+    if (duplicate.length > 0) throw new Error("يوجد قسم تشغيلي بنفس الاسم مسبقاً");
+    updateData.name = trimmed;
+  }
   if (params.isActive !== undefined) updateData.isActive = params.isActive ? 1 : 0;
 
-  await db.update(restaurants).set(updateData).where(eq(restaurants.id, id));
+  if (Object.keys(updateData).length > 0) {
+    await db.update(operationalDepartments).set(updateData).where(eq(operationalDepartments.id, id));
+  }
   return { success: true };
 }
+
+export async function deleteOperationalDepartment(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const linkedSite = await db
+    .select({ id: restaurants.id })
+    .from(restaurants)
+    .where(eq(restaurants.operationalDepartmentId, id))
+    .limit(1);
+  if (linkedSite.length > 0) {
+    throw new Error("لا يمكن حذف قسم مرتبط بمواقع تشغيل. غيّر ربط المواقع أولاً");
+  }
+
+  await db.delete(operationalDepartments).where(eq(operationalDepartments.id, id));
+  return { success: true };
+}
+
+export async function getAllRestaurants(includeInactive = false, costCenterId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+  if (!includeInactive) conditions.push(eq(restaurants.isActive, 1));
+  if (costCenterId) conditions.push(eq(restaurants.costCenterId, costCenterId));
+
+  return await db
+    .select({
+      id: restaurants.id,
+      name: restaurants.name,
+      costCenterId: restaurants.costCenterId,
+      costCenterName: costCenters.name,
+      operationalDepartmentId: restaurants.operationalDepartmentId,
+      operationalDepartmentName: operationalDepartments.name,
+      operationalDepartmentActive: operationalDepartments.isActive,
+      siteType: restaurants.siteType,
+      isActive: restaurants.isActive,
+      createdAt: restaurants.createdAt,
+      updatedAt: restaurants.updatedAt,
+    })
+    .from(restaurants)
+    .leftJoin(costCenters, eq(restaurants.costCenterId, costCenters.id))
+    .leftJoin(operationalDepartments, eq(restaurants.operationalDepartmentId, operationalDepartments.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(costCenters.name, operationalDepartments.name, restaurants.name);
+}
+
+export async function createRestaurant(params: {
+  name: string;
+  costCenterId?: number | null;
+  operationalDepartmentId?: number | null;
+  siteType?: 'restaurant' | 'site';
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const trimmed = params.name.trim();
+  if (!trimmed) throw new Error("اسم موقع التشغيل مطلوب");
+
+  if (params.costCenterId) {
+    const [costCenter] = await db
+      .select({ id: costCenters.id })
+      .from(costCenters)
+      .where(eq(costCenters.id, params.costCenterId))
+      .limit(1);
+    if (!costCenter) throw new Error("مركز التكلفة غير موجود");
+  }
+
+  if (params.operationalDepartmentId) {
+    const [department] = await db
+      .select({ id: operationalDepartments.id, isActive: operationalDepartments.isActive })
+      .from(operationalDepartments)
+      .where(eq(operationalDepartments.id, params.operationalDepartmentId))
+      .limit(1);
+    if (!department) throw new Error("القسم التشغيلي غير موجود");
+    if (!department.isActive) throw new Error("القسم التشغيلي غير نشط");
+  }
+
+  const duplicateConditions = [eq(restaurants.name, trimmed)];
+  if (params.costCenterId) duplicateConditions.push(eq(restaurants.costCenterId, params.costCenterId));
+  else duplicateConditions.push(isNull(restaurants.costCenterId));
+
+  const existing = await db
+    .select({ id: restaurants.id })
+    .from(restaurants)
+    .where(and(...duplicateConditions))
+    .limit(1);
+  if (existing.length > 0) {
+    throw new Error(params.costCenterId
+      ? "يوجد موقع تشغيل بنفس الاسم في مركز التكلفة مسبقاً"
+      : "يوجد موقع تشغيل غير مرتبط بنفس الاسم مسبقاً");
+  }
+
+  const result = await db.insert(restaurants).values({
+    name: trimmed,
+    costCenterId: params.costCenterId || null,
+    operationalDepartmentId: params.operationalDepartmentId || null,
+    siteType: params.siteType || 'site',
+  });
+  return { id: (result as any).insertId, name: trimmed };
+}
+
+export async function updateRestaurant(id: number, params: {
+  name?: string;
+  costCenterId?: number | null;
+  operationalDepartmentId?: number | null;
+  siteType?: 'restaurant' | 'site';
+  isActive?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [current] = await db.select().from(restaurants).where(eq(restaurants.id, id)).limit(1);
+  if (!current) throw new Error("موقع التشغيل غير موجود");
+
+  const updateData: any = {};
+  const nextName = params.name !== undefined ? params.name.trim() : current.name;
+  const nextCostCenterId = params.costCenterId !== undefined ? params.costCenterId : current.costCenterId;
+
+  if (!nextName) throw new Error("اسم موقع التشغيل مطلوب");
+
+  if (params.costCenterId !== undefined && params.costCenterId !== null) {
+    const [costCenter] = await db
+      .select({ id: costCenters.id })
+      .from(costCenters)
+      .where(eq(costCenters.id, params.costCenterId))
+      .limit(1);
+    if (!costCenter) throw new Error("مركز التكلفة غير موجود");
+  }
+
+  if (params.operationalDepartmentId !== undefined && params.operationalDepartmentId !== null) {
+    const [department] = await db
+      .select({ id: operationalDepartments.id, isActive: operationalDepartments.isActive })
+      .from(operationalDepartments)
+      .where(eq(operationalDepartments.id, params.operationalDepartmentId))
+      .limit(1);
+    if (!department) throw new Error("القسم التشغيلي غير موجود");
+    if (!department.isActive) throw new Error("القسم التشغيلي غير نشط");
+  }
+
+  if (params.costCenterId !== undefined && current.costCenterId !== params.costCenterId) {
+    const [historicalAssignment] = await db
+      .select({ id: dailyWorkAssignments.id })
+      .from(dailyWorkAssignments)
+      .where(eq(dailyWorkAssignments.restaurantId, id))
+      .limit(1);
+    if (historicalAssignment) {
+      throw new Error("لا يمكن تغيير مركز تكلفة موقع لديه سجلات تشغيل سابقة. عطّل الموقع وأنشئ موقعاً جديداً للحفاظ على التاريخ");
+    }
+  }
+
+  if (params.name !== undefined || params.costCenterId !== undefined) {
+    const duplicateConditions = [eq(restaurants.name, nextName), ne(restaurants.id, id)];
+    if (nextCostCenterId) duplicateConditions.push(eq(restaurants.costCenterId, nextCostCenterId));
+    else duplicateConditions.push(isNull(restaurants.costCenterId));
+
+    const duplicate = await db
+      .select({ id: restaurants.id })
+      .from(restaurants)
+      .where(and(...duplicateConditions))
+      .limit(1);
+    if (duplicate.length > 0) {
+      throw new Error(nextCostCenterId
+        ? "يوجد موقع تشغيل بنفس الاسم في مركز التكلفة مسبقاً"
+        : "يوجد موقع تشغيل غير مرتبط بنفس الاسم مسبقاً");
+    }
+  }
+
+  if (params.name !== undefined) updateData.name = nextName;
+  if (params.costCenterId !== undefined) updateData.costCenterId = params.costCenterId;
+  if (params.operationalDepartmentId !== undefined) updateData.operationalDepartmentId = params.operationalDepartmentId;
+  if (params.siteType !== undefined) updateData.siteType = params.siteType;
+  if (params.isActive !== undefined) updateData.isActive = params.isActive ? 1 : 0;
+
+  if (Object.keys(updateData).length > 0) {
+    await db.update(restaurants).set(updateData).where(eq(restaurants.id, id));
+  }
+  return { success: true };
+}
+
 
 export async function deleteRestaurant(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // لا نحذف نهائياً إن كان له تعيينات سابقة (حفاظاً على السجل التاريخي)، بل نعطّله فقط
+  // لا نحذف نهائياً إن كان للموقع تعيينات سابقة؛ نحافظ على التاريخ ونوقفه فقط.
   const hasAssignments = await db
     .select({ id: dailyWorkAssignments.id })
     .from(dailyWorkAssignments)

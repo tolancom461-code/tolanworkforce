@@ -70,10 +70,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     restrictedByCostCenter: false,
   },
   supervisor_tolan: {
-    label: "Supervisor Tolan",
-    labelAr: "مشرف تولان",
-    // بدون معالجة الملاحظات (operationsReview)
-    pages: ["operations"],
+    label: "Tolan Operations Staff",
+    labelAr: "موظف تشغيل تولان",
+    // تشغيل يومي فقط للمراكز المسندة للمستخدم
+    pages: ["restaurantOperations"],
     canCreateBatch: false,
     canManageDeductions: false,
     canDeleteBatch: false,
@@ -96,10 +96,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     restrictedByCostCenter: true,
   },
   supervisor_malqa: {
-    label: "Supervisor Malqa",
-    labelAr: "مشرف الملقا",
-    // بدون معالجة الملاحظات (operationsReview)
-    pages: ["operations"],
+    label: "Malqa Operations Staff",
+    labelAr: "موظف تشغيل الملقا",
+    // تشغيل يومي فقط للمراكز المسندة للمستخدم
+    pages: ["restaurantOperations"],
     canCreateBatch: false,
     canManageDeductions: false,
     canDeleteBatch: false,
@@ -253,9 +253,9 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     restrictedByCostCenter: false,
   },
   restaurant_operations: {
-    label: "Restaurant Operations",
-    labelAr: "تشغيل مطاعم",
-    // تشغيل مطاعم: صلاحية التشغيل وإدارة المطاعم فقط، لا غير
+    label: "Operations Staff",
+    labelAr: "موظف تشغيل",
+    // دور تشغيل متوافق للخلف: التشغيل اليومي فقط ضمن المراكز المسندة
     pages: ["restaurantOperations"],
     canCreateBatch: false,
     canManageDeductions: false,
@@ -273,10 +273,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, {
     canViewAttendanceLog: false,
     canEditAttendanceLog: false,
     canViewExecutiveDashboard: false,
-    canAccessOperations: false,
+    canAccessOperations: true,
     canViewDashboard: false,
     canViewDashboardQuickActions: false,
-    restrictedByCostCenter: false,
+    restrictedByCostCenter: true,
   },
   data_entry: {
     label: "Data Entry",

@@ -60,6 +60,7 @@ import TemporaryAssignments from "./pages/TemporaryAssignments";
 import Operations from "./pages/Operations";
 import RestaurantsManagement from "./pages/RestaurantsManagement";
 import RestaurantCostReport from "./pages/RestaurantCostReport";
+import OperationalRecordsReport from "./pages/OperationalRecordsReport";
 import Backup from "./pages/Backup";
 import Migration from "./pages/Migration";
 import DatabaseConsole from "./pages/DatabaseConsole";
@@ -87,6 +88,15 @@ const FINANCIAL_REPORT_ROLES = [
   "accountant",
   "auditor",
   "finance_manager",
+] as const;
+
+const OPERATIONS_COST_REPORT_ROLES = [
+  "admin_affairs",
+  "accountant",
+] as const;
+
+const OPERATIONAL_RECORD_REPORT_ROLES = [
+  "admin_affairs",
 ] as const;
 
 function Router() {
@@ -161,13 +171,18 @@ function Router() {
           <Operations />
         </ProtectedRoute>
       </Route>
+      <Route path="/operations/daily-reports">
+        <ProtectedRoute allowedRoles={OPERATIONAL_RECORD_REPORT_ROLES}>
+          <OperationalRecordsReport />
+        </ProtectedRoute>
+      </Route>
       <Route path="/operations/restaurants">
         <ProtectedRoute>
           <RestaurantsManagement />
         </ProtectedRoute>
       </Route>
       <Route path="/operations/cost-report">
-        <ProtectedRoute>
+        <ProtectedRoute allowedRoles={OPERATIONS_COST_REPORT_ROLES}>
           <RestaurantCostReport />
         </ProtectedRoute>
       </Route>

@@ -238,7 +238,7 @@ export default function SupervisorPerformance() {
                         <tr key={`${record.date}-${record.supervisorId}`} className="border-b hover:bg-muted/30 transition-colors">
                           <td className="py-3 px-4 font-medium">{record.supervisorName}</td>
                           <td className="py-3 px-4">
-                            <Badge variant="outline" className={record.supervisorRole === 'مشرف تولان' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}>
+                            <Badge variant="outline" className={record.supervisorRole === 'موظف تشغيل تولان' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}>
                               {record.supervisorRole}
                             </Badge>
                           </td>

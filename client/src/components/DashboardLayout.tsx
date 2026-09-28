@@ -94,8 +94,8 @@ type UserRoleType = 'guard' | 'supervisor_tolan' | 'supervisor_malqa' | 'admin_a
 const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
   // الحارس: فقط تسجيل الحضور (بدون سجل الحضور وبدون تقارير الحضور)
   guard: ['/attendance', '/profile'],
-  supervisor_tolan: ['/operations', '/profile'],  // بدون معالجة الملاحظات
-  supervisor_malqa: ['/operations', '/profile'],  // بدون معالجة الملاحظات
+  supervisor_tolan: ['/operations/staffing', '/profile'],
+  supervisor_malqa: ['/operations/staffing', '/profile'],
   // الشؤون الإدارية: بدون صفحة المستخدمين
   admin_affairs: [
     '/dashboard', '/executive', '/workers', '/groups',
@@ -110,7 +110,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/finance/payment-voucher',
     '/schedules/weekly', '/punches/review',
     '/operations', '/operations/notes-review', '/operations/supervisor-performance',
-    '/cost-centers', '/temporary-assignments', '/operations/staffing', '/operations/restaurants', '/operations/cost-report', '/profile',
+    '/cost-centers', '/temporary-assignments', '/operations/staffing', '/operations/daily-reports', '/operations/restaurants', '/operations/cost-report', '/profile',
   ],
   // المحاسب: بدون لوحة التحكم، بدون المستخدمين، مع سجل الحضور وتقارير الحضور (استعراض فقط)
   accountant: [
@@ -125,7 +125,7 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/finance/payment-voucher',
     '/schedules/weekly', '/punches/review',
     '/operations', '/operations/notes-review', '/operations/supervisor-performance',
-    '/cost-centers', '/temporary-assignments', '/operations/staffing', '/operations/restaurants', '/operations/cost-report', '/profile',
+    '/cost-centers', '/temporary-assignments', '/operations/staffing', '/operations/cost-report', '/profile',
   ],
   // المراجع: اعتماد/رفض + تقارير مالية + سجلات حضور (استعراض فقط) + سجل التدقيق
   auditor: [
@@ -148,8 +148,8 @@ const ROLE_ALLOWED_PATHS: Record<UserRoleType, string[] | 'all'> = {
     '/profile',
   ],
   executive: ['/executive/finance', '/profile'],
-  // تشغيل مطاعم: فقط صفحتَي التشغيل وإدارة المطاعم، لا غير
-  restaurant_operations: ['/operations/staffing', '/operations/restaurants', '/profile'],
+  // دور تشغيل متوافق للخلف: التشغيل اليومي فقط ضمن المراكز المسندة
+  restaurant_operations: ['/operations/staffing', '/profile'],
   // مدخل بيانات: شاشة العمال فقط، لا غير
   data_entry: ['/workers', '/profile'],
   super_admin: 'all',
@@ -242,6 +242,7 @@ function getMenuSections(t: any) {
       { icon: Building2, label: t.navItems.costCenters, path: "/cost-centers" },
       { icon: ArrowLeftRight, label: t.navItems.temporaryAssignments, path: "/temporary-assignments", color: "text-cyan-600" },
       { icon: ListChecks, label: t.navItems.staffingOperations, path: "/operations/staffing", color: "text-orange-600" },
+      { icon: BarChart3, label: t.navItems.operationalRecordsReport, path: "/operations/daily-reports", color: "text-amber-600" },
       { icon: UtensilsCrossed, label: t.navItems.restaurantsManagement, path: "/operations/restaurants", color: "text-pink-600" },
       { icon: BarChart3, label: t.navItems.restaurantCostReport, path: "/operations/cost-report", color: "text-indigo-600" },
     ]

@@ -1,9 +1,12 @@
 import puppeteer from "puppeteer";
-import { getCeoReportsData } from "./ceoReports";
+import { getCeoReportSignatures, getCeoReportsData } from "./ceoReports";
 import * as db from "./db";
 import {
   createCeoReportSections,
+  mergeCeoReportSignaturesForGroups,
+  type CeoReportGroupSignatures,
   type CeoReportSection,
+  type CeoReportSignatureNames,
   type CeoShiftCategory,
 } from "../shared/ceoReportsAggregation";
 
@@ -104,10 +107,16 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function renderSignatureNames(names: string[]): string {
+  if (names.length === 0) return "&nbsp;";
+  return names.map(escapeHtml).join("<br />");
+}
+
 function buildReportPageHtml(
   section: CeoReportSection,
   periodStart: string,
-  periodEnd: string
+  periodEnd: string,
+  signatures: CeoReportSignatureNames
 ): string {
   const now = new Date();
   const issueDate = now.toLocaleDateString("ar-SA", {
@@ -170,10 +179,10 @@ function buildReportPageHtml(
             <span class="value">${numberToArabicWords(totalNet)}</span>
           </div>
           <div class="signatures">
-            <div class="slot"><p class="role">إعداد</p></div>
-            <div class="slot"><p class="role">مراجعة أولى</p></div>
-            <div class="slot"><p class="role">المراجع المالي</p></div>
-            <div class="slot"><p class="role">رئيس الحسابات</p></div>
+            <div class="slot"><p class="role">إعداد</p><p class="name">${renderSignatureNames(signatures.preparedNames)}</p></div>
+            <div class="slot"><p class="role">مراجعة أولى</p><p class="name">${renderSignatureNames(signatures.firstReviewNames)}</p></div>
+            <div class="slot"><p class="role">المراجع المالي</p><p class="name">${renderSignatureNames(signatures.financialReviewerNames)}</p></div>
+            <div class="slot"><p class="role">رئيس الحسابات</p><p class="name">${renderSignatureNames(signatures.accountsManagerNames)}</p></div>
             <div class="slot"><p class="role">تدقيق ومراجعة</p><p class="name">م. سعد الزكري</p></div>
             <div class="slot"><p class="role exec">الرئيس التنفيذي</p><p class="name">م. زكري بن عبدالله الزكري</p></div>
           </div>`
@@ -186,10 +195,33 @@ function buildReportPageHtml(
 function buildReportHtml(
   sections: CeoReportSection[],
   periodStart: string,
-  periodEnd: string
+  periodEnd: string,
+  signatureEntries: CeoReportGroupSignatures[],
+  morningGroupIds: number[],
+  eveningGroupIds: number[]
 ): string {
   const pages = sections
-    .map(section => buildReportPageHtml(section, periodStart, periodEnd))
+    .map(section => {
+      const sectionGroupIds = Array.from(
+        new Set(
+          section.categories.flatMap(category =>
+            category === "morning" ? morningGroupIds : eveningGroupIds
+          )
+        )
+      );
+      const signatures = mergeCeoReportSignaturesForGroups(
+        signatureEntries.filter(
+          entry => entry.costCenterId === section.costCenterId
+        ),
+        sectionGroupIds
+      );
+      return buildReportPageHtml(
+        section,
+        periodStart,
+        periodEnd,
+        signatures
+      );
+    })
     .join("");
 
   return `<!DOCTYPE html>
@@ -306,7 +338,7 @@ function buildReportHtml(
   .signatures .slot { padding-bottom: 9px; border-bottom: 1px solid #9ca3af; }
   .signatures .role { font-weight: 700; font-size: 13px; margin: 0; }
   .signatures .role.exec { font-weight: 900; }
-  .signatures .name { font-size: 11px; margin-top: 4px; white-space: nowrap; }
+  .signatures .name { font-size: 11px; margin-top: 4px; white-space: normal; line-height: 1.45; min-height: 16px; }
   .empty-state { text-align: center; padding: 60px 0; color: #9ca3af; }
   @page { size: A4 landscape; margin: 1cm; }
 </style>
@@ -325,9 +357,22 @@ export async function generateCeoReportsPdf(input: {
   mergeShifts: boolean;
   reportTitle: string;
 }): Promise<Buffer> {
-  const [allRows, costCenters] = await Promise.all([
+  const selectedGroupIds = Array.from(
+    new Set(
+      input.selectedShifts.flatMap(category =>
+        category === "morning" ? input.morningGroupIds : input.eveningGroupIds
+      )
+    )
+  );
+  const [allRows, costCenters, signatureEntries] = await Promise.all([
     getCeoReportsData(input.periodStart, input.periodEnd, input.costCenterIds),
     db.getAllCostCenters(),
+    getCeoReportSignatures(
+      input.periodStart,
+      input.periodEnd,
+      input.costCenterIds,
+      selectedGroupIds
+    ),
   ]);
   const selectedIdSet = new Set(input.costCenterIds);
   const selectedCostCenters = costCenters.filter(costCenter =>
@@ -347,7 +392,14 @@ export async function generateCeoReportsPdf(input: {
     throw new Error("No valid cost centers were selected for the CEO report");
   }
 
-  const html = buildReportHtml(sections, input.periodStart, input.periodEnd);
+  const html = buildReportHtml(
+    sections,
+    input.periodStart,
+    input.periodEnd,
+    signatureEntries,
+    input.morningGroupIds,
+    input.eveningGroupIds
+  );
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],

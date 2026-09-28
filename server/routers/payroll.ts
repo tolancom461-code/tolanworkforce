@@ -49,6 +49,25 @@ export const payrollRouter = router({
         if (!perms?.canCreateBatch) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'ليس لديك صلاحية إنشاء دفعات العمال' });
         }
+
+        // === شرط 0: لا Payroll قبل إغلاق كل الأيام التشغيلية التي بها حضور فعلي ===
+        const unclosedOperationalDays = await db.getUnclosedOperationalDaysForPayroll(
+          input.periodStart,
+          input.periodEnd,
+          input.costCenterId ?? null
+        );
+        if (unclosedOperationalDays.length > 0) {
+          const preview = unclosedOperationalDays
+            .slice(0, 10)
+            .map((day) => `${day.workDate} — ${day.costCenterName}`)
+            .join('، ');
+          const rest = unclosedOperationalDays.length > 10
+            ? `، و${unclosedOperationalDays.length - 10} نطاق تشغيلي آخر`
+            : '';
+          throw new Error(
+            `لا يمكن إنشاء دفعة العمال. توجد أيام تشغيلية غير مغلقة لمركز/مراكز التكلفة الداخلة في الدفعة: ${preview}${rest}.\n\nيجب إكمال توزيع عمال مركز التكلفة وإغلاق يومه التشغيلي قبل إنشاء الدفعة.`
+          );
+        }
         
         // === شرط 1: منع تكرار الدفعة لنفس الفترة ومركز التكلفة والمجموعات ===
         const duplicateCheck = await db.checkDuplicatePayrollBatch(
@@ -177,7 +196,7 @@ export const payrollRouter = router({
     // List batches by status
     listBatchesByStatus: protectedProcedure
       .input(z.object({
-        status: z.string(),
+        status: z.string().optional(),
         costCenterId: z.number().optional(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),

@@ -131,7 +131,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   const [worker] = await db.select().from(workers).where(eq(workers.id, workerId)).limit(1);
   if (!worker) throw new Error("العامل غير موجود");
   
-  // ✅ Get effective group (considers temporary assignments)
+  // ✅ Get effective group (operational transfer → temporary assignment → base group)
   const effectiveGroupId = await getEffectiveGroupForWorkerOnDate(workerId, workDate);
   
   // Get group and shift info
@@ -175,7 +175,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
         .from(groupSchedules)
         .where(
           and(
-            eq(groupSchedules.groupId, worker.groupId),
+            eq(groupSchedules.groupId, effectiveGroupId),
             eq(groupSchedules.dayOfWeek, dayOfWeek),
             eq(groupSchedules.isActive, true),
             or(
@@ -206,7 +206,15 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
   // Check if it's a work day
   const [workDay] = await db.select().from(workDays).where(eq(workDays.workDate, sql`${workDate}`)).limit(1);
   if (workDay && (workDay.dayType === 'holiday' || workDay.dayType === 'weekend')) {
-    return { baseAmount: 0, deductions: 0, bonuses: 0, lateMinutes: 0, earlyLeaveMinutes: 0, actualWorkMinutes: 0 };
+    return {
+      baseAmount: 0,
+      deductions: 0,
+      bonuses: 0,
+      lateMinutes: 0,
+      earlyLeaveMinutes: 0,
+      actualWorkMinutes: 0,
+      effectiveGroupId,
+    };
   }
   
   // ✅ استخدام work_date بدلاً من event_time للتجميع
@@ -398,7 +406,7 @@ export async function calculateDailyFinanceFromAttendance(workerId: number, work
     lateMinutes,
     earlyLeaveMinutes,
     actualWorkMinutes,
-    effectiveGroupId, // ✅ المجموعة الفعالة (تراعي الانتدابات)
+    effectiveGroupId, // ✅ المجموعة الفعالة لليوم (تشغيل/انتداب/أساسية)
   };
 }
 

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/payroll/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,10 +29,36 @@ import { ArrowRight, Edit, Loader2, ArrowLeft, Users, Download, Calendar, CheckC
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 
+type WorkerSortMode = "code" | "name";
+
+function workerCodeNumber(code?: string | null) {
+  const match = String(code || "").match(/\d+/);
+  return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER;
+}
+
+function comparePayrollWorkers(a: any, b: any, mode: WorkerSortMode) {
+  if (mode === "name") {
+    return String(a.workerName || "").localeCompare(String(b.workerName || ""), "ar", { sensitivity: "base" });
+  }
+  const numericDiff = workerCodeNumber(a.workerCode) - workerCodeNumber(b.workerCode);
+  if (numericDiff !== 0) return numericDiff;
+  return String(a.workerCode || "").localeCompare(String(b.workerCode || ""), undefined, { numeric: true });
+}
+
+function formatOperationalTime(value?: string | null) {
+  if (!value) return "-";
+  const match = String(value).match(/(?:T|\s)(\d{2}):(\d{2})/);
+  if (!match) return String(value);
+  const hour24 = Number(match[1]);
+  const hour12 = hour24 % 12 || 12;
+  return `${hour12}:${match[2]} ${hour24 < 12 ? "ص" : "م"}`;
+}
+
 export default function PayrollBatchDetails() {
   const [, params] = useRoute("/payroll/batches/:id");
   const [, setLocation] = useLocation();
   const batchId = Number(params?.id);
+  const [workerSort, setWorkerSort] = useState<WorkerSortMode>("code");
 
   const [editingItem, setEditingItem] = useState<any>(null);
   const [editForm, setEditForm] = useState({
@@ -106,6 +133,7 @@ export default function PayrollBatchDetails() {
       const groupKey = item.groupId || 'unknown';
       if (!acc[groupKey]) {
         acc[groupKey] = {
+          groupId: item.groupId || null,
           groupName: item.groupName || 'مجموعة غير محددة',
           workers: [],
           totals: { base: 0, deductions: 0, otherDeductions: 0, bonuses: 0, net: 0 },
@@ -120,6 +148,9 @@ export default function PayrollBatchDetails() {
       return acc;
     }, {});
     const printGroups = Object.values(groupedForPrint || {}) as any[];
+    printGroups.forEach((group: any) => {
+      group.workers.sort((a: any, b: any) => comparePayrollWorkers(a, b, workerSort));
+    });
     let workerNum = 0;
     const grandTotal = { base: 0, deductions: 0, otherDeductions: 0, bonuses: 0, net: 0 };
     printGroups.forEach((g: any) => {
@@ -132,12 +163,19 @@ export default function PayrollBatchDetails() {
     const fmt = (n: number) => n.toLocaleString('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     let tableRows = '';
     printGroups.forEach((group: any) => {
-      tableRows += `<tr class="group-header"><td colspan="8">${group.groupName} (${group.workers.length} عامل)</td></tr>`;
+      const groupCallTimes = (batch.operationalInfo?.groupCalls || [])
+        .filter((call: any) => Number(call.groupId) === Number(group.groupId))
+        .map((call: any) => `${call.workDate}: ${formatOperationalTime(call.eventAt)}`)
+        .join(' | ');
+      tableRows += `<tr class="group-header"><td colspan="8">${group.groupName} (${group.workers.length} عامل)${groupCallTimes ? ` — وقت الاستدعاء: ${groupCallTimes}` : ''}</td></tr>`;
       group.workers.forEach((w: any) => {
         workerNum++;
+        const emergencyText = (w.emergencyCalls || [])
+          .map((call: any) => `استدعاء طارئ ${call.workDate} ${formatOperationalTime(call.eventAt)}${call.reason ? ` — ${call.reason}` : ''}`)
+          .join(' | ');
         tableRows += `<tr>
           <td>${workerNum}</td>
-          <td>${w.workerName}</td>
+          <td>${w.workerCode ? `${w.workerCode} — ` : ''}${w.workerName}${emergencyText ? `<div style="font-size:11px;color:#8a4b08;margin-top:3px;">${emergencyText}</div>` : ''}</td>
           <td>${fmt(parseFloat(w.baseAmount || '0'))}</td>
           <td>${fmt(parseFloat(w.totalDeductions || '0'))}</td>
           <td>${fmt(parseFloat(w.otherDeductions || '0'))}</td>
@@ -618,7 +656,13 @@ export default function PayrollBatchDetails() {
     return acc;
   }, {});
 
-  const groups = Object.values(groupedItems || {});
+  const groups = Object.values(groupedItems || {}) as any[];
+  groups.forEach((group: any) => {
+    group.workers.sort((a: any, b: any) => comparePayrollWorkers(a, b, workerSort));
+  });
+
+  const groupCallTimes = (groupId: number | null) =>
+    (batch.operationalInfo?.groupCalls || []).filter((call: any) => Number(call.groupId) === Number(groupId));
 
   return (
     <>
@@ -785,7 +829,16 @@ export default function PayrollBatchDetails() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>تفاصيل العمال حسب المجموعات</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={workerSort} onValueChange={(value) => setWorkerSort(value as WorkerSortMode)}>
+                <SelectTrigger className="w-[190px]">
+                  <SelectValue placeholder="ترتيب العمال" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="code">ترتيب حسب رقم العامل</SelectItem>
+                  <SelectItem value="name">ترتيب حسب اسم العامل</SelectItem>
+                </SelectContent>
+              </Select>
               <Button 
                 variant="outline" 
                 onClick={handlePrint}
@@ -838,7 +891,14 @@ export default function PayrollBatchDetails() {
                   <TableRow key={`group-${group.groupId}`} className="bg-muted/50 font-semibold">
                     <TableCell className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-primary" />
-                      {group.groupName} ({group.summary.count} عامل)
+                      <div>
+                        <div>{group.groupName} ({group.summary.count} عامل)</div>
+                        {groupCallTimes(group.groupId).length > 0 && (
+                          <div className="text-xs font-normal text-muted-foreground mt-1">
+                            وقت الاستدعاء: {groupCallTimes(group.groupId).map((call: any) => `${call.workDate} — ${formatOperationalTime(call.eventAt)}`).join(' | ')}
+                          </div>
+                        )}
+                      </div>
                       {canEdit && (
                         <Button
                           variant="outline"
@@ -882,7 +942,14 @@ export default function PayrollBatchDetails() {
                   {/* Worker Rows */}
                   {group.workers.map((item: any) => (
                     <TableRow key={item.id} className="hover:bg-muted/30">
-                      <TableCell className="pl-12 font-medium">{item.workerName}</TableCell>
+                      <TableCell className="pl-12 font-medium">
+                        <div>{item.workerCode ? `${item.workerCode} — ` : ''}{item.workerName}</div>
+                        {(item.emergencyCalls || []).map((call: any) => (
+                          <div key={call.id} className="text-xs text-amber-700 dark:text-amber-400 font-normal mt-1">
+                            استدعاء طارئ {call.workDate} — {formatOperationalTime(call.eventAt)}{call.reason ? ` — ${call.reason}` : ''}
+                          </div>
+                        ))}
+                      </TableCell>
                       <TableCell>{Number(item.baseAmount).toLocaleString("ar-SA")} ر.س</TableCell>
                       <TableCell className="text-red-600">
                         {Number(item.totalDeductions).toLocaleString("ar-SA")} ر.س

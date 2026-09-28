@@ -61,9 +61,13 @@ export async function getLastClosedPayrollDate(): Promise<string | null> {
 }
 
 /**
- * Get the effective group for a worker on a specific date
- * Checks if there's an active temporary assignment for that date
- * Returns toGroupId if assigned, otherwise returns worker's original groupId
+ * Get the effective group for a worker on a specific date.
+ * Priority:
+ * 1) Daily operational transfer recorded by Operations.
+ * 2) Existing active temporary assignment (legacy/current workflow).
+ * 3) Worker's original group.
+ *
+ * Work-site changes alone never change the effective payroll group.
  */
 export async function getEffectiveGroupForWorkerOnDate(
   workerId: number,
@@ -72,14 +76,30 @@ export async function getEffectiveGroupForWorkerOnDate(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const { temporaryAssignments, workers } = await import('../../drizzle/schema');
-
   const dateStr = date.split('T')[0];
 
-  // Check for active assignment on this date
+  // Phase 2: an explicit operational group transfer is the highest-priority daily decision.
+  const operationalAssignment = await db
+    .select({
+      operationalGroupId: dailyWorkAssignments.operationalGroupId,
+    })
+    .from(dailyWorkAssignments)
+    .where(
+      and(
+        eq(dailyWorkAssignments.workerId, workerId),
+        eq(dailyWorkAssignments.workDate, dateStr)
+      )
+    )
+    .limit(1);
+
+  if (operationalAssignment[0]?.operationalGroupId) {
+    return operationalAssignment[0].operationalGroupId;
+  }
+
+  // Preserve the existing temporary-assignment workflow as the fallback.
   const assignment = await db
     .select({
-      toGroupId: temporaryAssignments.toGroupId
+      toGroupId: temporaryAssignments.toGroupId,
     })
     .from(temporaryAssignments)
     .where(
@@ -92,11 +112,10 @@ export async function getEffectiveGroupForWorkerOnDate(
     )
     .limit(1);
 
-  if (assignment.length > 0 && assignment[0].toGroupId) {
+  if (assignment[0]?.toGroupId) {
     return assignment[0].toGroupId;
   }
 
-  // No assignment, return worker's original group
   const worker = await db
     .select({ groupId: workers.groupId })
     .from(workers)

@@ -166,7 +166,7 @@ export default function PayrollBatchReview({ role }: PayrollBatchReviewProps) {
   const roleTitle = 
     effectiveEndpoint === "accountant" ? "مراجعة المحاسب" :
     effectiveEndpoint === "financial_reviewer" ? (canActAsAuditorSkip ? "اعتماد المراجع المالي (بدون مرور بالمحاسب)" : "مراجعة المراجع المالي") :
-    "اعتماد مدير الحسابات";
+    "اعتماد المدير المالي";
 
   // ✅ تجميع العمال حسب المجموعة (نفس نظام صفحة المسودة)
   const groupedItems = (batch.items || []).reduce((acc: any, item: any) => {

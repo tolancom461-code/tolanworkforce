@@ -16,7 +16,9 @@ import { FileText, FileCheck } from "lucide-react";
 import {
   CEO_REPORT_TITLE,
   createCeoReportSections,
+  mergeCeoReportSignaturesForGroups,
   type CeoReportSection,
+  type CeoReportSignatureNames,
   type CeoShiftCategory,
 } from "@shared/ceoReportsAggregation";
 
@@ -116,12 +118,14 @@ function ReportSectionPreview({
   endDate,
   issueDate,
   issueTime,
+  signatures,
 }: {
   section: CeoReportSection;
   startDate: string;
   endDate: string;
   issueDate: string;
   issueTime: string;
+  signatures: CeoReportSignatureNames;
 }) {
   const isRed = section.costCenterCode === "CC06";
   const totalNet = section.rows.reduce((sum, row) => sum + row.totalNet, 0);
@@ -236,19 +240,39 @@ function ReportSectionPreview({
 
             <div className="mt-6 grid grid-cols-6 gap-3 text-center">
               <div className="flex h-full flex-col justify-between">
-                <p className="text-sm font-bold">إعداد</p>
+                <div>
+                  <p className="text-sm font-bold">إعداد</p>
+                  <p className="mt-1 text-xs leading-5">
+                    {signatures.preparedNames.join("، ") || "\u00A0"}
+                  </p>
+                </div>
                 <div className="h-10 border-b border-gray-400" />
               </div>
               <div className="flex h-full flex-col justify-between">
-                <p className="text-sm font-bold">مراجعة أولى</p>
+                <div>
+                  <p className="text-sm font-bold">مراجعة أولى</p>
+                  <p className="mt-1 text-xs leading-5">
+                    {signatures.firstReviewNames.join("، ") || "\u00A0"}
+                  </p>
+                </div>
                 <div className="h-10 border-b border-gray-400" />
               </div>
               <div className="flex h-full flex-col justify-between">
-                <p className="text-sm font-bold">المراجع المالي</p>
+                <div>
+                  <p className="text-sm font-bold">المراجع المالي</p>
+                  <p className="mt-1 text-xs leading-5">
+                    {signatures.financialReviewerNames.join("، ") || "\u00A0"}
+                  </p>
+                </div>
                 <div className="h-10 border-b border-gray-400" />
               </div>
               <div className="flex h-full flex-col justify-between">
-                <p className="text-sm font-bold">رئيس الحسابات</p>
+                <div>
+                  <p className="text-sm font-bold">رئيس الحسابات</p>
+                  <p className="mt-1 text-xs leading-5">
+                    {signatures.accountsManagerNames.join("، ") || "\u00A0"}
+                  </p>
+                </div>
                 <div className="h-10 border-b border-gray-400" />
               </div>
               <div className="flex h-full flex-col justify-between">
@@ -330,6 +354,17 @@ export default function CeoReports() {
       shiftSelection === "both" ? ["morning", "evening"] : [shiftSelection],
     [shiftSelection]
   );
+  const selectedReportGroupIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          selectedShifts.flatMap(category =>
+            category === "morning" ? morningGroupIds : eveningGroupIds
+          )
+        )
+      ),
+    [selectedShifts, morningGroupIds, eveningGroupIds]
+  );
 
   const { data: groups } = trpc.ceoReports.getGroups.useQuery(
     { costCenterIds: selectedCostCenterIds },
@@ -343,6 +378,21 @@ export default function CeoReports() {
     },
     { enabled: queryEnabled && selectedCostCenterIds.length > 0 }
   );
+  const { data: reportSignatureEntries } =
+    trpc.ceoReports.getSignatures.useQuery(
+      {
+        periodStart: startDate,
+        periodEnd: endDate,
+        costCenterIds: selectedCostCenterIds,
+        groupIds: selectedReportGroupIds,
+      },
+      {
+        enabled:
+          queryEnabled &&
+          selectedCostCenterIds.length > 0 &&
+          selectedReportGroupIds.length > 0,
+      }
+    );
   const reportSections = useMemo(
     () =>
       createCeoReportSections({
@@ -364,6 +414,32 @@ export default function CeoReports() {
       reportTitle,
     ]
   );
+  const sectionSignatures = useMemo(() => {
+    const signatureEntries = reportSignatureEntries ?? [];
+    return new Map(
+      reportSections.map(section => {
+        const sectionGroupIds = Array.from(
+          new Set(
+            section.categories.flatMap(category =>
+              category === "morning" ? morningGroupIds : eveningGroupIds
+            )
+          )
+        );
+        const signatures = mergeCeoReportSignaturesForGroups(
+          signatureEntries.filter(
+            entry => entry.costCenterId === section.costCenterId
+          ),
+          sectionGroupIds
+        );
+        return [section.key, signatures] as const;
+      })
+    );
+  }, [
+    reportSections,
+    reportSignatureEntries,
+    morningGroupIds,
+    eveningGroupIds,
+  ]);
 
   const toggleGroup = (category: CeoShiftCategory, id: number) => {
     if (category === "morning") {
@@ -693,6 +769,14 @@ export default function CeoReports() {
                 endDate={endDate}
                 issueDate={issueDate}
                 issueTime={issueTime}
+                signatures={
+                  sectionSignatures.get(section.key) ?? {
+                    preparedNames: [],
+                    firstReviewNames: [],
+                    financialReviewerNames: [],
+                    accountsManagerNames: [],
+                  }
+                }
               />
             ))}
           </div>

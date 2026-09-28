@@ -57,6 +57,7 @@ export function transformGroup(group: any): any {
     latePenaltyRate: group.latePenaltyRate,
     earlyLeavePenaltyRate: group.earlyLeavePenaltyRate,
     isFlexibleSchedule: group.isFlexibleSchedule,
+    isOperationalAssignmentExempt: group.isOperationalAssignmentExempt,
     requiredHours: group.requiredHours,
     isActive: group.isActive,
     createdAt: group.createdAt,

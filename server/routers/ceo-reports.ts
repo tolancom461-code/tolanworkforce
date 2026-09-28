@@ -27,6 +27,26 @@ export const ceoReportsRouter = router({
       );
     }),
 
+  getSignatures: protectedProcedure
+    .use(reportAccess)
+    .input(
+      z.object({
+        periodStart: z.string(),
+        periodEnd: z.string(),
+        costCenterIds: costCenterIdsSchema,
+        groupIds: z.array(z.number()).optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const { getCeoReportSignatures } = await import("../ceoReports");
+      return await getCeoReportSignatures(
+        input.periodStart,
+        input.periodEnd,
+        input.costCenterIds,
+        input.groupIds
+      );
+    }),
+
   getGroups: protectedProcedure
     .use(reportAccess)
     .input(

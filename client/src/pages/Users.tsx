@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -17,14 +18,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 // تعريف الأدوار
 const ROLES = [
   { value: 'guard', label: 'حارس', description: 'تسجيل الحضور والانصراف فقط', color: 'bg-gray-500' },
-  { value: 'supervisor_tolan', label: 'مشرف تولان', description: 'العمليات التشغيلية - مراكز تكلفة تولان (CC001-CC005)', color: 'bg-blue-500' },
-  { value: 'supervisor_malqa', label: 'مشرف الملقا', description: 'العمليات التشغيلية - مراكز تكلفة الملقا (CC006-CC010)', color: 'bg-cyan-500' },
+  { value: 'supervisor_tolan', label: 'موظف تشغيل تولان', description: 'التشغيل اليومي للمراكز المسندة للمستخدم (يُربط عادةً بمركز تولان)', color: 'bg-blue-500' },
+  { value: 'supervisor_malqa', label: 'موظف تشغيل الملقا', description: 'التشغيل اليومي للمراكز المسندة للمستخدم (يُربط عادةً بمركز الملقا)', color: 'bg-cyan-500' },
   { value: 'admin_affairs', label: 'شؤون إدارية', description: 'كل الصلاحيات ما عدا لوحة الإدارة العليا', color: 'bg-emerald-500' },
   { value: 'accountant', label: 'محاسب مالي', description: 'اعتماد/رفض الدفعات من الشؤون الإدارية (المرحلة 1)', color: 'bg-teal-500' },
   { value: 'auditor', label: 'مراجع مالي', description: 'اعتماد/رفض الدفعات من المحاسب (المرحلة 2) - بدون حذف', color: 'bg-amber-500' },
   { value: 'finance_manager', label: 'مدير مالي', description: 'الاعتماد النهائي/رفض الدفعات من المراجع (المرحلة 3) - بدون حذف', color: 'bg-purple-500' },
   { value: 'executive', label: 'إدارة عليا', description: 'لوحات التحكم فقط (استعراض)', color: 'bg-indigo-500' },
-  { value: 'restaurant_operations', label: 'تشغيل مطاعم', description: 'صلاحية صفحتي التشغيل وإدارة المطاعم فقط', color: 'bg-orange-500' },
+  { value: 'restaurant_operations', label: 'موظف تشغيل', description: 'صلاحية توزيع العمال وهيكلة مواقع التشغيل فقط', color: 'bg-orange-500' },
   { value: 'data_entry', label: 'مدخل بيانات', description: 'شاشة العمال فقط (إضافة/تعديل/حذف/عرض)', color: 'bg-pink-500' },
   { value: 'super_admin', label: 'سوبر أدمن', description: 'جميع الصلاحيات بدون استثناء', color: 'bg-red-500' },
 ] as const;
@@ -55,11 +56,15 @@ export default function Users() {
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedRole, setSelectedRole] = useState<string>("");
+  const [selectedCostCenterIds, setSelectedCostCenterIds] = useState<number[]>([]);
+  const [selectedGroupScopes, setSelectedGroupScopes] = useState<Record<number, { allGroups: boolean; groupIds: number[] }>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const utils = trpc.useUtils();
   const { data: users, isLoading } = trpc.users.list.useQuery();
+  const { data: costCenters } = trpc.costCenters.list.useQuery();
+  const { data: groups } = trpc.groups.list.useQuery();
 
   const createUser = (trpc.users as any).create.useMutation({
     onSuccess: () => {
@@ -85,12 +90,20 @@ export default function Users() {
 
   const updateRole = trpc.users.updateRole.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث الدور بنجاح");
       utils.users.list.invalidate();
-      setIsRoleDialogOpen(false);
     },
     onError: (error: any) => {
       toast.error(error.message || "حدث خطأ أثناء تحديث الدور");
+    },
+  });
+
+  const assignOperationScope = trpc.users.assignOperationScope.useMutation({
+    onSuccess: () => {
+      utils.users.getUserCostCenters.invalidate();
+      utils.users.getUserOperationScope.invalidate();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "حدث خطأ أثناء تعيين مجموعات التشغيل");
     },
   });
 
@@ -150,24 +163,101 @@ export default function Users() {
     });
   };
 
-  const handleChangeRole = (user: any) => {
+  const scopedOperationsRoles = new Set(['supervisor_tolan', 'supervisor_malqa', 'restaurant_operations']);
+
+  const handleChangeRole = async (user: any) => {
     setSelectedUser(user);
     setSelectedRole(user.role || 'guard');
+    setSelectedCostCenterIds([]);
+    setSelectedGroupScopes({});
     setIsRoleDialogOpen(true);
+    try {
+      const assigned = await utils.users.getUserOperationScope.fetch({ userId: user.id });
+      setSelectedCostCenterIds((assigned || []).map((row: any) => Number(row.costCenterId)));
+      setSelectedGroupScopes(
+        Object.fromEntries(
+          (assigned || []).map((row: any) => [
+            Number(row.costCenterId),
+            {
+              allGroups: !!row.allGroups,
+              groupIds: (row.groupIds || []).map(Number),
+            },
+          ])
+        )
+      );
+    } catch {
+      setSelectedCostCenterIds([]);
+      setSelectedGroupScopes({});
+    }
   };
 
-  const handleSaveRole = () => {
+  const handleSaveRole = async () => {
     if (!selectedUser || !selectedRole) return;
-    const reason = window.prompt('يرجى إدخال سبب تغيير الدور (إلزامي لسجل التدقيق):');
-    if (!reason || !reason.trim()) {
-      toast.error('سبب تغيير الدور إلزامي — لم يتم الحفظ');
+
+    if (scopedOperationsRoles.has(selectedRole) && selectedCostCenterIds.length === 0) {
+      toast.error('يجب تعيين مركز تكلفة واحد على الأقل لموظف التشغيل');
       return;
     }
-    updateRole.mutate({
-      userId: selectedUser.id,
-      role: selectedRole as any,
-      reason: reason.trim(),
-    });
+
+    if (scopedOperationsRoles.has(selectedRole)) {
+      const invalidCenter = selectedCostCenterIds.find((costCenterId) => {
+        const scope = selectedGroupScopes[costCenterId];
+        return !scope || (!scope.allGroups && scope.groupIds.length === 0);
+      });
+      if (invalidCenter) {
+        toast.error('اختر مجموعة واحدة على الأقل لكل مركز أو اختر كل المجموعات');
+        return;
+      }
+    }
+
+    try {
+      const roleChanged = selectedRole !== selectedUser.role;
+      let reason = '';
+      if (roleChanged) {
+        const enteredReason = window.prompt('يرجى إدخال سبب تغيير الدور (إلزامي لسجل التدقيق):');
+        if (!enteredReason || !enteredReason.trim()) {
+          toast.error('سبب تغيير الدور إلزامي — لم يتم الحفظ');
+          return;
+        }
+        reason = enteredReason.trim();
+      }
+
+      // عند اختيار دور تشغيل نحفظ المركز ونطاق مجموعاته معاً قبل تغيير الدور.
+      if (scopedOperationsRoles.has(selectedRole)) {
+        await assignOperationScope.mutateAsync({
+          userId: selectedUser.id,
+          scopes: selectedCostCenterIds.map((costCenterId) => {
+            const scope = selectedGroupScopes[costCenterId] || { allGroups: true, groupIds: [] };
+            return {
+              costCenterId,
+              allGroups: scope.allGroups,
+              groupIds: scope.allGroups ? [] : scope.groupIds,
+            };
+          }),
+        });
+      }
+
+      if (roleChanged) {
+        await updateRole.mutateAsync({
+          userId: selectedUser.id,
+          role: selectedRole as any,
+          reason,
+        });
+      }
+
+      if (!scopedOperationsRoles.has(selectedRole)) {
+        await assignOperationScope.mutateAsync({
+          userId: selectedUser.id,
+          scopes: [],
+        });
+      }
+
+      toast.success('تم تحديث الدور ونطاق مجموعات التشغيل بنجاح');
+      await utils.users.list.invalidate();
+      setIsRoleDialogOpen(false);
+    } catch {
+      // رسائل الأخطاء تظهر من mutations
+    }
   };
 
   return (
@@ -473,11 +563,113 @@ export default function Users() {
                 </div>
               ))}
             </div>
+
+            {scopedOperationsRoles.has(selectedRole) && (
+              <div className="space-y-4 rounded-lg border p-4">
+                <div>
+                  <p className="font-medium text-sm">مراكز ومجموعات التشغيل المسموحة</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    اختر المركز أولاً، ثم حدد كل مجموعاته أو مجموعات معينة فقط. موظف التشغيل لن يرى المجموعات غير المسموحة.
+                  </p>
+                </div>
+                <div className="grid gap-3 max-h-[360px] overflow-y-auto pe-1">
+                  {(costCenters || []).map((cc: any) => {
+                    const centerId = Number(cc.id);
+                    const checked = selectedCostCenterIds.includes(centerId);
+                    const centerGroups = (groups || []).filter(
+                      (group: any) => !!group.isActive && Number(group.costCenterId) === centerId
+                    );
+                    const scope = selectedGroupScopes[centerId] || { allGroups: true, groupIds: [] };
+                    return (
+                      <div key={cc.id} className="rounded-md border p-3 space-y-3">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(value) => {
+                              setSelectedCostCenterIds((current) =>
+                                value
+                                  ? Array.from(new Set([...current, centerId]))
+                                  : current.filter((item) => item !== centerId)
+                              );
+                              setSelectedGroupScopes((current) => {
+                                const next = { ...current };
+                                if (value) {
+                                  next[centerId] = next[centerId] || { allGroups: true, groupIds: [] };
+                                } else {
+                                  delete next[centerId];
+                                }
+                                return next;
+                              });
+                            }}
+                          />
+                          <span className="text-sm font-medium">
+                            {cc.code ? `${cc.code} — ` : ''}{cc.name}
+                          </span>
+                        </label>
+
+                        {checked && (
+                          <div className="ms-7 space-y-2 rounded-md bg-muted/30 p-3">
+                            <label className="flex items-center gap-2 cursor-pointer font-medium text-sm">
+                              <Checkbox
+                                checked={scope.allGroups}
+                                onCheckedChange={(value) => {
+                                  setSelectedGroupScopes((current) => ({
+                                    ...current,
+                                    [centerId]: value
+                                      ? { allGroups: true, groupIds: [] }
+                                      : { allGroups: false, groupIds: centerGroups.map((group: any) => Number(group.id)) },
+                                  }));
+                                }}
+                              />
+                              كل المجموعات
+                            </label>
+
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {centerGroups.length > 0 ? centerGroups.map((group: any) => {
+                                const groupId = Number(group.id);
+                                const groupChecked = scope.allGroups || scope.groupIds.includes(groupId);
+                                return (
+                                  <label key={group.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                                    <Checkbox
+                                      checked={groupChecked}
+                                      disabled={scope.allGroups}
+                                      onCheckedChange={(value) => {
+                                        setSelectedGroupScopes((current) => {
+                                          const currentScope = current[centerId] || { allGroups: false, groupIds: [] };
+                                          const nextIds = value
+                                            ? Array.from(new Set([...currentScope.groupIds, groupId]))
+                                            : currentScope.groupIds.filter((id) => id !== groupId);
+                                          return {
+                                            ...current,
+                                            [centerId]: { allGroups: false, groupIds: nextIds },
+                                          };
+                                        });
+                                      }}
+                                    />
+                                    <span>{group.code ? `${group.code} — ` : ''}{group.name}</span>
+                                  </label>
+                                );
+                              }) : (
+                                <p className="text-xs text-muted-foreground">لا توجد مجموعات نشطة في هذا المركز.</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>إلغاء</Button>
-              <Button onClick={handleSaveRole} disabled={updateRole.isPending || selectedRole === selectedUser?.role}>
-                {updateRole.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                حفظ الدور
+              <Button
+                onClick={handleSaveRole}
+                disabled={updateRole.isPending || assignOperationScope.isPending || !selectedRole}
+              >
+                {(updateRole.isPending || assignOperationScope.isPending) && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                حفظ الدور ونطاق المجموعات
               </Button>
             </DialogFooter>
           </DialogContent>

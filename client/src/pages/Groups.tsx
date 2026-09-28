@@ -37,6 +37,7 @@ export default function Groups() {
     latePenaltyRate: "",
     earlyLeavePenaltyRate: "",
     isFlexibleSchedule: false,
+    isOperationalAssignmentExempt: false,
     requiredHours: "8.00",
     isActive: true,
   });
@@ -142,6 +143,7 @@ export default function Groups() {
       latePenaltyRate: "",
       earlyLeavePenaltyRate: "",
       isFlexibleSchedule: false,
+      isOperationalAssignmentExempt: false,
       requiredHours: "8.00",
       isActive: true,
     });
@@ -160,6 +162,7 @@ export default function Groups() {
       latePenaltyRate: group.latePenaltyRate ? String(group.latePenaltyRate) : "",
       earlyLeavePenaltyRate: group.earlyLeavePenaltyRate ? String(group.earlyLeavePenaltyRate) : "",
       isFlexibleSchedule: Boolean(group.isFlexibleSchedule),
+      isOperationalAssignmentExempt: Boolean(group.isOperationalAssignmentExempt),
       requiredHours: group.requiredHours ? String(group.requiredHours) : "8.00",
       isActive: group.isActive !== undefined ? Boolean(group.isActive) : true,
     });
@@ -183,6 +186,7 @@ export default function Groups() {
         latePenaltyRate: freshGroupData.latePenaltyRate ? String(freshGroupData.latePenaltyRate) : "",
         earlyLeavePenaltyRate: freshGroupData.earlyLeavePenaltyRate ? String(freshGroupData.earlyLeavePenaltyRate) : "",
         isFlexibleSchedule: Boolean(freshGroupData.isFlexibleSchedule),
+        isOperationalAssignmentExempt: Boolean(freshGroupData.isOperationalAssignmentExempt),
         requiredHours: freshGroupData.requiredHours ? String(freshGroupData.requiredHours) : "8.00",
         isActive: freshGroupData.isActive !== undefined ? Boolean(freshGroupData.isActive) : true,
       });
@@ -423,6 +427,22 @@ export default function Groups() {
                 </div>
 
                 
+                <div className="border-t pt-4 mt-2 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="isOperationalAssignmentExempt"
+                      checked={formData.isOperationalAssignmentExempt}
+                      onCheckedChange={(checked) => setFormData({ ...formData, isOperationalAssignmentExempt: checked })}
+                    />
+                    <Label htmlFor="isOperationalAssignmentExempt" className="font-medium">
+                      مستثناة من إلزام تعيين موقع التشغيل
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    عند التفعيل لا تُطلب مواقع تشغيل لعمال هذه المجموعة ولا يمنعون إغلاق اليوم التشغيلي. الحضور والرواتب والاستدعاءات لا تتأثر.
+                  </p>
+                </div>
+
                 <div className="flex items-center gap-2">
                   <Switch
                     id="isActive"
@@ -502,6 +522,7 @@ export default function Groups() {
                     <TableHead className="text-right">الاسم</TableHead>
                     <TableHead className="text-right">مركز التكلفة</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">التوزيع التشغيلي</TableHead>
                     <TableHead className="text-right">الجدول الأسبوعي</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
@@ -516,6 +537,13 @@ export default function Groups() {
                         <Badge variant={group.isActive ? "default" : "secondary"}>
                           {group.isActive ? "نشط" : "غير نشط"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {group.isOperationalAssignmentExempt ? (
+                          <Badge variant="outline">مستثناة من التوزيع</Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">مطلوب</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <GroupScheduleStatus groupId={group.id} />
@@ -743,6 +771,22 @@ export default function Groups() {
               </div>
 
               
+              <div className="border-t pt-4 mt-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="edit-isOperationalAssignmentExempt"
+                    checked={formData.isOperationalAssignmentExempt}
+                    onCheckedChange={(checked) => setFormData({ ...formData, isOperationalAssignmentExempt: checked })}
+                  />
+                  <Label htmlFor="edit-isOperationalAssignmentExempt" className="font-medium">
+                    مستثناة من إلزام تعيين موقع التشغيل
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  عند التفعيل لا تُطلب مواقع تشغيل لعمال هذه المجموعة ولا يمنعون إغلاق اليوم التشغيلي. الحضور والرواتب والاستدعاءات لا تتأثر.
+                </p>
+              </div>
+
               <div className="flex items-center gap-2">
                 <Switch
                   id="edit-isActive"

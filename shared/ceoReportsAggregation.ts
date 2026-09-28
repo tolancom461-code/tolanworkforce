@@ -16,6 +16,49 @@ export interface CeoReportGroupRow {
 
 export type CeoShiftCategory = "morning" | "evening";
 
+export interface CeoReportSignatureNames {
+  preparedNames: string[];
+  firstReviewNames: string[];
+  financialReviewerNames: string[];
+  accountsManagerNames: string[];
+}
+
+export interface CeoReportGroupSignatures extends CeoReportSignatureNames {
+  groupId: number;
+  costCenterId: number;
+}
+
+
+function appendUnique(target: string[], values: string[]) {
+  for (const value of values) {
+    const normalized = value.trim();
+    if (normalized && !target.includes(normalized)) target.push(normalized);
+  }
+}
+
+export function mergeCeoReportSignaturesForGroups(
+  entries: CeoReportGroupSignatures[],
+  groupIds: number[]
+): CeoReportSignatureNames {
+  const selected = new Set(groupIds);
+  const merged: CeoReportSignatureNames = {
+    preparedNames: [],
+    firstReviewNames: [],
+    financialReviewerNames: [],
+    accountsManagerNames: [],
+  };
+
+  for (const entry of entries) {
+    if (!selected.has(entry.groupId)) continue;
+    appendUnique(merged.preparedNames, entry.preparedNames);
+    appendUnique(merged.firstReviewNames, entry.firstReviewNames);
+    appendUnique(merged.financialReviewerNames, entry.financialReviewerNames);
+    appendUnique(merged.accountsManagerNames, entry.accountsManagerNames);
+  }
+
+  return merged;
+}
+
 export interface CeoShiftAggregateRow {
   category: CeoShiftCategory;
   label: string;

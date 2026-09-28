@@ -1,0 +1,12 @@
+client/src/i18n/translations.ts
+client/src/pages/Operations.tsx
+client/src/pages/RestaurantsManagement.tsx
+client/src/pages/RestaurantCostReport.tsx
+server/routers/restaurants.ts
+server/db/daily-work-assignments.ts
+server/db/group-coverage.ts
+server/db/restaurant-costs.ts
+drizzle/schema.ts
+drizzle/0022_operations_phase1.sql
+README_OPERATIONS_PHASE1_2026-09-08.md
+CHANGED_FILES_OPERATIONS_PHASE1_2026-09-08.txt

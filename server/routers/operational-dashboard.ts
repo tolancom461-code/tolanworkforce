@@ -297,7 +297,7 @@ export const operationalDashboardRouter = router({
               date,
               supervisorId: supervisor.id,
               supervisorName: supervisor.fullName,
-              supervisorRole: supervisor.role === 'supervisor_tolan' ? 'مشرف تولان' : 'مشرف الملقا',
+              supervisorRole: supervisor.role === 'supervisor_tolan' ? 'موظف تشغيل تولان' : 'موظف تشغيل الملقا',
               groupNames,
               totalPresent,
               confirmedCount,

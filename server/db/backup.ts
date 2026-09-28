@@ -17,6 +17,7 @@ import {
   payrollBatchCorrections,
   operationalFlags,
   userCostCenters,
+  userOperationGroups,
   temporaryAssignments,
   assignmentSettlements,
   deductionRules,
@@ -58,6 +59,8 @@ export async function getBackupTableInfo() {
     { name: 'pay_overrides', label: 'التجاوزات المالية', table: payOverrides },
     { name: 'group_schedules', label: 'جداول المجموعات', table: groupSchedules },
     { name: 'worker_daily_finance', label: 'المالية اليومية', table: workerDailyFinance },
+    { name: 'user_cost_centers', label: 'صلاحيات مراكز التشغيل', table: userCostCenters },
+    { name: 'user_operation_groups', label: 'صلاحيات مجموعات التشغيل', table: userOperationGroups },
   ];
   
   const results = [];
@@ -93,6 +96,7 @@ export async function exportTablesData(tableNames: string[]) {
     payroll_batch_corrections: payrollBatchCorrections, work_days: workDays,
     cost_centers: costCenters, deduction_rules: deductionRules,
     user_cost_centers: userCostCenters,
+    user_operation_groups: userOperationGroups,
   };
   
   const result: Record<string, any[]> = {};
@@ -135,6 +139,7 @@ export async function exportFullSqlDump() {
     { name: 'temporary_assignments', table: temporaryAssignments },
     { name: 'audit_log', table: auditLog },
     { name: 'user_cost_centers', table: userCostCenters },
+    { name: 'user_operation_groups', table: userOperationGroups },
   ];
   
   let sqlDump = `-- Tolan Workforce Backup\n-- Date: ${new Date().toISOString()}\n-- ============================================\n\n`;

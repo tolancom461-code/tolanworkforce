@@ -2,13 +2,14 @@
  * ============================================
  * Administrative Day & Smart Attendance Logic
  * ============================================
- * 
- * نظام اليوم الإداري (5 AM Boundary) + منطق ذكي لربط البصمات
- * 
+ *
+ * نظام اليوم الإداري + منطق ذكي لربط البصمات.
+ *
  * القواعد الأساسية:
- * 1. اليوم الإداري يبدأ الساعة 5:00 صباحاً وينتهي 4:59 صباح اليوم التالي
- * 2. نافذة 15 ساعة للبحث عن آخر حضور
- * 3. منطق ذكي يعتمد على وردية المجموعة لتحديد نوع البصمة
+ * 1. قبل 2026-09-17: حد اليوم التشغيلي التاريخي 05:00 صباحاً.
+ * 2. من 2026-09-17: حد اليوم التشغيلي المعتمد 04:40 صباحاً.
+ * 3. نافذة 15 ساعة للبحث عن آخر حضور.
+ * 4. منطق ذكي يعتمد على وردية المجموعة لتحديد نوع البصمة.
  */
 
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
@@ -16,34 +17,115 @@ import { getDb } from "./db";
 import { TRPCError } from "@trpc/server";
 
 /**
- * حساب تاريخ اليوم الإداري بناءً على قاعدة 5 صباحاً
- * 
+ * حساب تاريخ اليوم الإداري حسب القاعدة السارية وقت البصمة بتوقيت الرياض.
+ * - قبل 2026-09-17: 05:00.
+ * - من 2026-09-17: 04:40.
+ *
  * @param timestamp - الوقت الفعلي للبصمة
  * @returns تاريخ اليوم الإداري بصيغة YYYY-MM-DD
- * 
- * أمثلة:
- * - 2024-01-15 04:30:00 → 2024-01-14 (قبل 5 صباحاً، يعتبر من اليوم السابق)
- * - 2024-01-15 05:00:00 → 2024-01-15 (بعد 5 صباحاً، يعتبر من نفس اليوم)
- * - 2024-01-15 23:00:00 → 2024-01-15 (مساءً، يعتبر من نفس اليوم)
  */
+export const ADMINISTRATIVE_DAY_BOUNDARY_HOUR = 4;
+export const ADMINISTRATIVE_DAY_BOUNDARY_MINUTE = 40;
+
+/**
+ * تاريخ بدء توحيد الاستعلامات الزمنية على حد 04:40.
+ * الأيام السابقة تبقى على نطاق الاستعلام القديم 05:00 → 04:59:59 حتى لا يتغير عرض/معالجة التاريخ السابق.
+ * لا يقوم هذا الثابت بأي تحديث للبيانات التاريخية.
+ */
+export const ADMINISTRATIVE_DAY_0440_EFFECTIVE_DATE = '2026-09-17';
+
+const LEGACY_QUERY_BOUNDARY_HOUR = 5;
+const LEGACY_QUERY_BOUNDARY_MINUTE = 0;
+
+function addDaysToDateString(dateStr: string, days: number): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const value = new Date(Date.UTC(year, month - 1, day + days));
+  const y = value.getUTCFullYear();
+  const m = String(value.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(value.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function formatBoundaryTime(hour: number, minute: number): string {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+}
+
+type AdministrativeBoundary = {
+  hour: number;
+  minute: number;
+  label: '04:40' | '05:00';
+};
+
+/**
+ * يحدد حد اليوم التشغيلي الساري لتاريخ تقويمي محلي في الرياض.
+ * التاريخ هنا هو تاريخ لحظة البصمة/بداية النطاق، وليس work_date بعد طرح يوم.
+ */
+function getAdministrativeBoundaryForCalendarDate(calendarDate: string): AdministrativeBoundary {
+  if (calendarDate >= ADMINISTRATIVE_DAY_0440_EFFECTIVE_DATE) {
+    return {
+      hour: ADMINISTRATIVE_DAY_BOUNDARY_HOUR,
+      minute: ADMINISTRATIVE_DAY_BOUNDARY_MINUTE,
+      label: '04:40',
+    };
+  }
+
+  return {
+    hour: LEGACY_QUERY_BOUNDARY_HOUR,
+    minute: LEGACY_QUERY_BOUNDARY_MINUTE,
+    label: '05:00',
+  };
+}
+
+function formatRiyadhCalendarDate(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * يرجع نطاق اليوم التشغيلي في توقيت الرياض كنطاق نصف مفتوح [start, endExclusive).
+ *
+ * بداية النطاق تستخدم الحد الساري في تاريخ workDate، ونهاية النطاق تستخدم الحد
+ * الساري في اليوم التقويمي التالي. هذا مهم في يوم الانتقال 2026-09-16:
+ * 2026-09-16 05:00 → 2026-09-17 04:40، بدون فجوة أو تداخل مع يوم 2026-09-17.
+ *
+ * هذه الدالة لا تعيد تصنيف أو تحديث أي سجل قديم.
+ */
+export function getAdministrativeDayRange(workDate: string): {
+  start: Date;
+  endExclusive: Date;
+  boundary: '04:40' | '05:00';
+} {
+  const nextDate = addDaysToDateString(workDate, 1);
+  const startBoundary = getAdministrativeBoundaryForCalendarDate(workDate);
+  const endBoundary = getAdministrativeBoundaryForCalendarDate(nextDate);
+  const startTime = formatBoundaryTime(startBoundary.hour, startBoundary.minute);
+  const endTime = formatBoundaryTime(endBoundary.hour, endBoundary.minute);
+
+  return {
+    start: new Date(`${workDate}T${startTime}+03:00`),
+    endExclusive: new Date(`${nextDate}T${endTime}+03:00`),
+    boundary: startBoundary.label,
+  };
+}
+
 export function getAdministrativeWorkDate(timestamp: Date): string {
-  // ✅ تحويل للتوقيت الرياض (UTC+3) بشكل صريح
-  const riyadhOffset = 3 * 60 * 60 * 1000; // 3 ساعات بالميلي ثانية
+  // تحويل للتوقيت الرياض (UTC+3) بشكل صريح. السعودية لا تستخدم التوقيت الصيفي.
+  const riyadhOffset = 3 * 60 * 60 * 1000;
   const riyadhTime = new Date(timestamp.getTime() + riyadhOffset);
-  
-  const hours = riyadhTime.getUTCHours(); // ← الآن بتوقيت الرياض
+  const calendarDate = formatRiyadhCalendarDate(riyadhTime);
+  const boundary = getAdministrativeBoundaryForCalendarDate(calendarDate);
+
+  const hours = riyadhTime.getUTCHours();
   const minutes = riyadhTime.getUTCMinutes();
-  
-  // إذا كانت الساعة قبل 4:40 صباحاً بتوقيت الرياض، نطرح يوم واحد
-  if (hours < 4 || (hours === 4 && minutes < 40)) {
+
+  // إذا كانت البصمة قبل الحد الساري في تاريخها المحلي، تُنسب لليوم التشغيلي السابق.
+  if (hours < boundary.hour || (hours === boundary.hour && minutes < boundary.minute)) {
     riyadhTime.setUTCDate(riyadhTime.getUTCDate() - 1);
   }
-  
-  // استخراج التاريخ بصيغة YYYY-MM-DD بتوقيت الرياض
-  const year = riyadhTime.getUTCFullYear();
-  const month = String(riyadhTime.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(riyadhTime.getUTCDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+
+  return formatRiyadhCalendarDate(riyadhTime);
 }
 
 /**

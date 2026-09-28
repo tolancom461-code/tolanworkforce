@@ -34,9 +34,8 @@ import { ENV } from '../_core/env';
 import { getDb, getExpandedDateRange, groupEventsByWorkDate } from './connection';
 import { transformGroup } from './groups';
 import { recordAttendance } from './attendance';
-
-import { aggregatePayrollData } from './advanced-payroll';
-import { calculateAssignmentDays, getAssignmentsFromCostCenter, getAssignmentsToCostCenter } from './temporary-assignments';
+import { getEffectiveGroupForWorkerOnDate } from './recalculation';
+import { calculateDailyFinanceFromAttendance } from './daily-finance';
 
 // ============================================
 // Auto Finance Calculation
@@ -80,44 +79,45 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
   const workDate = new Date(checkInTime);
   workDate.setHours(0, 0, 0, 0);
   
-  // Get worker and group data
+  // Get worker base data, then resolve the effective group for this operational day.
   const [workerData] = await db
     .select({
       dailyRate: workers.dailyRate,
       groupId: workers.groupId,
-      workMinutes: groups.workMinutes,
-      minuteCost: groups.minuteCost,
-      latePenaltyRate: groups.latePenaltyRate,
-      earlyLeavePenaltyRate: groups.earlyLeavePenaltyRate,
     })
     .from(workers)
-    .leftJoin(groups, eq(workers.groupId, groups.id))
     .where(eq(workers.id, workerId))
     .limit(1);
   
   if (!workerData) {
     throw new Error("Worker not found");
   }
+
+  const workDateStr = workDate.toLocaleDateString('en-CA');
+  const effectiveGroupId = (await getEffectiveGroupForWorkerOnDate(workerId, workDateStr)) || workerData.groupId;
+  const groupData = effectiveGroupId
+    ? await db.select().from(groups).where(eq(groups.id, effectiveGroupId)).limit(1)
+    : [];
+  const effectiveGroup = groupData[0];
   
   const dailyRate = Number(workerData.dailyRate) || 0;
-  const minuteCost = Number(workerData.minuteCost) || 0;
-  const latePenaltyRate = Number(workerData.latePenaltyRate) || 0;
-  const earlyLeavePenaltyRate = Number(workerData.earlyLeavePenaltyRate) || 0;
+  const minuteCost = Number(effectiveGroup?.minuteCost) || 0;
+  const latePenaltyRate = Number(effectiveGroup?.latePenaltyRate) || 0;
+  const earlyLeavePenaltyRate = Number(effectiveGroup?.earlyLeavePenaltyRate) || 0;
   
   // Get shift times from weekly schedule based on day of week
   let shiftStartTime: string | null = null;
   let shiftEndTime: string | null = null;
   
-  if (workerData.groupId) {
+  if (effectiveGroupId) {
     const dayOfWeek = workDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday (local time)
-    const workDateStr = typeof workDate === 'string' ? workDate : workDate.toLocaleDateString('en-CA');
     
     const [schedule] = await db
       .select()
       .from(groupSchedules)
       .where(
         and(
-          eq(groupSchedules.groupId, workerData.groupId),
+          eq(groupSchedules.groupId, effectiveGroupId),
           eq(groupSchedules.dayOfWeek, dayOfWeek),
           eq(groupSchedules.isActive, true),
           or(
@@ -135,10 +135,9 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
     }
   }
   
-  // Get group daily wage
-  const groupData = workerData.groupId ? await db.select().from(groups).where(eq(groups.id, workerData.groupId)).limit(1) : [];
-  const groupDailyWage = groupData.length > 0 && groupData[0].dailyWage ? Number(groupData[0].dailyWage) : 0;
-  const groupWorkMinutes = groupData.length > 0 && groupData[0].workMinutes ? Number(groupData[0].workMinutes) : 0;
+  // Use the effective group's wage/minute settings for this day.
+  const groupDailyWage = effectiveGroup?.dailyWage ? Number(effectiveGroup.dailyWage) : 0;
+  const groupWorkMinutes = effectiveGroup?.workMinutes ? Number(effectiveGroup.workMinutes) : 0;
   
   // Base salary = fixed daily wage (not calculated from minutes)
   let baseSalary = groupDailyWage > 0 ? groupDailyWage : dailyRate;
@@ -250,6 +249,7 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
         deductions: totalDeductions.toString(),
         bonuses: '0.00',
         netAmount: netSalary.toString(),
+        effectiveGroupId: effectiveGroupId || null,
         updatedAt: new Date(),
       })
       .where(eq(workerDailyFinance.id, existing[0].id));
@@ -273,6 +273,7 @@ export async function calculateAndSaveDailyFinance(workerId: number, checkOutTim
       deductions: totalDeductions.toString(),
       bonuses: '0.00',
       netAmount: netSalary.toString(),
+      effectiveGroupId: effectiveGroupId || null,
     });
   }
   
@@ -324,146 +325,228 @@ export async function aggregatePayrollDataByCostCenter(
   costCenterId: number,
   periodStart: string,
   periodEnd: string,
-  selectedGroupIds?: number[]  // ✅ المجموعات المختارة — إذا لم تُحدد يتم جلب الكل
+  selectedGroupIds?: number[]
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const { workers, groups } = await import('../../drizzle/schema');
+  const periodStartDate = periodStart.split('T')[0];
+  const periodEndDate = periodEnd.split('T')[0];
 
-  // First, get all groups in this cost center
   const groupsInCostCenter = await db
-    .select()
+    .select({ id: groups.id })
     .from(groups)
     .where(eq(groups.costCenterId, costCenterId));
 
-  // ✅ إذا تم تحديد مجموعات معينة → نفلتر، وإلا نأخذ الكل
+  const allGroupIds = groupsInCostCenter.map((group) => group.id);
   const targetGroupIds = selectedGroupIds && selectedGroupIds.length > 0
-    ? groupsInCostCenter.filter(g => selectedGroupIds.includes(g.id)).map(g => g.id)
-    : groupsInCostCenter.map(g => g.id);
+    ? allGroupIds.filter((id) => selectedGroupIds.includes(id))
+    : allGroupIds;
 
-  // Then, get all workers in these groups
-  const groupIds = targetGroupIds;
-  const workersInCostCenter = groupIds.length > 0
-    ? await db.select().from(workers).where(inArray(workers.groupId, groupIds))
-    : [];
+  if (targetGroupIds.length === 0) return [];
 
-  // === الانتدابات المؤقتة ===
-  // 1. جلب الانتدابات الخارجة من هذا المركز (عمال انتدبوا لمراكز أخرى)
-  const outgoingAssignments = await getAssignmentsFromCostCenter(costCenterId, periodStart, periodEnd);
-  // 2. جلب الانتدابات الواردة إلى هذا المركز (عمال من مراكز أخرى)
-  const incomingAssignments = await getAssignmentsToCostCenter(costCenterId, periodStart, periodEnd);
-
-  // بناء خريطة أيام الانتداب الخارجي لكل عامل أصلي
-  const outgoingDaysMap = new Map<number, number>(); // workerId -> total outgoing days
-  for (const assignment of outgoingAssignments) {
-    const days = calculateAssignmentDays(
-      assignment.startDate, assignment.endDate, periodStart, periodEnd
+  // Read daily finance rows first, then resolve the effective group day-by-day.
+  // This supports workers whose base group belongs to another cost center.
+  const financeRows = await db
+    .select({
+      workerId: workerDailyFinance.workerId,
+      workDate: workerDailyFinance.workDate,
+      baseAmount: workerDailyFinance.baseAmount,
+      deductions: workerDailyFinance.deductions,
+      bonuses: workerDailyFinance.bonuses,
+      netAmount: workerDailyFinance.netAmount,
+      storedEffectiveGroupId: workerDailyFinance.effectiveGroupId,
+      baseGroupId: workers.groupId,
+      workerName: workers.fullName,
+    })
+    .from(workerDailyFinance)
+    .innerJoin(workers, eq(workerDailyFinance.workerId, workers.id))
+    .where(
+      and(
+        sql`${workerDailyFinance.workDate} >= ${periodStartDate}`,
+        sql`${workerDailyFinance.workDate} <= ${periodEndDate}`
+      )
     );
-    outgoingDaysMap.set(
-      assignment.workerId,
-      (outgoingDaysMap.get(assignment.workerId) || 0) + days
-    );
-  }
 
-  // Aggregate data for each original worker (minus outgoing assignment days)
-  const results = [];
-  for (const worker of workersInCostCenter) {
-    const workerData = await aggregatePayrollData(worker.id, periodStart, periodEnd);
-    const outgoingDays = outgoingDaysMap.get(worker.id) || 0;
+  const periodWorkerIds = [...new Set(financeRows.map((row) => row.workerId))];
+  const [operationalRows, temporaryRows] = periodWorkerIds.length > 0
+    ? await Promise.all([
+        db
+          .select({
+            workerId: dailyWorkAssignments.workerId,
+            workDate: dailyWorkAssignments.workDate,
+            operationalGroupId: dailyWorkAssignments.operationalGroupId,
+          })
+          .from(dailyWorkAssignments)
+          .where(
+            and(
+              inArray(dailyWorkAssignments.workerId, periodWorkerIds),
+              gte(dailyWorkAssignments.workDate, periodStartDate),
+              lte(dailyWorkAssignments.workDate, periodEndDate)
+            )
+          ),
+        db
+          .select({
+            workerId: temporaryAssignments.workerId,
+            toGroupId: temporaryAssignments.toGroupId,
+            startDate: temporaryAssignments.startDate,
+            endDate: temporaryAssignments.endDate,
+          })
+          .from(temporaryAssignments)
+          .where(
+            and(
+              inArray(temporaryAssignments.workerId, periodWorkerIds),
+              eq(temporaryAssignments.status, 'active'),
+              lte(temporaryAssignments.startDate, periodEndDate),
+              gte(temporaryAssignments.endDate, periodStartDate)
+            )
+          ),
+      ])
+    : [[], []];
 
-    if (workerData.daysWorked > 0) {
-      if (outgoingDays > 0 && workerData.daysWorked > outgoingDays) {
-        // خصم أيام الانتداب الخارجي - حساب نسبي
-        const originalDays = workerData.daysWorked;
-        const remainingDays = originalDays - outgoingDays;
-        const ratio = remainingDays / originalDays;
-
-        const adjBaseAmount = (parseFloat(workerData.baseAmount) * ratio).toFixed(2);
-        const adjDeductions = (parseFloat(workerData.deductionsTotal) * ratio).toFixed(2);
-        const adjBonuses = (parseFloat(workerData.bonuses) * ratio).toFixed(2);
-        const adjNet = (parseFloat(adjBaseAmount) - parseFloat(adjDeductions) + parseFloat(adjBonuses)).toFixed(2);
-
-        results.push({
-          workerId: worker.id,
-          workerName: worker.fullName,
-          baseAmount: adjBaseAmount,
-          deductions: adjDeductions,
-          bonuses: adjBonuses,
-          netAmount: adjNet,
-          daysWorked: remainingDays,
-          isPartial: true,
-          outgoingDays,
-          notes: `منتدب ${outgoingDays} يوم لمركز آخر`,
-        });
-      } else if (outgoingDays >= workerData.daysWorked) {
-        // كل أيامه منتدبة - لا يظهر في هذه الدفعة
-        continue;
-      } else {
-        results.push({
-          workerId: worker.id,
-          workerName: worker.fullName,
-          baseAmount: workerData.baseAmount,
-          deductions: workerData.deductionsTotal,
-          bonuses: workerData.bonuses,
-          netAmount: workerData.netAmount,
-          daysWorked: workerData.daysWorked,
-        });
-      }
+  const operationalGroupByWorkerDate = new Map<string, number>();
+  for (const row of operationalRows) {
+    if (row.operationalGroupId) {
+      operationalGroupByWorkerDate.set(`${row.workerId}:${row.workDate}`, row.operationalGroupId);
     }
   }
 
-  // 3. إضافة العمال المنتدبين إلى هذا المركز (من مراكز أخرى)
-  for (const assignment of incomingAssignments) {
-    const assignmentDays = calculateAssignmentDays(
-      assignment.startDate, assignment.endDate, periodStart, periodEnd
-    );
-
-    if (assignmentDays <= 0) continue;
-
-    // حساب المبلغ اليومي للعامل المنتدب
-    const workerData = await aggregatePayrollData(assignment.workerId, periodStart, periodEnd);
-    if (workerData.daysWorked <= 0) continue;
-
-    const dailyRate = parseFloat(workerData.baseAmount) / workerData.daysWorked;
-    const dailyDeduction = parseFloat(workerData.deductionsTotal) / workerData.daysWorked;
-    const dailyBonus = parseFloat(workerData.bonuses) / workerData.daysWorked;
-
-    const assignBaseAmount = (dailyRate * assignmentDays).toFixed(2);
-    const assignDeductions = (dailyDeduction * assignmentDays).toFixed(2);
-    const assignBonuses = (dailyBonus * assignmentDays).toFixed(2);
-    const assignNet = (parseFloat(assignBaseAmount) - parseFloat(assignDeductions) + parseFloat(assignBonuses)).toFixed(2);
-
-    // تحقق من عدم تكرار العامل (إذا كان له أكثر من انتداب)
-    const existingIdx = results.findIndex(r => r.workerId === assignment.workerId);
-    if (existingIdx >= 0) {
-      // دمج مع سجل موجود
-      const existing = results[existingIdx];
-      results[existingIdx] = {
-        ...existing,
-        baseAmount: (parseFloat(existing.baseAmount) + parseFloat(assignBaseAmount)).toFixed(2),
-        deductions: (parseFloat(existing.deductions) + parseFloat(assignDeductions)).toFixed(2),
-        bonuses: (parseFloat(existing.bonuses) + parseFloat(assignBonuses)).toFixed(2),
-        netAmount: (parseFloat(existing.netAmount) + parseFloat(assignNet)).toFixed(2),
-        daysWorked: existing.daysWorked + assignmentDays,
-      };
-    } else {
-      results.push({
-        workerId: assignment.workerId,
-        workerName: assignment.workerName || 'غير معروف',
-        baseAmount: assignBaseAmount,
-        deductions: assignDeductions,
-        bonuses: assignBonuses,
-        netAmount: assignNet,
-        daysWorked: assignmentDays,
-        isAssigned: true,
-        fromGroupName: assignment.groupName,
-        notes: `منتدب من ${assignment.groupName || 'مجموعة أخرى'} - ${assignmentDays} يوم`,
-      });
-    }
+  const temporaryByWorker = new Map<number, typeof temporaryRows>();
+  for (const row of temporaryRows) {
+    const rows = temporaryByWorker.get(row.workerId) || [];
+    rows.push(row);
+    temporaryByWorker.set(row.workerId, rows);
   }
 
-  return results;
+  const baseGroupByWorker = new Map<number, number | null>();
+  for (const row of financeRows) {
+    if (!baseGroupByWorker.has(row.workerId)) baseGroupByWorker.set(row.workerId, row.baseGroupId || null);
+  }
+
+  const resolveEffectiveGroup = (workerId: number, workDate: string, baseGroupId?: number | null) => {
+    const operationalGroupId = operationalGroupByWorkerDate.get(`${workerId}:${workDate}`);
+    if (operationalGroupId) return operationalGroupId;
+
+    const temporary = temporaryByWorker
+      .get(workerId)
+      ?.find((assignment) => assignment.startDate <= workDate && assignment.endDate >= workDate);
+    return temporary?.toGroupId || baseGroupId || baseGroupByWorker.get(workerId) || null;
+  };
+
+  type WorkerAggregate = {
+    workerId: number;
+    workerName: string;
+    baseAmount: number;
+    deductions: number;
+    bonuses: number;
+    daysWorked: number;
+    groupDays: Map<number, { days: number; lastDate: string }>;
+  };
+
+  const workerMap = new Map<number, WorkerAggregate>();
+
+  for (const row of financeRows) {
+    const workDate = typeof row.workDate === 'string'
+      ? row.workDate
+      : new Date(row.workDate).toLocaleDateString('en-CA');
+    const effectiveGroupId = resolveEffectiveGroup(row.workerId, workDate, row.baseGroupId);
+
+    if (!effectiveGroupId || !targetGroupIds.includes(effectiveGroupId)) continue;
+
+    const existing = workerMap.get(row.workerId) || {
+      workerId: row.workerId,
+      workerName: row.workerName,
+      baseAmount: 0,
+      deductions: 0,
+      bonuses: 0,
+      daysWorked: 0,
+      groupDays: new Map<number, { days: number; lastDate: string }>(),
+    };
+
+    // If an explicit Operations transfer was recorded after this daily finance row was created,
+    // recalculate only that changed day in memory. Do not broadly recalculate historical rows whose
+    // effective_group_id is null, because that could rewrite old payroll semantics unintentionally.
+    let baseAmount = parseFloat(row.baseAmount || '0');
+    let deductions = parseFloat(row.deductions || '0');
+    let bonuses = parseFloat(row.bonuses || '0');
+    const hasOperationalTransfer = operationalGroupByWorkerDate.has(`${row.workerId}:${workDate}`);
+    if (hasOperationalTransfer && row.storedEffectiveGroupId !== effectiveGroupId) {
+      const recalculated = await calculateDailyFinanceFromAttendance(row.workerId, workDate);
+      baseAmount = Number(recalculated.baseAmount || 0);
+      deductions = Number(recalculated.deductions || 0);
+      bonuses = Number(recalculated.bonuses || 0);
+    }
+
+    existing.baseAmount += baseAmount;
+    existing.deductions += deductions;
+    existing.bonuses += bonuses;
+    existing.daysWorked += 1;
+    const groupDays = existing.groupDays.get(effectiveGroupId) || { days: 0, lastDate: workDate };
+    groupDays.days += 1;
+    if (workDate > groupDays.lastDate) groupDays.lastDate = workDate;
+    existing.groupDays.set(effectiveGroupId, groupDays);
+    workerMap.set(row.workerId, existing);
+  }
+
+  if (workerMap.size === 0) return [];
+
+  // Preserve approved pay overrides and assign each override to the effective group on its own date.
+  const overrides = await db
+    .select({
+      workerId: payOverrides.workerId,
+      overrideDate: payOverrides.overrideDate,
+      overrideType: payOverrides.overrideType,
+      amount: payOverrides.amount,
+    })
+    .from(payOverrides)
+    .where(
+      and(
+        eq(payOverrides.status, 'approved'),
+        sql`${payOverrides.overrideDate} >= ${periodStartDate}`,
+        sql`${payOverrides.overrideDate} <= ${periodEndDate}`,
+        inArray(payOverrides.workerId, [...workerMap.keys()])
+      )
+    );
+
+  for (const override of overrides) {
+    const aggregate = workerMap.get(override.workerId);
+    if (!aggregate) continue;
+
+    const overrideDate = typeof override.overrideDate === 'string'
+      ? override.overrideDate
+      : new Date(override.overrideDate).toLocaleDateString('en-CA');
+    const effectiveGroupId = resolveEffectiveGroup(override.workerId, overrideDate);
+    if (!effectiveGroupId || !targetGroupIds.includes(effectiveGroupId)) continue;
+
+    const amount = parseFloat(override.amount || '0');
+    if (override.overrideType === 'bonus') aggregate.bonuses += amount;
+    if (override.overrideType === 'deduction') aggregate.deductions += amount;
+    const groupDays = aggregate.groupDays.get(effectiveGroupId) || { days: 0, lastDate: overrideDate };
+    if (overrideDate > groupDays.lastDate) groupDays.lastDate = overrideDate;
+    aggregate.groupDays.set(effectiveGroupId, groupDays);
+  }
+
+  return [...workerMap.values()].map((aggregate) => {
+    const netAmount = aggregate.baseAmount - aggregate.deductions + aggregate.bonuses;
+    const groupStats = [...aggregate.groupDays.entries()];
+    const representativeGroupId = groupStats
+      .sort((a, b) => b[1].days - a[1].days || b[1].lastDate.localeCompare(a[1].lastDate) || a[0] - b[0])[0]?.[0] || null;
+    return {
+      workerId: aggregate.workerId,
+      workerName: aggregate.workerName,
+      // payroll_batch_items currently stores one group_id per worker. Keep a deterministic
+      // representative group for compatibility with existing reports; monetary calculation
+      // itself is still fully day-by-day across every effective group.
+      groupId: representativeGroupId,
+      baseAmount: aggregate.baseAmount.toFixed(2),
+      deductions: aggregate.deductions.toFixed(2),
+      bonuses: aggregate.bonuses.toFixed(2),
+      netAmount: netAmount.toFixed(2),
+      daysWorked: aggregate.daysWorked,
+      isPartial: groupStats.length > 1,
+      notes: groupStats.length > 1 ? 'تم احتساب العامل يومياً على أكثر من مجموعة داخل مركز التكلفة' : undefined,
+    };
+  });
 }
 
 
@@ -1022,27 +1105,20 @@ export async function checkIncompleteAttendanceForPeriodAndCostCenter(
     const dayIncomplete = await getIncompleteAttendance(currentDate);
     
     for (const record of dayIncomplete) {
-      // If costCenterId is specified, filter by workers in groups belonging to that cost center
+      // Filter using the worker's effective group for this exact day, not the base group.
       if (costCenterId) {
-        // Get the worker's group to check cost center
-        const { workers: workersTable, groups: groupsTable } = await import('../../drizzle/schema');
-        const workerData = await db
-          .select({ costCenterId: groupsTable.costCenterId, groupId: workersTable.groupId })
-          .from(workersTable)
-          .leftJoin(groupsTable, eq(workersTable.groupId, groupsTable.id))
-          .where(eq(workersTable.id, record.workerId))
-          .limit(1);
-        
-        if (workerData.length === 0 || workerData[0].costCenterId !== costCenterId) {
-          continue; // Skip workers not in the specified cost center
-        }
+        const dateStr = currentDate.toLocaleDateString('en-CA');
+        const effectiveGroupId = await getEffectiveGroupForWorkerOnDate(record.workerId, dateStr);
+        if (!effectiveGroupId) continue;
 
-        // ✅ إذا حُددت مجموعات معينة، تخطَّ العمال الذين لا ينتمون لأي منها
-        if (groupIds && groupIds.length > 0) {
-          if (!workerData[0].groupId || !groupIds.includes(workerData[0].groupId)) {
-            continue;
-          }
-        }
+        const [effectiveGroup] = await db
+          .select({ costCenterId: groups.costCenterId })
+          .from(groups)
+          .where(eq(groups.id, effectiveGroupId))
+          .limit(1);
+
+        if (!effectiveGroup || effectiveGroup.costCenterId !== costCenterId) continue;
+        if (groupIds && groupIds.length > 0 && !groupIds.includes(effectiveGroupId)) continue;
       }
       
       incompleteRecords.push({
