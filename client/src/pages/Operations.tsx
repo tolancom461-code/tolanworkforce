@@ -1266,8 +1266,8 @@ export default function Operations() {
         )}
 
         <Dialog open={quickDialogOpen} onOpenChange={handleQuickDialogOpenChange}>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden p-0">
-            <DialogHeader className="px-5 pt-5 pb-3 border-b">
+          <DialogContent className="max-h-[calc(100dvh-1rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-h-[90vh] sm:max-w-lg">
+            <DialogHeader className="shrink-0 px-5 pt-5 pb-3 border-b">
               <DialogTitle className="text-lg">
                 {selectedQuickGroup ? displayName(selectedQuickGroup.name) : t.staffingPage.quickSelectGroupTitle}
               </DialogTitle>
@@ -1276,7 +1276,7 @@ export default function Operations() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="overflow-y-auto px-5 py-4">
+            <div className="min-h-0 overflow-y-auto overscroll-contain px-5 py-4">
               {loadingWorkers ? (
                 <div className="py-10 text-center text-muted-foreground">{t.staffingPage.loading}</div>
               ) : quickCompletedVisible ? (
@@ -1352,7 +1352,7 @@ export default function Operations() {
             </div>
 
             {!loadingWorkers && !quickCompletedVisible && quickCurrentWorker && (
-              <DialogFooter className="px-5 py-4 border-t bg-background">
+              <DialogFooter className="shrink-0 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t bg-background">
                 <Button
                   className="w-full min-h-12 text-base"
                   onClick={() => void saveQuickAssignment()}
