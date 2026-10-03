@@ -265,21 +265,26 @@ export async function generateGroupsExcelExport(groups: any[]): Promise<any> {
   return buffer as unknown as Buffer;
 }
 
+function getWorkerCodeNumber(code: unknown): number | null {
+  const matches = String(code ?? '').match(/\d+/g);
+  if (!matches || matches.length === 0) return null;
+
+  const value = Number(matches[matches.length - 1]);
+  return Number.isFinite(value) ? value : null;
+}
+
 export async function generateWorkersExcelExport(workers: any[]): Promise<any> {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('العمال');
 
   // Set column widths
   worksheet.columns = [
-    { header: 'المعرف', key: 'id', width: 10 },
     { header: 'الكود', key: 'code', width: 15 },
     { header: 'الاسم الكامل', key: 'fullName', width: 25 },
     { header: 'رقم الهوية', key: 'nationalId', width: 20 },
     { header: 'الهاتف', key: 'phone', width: 15 },
     { header: 'معرف المجموعة', key: 'groupId', width: 15 },
-    { header: 'معرف الوظيفة', key: 'jobId', width: 15 },
-    { header: 'معدل الراتب اليومي', key: 'dailyRate', width: 18 },
-    { header: 'الحالة', key: 'status', width: 15 },
+    { header: 'اسم المجموعة', key: 'groupName', width: 30 },
     { header: 'تاريخ التوظيف', key: 'hireDate', width: 15 },
     { header: 'تاريخ الإنشاء', key: 'createdAt', width: 18 },
   ];
@@ -290,18 +295,40 @@ export async function generateWorkersExcelExport(workers: any[]): Promise<any> {
   headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
   headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
+  // Sort by group name, then by the numeric part of worker code descending.
+  const sortedWorkers = [...workers].sort((a, b) => {
+    const groupComparison = String(a.groupName ?? '').localeCompare(
+      String(b.groupName ?? ''),
+      'ar',
+      { sensitivity: 'base', numeric: true },
+    );
+
+    if (groupComparison !== 0) return groupComparison;
+
+    const aCodeNumber = getWorkerCodeNumber(a.code);
+    const bCodeNumber = getWorkerCodeNumber(b.code);
+
+    if (aCodeNumber !== null && bCodeNumber !== null && aCodeNumber !== bCodeNumber) {
+      return bCodeNumber - aCodeNumber;
+    }
+    if (aCodeNumber === null && bCodeNumber !== null) return 1;
+    if (aCodeNumber !== null && bCodeNumber === null) return -1;
+
+    return String(b.code ?? '').localeCompare(String(a.code ?? ''), 'en', {
+      sensitivity: 'base',
+      numeric: true,
+    });
+  });
+
   // Add data rows
-  workers.forEach((worker) => {
+  sortedWorkers.forEach((worker) => {
     worksheet.addRow({
-      id: worker.id,
       code: worker.code,
       fullName: worker.fullName,
       nationalId: worker.nationalId,
       phone: worker.phone,
       groupId: worker.groupId,
-      jobId: worker.jobId,
-      dailyRate: worker.dailyRate,
-      status: worker.status,
+      groupName: worker.groupName || 'غير محدد',
       hireDate: worker.hireDate,
       createdAt: worker.createdAt,
     });

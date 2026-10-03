@@ -106,6 +106,7 @@ export const excelImportExportRouter = router({
       .input(z.object({
         fileData: z.string(), // base64 encoded
       }))
+      .use(requireRole('admin_affairs', 'accountant'))
       .use(requirePermissionFlag('canManageWorkers'))
       .mutation(async ({ input }) => {
         try {
@@ -166,10 +167,23 @@ export const excelImportExportRouter = router({
       }),
 
     exportWorkers: protectedProcedure
-      .query(async () => {
+      .input(z.object({
+        groupId: z.number().int().positive().optional(),
+      }))
+      .query(async ({ input }) => {
         try {
-          const workers = await db.getAllWorkers();
-          const buffer = await generateWorkersExcelExport(workers);
+          const [workers, groups] = await Promise.all([
+            db.getWorkersForExport(input.groupId),
+            db.getAllGroups(),
+          ]);
+          const groupNameById = new Map(groups.map((group) => [group.id, group.name]));
+          const exportWorkers = workers.map((worker) => ({
+            ...worker,
+            groupName: worker.groupId
+              ? groupNameById.get(worker.groupId) || 'غير محدد'
+              : 'غير محدد',
+          }));
+          const buffer = await generateWorkersExcelExport(exportWorkers);
           return {
             success: true,
             data: buffer.toString('base64'),

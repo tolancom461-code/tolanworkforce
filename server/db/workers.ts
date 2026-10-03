@@ -45,6 +45,24 @@ export async function getAllWorkers(): Promise<DbWorker[]> {
   return await db.select().from(workers).orderBy(desc(workers.createdAt), desc(workers.id));
 }
 
+/**
+ * Export workers without pagination.
+ * When a group is selected on the Workers page, export every worker in that group.
+ */
+export async function getWorkersForExport(groupId?: number): Promise<DbWorker[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (groupId) {
+    return await db
+      .select()
+      .from(workers)
+      .where(eq(workers.groupId, groupId));
+  }
+
+  return await db.select().from(workers);
+}
+
 export async function getWorkersByGroup(groupId: number): Promise<DbWorker[]> {
   const db = await getDb();
   if (!db) return [];

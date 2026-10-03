@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Search, UserCircle, QrCode, Eye, Filter, RefreshCw, FileSpreadsheet, Printer, Download } from "lucide-react";
 import { ExcelImportExportDialog } from "@/components/ExcelImportExportDialog";
-import { exportToExcel, printPage } from '@/lib/exportUtils';
+import { printPage } from '@/lib/exportUtils';
 import { memo, useCallback, useMemo } from 'react';
 import WorkerRow from '@/components/WorkerRow';
 import WorkerPhotoPicker from '@/components/WorkerPhotoPicker';
@@ -28,6 +28,7 @@ import { canManageWorkerPhotos } from '@shared/workerPhotoPolicy';
 export default function Workers() {
   const hasPermission = () => true; // Existing worker-management behavior remains unchanged.
   const { user } = useAuth();
+  const isDataEntry = user?.role === 'data_entry';
   const canManagePhotos = canManageWorkerPhotos(user?.role, Boolean((user as any)?.isOwner));
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGroup, setFilterGroup] = useState<string>("all");
@@ -70,6 +71,10 @@ export default function Workers() {
   });
   // Get all groups (Workers page doesn't filter by cost center)
   const { data: groups } = trpc.groups.list.useQuery();
+  const exportWorkersQuery = trpc.excelImportExport.exportWorkers.useQuery(
+    { groupId },
+    { enabled: false },
+  );
   
   const workers = workersData?.data || [];
   const totalPages = workersData?.totalPages || 1;
@@ -336,28 +341,25 @@ export default function Workers() {
   });
 
   // Export handlers
-  const handleExportToExcel = () => {
-    if (!filteredWorkers || filteredWorkers.length === 0) {
-      toast.error('لا توجد بيانات للتصدير');
-      return;
+  const handleExportToExcel = async () => {
+    try {
+      const result = await exportWorkersQuery.refetch();
+      if (!result.data?.data) {
+        toast.error('لا توجد بيانات للتصدير');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${result.data.data}`;
+      link.download = result.data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success('تم تصدير قائمة العمال بنجاح');
+    } catch (error: any) {
+      toast.error(error?.message || 'فشل تصدير بيانات العمال');
     }
-
-    const exportData = filteredWorkers.map(worker => {
-      const groupName = groups?.find(g => g.id === worker.groupId)?.name || '-';
-      return {
-        'كود العامل': worker.code,
-        'الاسم الكامل': worker.fullName,
-        'رقم الهوية': worker.nationalId || '-',
-        'رقم الجوال': worker.phone || '-',
-        'المجموعة': groupName,
-        'تاريخ التوظيف': worker.hireDate ? new Date(worker.hireDate).toLocaleDateString('ar-SA') : '-',
-        'الحالة': worker.status === 'active' ? 'نشط' : worker.status === 'inactive' ? 'غير نشط' : 'مؤرشف',
-      };
-    });
-
-    const timestamp = new Date().toLocaleDateString('en-CA');
-    exportToExcel(exportData, `قائمة_العمال_${timestamp}`, 'العمال');
-    toast.success('تم تصدير القائمة بنجاح');
   };
 
   const handlePrint = () => {
@@ -384,10 +386,12 @@ export default function Workers() {
               <Printer className="h-4 w-4 ml-2" />
               طباعة
             </Button>
-            <ExcelImportExportDialog type="workers" onImportSuccess={() => {
-              utils.workers.listWithPagination.invalidate();
-              utils.workers.list.invalidate();
-            }} />
+            {!isDataEntry && (
+              <ExcelImportExportDialog type="workers" onImportSuccess={() => {
+                utils.workers.listWithPagination.invalidate();
+                utils.workers.list.invalidate();
+              }} />
+            )}
             {hasPermission() && (
               <Dialog
                 open={isAddDialogOpen}

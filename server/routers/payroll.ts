@@ -19,6 +19,11 @@ import ExcelJS from "exceljs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+const REQUIRE_OPERATIONAL_DAY_CLOSED_FOR_PAYROLL_DRAFT =
+  String(process.env.REQUIRE_OPERATIONAL_DAY_CLOSED_FOR_PAYROLL_DRAFT ?? "false")
+    .trim()
+    .toLowerCase() === "true";
+
   // Payroll Batches
 export const payrollRouter = router({
     // Create draft batch
@@ -51,22 +56,26 @@ export const payrollRouter = router({
         }
 
         // === شرط 0: لا Payroll قبل إغلاق كل الأيام التشغيلية التي بها حضور فعلي ===
-        const unclosedOperationalDays = await db.getUnclosedOperationalDaysForPayroll(
-          input.periodStart,
-          input.periodEnd,
-          input.costCenterId ?? null
-        );
-        if (unclosedOperationalDays.length > 0) {
-          const preview = unclosedOperationalDays
-            .slice(0, 10)
-            .map((day) => `${day.workDate} — ${day.costCenterName}`)
-            .join('، ');
-          const rest = unclosedOperationalDays.length > 10
-            ? `، و${unclosedOperationalDays.length - 10} نطاق تشغيلي آخر`
-            : '';
-          throw new Error(
-            `لا يمكن إنشاء دفعة العمال. توجد أيام تشغيلية غير مغلقة لمركز/مراكز التكلفة الداخلة في الدفعة: ${preview}${rest}.\n\nيجب إكمال توزيع عمال مركز التكلفة وإغلاق يومه التشغيلي قبل إنشاء الدفعة.`
+        // معلق مؤقتًا افتراضيًا. لإعادة تفعيله لاحقًا:
+        // REQUIRE_OPERATIONAL_DAY_CLOSED_FOR_PAYROLL_DRAFT=true
+        if (REQUIRE_OPERATIONAL_DAY_CLOSED_FOR_PAYROLL_DRAFT) {
+          const unclosedOperationalDays = await db.getUnclosedOperationalDaysForPayroll(
+            input.periodStart,
+            input.periodEnd,
+            input.costCenterId ?? null
           );
+          if (unclosedOperationalDays.length > 0) {
+            const preview = unclosedOperationalDays
+              .slice(0, 10)
+              .map((day) => `${day.workDate} — ${day.costCenterName}`)
+              .join('، ');
+            const rest = unclosedOperationalDays.length > 10
+              ? `، و${unclosedOperationalDays.length - 10} نطاق تشغيلي آخر`
+              : '';
+            throw new Error(
+              `لا يمكن إنشاء دفعة العمال. توجد أيام تشغيلية غير مغلقة لمركز/مراكز التكلفة الداخلة في الدفعة: ${preview}${rest}.\n\nيجب إكمال توزيع عمال مركز التكلفة وإغلاق يومه التشغيلي قبل إنشاء الدفعة.`
+            );
+          }
         }
         
         // === شرط 1: منع تكرار الدفعة لنفس الفترة ومركز التكلفة والمجموعات ===
